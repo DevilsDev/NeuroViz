@@ -181,8 +181,8 @@ This document outlines planned features for NeuroViz, organized by priority and 
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| Keyboard shortcuts | S | 🔲 | Space, S, R, Escape |
-| Dark/light theme toggle | M | 🔲 | CSS variables |
+| Keyboard shortcuts | S | ✅ | Space, S, R, Escape |
+| Dark/light theme toggle | M | ✅ | CSS variables + Tailwind dark mode |
 | Responsive mobile layout | M | 🔲 | Tailwind breakpoints |
 | Fullscreen mode | S | 🔲 | Fullscreen API |
 
@@ -309,12 +309,14 @@ This document outlines planned features for NeuroViz, organized by priority and 
 3. ✅ Multi-class support (2-5 classes)
 4. 🔲 Upload CSV (moved to Sprint 5)
 
-### Sprint 5: UX & Persistence
+### 🟡 Sprint 5: UX & Persistence (In Progress)
 
-1. 🔲 Keyboard shortcuts
-2. 🔲 Dark/light theme
+1. ✅ Keyboard shortcuts (Space, S, R)
+2. ✅ Dark/light theme toggle
 3. 🔲 Session save/load
 4. 🔲 Preset configurations
+5. 🔲 Responsive mobile layout
+6. 🔲 Fullscreen mode
 
 ---
 
