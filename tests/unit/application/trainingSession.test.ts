@@ -30,7 +30,6 @@ describe('TrainingSession', () => {
     session = new TrainingSession(neuralNet, visualizer, dataRepo, {
       renderInterval: 10,
       gridSize: 5, // Small grid for fast tests
-      stepDelayMs: 0,
     });
   });
 
