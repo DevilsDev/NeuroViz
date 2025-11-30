@@ -43,18 +43,18 @@
 
   body {
     @apply font-sans antialiased min-h-screen leading-relaxed;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
   }
 
-  /* Dark theme body (Tailwind classes) */
+  /* Dark theme body (default) */
   body:not([data-theme="light"]) {
-    @apply bg-navy-950 text-slate-100;
+    background-color: #0a0f1a !important;
+    color: #f1f5f9 !important;
   }
 
   /* Light theme body */
   body[data-theme="light"] {
-    @apply bg-slate-50 text-slate-900;
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
   }
 
   /* Focus ring for accessibility */
@@ -459,207 +459,217 @@
 }
 
 /* =============================================================================
-   Light Theme Overrides
+   Light Theme Overrides - All use !important to override Tailwind utilities
    ============================================================================= */
 [data-theme="light"] .panel,
 [data-theme="light"] .panel-glow {
-  background-color: #ffffff;
-  border-color: #e2e8f0;
-  box-shadow: 0 10px 15px -3px rgba(226, 232, 240, 0.5);
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 10px 15px -3px rgba(226, 232, 240, 0.5) !important;
 }
 
 [data-theme="light"] .control-fieldset {
-  background-color: #f8fafc;
-  border-color: #e2e8f0;
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
 }
 
 [data-theme="light"] .control-legend {
-  color: #334155;
+  color: #334155 !important;
 }
 
 [data-theme="light"] .input-field,
 [data-theme="light"] .select-field {
-  background-color: #ffffff;
-  border-color: #cbd5e1;
-  color: #0f172a;
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
 }
 
 [data-theme="light"] .input-label {
-  color: #475569;
+  color: #475569 !important;
 }
 
 [data-theme="light"] .btn-primary {
-  background: linear-gradient(to right, #0d9488, #0f766e);
+  background: linear-gradient(to right, #0d9488, #0f766e) !important;
 }
 
 [data-theme="light"] .btn-secondary {
-  background-color: #f1f5f9;
-  border-color: #cbd5e1;
-  color: #334155;
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
 }
 
 [data-theme="light"] .btn-secondary:hover:not(:disabled) {
-  background-color: #e2e8f0;
+  background-color: #e2e8f0 !important;
 }
 
 [data-theme="light"] .btn-danger {
-  background-color: #fee2e2;
-  border-color: #fca5a5;
-  color: #b91c1c;
+  background-color: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+  color: #b91c1c !important;
 }
 
 [data-theme="light"] .btn-danger:hover:not(:disabled) {
-  background-color: #fecaca;
+  background-color: #fecaca !important;
 }
 
 [data-theme="light"] .metric-card {
-  background-color: #f1f5f9;
-  border-color: #e2e8f0;
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
 }
 
 [data-theme="light"] .metric-label {
-  color: #64748b;
+  color: #64748b !important;
 }
 
 [data-theme="light"] .metric-value,
 [data-theme="light"] .metric-value-accent {
-  color: #1e293b;
+  color: #1e293b !important;
 }
 
 [data-theme="light"] .text-gradient,
 [data-theme="light"] .text-gradient-purple {
-  color: #0d9488;
-  background: none;
-  -webkit-background-clip: unset;
-  background-clip: unset;
-  -webkit-text-fill-color: unset;
+  color: #0d9488 !important;
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  background-clip: unset !important;
+  -webkit-text-fill-color: unset !important;
 }
 
 [data-theme="light"] .glow-accent {
-  text-shadow: none;
+  text-shadow: none !important;
 }
 
 [data-theme="light"] .kbd {
-  background-color: #e2e8f0;
-  border-color: #cbd5e1;
-  color: #475569;
+  background-color: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
 }
 
 [data-theme="light"] header {
-  border-color: #e2e8f0;
+  border-color: #e2e8f0 !important;
 }
 
 [data-theme="light"] .toast-container .toast {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
 }
 
 /* Theme toggle button in light mode */
 [data-theme="light"] #btn-theme-toggle {
-  background-color: #e2e8f0;
+  background-color: #e2e8f0 !important;
 }
 
 [data-theme="light"] #btn-theme-toggle:hover {
-  background-color: #cbd5e1;
+  background-color: #cbd5e1 !important;
 }
 
 /* Draw buttons in light mode */
 [data-theme="light"] .btn-draw {
-  background-color: #f1f5f9;
-  border-color: #cbd5e1;
-  color: #475569;
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
 }
 
 [data-theme="light"] .btn-draw:hover {
-  background-color: #e2e8f0;
+  background-color: #e2e8f0 !important;
 }
 
 [data-theme="light"] .btn-draw.active {
-  background-color: rgba(13, 148, 136, 0.1);
-  border-color: #0d9488;
-  color: #0d9488;
-}
-
-/* Status text in light mode */
-[data-theme="light"] .text-slate-400,
-[data-theme="light"] .text-slate-500 {
-  color: #64748b;
+  background-color: rgba(13, 148, 136, 0.1) !important;
+  border-color: #0d9488 !important;
+  color: #0d9488 !important;
 }
 
 /* Loss chart in light mode */
 [data-theme="light"] #loss-chart-container {
-  background-color: #f8fafc;
-  border-color: #e2e8f0;
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
 }
 
 /* Scrollbar in light mode */
 [data-theme="light"] ::-webkit-scrollbar-track {
-  background-color: #f1f5f9;
+  background-color: #f1f5f9 !important;
 }
 
 [data-theme="light"] ::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
+  background-color: #cbd5e1 !important;
 }
 
 [data-theme="light"] ::-webkit-scrollbar-thumb:hover {
-  background-color: #94a3b8;
+  background-color: #94a3b8 !important;
 }
 
 /* Toast notifications in light mode */
 [data-theme="light"] .toast-success {
-  background-color: rgba(16, 185, 129, 0.9);
-  border-color: #10b981;
-  color: #ffffff;
+  background-color: rgba(16, 185, 129, 0.9) !important;
+  border-color: #10b981 !important;
+  color: #ffffff !important;
 }
 
 [data-theme="light"] .toast-error {
-  background-color: rgba(239, 68, 68, 0.9);
-  border-color: #ef4444;
-  color: #ffffff;
+  background-color: rgba(239, 68, 68, 0.9) !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
 }
 
 [data-theme="light"] .toast-warning {
-  background-color: rgba(245, 158, 11, 0.9);
-  border-color: #f59e0b;
-  color: #ffffff;
+  background-color: rgba(245, 158, 11, 0.9) !important;
+  border-color: #f59e0b !important;
+  color: #ffffff !important;
 }
 
 [data-theme="light"] .toast-info {
-  background-color: rgba(59, 130, 246, 0.9);
-  border-color: #3b82f6;
-  color: #ffffff;
+  background-color: rgba(59, 130, 246, 0.9) !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
 }
 
 /* Focus ring in light mode */
 [data-theme="light"] :focus-visible {
-  --tw-ring-offset-color: #f8fafc;
+  --tw-ring-offset-color: #f8fafc !important;
 }
 
-/* Override inline Tailwind classes in light mode */
-[data-theme="light"] .border-navy-700\/50 {
+/* Override ALL navy/dark Tailwind classes in light mode */
+[data-theme="light"] .border-navy-700\/50,
+[data-theme="light"] .border-navy-700,
+[data-theme="light"] [class*="border-navy"] {
   border-color: #e2e8f0 !important;
 }
 
-[data-theme="light"] .bg-navy-800 {
+[data-theme="light"] .bg-navy-800,
+[data-theme="light"] .bg-navy-800\/80,
+[data-theme="light"] [class*="bg-navy-8"] {
   background-color: #e2e8f0 !important;
 }
 
-[data-theme="light"] .bg-navy-700 {
+[data-theme="light"] .bg-navy-700,
+[data-theme="light"] .bg-navy-700\/50,
+[data-theme="light"] [class*="bg-navy-7"] {
   background-color: #cbd5e1 !important;
 }
 
-[data-theme="light"] .bg-navy-950 {
+[data-theme="light"] .bg-navy-950,
+[data-theme="light"] .bg-navy-950\/60,
+[data-theme="light"] [class*="bg-navy-9"] {
   background-color: #f8fafc !important;
 }
 
-[data-theme="light"] .text-slate-400 {
-  color: #64748b !important;
+[data-theme="light"] .text-slate-100,
+[data-theme="light"] .text-slate-200,
+[data-theme="light"] .text-slate-300 {
+  color: #334155 !important;
 }
 
-[data-theme="light"] .border-navy-600 {
-  border-color: #cbd5e1 !important;
+[data-theme="light"] .text-slate-400,
+[data-theme="light"] .text-slate-500 {
+  color: #64748b !important;
 }
 
 /* App container background */
 [data-theme="light"] .app-container {
-  background-color: #f8fafc;
+  background-color: #f8fafc !important;
+}
+
+/* Viz container in light mode */
+[data-theme="light"] #viz-container {
+  background-color: #ffffff !important;
 }
