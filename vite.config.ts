@@ -8,7 +8,8 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 export default defineConfig({
   // Base path for GitHub Pages deployment (repo name)
   // Set to '/' for custom domain or local development
-  base: process.env.GITHUB_ACTIONS ? '/NeuroViz/' : '/',
+  // GITHUB_ACTIONS is automatically set to 'true' in GitHub Actions
+  base: process.env.GITHUB_ACTIONS === 'true' ? '/NeuroViz/' : '/',
   resolve: {
     alias: {
       '@core': resolve(__dirname, 'src/core'),
