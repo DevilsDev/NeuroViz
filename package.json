@@ -25,7 +25,7 @@
     "d3",
     "hexagonal-architecture"
   ],
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dependencies": {
     "@tensorflow/tfjs": "^4.21.0",
     "d3": "^7.9.0"
