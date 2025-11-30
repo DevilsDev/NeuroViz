@@ -538,16 +538,21 @@ function getStoredTheme(): 'light' | 'dark' {
 
 /**
  * Applies the specified theme to the document.
+ * Uses Tailwind's dark mode class on html element.
  */
 function applyTheme(theme: 'light' | 'dark'): void {
-  if (theme === 'light') {
-    document.body.setAttribute('data-theme', 'light');
-    elements.iconSun.classList.add('hidden');
-    elements.iconMoon.classList.remove('hidden');
-  } else {
+  const html = document.documentElement;
+  
+  if (theme === 'dark') {
+    html.classList.add('dark');
     document.body.removeAttribute('data-theme');
     elements.iconSun.classList.remove('hidden');
     elements.iconMoon.classList.add('hidden');
+  } else {
+    html.classList.remove('dark');
+    document.body.setAttribute('data-theme', 'light');
+    elements.iconSun.classList.add('hidden');
+    elements.iconMoon.classList.remove('hidden');
   }
   localStorage.setItem(THEME_KEY, theme);
 }
@@ -556,8 +561,8 @@ function applyTheme(theme: 'light' | 'dark'): void {
  * Toggles between light and dark themes.
  */
 function handleThemeToggle(): void {
-  const currentTheme = document.body.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
-  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+  const isDark = document.documentElement.classList.contains('dark');
+  const newTheme = isDark ? 'light' : 'dark';
   applyTheme(newTheme);
   toast.info(`Switched to ${newTheme} theme`);
 }
@@ -585,13 +590,16 @@ function handleKeyboardShortcut(event: KeyboardEvent): void {
   switch (event.code) {
     case 'Space':
       event.preventDefault();
-      if (state.isRunning) {
+      // Check if actively running (not paused) - then pause
+      if (state.isRunning && !state.isPaused) {
         handlePause();
         toast.info('⏸ Training paused — press Space to resume');
         // Visual feedback on pause button
         elements.btnPause.classList.add('ring-2', 'ring-accent-400');
         setTimeout(() => elements.btnPause.classList.remove('ring-2', 'ring-accent-400'), 300);
-      } else if (state.isInitialised && state.datasetLoaded) {
+      } 
+      // If paused or not running, start/resume
+      else if (state.isInitialised && state.datasetLoaded) {
         handleStart();
         toast.info('▶ Training resumed');
         // Visual feedback on start button
