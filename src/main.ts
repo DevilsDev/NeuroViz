@@ -18,6 +18,12 @@ import { TFNeuralNet } from './infrastructure/tensorflow';
 import { D3Chart } from './infrastructure/d3';
 import { MockDataRepository } from './infrastructure/api';
 
+// Configuration
+import { APP_CONFIG } from './config/app.config';
+
+// UI utilities
+import { toast } from './presentation/toast';
+
 // =============================================================================
 // DOM Element References
 // =============================================================================
@@ -53,14 +59,18 @@ const elements = {
 // This enables swapping implementations (e.g., MockDataRepository → AxiosDataRepository)
 // without changing any other code.
 
-const visualizerService = new D3Chart('viz-container', 500, 500);
+const visualizerService = new D3Chart(
+  'viz-container',
+  APP_CONFIG.visualization.width,
+  APP_CONFIG.visualization.height
+);
 const neuralNetService = new TFNeuralNet();
-const dataRepository = new MockDataRepository(500); // 500ms simulated latency
+const dataRepository = new MockDataRepository(APP_CONFIG.api.latencyMs);
 
 // Application layer receives adapters via constructor injection
 const session = new TrainingSession(neuralNetService, visualizerService, dataRepository, {
-  renderInterval: 10,
-  gridSize: 50,
+  renderInterval: APP_CONFIG.visualization.renderInterval,
+  gridSize: APP_CONFIG.visualization.gridSize,
 });
 
 // =============================================================================
@@ -106,10 +116,29 @@ function showLoading(show: boolean): void {
 }
 
 function parseLayersInput(input: string): number[] {
-  return input
+  const layers = input
     .split(',')
     .map((s) => parseInt(s.trim(), 10))
     .filter((n) => !isNaN(n) && n > 0);
+
+  if (layers.length === 0) {
+    throw new Error('At least one valid layer size is required');
+  }
+
+  if (layers.length > APP_CONFIG.validation.maxLayers) {
+    throw new Error(
+      `Maximum ${APP_CONFIG.validation.maxLayers} layers allowed (you entered ${layers.length})`
+    );
+  }
+
+  const oversizedLayer = layers.find((size) => size > APP_CONFIG.validation.maxLayerSize);
+  if (oversizedLayer !== undefined) {
+    throw new Error(
+      `Layer size cannot exceed ${APP_CONFIG.validation.maxLayerSize} neurons (found ${oversizedLayer})`
+    );
+  }
+
+  return layers;
 }
 
 // =============================================================================
@@ -124,9 +153,12 @@ async function handleLoadData(): Promise<void> {
 
   try {
     await session.loadData(datasetType);
+    toast.success(`Dataset "${datasetType}" loaded successfully!`);
   } catch (error) {
     console.error('Failed to load dataset:', error);
-    alert(`Failed to load dataset: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    toast.error(
+      `Failed to load dataset: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   } finally {
     showLoading(false);
     elements.btnLoadData.disabled = false;
@@ -135,15 +167,17 @@ async function handleLoadData(): Promise<void> {
 
 async function handleInitialise(): Promise<void> {
   const learningRate = parseFloat(elements.inputLr.value);
-  const layers = parseLayersInput(elements.inputLayers.value);
 
   if (isNaN(learningRate) || learningRate <= 0) {
-    alert('Please enter a valid learning rate (positive number).');
+    toast.warning('Please enter a valid learning rate (positive number).');
     return;
   }
 
-  if (layers.length === 0) {
-    alert('Please enter at least one hidden layer size (e.g., "8, 4").');
+  let layers: number[];
+  try {
+    layers = parseLayersInput(elements.inputLayers.value);
+  } catch (error) {
+    toast.warning(error instanceof Error ? error.message : 'Invalid layer configuration');
     return;
   }
 
@@ -154,9 +188,10 @@ async function handleInitialise(): Promise<void> {
 
   try {
     await session.setHyperparameters(config);
+    toast.success('Neural network initialized successfully!');
   } catch (error) {
     console.error('Failed to initialise network:', error);
-    alert(
+    toast.error(
       `Failed to initialise network: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
   } finally {
@@ -170,7 +205,7 @@ function handleStart(): void {
     session.start();
   } catch (error) {
     console.error('Failed to start training:', error);
-    alert(`Failed to start: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    toast.error(`Failed to start: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -179,14 +214,24 @@ function handlePause(): void {
 }
 
 async function handleStep(): Promise<void> {
+  // Guard against rapid clicks while processing
+  if (elements.btnStep.disabled) {
+    return;
+  }
+
   elements.btnStep.disabled = true;
 
   try {
     await session.step();
+    // Wait a frame for state notification to complete
+    await new Promise((resolve) => requestAnimationFrame(resolve));
   } catch (error) {
     console.error('Step failed:', error);
+    toast.error(`Step failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   } finally {
-    elements.btnStep.disabled = false;
+    // Re-enable only if state is valid for stepping
+    const state = session.getState();
+    elements.btnStep.disabled = !state.isInitialised || !state.datasetLoaded || state.isRunning;
   }
 }
 
@@ -203,17 +248,16 @@ function init(): void {
   session.onStateChange(updateUI);
 
   // Bind event listeners
-  elements.btnLoadData.addEventListener('click', handleLoadData);
-  elements.btnInit.addEventListener('click', handleInitialise);
+  elements.btnLoadData.addEventListener('click', () => void handleLoadData());
+  elements.btnInit.addEventListener('click', () => void handleInitialise());
   elements.btnStart.addEventListener('click', handleStart);
   elements.btnPause.addEventListener('click', handlePause);
-  elements.btnStep.addEventListener('click', handleStep);
+  elements.btnStep.addEventListener('click', () => void handleStep());
   elements.btnReset.addEventListener('click', handleReset);
 
   // Initial UI state
   updateUI(session.getState());
 
-  console.log('NeuroViz initialised. Composition root wired successfully.');
 }
 
 // Start the application
@@ -223,4 +267,5 @@ init();
 window.addEventListener('beforeunload', () => {
   session.dispose();
   neuralNetService.dispose();
+  visualizerService.dispose();
 });

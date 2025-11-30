@@ -149,6 +149,14 @@ export class D3Chart implements IVisualizerService {
     this.svg.selectAll('.boundary').remove();
   }
 
+  /**
+   * Disposes of all SVG elements and cleans up resources.
+   * Call this when the chart is no longer needed to prevent memory leaks.
+   */
+  dispose(): void {
+    this.container.selectAll('*').remove();
+  }
+
   private renderAxes(): void {
     // X axis
     this.svg

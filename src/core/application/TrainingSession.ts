@@ -114,7 +114,7 @@ export class TrainingSession implements ITrainingSession {
     this.notifyListeners();
 
     // Kick off the guard-rail loop
-    this.loop();
+    void this.loop();
   }
 
   /**
@@ -218,7 +218,7 @@ export class TrainingSession implements ITrainingSession {
     // Guard-rail: skip if previous step still processing
     if (this.isProcessingStep) {
       // Schedule next check without executing a step
-      requestAnimationFrame(() => this.loop());
+      requestAnimationFrame(() => void this.loop());
       return;
     }
 
@@ -240,7 +240,7 @@ export class TrainingSession implements ITrainingSession {
       // Stop training on error (e.g., GradientExplosionError)
       this.isTraining = false;
       this.notifyListeners();
-      throw error;
+      console.error('Training loop error:', error);
     } finally {
       // Unlock: allow next step
       this.isProcessingStep = false;
@@ -248,7 +248,7 @@ export class TrainingSession implements ITrainingSession {
 
     // Schedule next frame (only if still training)
     if (this.isTraining && !this.isPaused) {
-      requestAnimationFrame(() => this.loop());
+      requestAnimationFrame(() => void this.loop());
     }
   }
 

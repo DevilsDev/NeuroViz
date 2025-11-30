@@ -30,14 +30,14 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    environment: 'node',
+    environment: 'jsdom',
     include: ['tests/unit/**/*.test.ts'],
     exclude: ['tests/e2e/**/*'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      include: ['src/core/**/*.ts'],
-      exclude: ['src/core/**/index.ts'],
+      include: ['src/core/**/*.ts', 'src/infrastructure/**/*.ts'],
+      exclude: ['src/core/**/index.ts', 'src/infrastructure/**/index.ts', 'src/infrastructure/**/errors.ts'],
     },
     mockReset: true,
   },
