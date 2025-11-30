@@ -1,5 +1,5 @@
 import * as tf from '@tensorflow/tfjs';
-import type { INeuralNetworkService } from '../../core/ports';
+import type { INeuralNetworkService, TrainResult } from '../../core/ports';
 import type { Hyperparameters, Point, Prediction, OptimizerType, ActivationType } from '../../core/domain';
 import { DEFAULT_HYPERPARAMETERS } from '../../core/domain';
 import { GradientExplosionError, ModelNotInitialisedError } from './errors';
@@ -56,7 +56,7 @@ export class TFNeuralNet implements INeuralNetworkService {
    * Memory is manually managed via try/finally since `tf.tidy()`
    * cannot wrap async operations like `trainOnBatch`.
    */
-  async train(data: Point[]): Promise<number> {
+  async train(data: Point[]): Promise<TrainResult> {
     const model = this.assertInitialised();
 
     // Create tensors outside tf.tidy() since trainOnBatch is async
@@ -64,20 +64,64 @@ export class TFNeuralNet implements INeuralNetworkService {
     const ys = tf.tensor2d(data.map((p) => [p.label]));
 
     try {
-      // trainOnBatch returns number | number[] in newer TF.js versions
+      // trainOnBatch returns [loss, accuracy] when metrics are configured
       const result = await model.trainOnBatch(xs, ys);
 
-      // Extract loss value (first element if array, otherwise number)
-      const loss = Array.isArray(result) ? result[0] ?? 0 : result;
+      // Extract loss and accuracy values
+      let loss: number;
+      let accuracy: number;
+
+      if (Array.isArray(result)) {
+        loss = result[0] ?? 0;
+        accuracy = result[1] ?? 0;
+      } else {
+        loss = result;
+        accuracy = 0;
+      }
 
       // Check for gradient explosion
       if (Number.isNaN(loss)) {
         throw new GradientExplosionError();
       }
 
-      return loss;
+      return { loss, accuracy };
     } finally {
       // CRITICAL: Always dispose tensors to prevent GPU memory leaks
+      xs.dispose();
+      ys.dispose();
+    }
+  }
+
+  /**
+   * Evaluates the model on a dataset without updating weights.
+   * Used for validation loss calculation.
+   *
+   * @param data - Array of labelled points for evaluation
+   * @returns Evaluation result with loss and accuracy
+   * @throws {ModelNotInitialisedError} If called before initialize()
+   */
+  async evaluate(data: Point[]): Promise<TrainResult> {
+    const model = this.assertInitialised();
+
+    const xs = tf.tensor2d(data.map((p) => [p.x, p.y]));
+    const ys = tf.tensor2d(data.map((p) => [p.label]));
+
+    try {
+      // evaluate returns [loss, ...metrics] as scalars
+      const result = model.evaluate(xs, ys) as tf.Scalar[];
+
+      // Extract loss and accuracy
+      const lossValue = await result[0]?.data();
+      const accuracyValue = await result[1]?.data();
+
+      // Dispose result tensors
+      result.forEach((t) => t.dispose());
+
+      return {
+        loss: lossValue?.[0] ?? 0,
+        accuracy: accuracyValue?.[0] ?? 0,
+      };
+    } finally {
       xs.dispose();
       ys.dispose();
     }

@@ -25,18 +25,18 @@ This document outlines planned features for NeuroViz, organized by priority and 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
 | Multi-class classification (3+ classes) | M | 🔲 | Unlocks real-world datasets |
-| Batch size configuration | S | 🔲 | Currently hardcoded |
-| Epoch limit (auto-stop) | S | 🔲 | Prevent runaway training |
-| Training speed control (FPS) | S | 🔲 | Throttle `requestAnimationFrame` |
+| Batch size configuration | S | ✅ | Configurable in UI |
+| Epoch limit (auto-stop) | S | ✅ | Auto-stops at limit |
+| Training speed control (FPS) | S | ✅ | Slider 1-60 FPS |
 
 ### 🟠 P1 — Optimizers & Regularization
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| Adam optimizer | S | 🔲 | TensorFlow.js has built-in |
-| RMSprop, Adagrad optimizers | S | 🔲 | Dropdown selector |
+| Adam optimizer | S | ✅ | Default optimizer |
+| RMSprop, Adagrad optimizers | S | ✅ | Dropdown selector |
 | Learning rate scheduling | M | 🔲 | Decay, step, cosine |
-| L2 regularization (weight decay) | S | 🔲 | Slider control |
+| L2 regularization (weight decay) | S | ✅ | Slider control |
 | Dropout layers | M | 🔲 | Per-layer toggle |
 | Early stopping | M | 🔲 | Validation loss patience |
 
@@ -58,18 +58,18 @@ This document outlines planned features for NeuroViz, organized by priority and 
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| Real-time loss chart | M | 🔲 | Line graph with D3 |
-| Training history array | S | 🔲 | Store epoch/loss pairs |
-| Accuracy metric | S | 🔲 | Classification accuracy |
+| Real-time loss chart | M | ✅ | Line graph with D3 |
+| Training history array | S | ✅ | Store epoch/loss pairs |
+| Accuracy metric | S | ✅ | Classification accuracy |
 
 ### 🟠 P1 — Extended Metrics
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| Train/validation split | M | 🔲 | 80/20 configurable |
-| Validation loss tracking | S | 🔲 | Separate line on chart |
-| Export history to JSON | S | 🔲 | Download button |
-| Export history to CSV | S | 🔲 | Spreadsheet format |
+| Train/validation split | M | ✅ | Configurable 0-30% |
+| Validation loss tracking | S | ✅ | Dashed red line on chart |
+| Export history to JSON | S | ✅ | Download button |
+| Export history to CSV | S | ✅ | Spreadsheet format |
 
 ### 🟡 P2 — Advanced Analytics
 

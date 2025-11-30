@@ -1,4 +1,4 @@
-import type { Hyperparameters, TrainingConfig } from '../domain';
+import type { Hyperparameters, TrainingConfig, TrainingHistory, ExportFormat } from '../domain';
 
 /**
  * Training session state exposed to the UI layer.
@@ -7,6 +7,12 @@ import type { Hyperparameters, TrainingConfig } from '../domain';
 export interface TrainingState {
   readonly currentEpoch: number;
   readonly currentLoss: number | null;
+  /** Current training accuracy (0-1) */
+  readonly currentAccuracy: number | null;
+  /** Current validation loss (null if no validation split) */
+  readonly currentValLoss: number | null;
+  /** Current validation accuracy (null if no validation split) */
+  readonly currentValAccuracy: number | null;
   readonly isRunning: boolean;
   readonly isPaused: boolean;
   readonly isInitialised: boolean;
@@ -17,6 +23,10 @@ export interface TrainingState {
   readonly batchSize: number;
   /** Target FPS for training loop */
   readonly targetFps: number;
+  /** Validation split fraction (0-1) */
+  readonly validationSplit: number;
+  /** Training history with all epoch records */
+  readonly history: TrainingHistory;
 }
 
 /**
@@ -73,6 +83,13 @@ export interface ITrainingSession {
    * Can be called during training to adjust batch size, speed, etc.
    */
   setTrainingConfig(config: Partial<TrainingConfig>): void;
+
+  /**
+   * Exports training history in the specified format.
+   * @param format - 'json' or 'csv'
+   * @returns Formatted string of training history
+   */
+  exportHistory(format: ExportFormat): string;
 
   /**
    * Registers a callback for state changes.

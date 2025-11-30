@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import type { INeuralNetworkService } from '../../../src/core/ports';
+import type { INeuralNetworkService, TrainResult } from '../../../src/core/ports';
 import type { Hyperparameters, Point, Prediction } from '../../../src/core/domain';
 
 /**
@@ -15,9 +15,17 @@ export class MockNeuralNetworkService implements INeuralNetworkService {
   trainCallCount = 0;
   /** Tracks number of predict() calls */
   predictCallCount = 0;
+  /** Tracks number of evaluate() calls */
+  evaluateCallCount = 0;
   /** Configurable loss values to return from train() */
   lossSequence: number[] = [0.5, 0.4, 0.3, 0.2, 0.1];
-  /** Current index in loss sequence */
+  /** Configurable accuracy values to return from train() */
+  accuracySequence: number[] = [0.5, 0.6, 0.7, 0.8, 0.9];
+  /** Configurable validation loss values to return from evaluate() */
+  valLossSequence: number[] = [0.6, 0.5, 0.4, 0.3, 0.2];
+  /** Configurable validation accuracy values to return from evaluate() */
+  valAccuracySequence: number[] = [0.4, 0.5, 0.6, 0.7, 0.8];
+  /** Current index in loss/accuracy sequence */
   private lossIndex = 0;
 
   // Vitest spies for assertion
@@ -26,11 +34,12 @@ export class MockNeuralNetworkService implements INeuralNetworkService {
     this.lastConfig = config;
   });
 
-  readonly train = vi.fn(async (_data: Point[]): Promise<number> => {
+  readonly train = vi.fn(async (_data: Point[]): Promise<TrainResult> => {
     this.trainCallCount++;
     const loss = this.lossSequence[this.lossIndex] ?? 0.01;
+    const accuracy = this.accuracySequence[this.lossIndex] ?? 0.99;
     this.lossIndex = Math.min(this.lossIndex + 1, this.lossSequence.length - 1);
-    return loss;
+    return { loss, accuracy };
   });
 
   readonly predict = vi.fn(async (grid: Point[]): Promise<Prediction[]> => {
@@ -43,6 +52,13 @@ export class MockNeuralNetworkService implements INeuralNetworkService {
     }));
   });
 
+  readonly evaluate = vi.fn(async (_data: Point[]): Promise<TrainResult> => {
+    this.evaluateCallCount++;
+    const loss = this.valLossSequence[this.lossIndex] ?? 0.02;
+    const accuracy = this.valAccuracySequence[this.lossIndex] ?? 0.98;
+    return { loss, accuracy };
+  });
+
   /**
    * Reset all state and spies for clean test isolation.
    */
@@ -51,10 +67,12 @@ export class MockNeuralNetworkService implements INeuralNetworkService {
     this.lastConfig = null;
     this.trainCallCount = 0;
     this.predictCallCount = 0;
+    this.evaluateCallCount = 0;
     this.lossIndex = 0;
     this.initialize.mockClear();
     this.train.mockClear();
     this.predict.mockClear();
+    this.evaluate.mockClear();
   }
 
   /**

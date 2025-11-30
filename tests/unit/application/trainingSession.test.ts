@@ -39,6 +39,7 @@ describe('TrainingSession', () => {
 
       expect(state.currentEpoch).toBe(0);
       expect(state.currentLoss).toBeNull();
+      expect(state.currentValLoss).toBeNull();
       expect(state.isRunning).toBe(false);
       expect(state.isPaused).toBe(false);
       expect(state.isInitialised).toBe(false);
@@ -46,6 +47,7 @@ describe('TrainingSession', () => {
       expect(state.maxEpochs).toBe(0);
       expect(state.batchSize).toBe(0);
       expect(state.targetFps).toBe(60);
+      expect(state.validationSplit).toBe(0.2);
     });
 
     it('should accept dependencies via constructor injection', () => {
@@ -236,6 +238,140 @@ describe('TrainingSession', () => {
       await noDataSession.setHyperparameters(defaultConfig);
 
       await expect(noDataSession.step()).rejects.toThrow('No data loaded');
+    });
+
+    it('should update currentAccuracy with value from train()', async () => {
+      neuralNet.accuracySequence = [0.5, 0.7, 0.9];
+
+      await session.step();
+      expect(session.getState().currentAccuracy).toBe(0.5);
+
+      await session.step();
+      expect(session.getState().currentAccuracy).toBe(0.7);
+    });
+
+    it('should record training history on each step', async () => {
+      await session.step();
+      await session.step();
+      await session.step();
+
+      const state = session.getState();
+      expect(state.history.records).toHaveLength(3);
+      expect(state.history.records[0]?.epoch).toBe(1);
+      expect(state.history.records[1]?.epoch).toBe(2);
+      expect(state.history.records[2]?.epoch).toBe(3);
+    });
+
+    it('should track best loss in history', async () => {
+      neuralNet.setLossSequence([0.5, 0.3, 0.4]); // Best is 0.3 at epoch 2
+
+      await session.step();
+      await session.step();
+      await session.step();
+
+      const state = session.getState();
+      expect(state.history.bestLoss).toBe(0.3);
+      expect(state.history.bestEpoch).toBe(2);
+    });
+  });
+
+  describe('exportHistory()', () => {
+    beforeEach(async () => {
+      await session.setHyperparameters(defaultConfig);
+      dataRepo.setMockDataset([{ x: 0, y: 0, label: 0 }]);
+      await session.loadData('test');
+    });
+
+    it('should export history as JSON', async () => {
+      await session.step();
+      await session.step();
+
+      const json = session.exportHistory('json');
+      const parsed = JSON.parse(json);
+
+      expect(parsed.records).toHaveLength(2);
+      expect(parsed.summary.totalEpochs).toBe(2);
+    });
+
+    it('should export history as CSV', async () => {
+      await session.step();
+      await session.step();
+
+      const csv = session.exportHistory('csv');
+      const lines = csv.split('\n');
+
+      expect(lines[0]).toBe('epoch,loss,accuracy,val_loss,val_accuracy,timestamp');
+      expect(lines).toHaveLength(3); // header + 2 data rows
+    });
+  });
+
+  describe('Validation Split', () => {
+    it('should split data when validationSplit > 0', async () => {
+      await session.setHyperparameters(defaultConfig);
+
+      // Create 10 data points
+      const mockPoints = Array.from({ length: 10 }, (_, i) => ({
+        x: i,
+        y: i,
+        label: i % 2,
+      }));
+      dataRepo.setMockDataset(mockPoints);
+
+      // Default split is 0.2 (20%)
+      await session.loadData('test');
+      await session.step();
+
+      // Should call evaluate for validation
+      expect(neuralNet.evaluate).toHaveBeenCalled();
+    });
+
+    it('should track validation loss in state', async () => {
+      await session.setHyperparameters(defaultConfig);
+
+      const mockPoints = Array.from({ length: 10 }, (_, i) => ({
+        x: i,
+        y: i,
+        label: i % 2,
+      }));
+      dataRepo.setMockDataset(mockPoints);
+
+      await session.loadData('test');
+      await session.step();
+
+      const state = session.getState();
+      expect(state.currentValLoss).not.toBeNull();
+      expect(state.currentValAccuracy).not.toBeNull();
+    });
+
+    it('should not evaluate when validationSplit is 0', async () => {
+      session.setTrainingConfig({ validationSplit: 0 });
+      await session.setHyperparameters(defaultConfig);
+
+      const mockPoints = [{ x: 0, y: 0, label: 0 }];
+      dataRepo.setMockDataset(mockPoints);
+
+      await session.loadData('test');
+      await session.step();
+
+      expect(neuralNet.evaluate).not.toHaveBeenCalled();
+    });
+
+    it('should record validation metrics in history', async () => {
+      await session.setHyperparameters(defaultConfig);
+
+      const mockPoints = Array.from({ length: 10 }, (_, i) => ({
+        x: i,
+        y: i,
+        label: i % 2,
+      }));
+      dataRepo.setMockDataset(mockPoints);
+
+      await session.loadData('test');
+      await session.step();
+
+      const state = session.getState();
+      expect(state.history.records[0]?.valLoss).not.toBeNull();
+      expect(state.history.records[0]?.valAccuracy).not.toBeNull();
     });
   });
 

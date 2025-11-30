@@ -156,18 +156,29 @@
                   />
                 </label>
               </div>
-              <label class="block">
-                <span class="input-label">Training Speed (FPS): <span id="fps-value">60</span></span>
-                <input
-                  type="range"
-                  id="input-fps"
-                  class="w-full h-2 bg-navy-700 rounded-lg appearance-none cursor-pointer accent-accent-500"
-                  value="60"
-                  min="1"
-                  max="60"
-                  step="1"
-                />
-              </label>
+              <div class="grid grid-cols-2 gap-2">
+                <label class="block">
+                  <span class="input-label">Validation Split</span>
+                  <select id="input-val-split" class="select-field">
+                    <option value="0">None</option>
+                    <option value="0.1">10%</option>
+                    <option value="0.2" selected>20%</option>
+                    <option value="0.3">30%</option>
+                  </select>
+                </label>
+                <label class="block">
+                  <span class="input-label">Speed: <span id="fps-value">60</span> FPS</span>
+                  <input
+                    type="range"
+                    id="input-fps"
+                    class="w-full h-2 bg-navy-700 rounded-lg appearance-none cursor-pointer accent-accent-500 mt-2"
+                    value="60"
+                    min="1"
+                    max="60"
+                    step="1"
+                  />
+                </label>
+              </div>
             </div>
           </fieldset>
 
@@ -205,19 +216,49 @@
           <!-- Status Display -->
           <fieldset class="control-fieldset">
             <legend class="control-legend">Metrics</legend>
-            <div class="grid grid-cols-3 gap-2">
+            <div class="grid grid-cols-3 gap-2 mb-2">
               <div class="metric-card">
                 <span class="metric-label">Epoch</span>
                 <span id="status-epoch" class="metric-value-accent">0</span>
               </div>
               <div class="metric-card">
-                <span class="metric-label">Loss</span>
-                <span id="status-loss" class="metric-value text-slate-100">—</span>
+                <span class="metric-label">Train Loss</span>
+                <span id="status-loss" class="metric-value text-orange-400">—</span>
               </div>
+              <div class="metric-card">
+                <span class="metric-label">Val Loss</span>
+                <span id="status-val-loss" class="metric-value text-red-400">—</span>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
               <div class="metric-card">
                 <span class="metric-label">State</span>
                 <span id="status-state" class="metric-value status-idle" aria-live="polite">Idle</span>
               </div>
+              <div class="metric-card">
+                <span class="metric-label">Train Acc</span>
+                <span id="status-accuracy" class="metric-value text-emerald-400">—</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">Val Acc</span>
+                <span id="status-val-accuracy" class="metric-value text-emerald-300">—</span>
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- Training History Chart -->
+          <fieldset class="control-fieldset">
+            <legend class="control-legend">Training History</legend>
+            <div id="loss-chart-container" class="w-full h-48 bg-navy-900/50 rounded-lg">
+              <!-- D3 loss chart renders here -->
+            </div>
+            <div class="flex gap-2 mt-2">
+              <button id="btn-export-json" class="btn-secondary flex-1 text-xs" disabled>
+                Export JSON
+              </button>
+              <button id="btn-export-csv" class="btn-secondary flex-1 text-xs" disabled>
+                Export CSV
+              </button>
             </div>
           </fieldset>
         </aside>

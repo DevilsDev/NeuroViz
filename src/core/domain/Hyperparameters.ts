@@ -44,6 +44,9 @@ export interface TrainingConfig {
 
   /** Delay between epochs in milliseconds (alternative to FPS control) */
   readonly epochDelayMs?: number;
+
+  /** Fraction of data to use for validation (0-1). 0 = no validation. */
+  readonly validationSplit?: number;
 }
 
 /**
@@ -65,4 +68,5 @@ export const DEFAULT_TRAINING_CONFIG: Required<TrainingConfig> = {
   maxEpochs: 0, // 0 = unlimited
   targetFps: 60,
   epochDelayMs: 0,
+  validationSplit: 0.2, // 20% validation by default
 };

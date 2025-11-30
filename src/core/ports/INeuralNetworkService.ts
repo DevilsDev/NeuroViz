@@ -1,6 +1,16 @@
 import type { Hyperparameters, Point, Prediction } from '../domain';
 
 /**
+ * Result of a training step, including loss and accuracy.
+ */
+export interface TrainResult {
+  /** Training loss for this batch/epoch */
+  readonly loss: number;
+  /** Training accuracy (0-1) for this batch/epoch */
+  readonly accuracy: number;
+}
+
+/**
  * Port for neural network operations.
  * Abstracts the ML framework (TensorFlow.js, ONNX, etc.) from the core domain.
  *
@@ -21,10 +31,10 @@ export interface INeuralNetworkService {
    * Trains the network on the provided dataset.
    *
    * @param data - Array of labelled points for supervised learning
-   * @returns The final training loss value
+   * @returns Training result with loss and accuracy
    * @throws If called before initialize() or if training fails
    */
-  train(data: Point[]): Promise<number>;
+  train(data: Point[]): Promise<TrainResult>;
 
   /**
    * Generates predictions for a grid of points.
@@ -35,4 +45,14 @@ export interface INeuralNetworkService {
    * @throws If called before initialize() or if inference fails
    */
   predict(grid: Point[]): Promise<Prediction[]>;
+
+  /**
+   * Evaluates the model on a dataset without updating weights.
+   * Used for validation loss calculation.
+   *
+   * @param data - Array of labelled points for evaluation
+   * @returns Evaluation result with loss and accuracy
+   * @throws If called before initialize() or if evaluation fails
+   */
+  evaluate(data: Point[]): Promise<TrainResult>;
 }

@@ -15,7 +15,7 @@ import { TrainingSession } from './core/application';
 
 // Infrastructure adapters - only imported here at the composition root
 import { TFNeuralNet } from './infrastructure/tensorflow';
-import { D3Chart } from './infrastructure/d3';
+import { D3Chart, D3LossChart } from './infrastructure/d3';
 import { MockDataRepository } from './infrastructure/api';
 
 // Configuration
@@ -57,7 +57,17 @@ const elements = {
   // Status display
   statusEpoch: document.getElementById('status-epoch') as HTMLSpanElement,
   statusLoss: document.getElementById('status-loss') as HTMLSpanElement,
+  statusValLoss: document.getElementById('status-val-loss') as HTMLSpanElement,
+  statusAccuracy: document.getElementById('status-accuracy') as HTMLSpanElement,
+  statusValAccuracy: document.getElementById('status-val-accuracy') as HTMLSpanElement,
   statusState: document.getElementById('status-state') as HTMLSpanElement,
+
+  // Validation split
+  inputValSplit: document.getElementById('input-val-split') as HTMLSelectElement,
+
+  // Export buttons
+  btnExportJson: document.getElementById('btn-export-json') as HTMLButtonElement,
+  btnExportCsv: document.getElementById('btn-export-csv') as HTMLButtonElement,
 };
 
 // =============================================================================
@@ -76,6 +86,9 @@ const visualizerService = new D3Chart(
 const neuralNetService = new TFNeuralNet();
 const dataRepository = new MockDataRepository(APP_CONFIG.api.latencyMs);
 
+// Loss chart for training history visualization
+const lossChart = new D3LossChart('loss-chart-container', 380, 180);
+
 // Application layer receives adapters via constructor injection
 const session = new TrainingSession(neuralNetService, visualizerService, dataRepository, {
   renderInterval: APP_CONFIG.visualization.renderInterval,
@@ -91,6 +104,12 @@ function updateUI(state: TrainingState): void {
   elements.statusEpoch.textContent = state.currentEpoch.toString();
   elements.statusLoss.textContent =
     state.currentLoss !== null ? state.currentLoss.toFixed(4) : '—';
+  elements.statusValLoss.textContent =
+    state.currentValLoss !== null ? state.currentValLoss.toFixed(4) : '—';
+  elements.statusAccuracy.textContent =
+    state.currentAccuracy !== null ? `${(state.currentAccuracy * 100).toFixed(1)}%` : '—';
+  elements.statusValAccuracy.textContent =
+    state.currentValAccuracy !== null ? `${(state.currentValAccuracy * 100).toFixed(1)}%` : '—';
 
   // Update state indicator
   const stateText = getStateText(state);
@@ -99,11 +118,19 @@ function updateUI(state: TrainingState): void {
 
   // Update button states
   const canTrain = state.isInitialised && state.datasetLoaded;
+  const hasHistory = state.history.records.length > 0;
 
   elements.btnStart.disabled = !canTrain || (state.isRunning && !state.isPaused);
   elements.btnPause.disabled = !state.isRunning || state.isPaused;
   elements.btnStep.disabled = !canTrain || state.isRunning;
   elements.btnReset.disabled = !canTrain;
+
+  // Update export buttons
+  elements.btnExportJson.disabled = !hasHistory;
+  elements.btnExportCsv.disabled = !hasHistory;
+
+  // Update loss chart
+  lossChart.update(state.history);
 }
 
 function getStateText(state: TrainingState): string {
@@ -263,6 +290,14 @@ function handleMaxEpochsChange(): void {
   session.setTrainingConfig({ maxEpochs });
 }
 
+/**
+ * Handles validation split changes.
+ */
+function handleValSplitChange(): void {
+  const validationSplit = parseFloat(elements.inputValSplit.value) || 0;
+  session.setTrainingConfig({ validationSplit });
+}
+
 function handleStart(): void {
   try {
     session.start();
@@ -300,6 +335,37 @@ async function handleStep(): Promise<void> {
 
 function handleReset(): void {
   session.reset();
+  lossChart.clear();
+}
+
+/**
+ * Exports training history and triggers download.
+ */
+function handleExportJson(): void {
+  const data = session.exportHistory('json');
+  downloadFile(data, 'training-history.json', 'application/json');
+  toast.success('Training history exported as JSON');
+}
+
+function handleExportCsv(): void {
+  const data = session.exportHistory('csv');
+  downloadFile(data, 'training-history.csv', 'text/csv');
+  toast.success('Training history exported as CSV');
+}
+
+/**
+ * Triggers a file download in the browser.
+ */
+function downloadFile(content: string, filename: string, mimeType: string): void {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 // =============================================================================
@@ -320,12 +386,17 @@ function init(): void {
   elements.inputFps.addEventListener('input', handleFpsChange);
   elements.inputBatchSize.addEventListener('change', handleBatchSizeChange);
   elements.inputMaxEpochs.addEventListener('change', handleMaxEpochsChange);
+  elements.inputValSplit.addEventListener('change', handleValSplitChange);
 
   // Bind event listeners - Training controls
   elements.btnStart.addEventListener('click', handleStart);
   elements.btnPause.addEventListener('click', handlePause);
   elements.btnStep.addEventListener('click', () => void handleStep());
   elements.btnReset.addEventListener('click', handleReset);
+
+  // Bind event listeners - Export
+  elements.btnExportJson.addEventListener('click', handleExportJson);
+  elements.btnExportCsv.addEventListener('click', handleExportCsv);
 
   // Initial UI state
   updateUI(session.getState());
@@ -339,4 +410,5 @@ window.addEventListener('beforeunload', () => {
   session.dispose();
   neuralNetService.dispose();
   visualizerService.dispose();
+  lossChart.dispose();
 });

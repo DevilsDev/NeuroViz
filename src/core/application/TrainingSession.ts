@@ -1,5 +1,5 @@
-import type { Hyperparameters, Point, Prediction, TrainingConfig } from '../domain';
-import { DEFAULT_TRAINING_CONFIG } from '../domain';
+import type { Hyperparameters, Point, Prediction, TrainingConfig, TrainingHistory, ExportFormat } from '../domain';
+import { DEFAULT_TRAINING_CONFIG, createEmptyHistory, addHistoryRecord, exportHistory } from '../domain';
 import type { INeuralNetworkService, IVisualizerService, IDatasetRepository } from '../ports';
 import type { ITrainingSession, TrainingState } from './ITrainingSession';
 
@@ -46,8 +46,15 @@ export class TrainingSession implements ITrainingSession {
   // Training state
   private currentEpoch = 0;
   private currentLoss: number | null = null;
+  private currentAccuracy: number | null = null;
+  private currentValLoss: number | null = null;
+  private currentValAccuracy: number | null = null;
   private isInitialised = false;
   private datasetLoaded = false;
+
+  // Training history
+  private history: TrainingHistory = createEmptyHistory();
+  private trainingStartTime = 0;
 
   // Loop control flags
   private isTraining = false;
@@ -55,7 +62,9 @@ export class TrainingSession implements ITrainingSession {
   private isProcessingStep = false;
 
   // Data caches (reused to reduce GC pressure)
-  private trainingData: Point[] = [];
+  private allData: Point[] = []; // Original full dataset
+  private trainingData: Point[] = []; // Training split
+  private validationData: Point[] = []; // Validation split
   private readonly predictionGrid: Point[] = [];
   private cachedPredictions: Prediction[] = [];
 
@@ -84,6 +93,9 @@ export class TrainingSession implements ITrainingSession {
     return {
       currentEpoch: this.currentEpoch,
       currentLoss: this.currentLoss,
+      currentAccuracy: this.currentAccuracy,
+      currentValLoss: this.currentValLoss,
+      currentValAccuracy: this.currentValAccuracy,
       isRunning: this.isTraining,
       isPaused: this.isPaused,
       isInitialised: this.isInitialised,
@@ -91,6 +103,8 @@ export class TrainingSession implements ITrainingSession {
       maxEpochs: this.trainingConfig.maxEpochs,
       batchSize: this.trainingConfig.batchSize,
       targetFps: this.trainingConfig.targetFps,
+      validationSplit: this.trainingConfig.validationSplit,
+      history: this.history,
     };
   }
 
@@ -111,6 +125,11 @@ export class TrainingSession implements ITrainingSession {
       this.frameInterval = config.epochDelayMs;
     }
 
+    // Re-split data if validation split changed
+    if (config.validationSplit !== undefined && this.allData.length > 0) {
+      this.splitData();
+    }
+
     this.notifyListeners();
   }
 
@@ -119,14 +138,53 @@ export class TrainingSession implements ITrainingSession {
     this.isInitialised = true;
     this.currentEpoch = 0;
     this.currentLoss = null;
+    this.currentAccuracy = null;
+    this.history = createEmptyHistory();
     this.notifyListeners();
   }
 
+  /**
+   * Exports training history in the specified format.
+   */
+  exportHistory(format: ExportFormat): string {
+    return exportHistory(this.history, format);
+  }
+
   async loadData(datasetType: string): Promise<void> {
-    this.trainingData = await this.dataRepo.getDataset(datasetType);
+    this.allData = await this.dataRepo.getDataset(datasetType);
+    this.splitData();
     this.datasetLoaded = true;
-    this.visualizer.renderData(this.trainingData);
+    this.visualizer.renderData(this.allData);
     this.notifyListeners();
+  }
+
+  /**
+   * Splits the dataset into training and validation sets based on validationSplit.
+   * Shuffles data before splitting for randomness.
+   */
+  private splitData(): void {
+    const { validationSplit } = this.trainingConfig;
+
+    if (validationSplit <= 0 || validationSplit >= 1) {
+      // No validation split
+      this.trainingData = this.allData;
+      this.validationData = [];
+      return;
+    }
+
+    // Shuffle data
+    const shuffled = [...this.allData];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = shuffled[i] as Point;
+      shuffled[i] = shuffled[j] as Point;
+      shuffled[j] = temp;
+    }
+
+    // Split
+    const splitIndex = Math.floor(shuffled.length * (1 - validationSplit));
+    this.trainingData = shuffled.slice(0, splitIndex);
+    this.validationData = shuffled.slice(splitIndex);
   }
 
   /**
@@ -163,7 +221,7 @@ export class TrainingSession implements ITrainingSession {
 
   /**
    * Resets training state to initial values.
-   * Stops the loop and clears epoch/loss.
+   * Stops the loop and clears epoch/loss/history.
    */
   reset(): void {
     this.isTraining = false;
@@ -171,10 +229,19 @@ export class TrainingSession implements ITrainingSession {
     this.isProcessingStep = false;
     this.currentEpoch = 0;
     this.currentLoss = null;
+    this.currentAccuracy = null;
+    this.currentValLoss = null;
+    this.currentValAccuracy = null;
+    this.history = createEmptyHistory();
+
+    // Re-split data (shuffles again for different validation set)
+    if (this.allData.length > 0) {
+      this.splitData();
+    }
 
     // Re-render data points without boundary
     if (this.datasetLoaded) {
-      this.visualizer.renderData(this.trainingData);
+      this.visualizer.renderData(this.allData);
     }
 
     this.notifyListeners();
@@ -196,7 +263,33 @@ export class TrainingSession implements ITrainingSession {
 
     try {
       this.currentEpoch++;
-      this.currentLoss = await this.neuralNet.train(this.trainingData);
+
+      // Train on training data
+      const result = await this.neuralNet.train(this.trainingData);
+      this.currentLoss = result.loss;
+      this.currentAccuracy = result.accuracy;
+
+      // Evaluate on validation data if available
+      let valLoss: number | null = null;
+      let valAccuracy: number | null = null;
+
+      if (this.validationData.length > 0) {
+        const valResult = await this.neuralNet.evaluate(this.validationData);
+        valLoss = valResult.loss;
+        valAccuracy = valResult.accuracy;
+        this.currentValLoss = valLoss;
+        this.currentValAccuracy = valAccuracy;
+      }
+
+      // Record in history
+      this.history = addHistoryRecord(this.history, {
+        epoch: this.currentEpoch,
+        loss: result.loss,
+        accuracy: result.accuracy,
+        valLoss,
+        valAccuracy,
+        timestamp: performance.now(),
+      });
 
       // Render boundary at intervals
       if (this.currentEpoch % this.config.renderInterval === 0) {
@@ -280,7 +373,31 @@ export class TrainingSession implements ITrainingSession {
 
       // Execute training step
       this.currentEpoch++;
-      this.currentLoss = await this.neuralNet.train(batch);
+      const result = await this.neuralNet.train(batch);
+      this.currentLoss = result.loss;
+      this.currentAccuracy = result.accuracy;
+
+      // Evaluate on validation data if available
+      let valLoss: number | null = null;
+      let valAccuracy: number | null = null;
+
+      if (this.validationData.length > 0) {
+        const valResult = await this.neuralNet.evaluate(this.validationData);
+        valLoss = valResult.loss;
+        valAccuracy = valResult.accuracy;
+        this.currentValLoss = valLoss;
+        this.currentValAccuracy = valAccuracy;
+      }
+
+      // Record in history
+      this.history = addHistoryRecord(this.history, {
+        epoch: this.currentEpoch,
+        loss: result.loss,
+        accuracy: result.accuracy,
+        valLoss,
+        valAccuracy,
+        timestamp: performance.now(),
+      });
 
       // Update visualisation at intervals (decouples rendering from training)
       if (this.currentEpoch % this.config.renderInterval === 0) {
