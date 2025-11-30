@@ -101,6 +101,8 @@ jobs:
 
       - name: Build application
         run: npm run build
+        env:
+          GITHUB_ACTIONS: true
 
       # -----------------------------------------------------------------------
       # Upload build artifact for subsequent jobs
@@ -156,8 +158,8 @@ jobs:
           # Start preview server in background
           npm run preview -- --port 5173 &
           
-          # Wait for server to be ready
-          npx wait-on http://localhost:5173 --timeout 30000
+          # Wait for server to be ready (with base path)
+          npx wait-on http://localhost:5173/NeuroViz/ --timeout 30000
           
           # Run Playwright tests
           npm run test:e2e
