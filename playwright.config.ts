@@ -53,9 +53,17 @@ export default defineConfig({
     },
     {
       name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
+      use: {
+        ...devices['Desktop Safari'],
+        // WebKit + TensorFlow.js is slower, increase timeouts
+        actionTimeout: 30000,
+        navigationTimeout: 30000,
+      },
     },
   ],
+
+  /* Global timeout for each test */
+  timeout: process.env.CI ? 60000 : 30000,
 
   /* Run local dev server before starting the tests */
   webServer: process.env.CI

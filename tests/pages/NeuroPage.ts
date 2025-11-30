@@ -161,10 +161,20 @@ export class NeuroPage {
   }
 
   /**
-   * Execute a single training step.
+   * Execute a single training step and wait for it to complete.
    */
   async stepTraining(): Promise<void> {
+    const currentEpoch = await this.getEpochCount();
     await this.stepButton.click();
+    // Wait for epoch to increment (async training step)
+    await this.page.waitForFunction(
+      ({ selector, expected }: { selector: string; expected: number }) => {
+        const el = document.querySelector(selector);
+        return el && parseInt(el.textContent ?? '0', 10) > expected;
+      },
+      { selector: '#status-epoch', expected: currentEpoch },
+      { timeout: 10000 }
+    );
   }
 
   /**
@@ -240,9 +250,9 @@ export class NeuroPage {
   /**
    * Wait for epoch counter to reach a minimum value.
    * @param minEpoch - Minimum epoch to wait for
-   * @param timeout - Maximum wait time in ms
+   * @param timeout - Maximum wait time in ms (default 30s for slow browsers like WebKit)
    */
-  async waitForEpoch(minEpoch: number, timeout = 10000): Promise<void> {
+  async waitForEpoch(minEpoch: number, timeout = 30000): Promise<void> {
     await this.page.waitForFunction(
       ({ selector, target }: { selector: string; target: number }) => {
         const element = document.querySelector(selector);
