@@ -552,3 +552,114 @@
 [data-theme="light"] .toast-container .toast {
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
+
+/* Theme toggle button in light mode */
+[data-theme="light"] #btn-theme-toggle {
+  background-color: #e2e8f0;
+}
+
+[data-theme="light"] #btn-theme-toggle:hover {
+  background-color: #cbd5e1;
+}
+
+/* Draw buttons in light mode */
+[data-theme="light"] .btn-draw {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+[data-theme="light"] .btn-draw:hover {
+  background-color: #e2e8f0;
+}
+
+[data-theme="light"] .btn-draw.active {
+  background-color: rgba(13, 148, 136, 0.1);
+  border-color: #0d9488;
+  color: #0d9488;
+}
+
+/* Status text in light mode */
+[data-theme="light"] .text-slate-400,
+[data-theme="light"] .text-slate-500 {
+  color: #64748b;
+}
+
+/* Loss chart in light mode */
+[data-theme="light"] #loss-chart-container {
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+/* Scrollbar in light mode */
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background-color: #f1f5f9;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
+
+/* Toast notifications in light mode */
+[data-theme="light"] .toast-success {
+  background-color: rgba(16, 185, 129, 0.9);
+  border-color: #10b981;
+  color: #ffffff;
+}
+
+[data-theme="light"] .toast-error {
+  background-color: rgba(239, 68, 68, 0.9);
+  border-color: #ef4444;
+  color: #ffffff;
+}
+
+[data-theme="light"] .toast-warning {
+  background-color: rgba(245, 158, 11, 0.9);
+  border-color: #f59e0b;
+  color: #ffffff;
+}
+
+[data-theme="light"] .toast-info {
+  background-color: rgba(59, 130, 246, 0.9);
+  border-color: #3b82f6;
+  color: #ffffff;
+}
+
+/* Focus ring in light mode */
+[data-theme="light"] :focus-visible {
+  --tw-ring-offset-color: #f8fafc;
+}
+
+/* Override inline Tailwind classes in light mode */
+[data-theme="light"] .border-navy-700\/50 {
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .bg-navy-800 {
+  background-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .bg-navy-700 {
+  background-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .bg-navy-950 {
+  background-color: #f8fafc !important;
+}
+
+[data-theme="light"] .text-slate-400 {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .border-navy-600 {
+  border-color: #cbd5e1 !important;
+}
+
+/* App container background */
+[data-theme="light"] .app-container {
+  background-color: #f8fafc;
+}

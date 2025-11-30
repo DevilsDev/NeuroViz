@@ -603,7 +603,9 @@ function handleKeyboardShortcut(event: KeyboardEvent): void {
     case 'KeyS':
       if (!event.ctrlKey && !event.metaKey) {
         event.preventDefault();
-        if (state.isInitialised && state.datasetLoaded && !state.isRunning) {
+        // Can step if initialised, has data, and not actively running (paused or idle is fine)
+        const canStep = state.isInitialised && state.datasetLoaded && (!state.isRunning || state.isPaused);
+        if (canStep) {
           void handleStep();
           toast.info('⏭ Single step executed');
           // Visual pulse on step button to confirm action
@@ -613,7 +615,7 @@ function handleKeyboardShortcut(event: KeyboardEvent): void {
           toast.warning('Initialise network first before stepping');
         } else if (!state.datasetLoaded) {
           toast.warning('Load a dataset first before stepping');
-        } else if (state.isRunning) {
+        } else if (state.isRunning && !state.isPaused) {
           toast.warning('Pause training first to use single step');
         }
       }
