@@ -58,7 +58,6 @@ const dataRepository = new MockDataRepository(500); // 500ms simulated latency
 const session = new TrainingSession(neuralNetService, visualizerService, dataRepository, {
   renderInterval: 10,
   gridSize: 50,
-  stepDelayMs: 50,
 });
 
 // =============================================================================
