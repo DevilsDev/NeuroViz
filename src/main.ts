@@ -6,6 +6,9 @@
  * infrastructure/tensorflow and infrastructure/d3.
  */
 
+// Import styles for Vite to process through PostCSS/Tailwind
+import './presentation/styles.css';
+
 import type { Hyperparameters } from './core/domain';
 import type { TrainingState } from './core/application';
 import { TrainingSession } from './core/application';
