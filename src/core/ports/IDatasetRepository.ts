@@ -8,6 +8,8 @@ export interface DatasetOptions {
   readonly samples?: number;
   /** Noise level (0-1). Default: 0.1 */
   readonly noise?: number;
+  /** Number of classes for multi-class datasets. Default: 2 */
+  readonly numClasses?: number;
 }
 
 /**

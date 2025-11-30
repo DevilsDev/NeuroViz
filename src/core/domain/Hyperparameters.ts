@@ -27,6 +27,9 @@ export interface Hyperparameters {
 
   /** L2 regularization strength (weight decay). 0 = disabled. */
   readonly l2Regularization?: number;
+
+  /** Number of output classes (default: 2 for binary classification) */
+  readonly numClasses?: number;
 }
 
 /**
@@ -58,6 +61,7 @@ export const DEFAULT_HYPERPARAMETERS: Required<Hyperparameters> = {
   optimizer: 'adam',
   activation: 'relu',
   l2Regularization: 0,
+  numClasses: 2,
 };
 
 /**

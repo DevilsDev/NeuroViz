@@ -24,7 +24,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| Multi-class classification (3+ classes) | M | 🔲 | Unlocks real-world datasets |
+| Multi-class classification (3+ classes) | M | ✅ | Softmax output, up to 10 classes |
 | Batch size configuration | S | ✅ | Configurable in UI |
 | Epoch limit (auto-stop) | S | ✅ | Auto-stops at limit |
 | Training speed control (FPS) | S | ✅ | Slider 1-60 FPS |
@@ -302,12 +302,12 @@ This document outlines planned features for NeuroViz, organized by priority and 
 4. ✅ Colour scheme selector
 5. ✅ Point size control
 
-### 🔄 Sprint 4: Data Flexibility (In Progress)
+### ✅ Sprint 4: Data Flexibility (Complete)
 
 1. ✅ Draw your own data (click to add)
 2. ✅ Noise/sample sliders
-3. 🔲 Multi-class support
-4. 🔲 Upload CSV
+3. ✅ Multi-class support (2-5 classes)
+4. 🔲 Upload CSV (moved to Sprint 5)
 
 ### Sprint 5: UX & Persistence
 

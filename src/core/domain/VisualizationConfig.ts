@@ -45,3 +45,20 @@ export const COLOUR_PALETTES: Record<ColourScheme, { low: string; high: string }
   cool: { low: '#6366f1', high: '#06b6d4' }, // Indigo to Cyan
   warm: { low: '#dc2626', high: '#facc15' }, // Red to Yellow
 };
+
+/**
+ * Multi-class colour palette (up to 10 classes).
+ * Distinct, colourblind-friendly colours.
+ */
+export const MULTI_CLASS_COLOURS: readonly string[] = [
+  '#3b82f6', // Blue (class 0)
+  '#f97316', // Orange (class 1)
+  '#22c55e', // Green (class 2)
+  '#a855f7', // Purple (class 3)
+  '#ef4444', // Red (class 4)
+  '#06b6d4', // Cyan (class 5)
+  '#eab308', // Yellow (class 6)
+  '#ec4899', // Pink (class 7)
+  '#64748b', // Slate (class 8)
+  '#14b8a6', // Teal (class 9)
+];

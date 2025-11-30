@@ -10,6 +10,7 @@
 import './presentation/styles.css';
 
 import type { Hyperparameters, OptimizerType, ActivationType, ColourScheme, Point } from './core/domain';
+import { MULTI_CLASS_COLOURS } from './core/domain';
 import type { TrainingState } from './core/application';
 import { TrainingSession } from './core/application';
 
@@ -34,8 +35,6 @@ const elements = {
   btnLoadData: document.getElementById('btn-load-data') as HTMLButtonElement,
   loadingOverlay: document.getElementById('loading-overlay') as HTMLDivElement,
   drawControls: document.getElementById('draw-controls') as HTMLDivElement,
-  btnDrawClass0: document.getElementById('btn-draw-class-0') as HTMLButtonElement,
-  btnDrawClass1: document.getElementById('btn-draw-class-1') as HTMLButtonElement,
   btnClearCustom: document.getElementById('btn-clear-custom') as HTMLButtonElement,
   datasetOptions: document.getElementById('dataset-options') as HTMLDivElement,
   inputSamples: document.getElementById('input-samples') as HTMLInputElement,
@@ -56,8 +55,10 @@ const elements = {
   inputLayers: document.getElementById('input-layers') as HTMLInputElement,
   inputOptimizer: document.getElementById('input-optimizer') as HTMLSelectElement,
   inputActivation: document.getElementById('input-activation') as HTMLSelectElement,
+  inputNumClasses: document.getElementById('input-num-classes') as HTMLSelectElement,
   inputL2: document.getElementById('input-l2') as HTMLInputElement,
   btnInit: document.getElementById('btn-init') as HTMLButtonElement,
+  drawClassButtons: document.getElementById('draw-class-buttons') as HTMLDivElement,
 
   // Training config inputs
   inputBatchSize: document.getElementById('input-batch-size') as HTMLInputElement,
@@ -263,13 +264,42 @@ function handleDrawClassSelect(label: number): void {
   currentDrawLabel = label;
   
   // Update button states
-  elements.btnDrawClass0.classList.toggle('active', label === 0);
-  elements.btnDrawClass1.classList.toggle('active', label === 1);
+  const buttons = elements.drawClassButtons.querySelectorAll('.btn-draw');
+  buttons.forEach((btn, index) => {
+    btn.classList.toggle('active', index === label);
+  });
   
   // Update draw mode with new label
   if (visualizerService.isDrawModeEnabled()) {
     visualizerService.enableDrawMode(label, handlePointAdded);
   }
+}
+
+/**
+ * Generates draw class buttons based on current numClasses setting.
+ */
+function updateDrawClassButtons(): void {
+  const numClasses = parseInt(elements.inputNumClasses.value, 10) || 2;
+  
+  // Clear existing buttons
+  elements.drawClassButtons.innerHTML = '';
+  
+  // Create buttons for each class
+  for (let i = 0; i < numClasses; i++) {
+    const colour = MULTI_CLASS_COLOURS[i % MULTI_CLASS_COLOURS.length];
+    const button = document.createElement('button');
+    button.className = `btn-draw${i === 0 ? ' active' : ''}`;
+    button.dataset.class = String(i);
+    button.innerHTML = `
+      <span class="w-3 h-3 rounded-full inline-block" style="background-color: ${colour}"></span>
+      Class ${i}
+    `;
+    button.addEventListener('click', () => handleDrawClassSelect(i));
+    elements.drawClassButtons.appendChild(button);
+  }
+  
+  // Reset to class 0
+  currentDrawLabel = 0;
 }
 
 function handlePointAdded(point: Point): void {
@@ -313,10 +343,11 @@ async function handleLoadData(): Promise<void> {
   // Get dataset options from sliders
   const samples = parseInt(elements.inputSamples.value, 10) || 200;
   const noise = (parseInt(elements.inputNoise.value, 10) || 10) / 100;
+  const numClasses = parseInt(elements.inputNumClasses.value, 10) || 2;
 
   try {
-    await session.loadData(datasetType, { samples, noise });
-    toast.success(`Dataset "${datasetType}" loaded (${samples} samples, noise=${noise.toFixed(2)})`);
+    await session.loadData(datasetType, { samples, noise, numClasses });
+    toast.success(`Dataset "${datasetType}" loaded (${samples} samples, ${numClasses} classes)`);
   } catch (error) {
     console.error('Failed to load dataset:', error);
     toast.error(
@@ -347,6 +378,7 @@ async function handleInitialise(): Promise<void> {
   const optimizer = elements.inputOptimizer.value as OptimizerType;
   const activation = elements.inputActivation.value as ActivationType;
   const l2Regularization = parseFloat(elements.inputL2.value) || 0;
+  const numClasses = parseInt(elements.inputNumClasses.value, 10) || 2;
 
   const config: Hyperparameters = {
     learningRate,
@@ -354,6 +386,7 @@ async function handleInitialise(): Promise<void> {
     optimizer,
     activation,
     l2Regularization,
+    numClasses,
   };
 
   elements.btnInit.disabled = true;
@@ -506,11 +539,13 @@ function init(): void {
   // Bind event listeners - Dataset
   elements.btnLoadData.addEventListener('click', () => void handleLoadData());
   elements.datasetSelect.addEventListener('change', handleDatasetSelectChange);
-  elements.btnDrawClass0.addEventListener('click', () => handleDrawClassSelect(0));
-  elements.btnDrawClass1.addEventListener('click', () => handleDrawClassSelect(1));
   elements.btnClearCustom.addEventListener('click', handleClearCustomData);
   elements.inputSamples.addEventListener('input', handleSamplesChange);
   elements.inputNoise.addEventListener('input', handleNoiseChange);
+  elements.inputNumClasses.addEventListener('change', updateDrawClassButtons);
+
+  // Initialize draw class buttons
+  updateDrawClassButtons();
 
   // Bind event listeners - Visualization (live updates)
   elements.inputColourScheme.addEventListener('change', handleColourSchemeChange);

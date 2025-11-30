@@ -43,8 +43,9 @@
             <select id="dataset-select" aria-label="Select dataset type" class="select-field mb-3">
               <option value="circle">Circle (Concentric Rings)</option>
               <option value="xor">XOR (Quadrants)</option>
-              <option value="spiral">Spiral (Two Arms)</option>
-              <option value="gaussian">Gaussian (Clusters)</option>
+              <option value="spiral">Spiral (Multi-arm)</option>
+              <option value="gaussian">Gaussian (2 Clusters)</option>
+              <option value="clusters">Clusters (Multi-class)</option>
               <option value="custom">Custom (Draw Your Own)</option>
             </select>
             <!-- Dataset generation options -->
@@ -85,15 +86,8 @@
             <!-- Draw Mode Controls (shown when custom dataset selected) -->
             <div id="draw-controls" class="mt-3 hidden">
               <div class="text-xs text-slate-400 mb-2">Click on chart to add points</div>
-              <div class="flex gap-2">
-                <button id="btn-draw-class-0" class="btn-draw active" data-class="0">
-                  <span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span>
-                  Class 0
-                </button>
-                <button id="btn-draw-class-1" class="btn-draw" data-class="1">
-                  <span class="w-3 h-3 rounded-full bg-orange-500 inline-block"></span>
-                  Class 1
-                </button>
+              <div id="draw-class-buttons" class="flex flex-wrap gap-2">
+                <!-- Class buttons generated dynamically based on numClasses -->
               </div>
               <button id="btn-clear-custom" class="btn-secondary w-full mt-2 text-xs">
                 Clear All Points
@@ -198,18 +192,27 @@
                   </select>
                 </label>
                 <label class="block">
-                  <span class="input-label">L2 Regularization</span>
-                  <input
-                    type="number"
-                    id="input-l2"
-                    class="input-field"
-                    value="0"
-                    min="0"
-                    max="0.1"
-                    step="0.001"
-                  />
+                  <span class="input-label">Classes</span>
+                  <select id="input-num-classes" class="select-field">
+                    <option value="2" selected>2 (Binary)</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                  </select>
                 </label>
               </div>
+              <label class="block">
+                <span class="input-label">L2 Regularization</span>
+                <input
+                  type="number"
+                  id="input-l2"
+                  class="input-field"
+                  value="0"
+                  min="0"
+                  max="0.1"
+                  step="0.001"
+                />
+              </label>
               <button id="btn-init" class="btn-secondary w-full" aria-label="Initialize neural network">
                 <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />

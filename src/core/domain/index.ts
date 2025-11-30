@@ -27,4 +27,5 @@ export type {
 export {
   DEFAULT_VISUALIZATION_CONFIG,
   COLOUR_PALETTES,
+  MULTI_CLASS_COLOURS,
 } from './VisualizationConfig';

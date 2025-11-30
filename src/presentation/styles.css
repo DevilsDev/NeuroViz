@@ -167,7 +167,7 @@
   }
 
   .btn-draw:hover {
-    @apply bg-navy-700 border-navy-500;
+    @apply bg-navy-700 border-navy-600;
   }
 
   .btn-draw.active {

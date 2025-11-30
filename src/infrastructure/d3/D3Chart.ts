@@ -1,7 +1,7 @@
 import * as d3 from 'd3';
 import type { IVisualizerService, PointAddedCallback } from '../../core/ports';
 import type { Point, Prediction, VisualizationConfig } from '../../core/domain';
-import { DEFAULT_VISUALIZATION_CONFIG, COLOUR_PALETTES } from '../../core/domain';
+import { DEFAULT_VISUALIZATION_CONFIG, COLOUR_PALETTES, MULTI_CLASS_COLOURS } from '../../core/domain';
 
 /**
  * D3.js implementation of IVisualizerService.
@@ -115,7 +115,7 @@ export class D3Chart implements IVisualizerService {
 
   /**
    * Renders data points on the chart.
-   * Points are coloured by label using current colour scheme.
+   * Points are coloured by label using multi-class colour palette.
    */
   renderData(points: Point[]): void {
     // Cache for re-rendering
@@ -124,11 +124,14 @@ export class D3Chart implements IVisualizerService {
     // Remove existing data points
     this.chartGroup.selectAll('.data-point').remove();
 
-    const palette = COLOUR_PALETTES[this.config.colourScheme];
-    const colourScale = d3
-      .scaleOrdinal<number, string>()
-      .domain([0, 1])
-      .range([palette.low, palette.high]);
+    // Determine number of classes from data
+    const uniqueLabels = [...new Set(points.map((p) => p.label))].sort((a, b) => a - b);
+    const numClasses = Math.max(...uniqueLabels, 1) + 1;
+
+    // Use multi-class colours (supports up to 10 classes)
+    const getColour = (label: number): string => {
+      return MULTI_CLASS_COLOURS[label % MULTI_CLASS_COLOURS.length] ?? '#888888';
+    };
 
     const dataPoints = this.chartGroup
       .selectAll('.data-point')
@@ -139,7 +142,7 @@ export class D3Chart implements IVisualizerService {
       .attr('cx', (d) => this.xScale(d.x))
       .attr('cy', (d) => this.yScale(d.y))
       .attr('r', this.config.pointRadius)
-      .attr('fill', (d) => colourScale(d.label))
+      .attr('fill', (d) => getColour(d.label))
       .attr('stroke', '#fff')
       .attr('stroke-width', 1.5)
       .attr('opacity', 0.9);
@@ -162,8 +165,8 @@ export class D3Chart implements IVisualizerService {
   }
 
   /**
-   * Renders the decision boundary as a contour heatmap.
-   * Predictions are mapped to colours based on confidence using current colour scheme.
+   * Renders the decision boundary as a heatmap.
+   * For binary: contour-based gradient. For multi-class: pixel-based regions.
    */
   renderBoundary(predictions: Prediction[], gridSize: number): void {
     // Cache for re-rendering
@@ -180,6 +183,20 @@ export class D3Chart implements IVisualizerService {
       return;
     }
 
+    // Determine if multi-class based on predictions
+    const numClasses = predictions[0]?.probabilities?.length ?? 2;
+
+    if (numClasses === 2) {
+      this.renderBinaryBoundary(predictions, gridSize);
+    } else {
+      this.renderMultiClassBoundary(predictions, gridSize);
+    }
+  }
+
+  /**
+   * Renders binary classification boundary using contours.
+   */
+  private renderBinaryBoundary(predictions: Prediction[], gridSize: number): void {
     // Extract confidence values as a flat array for contour generation
     const confidenceValues = predictions.map((p) => p.confidence);
 
@@ -222,6 +239,37 @@ export class D3Chart implements IVisualizerService {
       .attr('fill', (d) => colourScale(d.value))
       .attr('stroke', 'none')
       .attr('opacity', this.config.boundaryOpacity);
+  }
+
+  /**
+   * Renders multi-class boundary using pixel rectangles.
+   */
+  private renderMultiClassBoundary(predictions: Prediction[], gridSize: number): void {
+    const cellWidth = this.width / gridSize;
+    const cellHeight = this.height / gridSize;
+
+    // Get colour for each class with confidence-based opacity
+    const getColour = (pred: Prediction): string => {
+      const baseColour = MULTI_CLASS_COLOURS[pred.predictedClass % MULTI_CLASS_COLOURS.length] ?? '#888888';
+      return baseColour;
+    };
+
+    const boundaryGroup = this.chartGroup
+      .insert('g', '.data-point')
+      .attr('class', 'boundary');
+
+    boundaryGroup
+      .selectAll('rect')
+      .data(predictions)
+      .enter()
+      .append('rect')
+      .attr('x', (_, i) => (i % gridSize) * cellWidth)
+      .attr('y', (_, i) => this.height - Math.floor(i / gridSize) * cellHeight - cellHeight)
+      .attr('width', cellWidth)
+      .attr('height', cellHeight)
+      .attr('fill', (d) => getColour(d))
+      .attr('opacity', (d) => this.config.boundaryOpacity * (0.3 + d.confidence * 0.7))
+      .attr('stroke', 'none');
   }
 
   /**

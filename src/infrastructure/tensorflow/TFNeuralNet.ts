@@ -26,6 +26,7 @@ import { GradientExplosionError, ModelNotInitialisedError } from './errors';
 export class TFNeuralNet implements INeuralNetworkService {
   private model: tf.Sequential | null = null;
   private config: Hyperparameters | null = null;
+  private numClasses = 2;
 
   /**
    * Initialises a new sequential model with the given hyperparameters.
@@ -36,6 +37,7 @@ export class TFNeuralNet implements INeuralNetworkService {
   async initialize(config: Hyperparameters): Promise<void> {
     this.dispose();
     this.config = config;
+    this.numClasses = config.numClasses ?? 2;
     this.model = this.buildModel(config);
   }
 
@@ -61,7 +63,7 @@ export class TFNeuralNet implements INeuralNetworkService {
 
     // Create tensors outside tf.tidy() since trainOnBatch is async
     const xs = tf.tensor2d(data.map((p) => [p.x, p.y]));
-    const ys = tf.tensor2d(data.map((p) => [p.label]));
+    const ys = this.createLabelTensor(data);
 
     try {
       // trainOnBatch returns [loss, accuracy] when metrics are configured
@@ -104,7 +106,7 @@ export class TFNeuralNet implements INeuralNetworkService {
     const model = this.assertInitialised();
 
     const xs = tf.tensor2d(data.map((p) => [p.x, p.y]));
-    const ys = tf.tensor2d(data.map((p) => [p.label]));
+    const ys = this.createLabelTensor(data);
 
     try {
       // evaluate returns [loss, ...metrics] as scalars
@@ -151,13 +153,44 @@ export class TFNeuralNet implements INeuralNetworkService {
 
       try {
         // Use async .data() to avoid blocking the UI thread
-        const confidences = await outputTensor.data();
+        const outputData = await outputTensor.data();
 
-        return grid.map((point, index) => ({
-          x: point.x,
-          y: point.y,
-          confidence: confidences[index] ?? 0.5,
-        }));
+        return grid.map((point, index) => {
+          if (this.numClasses === 2) {
+            // Binary classification: single sigmoid output
+            const confidence = outputData[index] ?? 0.5;
+            return {
+              x: point.x,
+              y: point.y,
+              confidence,
+              predictedClass: confidence >= 0.5 ? 1 : 0,
+              probabilities: [1 - confidence, confidence],
+            };
+          } else {
+            // Multi-class: softmax output
+            const startIdx = index * this.numClasses;
+            const probs: number[] = [];
+            let maxProb = 0;
+            let predictedClass = 0;
+
+            for (let c = 0; c < this.numClasses; c++) {
+              const prob = outputData[startIdx + c] ?? 0;
+              probs.push(prob);
+              if (prob > maxProb) {
+                maxProb = prob;
+                predictedClass = c;
+              }
+            }
+
+            return {
+              x: point.x,
+              y: point.y,
+              confidence: maxProb,
+              predictedClass,
+              probabilities: probs,
+            };
+          }
+        });
       } finally {
         outputTensor.dispose();
       }
@@ -196,12 +229,13 @@ export class TFNeuralNet implements INeuralNetworkService {
    * Architecture:
    * - Input: 2 features (x, y coordinates)
    * - Hidden: Configurable activation, He Normal initialisation
-   * - Output: 1 unit, Sigmoid activation (binary classification)
+   * - Output: 1 unit sigmoid (binary) or N units softmax (multi-class)
    */
   private buildModel(config: Hyperparameters): tf.Sequential {
     const model = tf.sequential();
     const activation = this.mapActivation(config.activation ?? DEFAULT_HYPERPARAMETERS.activation);
     const regularizer = this.createRegularizer(config.l2Regularization ?? 0);
+    const numClasses = config.numClasses ?? 2;
 
     // Input layer (first hidden layer)
     model.add(
@@ -226,26 +260,56 @@ export class TFNeuralNet implements INeuralNetworkService {
       );
     }
 
-    // Output layer (binary classification)
-    model.add(
-      tf.layers.dense({
-        units: 1,
-        activation: 'sigmoid',
-      })
-    );
+    // Output layer - binary or multi-class
+    if (numClasses === 2) {
+      // Binary classification: single sigmoid output
+      model.add(
+        tf.layers.dense({
+          units: 1,
+          activation: 'sigmoid',
+        })
+      );
+    } else {
+      // Multi-class classification: softmax output
+      model.add(
+        tf.layers.dense({
+          units: numClasses,
+          activation: 'softmax',
+        })
+      );
+    }
 
     const optimizer = this.createOptimizer(
       config.optimizer ?? DEFAULT_HYPERPARAMETERS.optimizer,
       config.learningRate
     );
 
+    // Loss function depends on number of classes
+    const loss = numClasses === 2 ? 'binaryCrossentropy' : 'categoricalCrossentropy';
+
     model.compile({
       optimizer,
-      loss: 'binaryCrossentropy',
+      loss,
       metrics: ['accuracy'],
     });
 
     return model;
+  }
+
+  /**
+   * Creates label tensor appropriate for binary or multi-class classification.
+   */
+  private createLabelTensor(data: Point[]): tf.Tensor {
+    if (this.numClasses === 2) {
+      // Binary: single column with 0 or 1
+      return tf.tensor2d(data.map((p) => [p.label]));
+    } else {
+      // Multi-class: one-hot encoded
+      return tf.oneHot(
+        tf.tensor1d(data.map((p) => p.label), 'int32'),
+        this.numClasses
+      );
+    }
   }
 
   /**
