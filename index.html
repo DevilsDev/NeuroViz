@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NeuroViz - Neural Network Visualiser</title>
+    <link rel="stylesheet" href="/src/presentation/styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <h1>NeuroViz</h1>
+        <p class="subtitle">Interactive Neural Network Decision Boundary Visualiser</p>
+      </header>
+
+      <main class="main">
+        <!-- Visualisation Panel -->
+        <section class="viz-panel">
+          <div id="viz-container" class="viz-container">
+            <!-- D3 chart renders here -->
+          </div>
+          <div id="loading-overlay" class="loading-overlay hidden">
+            <div class="spinner"></div>
+            <span>Loading dataset...</span>
+          </div>
+        </section>
+
+        <!-- Control Panel -->
+        <aside class="control-panel">
+          <!-- Dataset Selection -->
+          <fieldset class="control-group">
+            <legend>Dataset</legend>
+            <select id="dataset-select" class="select">
+              <option value="circle">Circle (Concentric Rings)</option>
+              <option value="xor">XOR (Quadrants)</option>
+              <option value="spiral">Spiral (Two Arms)</option>
+              <option value="gaussian">Gaussian (Clusters)</option>
+            </select>
+            <button id="btn-load-data" class="btn btn-secondary">
+              Fetch Data (Simulate API)
+            </button>
+          </fieldset>
+
+          <!-- Hyperparameters -->
+          <fieldset class="control-group">
+            <legend>Hyperparameters</legend>
+            <label class="input-group">
+              <span>Learning Rate</span>
+              <input
+                type="number"
+                id="input-lr"
+                class="input"
+                value="0.03"
+                min="0.001"
+                max="1"
+                step="0.001"
+              />
+            </label>
+            <label class="input-group">
+              <span>Hidden Layers</span>
+              <input
+                type="text"
+                id="input-layers"
+                class="input"
+                value="8, 4"
+                placeholder="e.g., 8, 4, 2"
+              />
+            </label>
+            <button id="btn-init" class="btn btn-secondary">
+              Initialise Network
+            </button>
+          </fieldset>
+
+          <!-- Training Controls -->
+          <fieldset class="control-group">
+            <legend>Training</legend>
+            <div class="btn-row">
+              <button id="btn-start" class="btn btn-primary" disabled>
+                Start
+              </button>
+              <button id="btn-pause" class="btn btn-secondary" disabled>
+                Pause
+              </button>
+              <button id="btn-step" class="btn btn-secondary" disabled>
+                Step
+              </button>
+              <button id="btn-reset" class="btn btn-danger" disabled>
+                Reset
+              </button>
+            </div>
+          </fieldset>
+
+          <!-- Status Display -->
+          <fieldset class="control-group">
+            <legend>Status</legend>
+            <div class="status-grid">
+              <div class="status-item">
+                <span class="status-label">Epoch</span>
+                <span id="status-epoch" class="status-value">0</span>
+              </div>
+              <div class="status-item">
+                <span class="status-label">Loss</span>
+                <span id="status-loss" class="status-value">—</span>
+              </div>
+              <div class="status-item">
+                <span class="status-label">State</span>
+                <span id="status-state" class="status-value status-idle">Idle</span>
+              </div>
+            </div>
+          </fieldset>
+        </aside>
+      </main>
+
+      <footer class="footer">
+        <p>Hexagonal Architecture Demo • Modular Monolith</p>
+      </footer>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

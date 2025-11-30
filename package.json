@@ -1,0 +1,31 @@
+{
+  "name": "neuroviz",
+  "version": "0.1.0",
+  "description": "Interactive Neural Network Decision Boundary Visualiser - Hexagonal Architecture Demo",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "neural-network",
+    "visualisation",
+    "tensorflow",
+    "d3",
+    "hexagonal-architecture"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@tensorflow/tfjs": "^4.21.0",
+    "d3": "^7.9.0"
+  },
+  "devDependencies": {
+    "@types/d3": "^7.4.3",
+    "@types/node": "^22.10.1",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.1"
+  }
+}

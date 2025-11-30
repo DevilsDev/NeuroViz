@@ -1,0 +1,38 @@
+import type { Hyperparameters, Point, Prediction } from '../domain';
+
+/**
+ * Port for neural network operations.
+ * Abstracts the ML framework (TensorFlow.js, ONNX, etc.) from the core domain.
+ *
+ * @remarks
+ * Implementations must handle their own resource lifecycle (model disposal, memory cleanup).
+ */
+export interface INeuralNetworkService {
+  /**
+   * Initialises the neural network with the given configuration.
+   * Must be called before train() or predict().
+   *
+   * @param config - Hyperparameters defining network architecture and training settings
+   * @throws If initialisation fails (e.g., invalid layer configuration)
+   */
+  initialize(config: Hyperparameters): Promise<void>;
+
+  /**
+   * Trains the network on the provided dataset.
+   *
+   * @param data - Array of labelled points for supervised learning
+   * @returns The final training loss value
+   * @throws If called before initialize() or if training fails
+   */
+  train(data: Point[]): Promise<number>;
+
+  /**
+   * Generates predictions for a grid of points.
+   * Used to compute decision boundaries for visualisation.
+   *
+   * @param grid - Array of points to classify (labels are ignored)
+   * @returns Predictions with confidence scores for each grid point
+   * @throws If called before initialize() or if inference fails
+   */
+  predict(grid: Point[]): Promise<Prediction[]>;
+}
