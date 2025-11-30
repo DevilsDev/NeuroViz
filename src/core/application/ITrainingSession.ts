@@ -1,4 +1,5 @@
-import type { Hyperparameters, TrainingConfig, TrainingHistory, ExportFormat } from '../domain';
+import type { Hyperparameters, TrainingConfig, TrainingHistory, ExportFormat, Point } from '../domain';
+import type { DatasetOptions } from '../ports';
 
 /**
  * Training session state exposed to the UI layer.
@@ -52,8 +53,9 @@ export interface ITrainingSession {
   /**
    * Loads a dataset and renders it on the visualiser.
    * @param datasetType - Dataset identifier (e.g., 'circle', 'xor')
+   * @param options - Optional generation parameters (samples, noise)
    */
-  loadData(datasetType: string): Promise<void>;
+  loadData(datasetType: string, options?: DatasetOptions): Promise<void>;
 
   /**
    * Starts or resumes the training loop.
@@ -90,6 +92,12 @@ export interface ITrainingSession {
    * @returns Formatted string of training history
    */
   exportHistory(format: ExportFormat): string;
+
+  /**
+   * Sets custom data points directly (for draw mode).
+   * @param points - Array of points to use as training data
+   */
+  setCustomData(points: Point[]): void;
 
   /**
    * Registers a callback for state changes.

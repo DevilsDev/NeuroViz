@@ -1,6 +1,11 @@
 import type { Point, Prediction, VisualizationConfig } from '../domain';
 
 /**
+ * Callback for when a point is added via click.
+ */
+export type PointAddedCallback = (point: Point) => void;
+
+/**
  * Port for visualisation operations.
  * Abstracts the rendering library (D3.js, Canvas, WebGL, etc.) from the core domain.
  *
@@ -37,6 +42,24 @@ export interface IVisualizerService {
    * Returns current visualization configuration.
    */
   getConfig(): VisualizationConfig;
+
+  /**
+   * Enables drawing mode where clicks add points.
+   *
+   * @param label - The class label for new points (0 or 1)
+   * @param callback - Called when a point is added
+   */
+  enableDrawMode(label: number, callback: PointAddedCallback): void;
+
+  /**
+   * Disables drawing mode.
+   */
+  disableDrawMode(): void;
+
+  /**
+   * Returns whether drawing mode is currently enabled.
+   */
+  isDrawModeEnabled(): boolean;
 
   /**
    * Cleans up resources and removes DOM elements.

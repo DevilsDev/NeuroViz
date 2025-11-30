@@ -45,13 +45,60 @@
               <option value="xor">XOR (Quadrants)</option>
               <option value="spiral">Spiral (Two Arms)</option>
               <option value="gaussian">Gaussian (Clusters)</option>
+              <option value="custom">Custom (Draw Your Own)</option>
             </select>
+            <!-- Dataset generation options -->
+            <div id="dataset-options" class="space-y-2 mb-3">
+              <label class="block">
+                <span class="input-label">Samples: <span id="samples-value">200</span></span>
+                <input
+                  type="range"
+                  id="input-samples"
+                  class="w-full h-2 bg-navy-700 rounded-lg appearance-none cursor-pointer accent-accent-500"
+                  value="200"
+                  min="50"
+                  max="500"
+                  step="50"
+                />
+              </label>
+              <label class="block">
+                <span class="input-label">Noise: <span id="noise-value">0.1</span></span>
+                <input
+                  type="range"
+                  id="input-noise"
+                  class="w-full h-2 bg-navy-700 rounded-lg appearance-none cursor-pointer accent-accent-500"
+                  value="10"
+                  min="0"
+                  max="50"
+                  step="5"
+                />
+              </label>
+            </div>
+
             <button id="btn-load-data" class="btn-secondary w-full" aria-label="Load dataset">
               <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
               </svg>
               Fetch Data
             </button>
+            
+            <!-- Draw Mode Controls (shown when custom dataset selected) -->
+            <div id="draw-controls" class="mt-3 hidden">
+              <div class="text-xs text-slate-400 mb-2">Click on chart to add points</div>
+              <div class="flex gap-2">
+                <button id="btn-draw-class-0" class="btn-draw active" data-class="0">
+                  <span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span>
+                  Class 0
+                </button>
+                <button id="btn-draw-class-1" class="btn-draw" data-class="1">
+                  <span class="w-3 h-3 rounded-full bg-orange-500 inline-block"></span>
+                  Class 1
+                </button>
+              </div>
+              <button id="btn-clear-custom" class="btn-secondary w-full mt-2 text-xs">
+                Clear All Points
+              </button>
+            </div>
           </fieldset>
 
           <!-- Visualization Settings -->

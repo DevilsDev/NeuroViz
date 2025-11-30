@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
-import type { IVisualizerService } from '../../core/ports';
-import type { Point, Prediction, VisualizationConfig, ColourScheme } from '../../core/domain';
+import type { IVisualizerService, PointAddedCallback } from '../../core/ports';
+import type { Point, Prediction, VisualizationConfig } from '../../core/domain';
 import { DEFAULT_VISUALIZATION_CONFIG, COLOUR_PALETTES } from '../../core/domain';
 
 /**
@@ -32,6 +32,11 @@ export class D3Chart implements IVisualizerService {
   private cachedPoints: Point[] = [];
   private cachedPredictions: Prediction[] = [];
   private cachedGridSize = 0;
+
+  // Draw mode state
+  private drawModeEnabled = false;
+  private drawModeLabel = 0;
+  private drawModeCallback: PointAddedCallback | null = null;
 
   /**
    * @param containerId - DOM element ID where the chart will be rendered
@@ -232,10 +237,58 @@ export class D3Chart implements IVisualizerService {
    * Call this when the chart is no longer needed to prevent memory leaks.
    */
   dispose(): void {
+    this.disableDrawMode();
     if (this.tooltip) {
       this.tooltip.remove();
     }
     this.container.selectAll('*').remove();
+  }
+
+  /**
+   * Enables drawing mode where clicks add points.
+   */
+  enableDrawMode(label: number, callback: PointAddedCallback): void {
+    this.drawModeEnabled = true;
+    this.drawModeLabel = label;
+    this.drawModeCallback = callback;
+
+    // Change cursor to crosshair
+    this.svg.style('cursor', 'crosshair');
+
+    // Add click handler
+    this.svg.on('click.draw', (event: MouseEvent) => {
+      if (!this.drawModeEnabled || !this.drawModeCallback) return;
+
+      // Get click position relative to chart group
+      const [mouseX, mouseY] = d3.pointer(event, this.chartGroup.node());
+
+      // Convert to data coordinates
+      const x = this.xScale.invert(mouseX);
+      const y = this.yScale.invert(mouseY);
+
+      // Only add if within bounds
+      if (x >= -1 && x <= 1 && y >= -1 && y <= 1) {
+        const point: Point = { x, y, label: this.drawModeLabel };
+        this.drawModeCallback(point);
+      }
+    });
+  }
+
+  /**
+   * Disables drawing mode.
+   */
+  disableDrawMode(): void {
+    this.drawModeEnabled = false;
+    this.drawModeCallback = null;
+    this.svg.style('cursor', 'default');
+    this.svg.on('click.draw', null);
+  }
+
+  /**
+   * Returns whether drawing mode is currently enabled.
+   */
+  isDrawModeEnabled(): boolean {
+    return this.drawModeEnabled;
   }
 
   private renderAxes(): void {

@@ -1,4 +1,4 @@
-import type { IDatasetRepository } from '../../core/ports';
+import type { IDatasetRepository, DatasetOptions } from '../../core/ports';
 import type { Point } from '../../core/domain';
 
 /**
@@ -24,11 +24,14 @@ export class MockDataRepository implements IDatasetRepository {
    * Retrieves a dataset by type identifier.
    * @throws If the dataset type is unknown
    */
-  async getDataset(type: string): Promise<Point[]> {
+  async getDataset(type: string, options?: DatasetOptions): Promise<Point[]> {
     await this.simulateLatency();
 
+    const samples = options?.samples ?? 200;
+    const noise = options?.noise ?? 0.1;
+
     const generator = this.getDatasetGenerator(type);
-    return generator();
+    return generator(samples, noise);
   }
 
   /**
@@ -43,12 +46,12 @@ export class MockDataRepository implements IDatasetRepository {
     return new Promise((resolve) => setTimeout(resolve, this.latencyMs));
   }
 
-  private getDatasetGenerator(type: string): () => Point[] {
-    const generators: Record<string, () => Point[]> = {
-      circle: () => this.generateCircleDataset(),
-      xor: () => this.generateXorDataset(),
-      spiral: () => this.generateSpiralDataset(),
-      gaussian: () => this.generateGaussianDataset(),
+  private getDatasetGenerator(type: string): (samples: number, noise: number) => Point[] {
+    const generators: Record<string, (samples: number, noise: number) => Point[]> = {
+      circle: (s, n) => this.generateCircleDataset(s, n),
+      xor: (s, n) => this.generateXorDataset(s, n),
+      spiral: (s, n) => this.generateSpiralDataset(s, n),
+      gaussian: (s, n) => this.generateGaussianDataset(s, n),
     };
 
     const generator = generators[type.toLowerCase()];
@@ -65,17 +68,17 @@ export class MockDataRepository implements IDatasetRepository {
    * Generates a circular dataset with two concentric rings.
    * Inner ring = label 0, outer ring = label 1.
    */
-  private generateCircleDataset(): Point[] {
+  private generateCircleDataset(samples: number, noise: number): Point[] {
     const points: Point[] = [];
-    const samplesPerClass = 100;
+    const samplesPerClass = Math.floor(samples / 2);
 
     // Inner circle (label 0)
     for (let i = 0; i < samplesPerClass; i++) {
       const angle = (2 * Math.PI * i) / samplesPerClass;
-      const radius = 0.3 + this.noise(0.05);
+      const radius = 0.3 + this.noise(0.05 * noise * 5);
       points.push({
-        x: radius * Math.cos(angle) + this.noise(0.02),
-        y: radius * Math.sin(angle) + this.noise(0.02),
+        x: radius * Math.cos(angle) + this.noise(noise * 0.2),
+        y: radius * Math.sin(angle) + this.noise(noise * 0.2),
         label: 0,
       });
     }
@@ -83,10 +86,10 @@ export class MockDataRepository implements IDatasetRepository {
     // Outer circle (label 1)
     for (let i = 0; i < samplesPerClass; i++) {
       const angle = (2 * Math.PI * i) / samplesPerClass;
-      const radius = 0.7 + this.noise(0.05);
+      const radius = 0.7 + this.noise(0.05 * noise * 5);
       points.push({
-        x: radius * Math.cos(angle) + this.noise(0.02),
-        y: radius * Math.sin(angle) + this.noise(0.02),
+        x: radius * Math.cos(angle) + this.noise(noise * 0.2),
+        y: radius * Math.sin(angle) + this.noise(noise * 0.2),
         label: 1,
       });
     }
@@ -98,9 +101,9 @@ export class MockDataRepository implements IDatasetRepository {
    * Generates an XOR dataset with four quadrants.
    * Diagonal quadrants share the same label.
    */
-  private generateXorDataset(): Point[] {
+  private generateXorDataset(samples: number, noise: number): Point[] {
     const points: Point[] = [];
-    const samplesPerQuadrant = 50;
+    const samplesPerQuadrant = Math.floor(samples / 4);
 
     const quadrants = [
       { xSign: 1, ySign: 1, label: 0 },
@@ -112,8 +115,8 @@ export class MockDataRepository implements IDatasetRepository {
     for (const { xSign, ySign, label } of quadrants) {
       for (let i = 0; i < samplesPerQuadrant; i++) {
         points.push({
-          x: xSign * (0.2 + Math.random() * 0.6),
-          y: ySign * (0.2 + Math.random() * 0.6),
+          x: xSign * (0.2 + Math.random() * 0.6) + this.noise(noise * 0.3),
+          y: ySign * (0.2 + Math.random() * 0.6) + this.noise(noise * 0.3),
           label,
         });
       }
@@ -126,16 +129,16 @@ export class MockDataRepository implements IDatasetRepository {
    * Generates a two-arm spiral dataset.
    * Each arm has a different label.
    */
-  private generateSpiralDataset(): Point[] {
+  private generateSpiralDataset(samples: number, noise: number): Point[] {
     const points: Point[] = [];
-    const samplesPerArm = 100;
+    const samplesPerArm = Math.floor(samples / 2);
 
     for (let arm = 0; arm < 2; arm++) {
       const deltaAngle = arm * Math.PI;
 
       for (let i = 0; i < samplesPerArm; i++) {
         const t = (i / samplesPerArm) * 2 * Math.PI;
-        const radius = (0.1 + (t / (2 * Math.PI)) * 0.8) * (1 + this.noise(0.1));
+        const radius = (0.1 + (t / (2 * Math.PI)) * 0.8) * (1 + this.noise(noise));
         const angle = t + deltaAngle;
 
         points.push({
@@ -153,9 +156,9 @@ export class MockDataRepository implements IDatasetRepository {
    * Generates two Gaussian clusters.
    * Each cluster has a different label.
    */
-  private generateGaussianDataset(): Point[] {
+  private generateGaussianDataset(samples: number, noise: number): Point[] {
     const points: Point[] = [];
-    const samplesPerCluster = 100;
+    const samplesPerCluster = Math.floor(samples / 2);
 
     const clusters = [
       { cx: -0.5, cy: -0.5, label: 0 },
@@ -165,8 +168,8 @@ export class MockDataRepository implements IDatasetRepository {
     for (const { cx, cy, label } of clusters) {
       for (let i = 0; i < samplesPerCluster; i++) {
         points.push({
-          x: cx + this.gaussianNoise(0.2),
-          y: cy + this.gaussianNoise(0.2),
+          x: cx + this.gaussianNoise(0.15 + noise * 0.3),
+          y: cy + this.gaussianNoise(0.15 + noise * 0.3),
           label,
         });
       }

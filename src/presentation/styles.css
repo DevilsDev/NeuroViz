@@ -157,6 +157,24 @@
     @apply bg-red-500;
   }
 
+  .btn-draw {
+    @apply flex-1 inline-flex items-center justify-center gap-1.5;
+    @apply px-3 py-2 rounded-lg;
+    @apply text-xs font-medium;
+    @apply bg-navy-800 text-slate-300;
+    @apply border border-navy-600;
+    @apply transition-all duration-200;
+  }
+
+  .btn-draw:hover {
+    @apply bg-navy-700 border-navy-500;
+  }
+
+  .btn-draw.active {
+    @apply bg-accent-600/20 border-accent-500 text-accent-300;
+    @apply ring-1 ring-accent-500/50;
+  }
+
   .btn-danger:active:not(:disabled) {
     @apply scale-[0.98];
   }

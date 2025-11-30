@@ -1,6 +1,6 @@
 import type { Hyperparameters, Point, Prediction, TrainingConfig, TrainingHistory, ExportFormat } from '../domain';
 import { DEFAULT_TRAINING_CONFIG, createEmptyHistory, addHistoryRecord, exportHistory } from '../domain';
-import type { INeuralNetworkService, IVisualizerService, IDatasetRepository } from '../ports';
+import type { INeuralNetworkService, IVisualizerService, IDatasetRepository, DatasetOptions } from '../ports';
 import type { ITrainingSession, TrainingState } from './ITrainingSession';
 
 /**
@@ -150,8 +150,8 @@ export class TrainingSession implements ITrainingSession {
     return exportHistory(this.history, format);
   }
 
-  async loadData(datasetType: string): Promise<void> {
-    this.allData = await this.dataRepo.getDataset(datasetType);
+  async loadData(datasetType: string, options?: DatasetOptions): Promise<void> {
+    this.allData = await this.dataRepo.getDataset(datasetType, options);
     this.splitData();
     this.datasetLoaded = true;
     this.visualizer.renderData(this.allData);
@@ -511,5 +511,28 @@ export class TrainingSession implements ITrainingSession {
     if (!this.datasetLoaded) {
       throw new Error('No data loaded. Call loadData() first.');
     }
+  }
+
+  // ===========================================================================
+  // Custom Data
+  // ===========================================================================
+
+  /**
+   * Sets custom data points directly (for draw mode).
+   * Bypasses the data repository and uses provided points.
+   */
+  setCustomData(points: Point[]): void {
+    this.allData = [...points];
+    this.datasetLoaded = points.length > 0;
+
+    // Split into training/validation
+    if (points.length > 0) {
+      this.splitData();
+    } else {
+      this.trainingData = [];
+      this.validationData = [];
+    }
+
+    this.notifyListeners();
   }
 }

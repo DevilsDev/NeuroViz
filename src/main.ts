@@ -9,7 +9,7 @@
 // Import styles for Vite to process through PostCSS/Tailwind
 import './presentation/styles.css';
 
-import type { Hyperparameters, OptimizerType, ActivationType, ColourScheme } from './core/domain';
+import type { Hyperparameters, OptimizerType, ActivationType, ColourScheme, Point } from './core/domain';
 import type { TrainingState } from './core/application';
 import { TrainingSession } from './core/application';
 
@@ -33,6 +33,15 @@ const elements = {
   datasetSelect: document.getElementById('dataset-select') as HTMLSelectElement,
   btnLoadData: document.getElementById('btn-load-data') as HTMLButtonElement,
   loadingOverlay: document.getElementById('loading-overlay') as HTMLDivElement,
+  drawControls: document.getElementById('draw-controls') as HTMLDivElement,
+  btnDrawClass0: document.getElementById('btn-draw-class-0') as HTMLButtonElement,
+  btnDrawClass1: document.getElementById('btn-draw-class-1') as HTMLButtonElement,
+  btnClearCustom: document.getElementById('btn-clear-custom') as HTMLButtonElement,
+  datasetOptions: document.getElementById('dataset-options') as HTMLDivElement,
+  inputSamples: document.getElementById('input-samples') as HTMLInputElement,
+  samplesValue: document.getElementById('samples-value') as HTMLSpanElement,
+  inputNoise: document.getElementById('input-noise') as HTMLInputElement,
+  noiseValue: document.getElementById('noise-value') as HTMLSpanElement,
 
   // Visualization controls
   inputColourScheme: document.getElementById('input-colour-scheme') as HTMLSelectElement,
@@ -214,18 +223,100 @@ function handleTooltipsToggle(): void {
 }
 
 // =============================================================================
+// Custom Dataset / Draw Mode
+// =============================================================================
+
+/** Custom dataset points when in draw mode */
+let customDataPoints: Point[] = [];
+let currentDrawLabel = 0;
+
+function handleDatasetSelectChange(): void {
+  const isCustom = elements.datasetSelect.value === 'custom';
+  
+  if (isCustom) {
+    elements.drawControls.classList.remove('hidden');
+    elements.datasetOptions.classList.add('hidden');
+    elements.btnLoadData.textContent = 'Start Drawing';
+  } else {
+    elements.drawControls.classList.add('hidden');
+    elements.datasetOptions.classList.remove('hidden');
+    elements.btnLoadData.innerHTML = `
+      <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+      </svg>
+      Fetch Data
+    `;
+    visualizerService.disableDrawMode();
+  }
+}
+
+function handleSamplesChange(): void {
+  elements.samplesValue.textContent = elements.inputSamples.value;
+}
+
+function handleNoiseChange(): void {
+  const noisePercent = parseInt(elements.inputNoise.value, 10);
+  elements.noiseValue.textContent = (noisePercent / 100).toFixed(2);
+}
+
+function handleDrawClassSelect(label: number): void {
+  currentDrawLabel = label;
+  
+  // Update button states
+  elements.btnDrawClass0.classList.toggle('active', label === 0);
+  elements.btnDrawClass1.classList.toggle('active', label === 1);
+  
+  // Update draw mode with new label
+  if (visualizerService.isDrawModeEnabled()) {
+    visualizerService.enableDrawMode(label, handlePointAdded);
+  }
+}
+
+function handlePointAdded(point: Point): void {
+  customDataPoints.push(point);
+  visualizerService.renderData(customDataPoints);
+  
+  // Update session with custom data
+  session.setCustomData(customDataPoints);
+}
+
+function handleClearCustomData(): void {
+  customDataPoints = [];
+  visualizerService.renderData([]);
+  session.setCustomData([]);
+  toast.info('Custom data cleared');
+}
+
+function enableDrawMode(): void {
+  visualizerService.enableDrawMode(currentDrawLabel, handlePointAdded);
+  toast.info('Draw mode enabled - click on chart to add points');
+}
+
+// =============================================================================
 // Event Handlers
 // =============================================================================
 
 async function handleLoadData(): Promise<void> {
   const datasetType = elements.datasetSelect.value;
 
+  // Handle custom dataset differently
+  if (datasetType === 'custom') {
+    customDataPoints = [];
+    visualizerService.renderData([]);
+    enableDrawMode();
+    return;
+  }
+
   showLoading(true);
   elements.btnLoadData.disabled = true;
 
+  // Get dataset options from sliders
+  const samples = parseInt(elements.inputSamples.value, 10) || 200;
+  const noise = (parseInt(elements.inputNoise.value, 10) || 10) / 100;
+
   try {
-    await session.loadData(datasetType);
-    toast.success(`Dataset "${datasetType}" loaded successfully!`);
+    await session.loadData(datasetType, { samples, noise });
+    toast.success(`Dataset "${datasetType}" loaded (${samples} samples, noise=${noise.toFixed(2)})`);
   } catch (error) {
     console.error('Failed to load dataset:', error);
     toast.error(
@@ -414,6 +505,12 @@ function init(): void {
 
   // Bind event listeners - Dataset
   elements.btnLoadData.addEventListener('click', () => void handleLoadData());
+  elements.datasetSelect.addEventListener('change', handleDatasetSelectChange);
+  elements.btnDrawClass0.addEventListener('click', () => handleDrawClassSelect(0));
+  elements.btnDrawClass1.addEventListener('click', () => handleDrawClassSelect(1));
+  elements.btnClearCustom.addEventListener('click', handleClearCustomData);
+  elements.inputSamples.addEventListener('input', handleSamplesChange);
+  elements.inputNoise.addEventListener('input', handleNoiseChange);
 
   // Bind event listeners - Visualization (live updates)
   elements.inputColourScheme.addEventListener('change', handleColourSchemeChange);

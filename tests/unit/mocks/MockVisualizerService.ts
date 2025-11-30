@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import type { IVisualizerService } from '../../../src/core/ports';
+import type { IVisualizerService, PointAddedCallback } from '../../../src/core/ports';
 import type { Point, Prediction, VisualizationConfig } from '../../../src/core/domain';
 import { DEFAULT_VISUALIZATION_CONFIG } from '../../../src/core/domain';
 
@@ -45,6 +45,28 @@ export class MockVisualizerService implements IVisualizerService {
     // No-op for mock
   });
 
+  // Draw mode state
+  private drawModeEnabled = false;
+  private drawModeLabel = 0;
+
+  readonly enableDrawMode = vi.fn((label: number, _callback: PointAddedCallback): void => {
+    this.drawModeEnabled = true;
+    this.drawModeLabel = label;
+  });
+
+  readonly disableDrawMode = vi.fn((): void => {
+    this.drawModeEnabled = false;
+  });
+
+  readonly isDrawModeEnabled = vi.fn((): boolean => {
+    return this.drawModeEnabled;
+  });
+
+  /** Get the current draw mode label for testing */
+  getDrawModeLabel(): number {
+    return this.drawModeLabel;
+  }
+
   /**
    * Reset all state and spies for clean test isolation.
    */
@@ -55,10 +77,15 @@ export class MockVisualizerService implements IVisualizerService {
     this.lastRenderedPredictions = [];
     this.lastGridSize = 0;
     this.config = { ...DEFAULT_VISUALIZATION_CONFIG };
+    this.drawModeEnabled = false;
+    this.drawModeLabel = 0;
     this.renderData.mockClear();
     this.renderBoundary.mockClear();
     this.setConfig.mockClear();
     this.getConfig.mockClear();
     this.dispose.mockClear();
+    this.enableDrawMode.mockClear();
+    this.disableDrawMode.mockClear();
+    this.isDrawModeEnabled.mockClear();
   }
 }

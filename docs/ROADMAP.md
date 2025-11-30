@@ -122,9 +122,9 @@ This document outlines planned features for NeuroViz, organized by priority and 
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| Draw your own data (click to add) | M | 🔲 | Canvas click handler |
-| Noise level slider | S | 🔲 | Dataset generation param |
-| Sample count slider | S | 🔲 | 50-1000 points |
+| Draw your own data (click to add) | M | ✅ | Click chart, toggle class |
+| Noise level slider | S | ✅ | 0-50% noise |
+| Sample count slider | S | ✅ | 50-500 points |
 | Class imbalance ratio | S | 🔲 | Slider control |
 
 ### 🟡 P2 — Data Import/Export
@@ -277,40 +277,44 @@ This document outlines planned features for NeuroViz, organized by priority and 
 
 ## Implementation Order (Suggested)
 
-### Sprint 1: Training Controls
+### ✅ Sprint 1: Training Controls (Complete)
 
-1. Batch size configuration
-2. Epoch limit (auto-stop)
-3. Training speed control
-4. Adam optimizer
+1. ✅ Batch size configuration
+2. ✅ Epoch limit (auto-stop)
+3. ✅ Training speed control
+4. ✅ Adam optimizer
+5. ✅ L2 regularization
 
-### Sprint 2: Metrics Dashboard
+### ✅ Sprint 2: Metrics Dashboard (Complete)
 
-1. Training history array
-2. Real-time loss chart
-3. Accuracy metric
-4. Export to JSON/CSV
+1. ✅ Training history array
+2. ✅ Real-time loss chart
+3. ✅ Accuracy metric
+4. ✅ Export to JSON/CSV
+5. ✅ Train/validation split
+6. ✅ Validation loss tracking
 
-### Sprint 3: Data Flexibility
+### ✅ Sprint 3: Visualization Polish (Complete)
 
-1. Draw your own data
-2. Noise/sample sliders
-3. Multi-class support
-4. Upload CSV
+1. ✅ Zoom and pan
+2. ✅ Hover tooltips
+3. ✅ Heatmap opacity control
+4. ✅ Colour scheme selector
+5. ✅ Point size control
 
-### Sprint 4: Visualization Polish
+### 🔄 Sprint 4: Data Flexibility (In Progress)
 
-1. Zoom and pan
-2. Misclassified highlighting
-3. Heatmap controls
-4. Click for details
+1. ✅ Draw your own data (click to add)
+2. ✅ Noise/sample sliders
+3. 🔲 Multi-class support
+4. 🔲 Upload CSV
 
 ### Sprint 5: UX & Persistence
 
-1. Keyboard shortcuts
-2. Dark/light theme
-3. Session save/load
-4. Preset configurations
+1. 🔲 Keyboard shortcuts
+2. 🔲 Dark/light theme
+3. 🔲 Session save/load
+4. 🔲 Preset configurations
 
 ---
 
