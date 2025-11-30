@@ -9,7 +9,7 @@
 // Import styles for Vite to process through PostCSS/Tailwind
 import './presentation/styles.css';
 
-import type { Hyperparameters, OptimizerType, ActivationType } from './core/domain';
+import type { Hyperparameters, OptimizerType, ActivationType, ColourScheme } from './core/domain';
 import type { TrainingState } from './core/application';
 import { TrainingSession } from './core/application';
 
@@ -33,6 +33,14 @@ const elements = {
   datasetSelect: document.getElementById('dataset-select') as HTMLSelectElement,
   btnLoadData: document.getElementById('btn-load-data') as HTMLButtonElement,
   loadingOverlay: document.getElementById('loading-overlay') as HTMLDivElement,
+
+  // Visualization controls
+  inputColourScheme: document.getElementById('input-colour-scheme') as HTMLSelectElement,
+  inputPointSize: document.getElementById('input-point-size') as HTMLSelectElement,
+  inputOpacity: document.getElementById('input-opacity') as HTMLInputElement,
+  opacityValue: document.getElementById('opacity-value') as HTMLSpanElement,
+  inputZoom: document.getElementById('input-zoom') as HTMLInputElement,
+  inputTooltips: document.getElementById('input-tooltips') as HTMLInputElement,
 
   // Hyperparameter inputs
   inputLr: document.getElementById('input-lr') as HTMLInputElement,
@@ -175,6 +183,34 @@ function parseLayersInput(input: string): number[] {
   }
 
   return layers;
+}
+
+// =============================================================================
+// Visualization Handlers
+// =============================================================================
+
+function handleColourSchemeChange(): void {
+  const scheme = elements.inputColourScheme.value as ColourScheme;
+  visualizerService.setConfig({ colourScheme: scheme });
+}
+
+function handlePointSizeChange(): void {
+  const size = parseInt(elements.inputPointSize.value, 10) || 5;
+  visualizerService.setConfig({ pointRadius: size });
+}
+
+function handleOpacityChange(): void {
+  const opacity = parseInt(elements.inputOpacity.value, 10) / 100;
+  elements.opacityValue.textContent = elements.inputOpacity.value;
+  visualizerService.setConfig({ boundaryOpacity: opacity });
+}
+
+function handleZoomToggle(): void {
+  visualizerService.setConfig({ zoomEnabled: elements.inputZoom.checked });
+}
+
+function handleTooltipsToggle(): void {
+  visualizerService.setConfig({ tooltipsEnabled: elements.inputTooltips.checked });
 }
 
 // =============================================================================
@@ -378,6 +414,13 @@ function init(): void {
 
   // Bind event listeners - Dataset
   elements.btnLoadData.addEventListener('click', () => void handleLoadData());
+
+  // Bind event listeners - Visualization (live updates)
+  elements.inputColourScheme.addEventListener('change', handleColourSchemeChange);
+  elements.inputPointSize.addEventListener('change', handlePointSizeChange);
+  elements.inputOpacity.addEventListener('input', handleOpacityChange);
+  elements.inputZoom.addEventListener('change', handleZoomToggle);
+  elements.inputTooltips.addEventListener('change', handleTooltipsToggle);
 
   // Bind event listeners - Hyperparameters
   elements.btnInit.addEventListener('click', () => void handleInitialise());

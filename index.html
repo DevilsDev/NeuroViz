@@ -54,6 +54,55 @@
             </button>
           </fieldset>
 
+          <!-- Visualization Settings -->
+          <fieldset class="control-fieldset">
+            <legend class="control-legend">Visualization</legend>
+            <div class="space-y-3">
+              <div class="grid grid-cols-2 gap-2">
+                <label class="block">
+                  <span class="input-label">Colour Scheme</span>
+                  <select id="input-colour-scheme" class="select-field">
+                    <option value="default" selected>Default</option>
+                    <option value="viridis">Viridis</option>
+                    <option value="plasma">Plasma</option>
+                    <option value="cool">Cool</option>
+                    <option value="warm">Warm</option>
+                  </select>
+                </label>
+                <label class="block">
+                  <span class="input-label">Point Size</span>
+                  <select id="input-point-size" class="select-field">
+                    <option value="3">Small</option>
+                    <option value="5" selected>Medium</option>
+                    <option value="8">Large</option>
+                  </select>
+                </label>
+              </div>
+              <label class="block">
+                <span class="input-label">Boundary Opacity: <span id="opacity-value">70</span>%</span>
+                <input
+                  type="range"
+                  id="input-opacity"
+                  class="w-full h-2 bg-navy-700 rounded-lg appearance-none cursor-pointer accent-accent-500"
+                  value="70"
+                  min="10"
+                  max="100"
+                  step="10"
+                />
+              </label>
+              <div class="flex gap-2">
+                <label class="flex items-center gap-2 text-xs text-slate-400">
+                  <input type="checkbox" id="input-zoom" class="accent-accent-500" checked />
+                  Zoom/Pan
+                </label>
+                <label class="flex items-center gap-2 text-xs text-slate-400">
+                  <input type="checkbox" id="input-tooltips" class="accent-accent-500" checked />
+                  Tooltips
+                </label>
+              </div>
+            </div>
+          </fieldset>
+
           <!-- Hyperparameters -->
           <fieldset class="control-fieldset">
             <legend class="control-legend">Hyperparameters</legend>

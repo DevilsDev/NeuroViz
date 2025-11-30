@@ -88,16 +88,18 @@ This document outlines planned features for NeuroViz, organized by priority and 
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| Heatmap intensity slider | S | 🔲 | Opacity control |
+| Heatmap intensity slider | S | ✅ | Opacity control (10-100%) |
 | Contour line count | S | 🔲 | Threshold adjustment |
-| Custom color schemes | S | 🔲 | Presets + custom |
+| Custom color schemes | S | ✅ | 5 presets (default, viridis, plasma, cool, warm) |
+| Point size control | S | ✅ | Small/Medium/Large |
 | Misclassified points highlighting | S | 🔲 | Red outline/marker |
 
 ### 🟡 P2 — Interactive Features
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| Zoom and pan | M | 🔲 | D3 zoom behavior |
+| Zoom and pan | M | ✅ | D3 zoom with double-click reset |
+| Hover tooltips | S | ✅ | Point coordinates and class |
 | Click point for prediction details | S | 🔲 | Tooltip with confidence |
 | Confidence circles | M | 🔲 | Radius = uncertainty |
 | Boundary evolution animation | L | 🔲 | Replay training |

@@ -20,3 +20,11 @@ export {
   addHistoryRecord,
   exportHistory,
 } from './TrainingHistory';
+export type {
+  VisualizationConfig,
+  ColourScheme,
+} from './VisualizationConfig';
+export {
+  DEFAULT_VISUALIZATION_CONFIG,
+  COLOUR_PALETTES,
+} from './VisualizationConfig';

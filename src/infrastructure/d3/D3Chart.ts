@@ -1,6 +1,7 @@
 import * as d3 from 'd3';
 import type { IVisualizerService } from '../../core/ports';
-import type { Point, Prediction } from '../../core/domain';
+import type { Point, Prediction, VisualizationConfig, ColourScheme } from '../../core/domain';
+import { DEFAULT_VISUALIZATION_CONFIG, COLOUR_PALETTES } from '../../core/domain';
 
 /**
  * D3.js implementation of IVisualizerService.
@@ -10,16 +11,27 @@ import type { Point, Prediction } from '../../core/domain';
  * - Agnostic to neural networks; only knows about Points and Predictions
  * - Uses contour rendering for decision boundaries
  * - Manages its own SVG lifecycle within the provided container
+ * - Supports zoom/pan, tooltips, and configurable appearance
  */
 export class D3Chart implements IVisualizerService {
   private readonly container: d3.Selection<HTMLElement, unknown, null, undefined>;
   private readonly svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
+  private readonly chartGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
   private readonly width: number;
   private readonly height: number;
   private readonly margin = { top: 20, right: 20, bottom: 30, left: 40 };
 
   private xScale: d3.ScaleLinear<number, number>;
   private yScale: d3.ScaleLinear<number, number>;
+
+  private config: VisualizationConfig = { ...DEFAULT_VISUALIZATION_CONFIG };
+  private zoom: d3.ZoomBehavior<SVGSVGElement, unknown> | null = null;
+  private tooltip: d3.Selection<HTMLDivElement, unknown, HTMLElement, unknown> | null = null;
+
+  // Cache for re-rendering after zoom
+  private cachedPoints: Point[] = [];
+  private cachedPredictions: Prediction[] = [];
+  private cachedGridSize = 0;
 
   /**
    * @param containerId - DOM element ID where the chart will be rendered
@@ -39,36 +51,81 @@ export class D3Chart implements IVisualizerService {
     // Clear any existing content
     this.container.selectAll('*').remove();
 
+    // Create SVG with clip path for zoom
     this.svg = this.container
       .append('svg')
       .attr('width', width)
-      .attr('height', height)
+      .attr('height', height) as d3.Selection<SVGSVGElement, unknown, null, undefined>;
+
+    // Add clip path to prevent rendering outside chart area
+    this.svg
+      .append('defs')
+      .append('clipPath')
+      .attr('id', 'chart-clip')
+      .append('rect')
+      .attr('width', this.width)
+      .attr('height', this.height);
+
+    // Main chart group with margin transform
+    this.chartGroup = this.svg
       .append('g')
-      .attr('transform', `translate(${this.margin.left},${this.margin.top})`) as unknown as d3.Selection<
-      SVGSVGElement,
-      unknown,
-      null,
-      undefined
-    >;
+      .attr('transform', `translate(${this.margin.left},${this.margin.top})`)
+      .attr('clip-path', 'url(#chart-clip)') as d3.Selection<SVGGElement, unknown, null, undefined>;
 
     // Initialise scales with default domain [-1, 1]
     this.xScale = d3.scaleLinear().domain([-1, 1]).range([0, this.width]);
     this.yScale = d3.scaleLinear().domain([-1, 1]).range([this.height, 0]);
 
     this.renderAxes();
+    this.setupZoom();
+    this.setupTooltip();
+  }
+
+  /**
+   * Updates visualization configuration.
+   */
+  setConfig(config: Partial<VisualizationConfig>): void {
+    this.config = { ...this.config, ...config };
+
+    // Re-render with new config
+    if (this.cachedPoints.length > 0) {
+      this.renderData(this.cachedPoints);
+    }
+    if (this.cachedPredictions.length > 0) {
+      this.renderBoundary(this.cachedPredictions, this.cachedGridSize);
+    }
+
+    // Update zoom behaviour
+    if (config.zoomEnabled !== undefined) {
+      this.setupZoom();
+    }
+  }
+
+  /**
+   * Returns current visualization configuration.
+   */
+  getConfig(): VisualizationConfig {
+    return { ...this.config };
   }
 
   /**
    * Renders data points on the chart.
-   * Points are coloured by label (0 = blue, 1 = orange).
+   * Points are coloured by label using current colour scheme.
    */
   renderData(points: Point[]): void {
+    // Cache for re-rendering
+    this.cachedPoints = points;
+
     // Remove existing data points
-    this.svg.selectAll('.data-point').remove();
+    this.chartGroup.selectAll('.data-point').remove();
 
-    const colourScale = d3.scaleOrdinal<number, string>().domain([0, 1]).range(['#3b82f6', '#f97316']);
+    const palette = COLOUR_PALETTES[this.config.colourScheme];
+    const colourScale = d3
+      .scaleOrdinal<number, string>()
+      .domain([0, 1])
+      .range([palette.low, palette.high]);
 
-    this.svg
+    const dataPoints = this.chartGroup
       .selectAll('.data-point')
       .data(points)
       .enter()
@@ -76,20 +133,40 @@ export class D3Chart implements IVisualizerService {
       .attr('class', 'data-point')
       .attr('cx', (d) => this.xScale(d.x))
       .attr('cy', (d) => this.yScale(d.y))
-      .attr('r', 5)
+      .attr('r', this.config.pointRadius)
       .attr('fill', (d) => colourScale(d.label))
       .attr('stroke', '#fff')
       .attr('stroke-width', 1.5)
       .attr('opacity', 0.9);
+
+    // Add tooltip handlers if enabled
+    if (this.config.tooltipsEnabled && this.tooltip) {
+      const tooltip = this.tooltip;
+      dataPoints
+        .on('mouseenter', (event, d) => {
+          tooltip
+            .style('opacity', 1)
+            .html(`<strong>Point</strong><br/>x: ${d.x.toFixed(3)}<br/>y: ${d.y.toFixed(3)}<br/>class: ${d.label}`)
+            .style('left', `${event.pageX + 10}px`)
+            .style('top', `${event.pageY - 10}px`);
+        })
+        .on('mouseleave', () => {
+          tooltip.style('opacity', 0);
+        });
+    }
   }
 
   /**
    * Renders the decision boundary as a contour heatmap.
-   * Predictions are mapped to colours based on confidence (0 = blue, 1 = orange).
+   * Predictions are mapped to colours based on confidence using current colour scheme.
    */
   renderBoundary(predictions: Prediction[], gridSize: number): void {
+    // Cache for re-rendering
+    this.cachedPredictions = predictions;
+    this.cachedGridSize = gridSize;
+
     // Remove existing boundary
-    this.svg.selectAll('.boundary').remove();
+    this.chartGroup.selectAll('.boundary').remove();
 
     if (predictions.length !== gridSize * gridSize) {
       console.warn(
@@ -109,11 +186,12 @@ export class D3Chart implements IVisualizerService {
 
     const contours = contourGenerator(confidenceValues);
 
-    // Colour scale: blue (0) -> white (0.5) -> orange (1)
+    // Colour scale using current palette
+    const palette = COLOUR_PALETTES[this.config.colourScheme];
     const colourScale = d3
       .scaleLinear<string>()
       .domain([0, 0.5, 1])
-      .range(['#3b82f6', '#f5f5f5', '#f97316']);
+      .range([palette.low, '#f5f5f5', palette.high]);
 
     // Scale contour paths to chart dimensions
     const xContourScale = d3.scaleLinear().domain([0, gridSize]).range([0, this.width]);
@@ -128,7 +206,7 @@ export class D3Chart implements IVisualizerService {
     );
 
     // Render contours behind data points
-    this.svg
+    this.chartGroup
       .insert('g', '.data-point')
       .attr('class', 'boundary')
       .selectAll('path')
@@ -138,7 +216,7 @@ export class D3Chart implements IVisualizerService {
       .attr('d', pathGenerator)
       .attr('fill', (d) => colourScale(d.value))
       .attr('stroke', 'none')
-      .attr('opacity', 0.6);
+      .attr('opacity', this.config.boundaryOpacity);
   }
 
   /**
@@ -154,18 +232,70 @@ export class D3Chart implements IVisualizerService {
    * Call this when the chart is no longer needed to prevent memory leaks.
    */
   dispose(): void {
+    if (this.tooltip) {
+      this.tooltip.remove();
+    }
     this.container.selectAll('*').remove();
   }
 
   private renderAxes(): void {
+    // Axes group (outside clip path so they're always visible)
+    const axesGroup = this.svg
+      .append('g')
+      .attr('class', 'axes')
+      .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
+
     // X axis
-    this.svg
+    axesGroup
       .append('g')
       .attr('class', 'x-axis')
       .attr('transform', `translate(0,${this.height})`)
       .call(d3.axisBottom(this.xScale).ticks(5));
 
     // Y axis
-    this.svg.append('g').attr('class', 'y-axis').call(d3.axisLeft(this.yScale).ticks(5));
+    axesGroup.append('g').attr('class', 'y-axis').call(d3.axisLeft(this.yScale).ticks(5));
+  }
+
+  private setupZoom(): void {
+    if (!this.config.zoomEnabled) {
+      // Remove zoom behaviour
+      this.svg.on('.zoom', null);
+      return;
+    }
+
+    this.zoom = d3
+      .zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.5, 5])
+      .on('zoom', (event) => {
+        this.chartGroup.attr('transform', event.transform);
+      });
+
+    this.svg.call(this.zoom);
+
+    // Add double-click to reset zoom
+    this.svg.on('dblclick.zoom', () => {
+      this.svg
+        .transition()
+        .duration(300)
+        .call(this.zoom!.transform, d3.zoomIdentity);
+    });
+  }
+
+  private setupTooltip(): void {
+    // Create tooltip div if it doesn't exist
+    this.tooltip = d3
+      .select('body')
+      .append('div')
+      .attr('class', 'chart-tooltip')
+      .style('position', 'absolute')
+      .style('background', 'rgba(15, 23, 42, 0.9)')
+      .style('color', '#e2e8f0')
+      .style('padding', '8px 12px')
+      .style('border-radius', '6px')
+      .style('font-size', '12px')
+      .style('pointer-events', 'none')
+      .style('opacity', 0)
+      .style('z-index', '1000')
+      .style('box-shadow', '0 4px 6px rgba(0, 0, 0, 0.3)');
   }
 }

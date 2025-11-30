@@ -1,4 +1,4 @@
-import type { Point, Prediction } from '../domain';
+import type { Point, Prediction, VisualizationConfig } from '../domain';
 
 /**
  * Port for visualisation operations.
@@ -24,4 +24,22 @@ export interface IVisualizerService {
    * @param gridSize - Number of points per axis (predictions.length should equal gridSize²)
    */
   renderBoundary(predictions: Prediction[], gridSize: number): void;
+
+  /**
+   * Updates visualization configuration.
+   * Changes take effect on next render.
+   *
+   * @param config - Partial configuration to merge with current settings
+   */
+  setConfig(config: Partial<VisualizationConfig>): void;
+
+  /**
+   * Returns current visualization configuration.
+   */
+  getConfig(): VisualizationConfig;
+
+  /**
+   * Cleans up resources and removes DOM elements.
+   */
+  dispose(): void;
 }
