@@ -253,6 +253,7 @@ describe('TrainingSession', () => {
     it('should re-render data points after boundary render', async () => {
       const callOrder: string[] = [];
 
+      // Set up mocks to track call order
       visualizer.renderBoundary.mockImplementation(() => {
         callOrder.push('renderBoundary');
       });
@@ -261,16 +262,14 @@ describe('TrainingSession', () => {
         callOrder.push('renderData');
       });
 
-      // Initial renderData from loadData
-      expect(callOrder).toEqual(['renderData']);
-
-      // Execute 10 steps
+      // Execute 10 steps to trigger boundary render
       for (let i = 0; i < 10; i++) {
         await session.step();
       }
 
       // Should render boundary then re-render data on top
       expect(callOrder).toContain('renderBoundary');
+      expect(callOrder).toContain('renderData');
       expect(callOrder.lastIndexOf('renderData')).toBeGreaterThan(
         callOrder.indexOf('renderBoundary')
       );
