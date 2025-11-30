@@ -136,12 +136,14 @@
   }
 
   .select-field {
-    @apply input-field cursor-pointer;
-    @apply appearance-none bg-no-repeat bg-right;
+    @apply w-full px-3 py-2.5;
+    @apply bg-navy-950 border border-navy-600;
+    @apply rounded-lg text-slate-100 text-sm;
+    @apply transition-all duration-200;
+    @apply cursor-pointer appearance-none bg-no-repeat bg-right pr-8;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
     background-size: 1.25rem;
     background-position: right 0.5rem center;
-    @apply pr-8;
   }
 
   .input-label {
@@ -160,7 +162,11 @@
   }
 
   .btn-primary {
-    @apply btn;
+    @apply inline-flex items-center justify-center gap-2;
+    @apply px-4 py-2.5 rounded-lg;
+    @apply text-sm font-semibold;
+    @apply transition-all duration-200;
+    @apply disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none;
     @apply bg-gradient-to-r from-accent-500 to-accent-600;
     @apply text-white shadow-lg shadow-accent-500/25;
   }
@@ -174,7 +180,11 @@
   }
 
   .btn-secondary {
-    @apply btn;
+    @apply inline-flex items-center justify-center gap-2;
+    @apply px-4 py-2.5 rounded-lg;
+    @apply text-sm font-semibold;
+    @apply transition-all duration-200;
+    @apply disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none;
     @apply bg-navy-700 text-slate-200;
     @apply border border-navy-600;
   }
@@ -188,7 +198,11 @@
   }
 
   .btn-danger {
-    @apply btn;
+    @apply inline-flex items-center justify-center gap-2;
+    @apply px-4 py-2.5 rounded-lg;
+    @apply text-sm font-semibold;
+    @apply transition-all duration-200;
+    @apply disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none;
     @apply bg-red-600/90 text-white;
   }
 
@@ -219,7 +233,11 @@
   }
 
   .btn-icon {
-    @apply btn p-2.5;
+    @apply inline-flex items-center justify-center gap-2;
+    @apply p-2.5 rounded-lg;
+    @apply text-sm font-semibold;
+    @apply transition-all duration-200;
+    @apply disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none;
     @apply bg-navy-700/50 text-slate-300;
   }
 
@@ -247,14 +265,19 @@
   }
 
   .metric-value-accent {
-    @apply metric-value text-accent-400;
+    @apply block text-lg font-mono font-bold;
+    @apply tabular-nums tracking-tight;
+    @apply text-accent-400;
   }
 
   /* ---------------------------------------------------------------------------
      Fieldset / Control Group
      --------------------------------------------------------------------------- */
   .control-fieldset {
-    @apply panel p-4 space-y-3;
+    @apply bg-navy-800/80 backdrop-blur-sm;
+    @apply border border-navy-700/50 rounded-xl;
+    @apply shadow-lg shadow-black/20;
+    @apply p-4 space-y-3;
   }
 
   .control-legend {
@@ -438,72 +461,94 @@
 /* =============================================================================
    Light Theme Overrides
    ============================================================================= */
-[data-theme="light"] {
-  .panel,
-  .panel-glow {
-    @apply bg-white border-slate-200 shadow-lg shadow-slate-200/50;
-  }
+[data-theme="light"] .panel,
+[data-theme="light"] .panel-glow {
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 10px 15px -3px rgba(226, 232, 240, 0.5);
+}
 
-  .control-fieldset {
-    @apply bg-slate-50 border-slate-200;
-  }
+[data-theme="light"] .control-fieldset {
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+}
 
-  .control-legend {
-    @apply text-slate-700;
-  }
+[data-theme="light"] .control-legend {
+  color: #334155;
+}
 
-  .input-field,
-  .select-field {
-    @apply bg-white border-slate-300 text-slate-900;
-  }
+[data-theme="light"] .input-field,
+[data-theme="light"] .select-field {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
 
-  .input-label {
-    @apply text-slate-600;
-  }
+[data-theme="light"] .input-label {
+  color: #475569;
+}
 
-  .btn-primary {
-    @apply bg-teal-600 hover:bg-teal-700;
-  }
+[data-theme="light"] .btn-primary {
+  background: linear-gradient(to right, #0d9488, #0f766e);
+}
 
-  .btn-secondary {
-    @apply bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200;
-  }
+[data-theme="light"] .btn-secondary {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
 
-  .btn-danger {
-    @apply bg-red-100 border-red-300 text-red-700 hover:bg-red-200;
-  }
+[data-theme="light"] .btn-secondary:hover:not(:disabled) {
+  background-color: #e2e8f0;
+}
 
-  .metric-card {
-    @apply bg-slate-100 border-slate-200;
-  }
+[data-theme="light"] .btn-danger {
+  background-color: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
 
-  .metric-label {
-    @apply text-slate-500;
-  }
+[data-theme="light"] .btn-danger:hover:not(:disabled) {
+  background-color: #fecaca;
+}
 
-  .metric-value,
-  .metric-value-accent {
-    @apply text-slate-800;
-  }
+[data-theme="light"] .metric-card {
+  background-color: #f1f5f9;
+  border-color: #e2e8f0;
+}
 
-  .text-gradient,
-  .text-gradient-purple {
-    @apply text-teal-600;
-    background: none;
-    -webkit-background-clip: unset;
-    background-clip: unset;
-    -webkit-text-fill-color: unset;
-  }
+[data-theme="light"] .metric-label {
+  color: #64748b;
+}
 
-  .glow-accent {
-    text-shadow: none;
-  }
+[data-theme="light"] .metric-value,
+[data-theme="light"] .metric-value-accent {
+  color: #1e293b;
+}
 
-  .kbd {
-    @apply bg-slate-200 border-slate-300 text-slate-600;
-  }
+[data-theme="light"] .text-gradient,
+[data-theme="light"] .text-gradient-purple {
+  color: #0d9488;
+  background: none;
+  -webkit-background-clip: unset;
+  background-clip: unset;
+  -webkit-text-fill-color: unset;
+}
 
-  header {
-    @apply border-slate-200;
-  }
+[data-theme="light"] .glow-accent {
+  text-shadow: none;
+}
+
+[data-theme="light"] .kbd {
+  background-color: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+[data-theme="light"] header {
+  border-color: #e2e8f0;
+}
+
+[data-theme="light"] .toast-container .toast {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }

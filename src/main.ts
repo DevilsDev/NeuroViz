@@ -587,10 +587,16 @@ function handleKeyboardShortcut(event: KeyboardEvent): void {
       event.preventDefault();
       if (state.isRunning) {
         handlePause();
-        toast.info('Training paused (Space)');
+        toast.info('⏸ Training paused — press Space to resume');
+        // Visual feedback on pause button
+        elements.btnPause.classList.add('ring-2', 'ring-accent-400');
+        setTimeout(() => elements.btnPause.classList.remove('ring-2', 'ring-accent-400'), 300);
       } else if (state.isInitialised && state.datasetLoaded) {
         handleStart();
-        toast.info('Training started (Space)');
+        toast.info('▶ Training resumed');
+        // Visual feedback on start button
+        elements.btnStart.classList.add('ring-2', 'ring-accent-400');
+        setTimeout(() => elements.btnStart.classList.remove('ring-2', 'ring-accent-400'), 300);
       }
       break;
 
@@ -599,7 +605,16 @@ function handleKeyboardShortcut(event: KeyboardEvent): void {
         event.preventDefault();
         if (state.isInitialised && state.datasetLoaded && !state.isRunning) {
           void handleStep();
-          toast.info('Single step (S)');
+          toast.info('⏭ Single step executed');
+          // Visual pulse on step button to confirm action
+          elements.btnStep.classList.add('ring-2', 'ring-accent-400', 'scale-95');
+          setTimeout(() => elements.btnStep.classList.remove('ring-2', 'ring-accent-400', 'scale-95'), 150);
+        } else if (!state.isInitialised) {
+          toast.warning('Initialise network first before stepping');
+        } else if (!state.datasetLoaded) {
+          toast.warning('Load a dataset first before stepping');
+        } else if (state.isRunning) {
+          toast.warning('Pause training first to use single step');
         }
       }
       break;
