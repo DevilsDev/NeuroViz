@@ -1,4 +1,4 @@
-import type { Hyperparameters } from '../domain';
+import type { Hyperparameters, TrainingConfig } from '../domain';
 
 /**
  * Training session state exposed to the UI layer.
@@ -11,6 +11,12 @@ export interface TrainingState {
   readonly isPaused: boolean;
   readonly isInitialised: boolean;
   readonly datasetLoaded: boolean;
+  /** Maximum epochs (0 = unlimited) */
+  readonly maxEpochs: number;
+  /** Current batch size (0 = all samples) */
+  readonly batchSize: number;
+  /** Target FPS for training loop */
+  readonly targetFps: number;
 }
 
 /**
@@ -61,6 +67,12 @@ export interface ITrainingSession {
    * Useful for step-by-step debugging.
    */
   step(): Promise<void>;
+
+  /**
+   * Updates runtime training configuration.
+   * Can be called during training to adjust batch size, speed, etc.
+   */
+  setTrainingConfig(config: Partial<TrainingConfig>): void;
 
   /**
    * Registers a callback for state changes.

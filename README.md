@@ -183,6 +183,19 @@ The GitHub Actions workflow runs on every push and PR:
 
 ---
 
+## Roadmap
+
+See [docs/ROADMAP.md](docs/ROADMAP.md) for planned features including:
+
+- Advanced optimizers (Adam, RMSprop) and regularization
+- Real-time training metrics and loss charts
+- Custom dataset upload and drawing
+- Multi-class classification support
+- Model export and session persistence
+- Educational tooltips and tutorials
+
+---
+
 ## Extending the Application
 
 ### Adding a New ML Backend

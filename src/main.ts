@@ -9,7 +9,7 @@
 // Import styles for Vite to process through PostCSS/Tailwind
 import './presentation/styles.css';
 
-import type { Hyperparameters } from './core/domain';
+import type { Hyperparameters, OptimizerType, ActivationType } from './core/domain';
 import type { TrainingState } from './core/application';
 import { TrainingSession } from './core/application';
 
@@ -37,7 +37,16 @@ const elements = {
   // Hyperparameter inputs
   inputLr: document.getElementById('input-lr') as HTMLInputElement,
   inputLayers: document.getElementById('input-layers') as HTMLInputElement,
+  inputOptimizer: document.getElementById('input-optimizer') as HTMLSelectElement,
+  inputActivation: document.getElementById('input-activation') as HTMLSelectElement,
+  inputL2: document.getElementById('input-l2') as HTMLInputElement,
   btnInit: document.getElementById('btn-init') as HTMLButtonElement,
+
+  // Training config inputs
+  inputBatchSize: document.getElementById('input-batch-size') as HTMLInputElement,
+  inputMaxEpochs: document.getElementById('input-max-epochs') as HTMLInputElement,
+  inputFps: document.getElementById('input-fps') as HTMLInputElement,
+  fpsValue: document.getElementById('fps-value') as HTMLSpanElement,
 
   // Training controls
   btnStart: document.getElementById('btn-start') as HTMLButtonElement,
@@ -181,14 +190,28 @@ async function handleInitialise(): Promise<void> {
     return;
   }
 
-  const config: Hyperparameters = { learningRate, layers };
+  const optimizer = elements.inputOptimizer.value as OptimizerType;
+  const activation = elements.inputActivation.value as ActivationType;
+  const l2Regularization = parseFloat(elements.inputL2.value) || 0;
+
+  const config: Hyperparameters = {
+    learningRate,
+    layers,
+    optimizer,
+    activation,
+    l2Regularization,
+  };
 
   elements.btnInit.disabled = true;
   elements.btnInit.textContent = 'Initialising...';
 
   try {
     await session.setHyperparameters(config);
-    toast.success('Neural network initialized successfully!');
+
+    // Apply training config
+    applyTrainingConfig();
+
+    toast.success(`Network initialized with ${optimizer.toUpperCase()} optimizer!`);
   } catch (error) {
     console.error('Failed to initialise network:', error);
     toast.error(
@@ -198,6 +221,46 @@ async function handleInitialise(): Promise<void> {
     elements.btnInit.disabled = false;
     elements.btnInit.textContent = 'Initialise Network';
   }
+}
+
+/**
+ * Applies training configuration from UI inputs to the session.
+ */
+function applyTrainingConfig(): void {
+  const batchSize = parseInt(elements.inputBatchSize.value, 10) || 0;
+  const maxEpochs = parseInt(elements.inputMaxEpochs.value, 10) || 0;
+  const targetFps = parseInt(elements.inputFps.value, 10) || 60;
+
+  session.setTrainingConfig({
+    batchSize,
+    maxEpochs,
+    targetFps,
+  });
+}
+
+/**
+ * Handles FPS slider changes.
+ */
+function handleFpsChange(): void {
+  const fps = parseInt(elements.inputFps.value, 10) || 60;
+  elements.fpsValue.textContent = fps.toString();
+  session.setTrainingConfig({ targetFps: fps });
+}
+
+/**
+ * Handles batch size changes.
+ */
+function handleBatchSizeChange(): void {
+  const batchSize = parseInt(elements.inputBatchSize.value, 10) || 0;
+  session.setTrainingConfig({ batchSize });
+}
+
+/**
+ * Handles max epochs changes.
+ */
+function handleMaxEpochsChange(): void {
+  const maxEpochs = parseInt(elements.inputMaxEpochs.value, 10) || 0;
+  session.setTrainingConfig({ maxEpochs });
 }
 
 function handleStart(): void {
@@ -247,9 +310,18 @@ function init(): void {
   // Subscribe to state changes
   session.onStateChange(updateUI);
 
-  // Bind event listeners
+  // Bind event listeners - Dataset
   elements.btnLoadData.addEventListener('click', () => void handleLoadData());
+
+  // Bind event listeners - Hyperparameters
   elements.btnInit.addEventListener('click', () => void handleInitialise());
+
+  // Bind event listeners - Training config (live updates)
+  elements.inputFps.addEventListener('input', handleFpsChange);
+  elements.inputBatchSize.addEventListener('change', handleBatchSizeChange);
+  elements.inputMaxEpochs.addEventListener('change', handleMaxEpochsChange);
+
+  // Bind event listeners - Training controls
   elements.btnStart.addEventListener('click', handleStart);
   elements.btnPause.addEventListener('click', handlePause);
   elements.btnStep.addEventListener('click', () => void handleStep());
@@ -257,7 +329,6 @@ function init(): void {
 
   // Initial UI state
   updateUI(session.getState());
-
 }
 
 // Start the application

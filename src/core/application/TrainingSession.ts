@@ -1,4 +1,5 @@
-import type { Hyperparameters, Point, Prediction } from '../domain';
+import type { Hyperparameters, Point, Prediction, TrainingConfig } from '../domain';
+import { DEFAULT_TRAINING_CONFIG } from '../domain';
 import type { INeuralNetworkService, IVisualizerService, IDatasetRepository } from '../ports';
 import type { ITrainingSession, TrainingState } from './ITrainingSession';
 
@@ -58,6 +59,13 @@ export class TrainingSession implements ITrainingSession {
   private readonly predictionGrid: Point[] = [];
   private cachedPredictions: Prediction[] = [];
 
+  // Runtime training configuration
+  private trainingConfig: Required<TrainingConfig> = { ...DEFAULT_TRAINING_CONFIG };
+
+  // Timing control
+  private lastFrameTime = 0;
+  private frameInterval = 0; // ms between frames (0 = no limit)
+
   constructor(
     private readonly neuralNet: INeuralNetworkService,
     private readonly visualizer: IVisualizerService,
@@ -80,7 +88,30 @@ export class TrainingSession implements ITrainingSession {
       isPaused: this.isPaused,
       isInitialised: this.isInitialised,
       datasetLoaded: this.datasetLoaded,
+      maxEpochs: this.trainingConfig.maxEpochs,
+      batchSize: this.trainingConfig.batchSize,
+      targetFps: this.trainingConfig.targetFps,
     };
+  }
+
+  /**
+   * Updates runtime training configuration.
+   * Can be called during training to adjust batch size, speed, etc.
+   */
+  setTrainingConfig(config: Partial<TrainingConfig>): void {
+    this.trainingConfig = { ...this.trainingConfig, ...config };
+
+    // Update frame interval based on target FPS
+    if (config.targetFps !== undefined) {
+      this.frameInterval = config.targetFps > 0 ? 1000 / config.targetFps : 0;
+    }
+
+    // Update frame interval based on epoch delay
+    if (config.epochDelayMs !== undefined && config.epochDelayMs > 0) {
+      this.frameInterval = config.epochDelayMs;
+    }
+
+    this.notifyListeners();
   }
 
   async setHyperparameters(config: Hyperparameters): Promise<void> {
@@ -203,8 +234,10 @@ export class TrainingSession implements ITrainingSession {
    *
    * Key behaviour:
    * 1. If not training or paused → exit
-   * 2. If already processing a step → skip this frame (GPU busy)
-   * 3. Otherwise → execute step, then schedule next frame
+   * 2. If max epochs reached → auto-stop
+   * 3. If already processing a step → skip this frame (GPU busy)
+   * 4. If frame interval not elapsed → skip (speed control)
+   * 5. Otherwise → execute step, then schedule next frame
    *
    * This ensures we never start Step N+1 before Step N completes,
    * even if requestAnimationFrame fires faster than GPU training.
@@ -215,6 +248,14 @@ export class TrainingSession implements ITrainingSession {
       return;
     }
 
+    // Check epoch limit (auto-stop)
+    const { maxEpochs } = this.trainingConfig;
+    if (maxEpochs > 0 && this.currentEpoch >= maxEpochs) {
+      this.isTraining = false;
+      this.notifyListeners();
+      return;
+    }
+
     // Guard-rail: skip if previous step still processing
     if (this.isProcessingStep) {
       // Schedule next check without executing a step
@@ -222,13 +263,24 @@ export class TrainingSession implements ITrainingSession {
       return;
     }
 
+    // Speed control: check if enough time has passed
+    const now = performance.now();
+    if (this.frameInterval > 0 && now - this.lastFrameTime < this.frameInterval) {
+      requestAnimationFrame(() => void this.loop());
+      return;
+    }
+    this.lastFrameTime = now;
+
     // Lock: prevent overlapping execution
     this.isProcessingStep = true;
 
     try {
+      // Get training batch (all data or subset)
+      const batch = this.getTrainingBatch();
+
       // Execute training step
       this.currentEpoch++;
-      this.currentLoss = await this.neuralNet.train(this.trainingData);
+      this.currentLoss = await this.neuralNet.train(batch);
 
       // Update visualisation at intervals (decouples rendering from training)
       if (this.currentEpoch % this.config.renderInterval === 0) {
@@ -246,10 +298,42 @@ export class TrainingSession implements ITrainingSession {
       this.isProcessingStep = false;
     }
 
-    // Schedule next frame (only if still training)
+    // Schedule next frame (only if still training and not at epoch limit)
     if (this.isTraining && !this.isPaused) {
-      requestAnimationFrame(() => void this.loop());
+      const stillUnderLimit = maxEpochs === 0 || this.currentEpoch < maxEpochs;
+      if (stillUnderLimit) {
+        requestAnimationFrame(() => void this.loop());
+      } else {
+        // Reached epoch limit
+        this.isTraining = false;
+        this.notifyListeners();
+      }
     }
+  }
+
+  /**
+   * Returns a batch of training data based on batchSize config.
+   * If batchSize is 0 or >= data length, returns all data.
+   * Otherwise, returns a random subset.
+   */
+  private getTrainingBatch(): Point[] {
+    const { batchSize } = this.trainingConfig;
+
+    // Use all data if batchSize is 0 or larger than dataset
+    if (batchSize <= 0 || batchSize >= this.trainingData.length) {
+      return this.trainingData;
+    }
+
+    // Random sampling without replacement
+    const shuffled = [...this.trainingData];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = shuffled[i] as Point;
+      shuffled[i] = shuffled[j] as Point;
+      shuffled[j] = temp;
+    }
+
+    return shuffled.slice(0, batchSize);
   }
 
   // ===========================================================================

@@ -43,6 +43,9 @@ describe('TrainingSession', () => {
       expect(state.isPaused).toBe(false);
       expect(state.isInitialised).toBe(false);
       expect(state.datasetLoaded).toBe(false);
+      expect(state.maxEpochs).toBe(0);
+      expect(state.batchSize).toBe(0);
+      expect(state.targetFps).toBe(60);
     });
 
     it('should accept dependencies via constructor injection', () => {
@@ -77,6 +80,48 @@ describe('TrainingSession', () => {
       const state = session.getState();
       expect(state.currentEpoch).toBe(0);
       expect(state.currentLoss).toBeNull();
+    });
+  });
+
+  describe('setTrainingConfig()', () => {
+    it('should update batch size in state', () => {
+      session.setTrainingConfig({ batchSize: 32 });
+
+      const state = session.getState();
+      expect(state.batchSize).toBe(32);
+    });
+
+    it('should update max epochs in state', () => {
+      session.setTrainingConfig({ maxEpochs: 1000 });
+
+      const state = session.getState();
+      expect(state.maxEpochs).toBe(1000);
+    });
+
+    it('should update target FPS in state', () => {
+      session.setTrainingConfig({ targetFps: 30 });
+
+      const state = session.getState();
+      expect(state.targetFps).toBe(30);
+    });
+
+    it('should allow partial updates', () => {
+      session.setTrainingConfig({ batchSize: 64 });
+      session.setTrainingConfig({ maxEpochs: 500 });
+
+      const state = session.getState();
+      expect(state.batchSize).toBe(64);
+      expect(state.maxEpochs).toBe(500);
+      expect(state.targetFps).toBe(60); // Unchanged
+    });
+
+    it('should notify listeners on config change', () => {
+      const listener = vi.fn();
+      session.onStateChange(listener);
+
+      session.setTrainingConfig({ batchSize: 16 });
+
+      expect(listener).toHaveBeenCalled();
     });
   });
 

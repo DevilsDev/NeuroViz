@@ -1,6 +1,7 @@
 import * as tf from '@tensorflow/tfjs';
 import type { INeuralNetworkService } from '../../core/ports';
-import type { Hyperparameters, Point, Prediction } from '../../core/domain';
+import type { Hyperparameters, Point, Prediction, OptimizerType, ActivationType } from '../../core/domain';
+import { DEFAULT_HYPERPARAMETERS } from '../../core/domain';
 import { GradientExplosionError, ModelNotInitialisedError } from './errors';
 
 /**
@@ -150,19 +151,22 @@ export class TFNeuralNet implements INeuralNetworkService {
    *
    * Architecture:
    * - Input: 2 features (x, y coordinates)
-   * - Hidden: ReLU activation, He Normal initialisation
+   * - Hidden: Configurable activation, He Normal initialisation
    * - Output: 1 unit, Sigmoid activation (binary classification)
    */
   private buildModel(config: Hyperparameters): tf.Sequential {
     const model = tf.sequential();
+    const activation = this.mapActivation(config.activation ?? DEFAULT_HYPERPARAMETERS.activation);
+    const regularizer = this.createRegularizer(config.l2Regularization ?? 0);
 
     // Input layer (first hidden layer)
     model.add(
       tf.layers.dense({
         inputShape: [2],
         units: config.layers[0] ?? 4,
-        activation: 'relu',
+        activation,
         kernelInitializer: 'heNormal',
+        kernelRegularizer: regularizer,
       })
     );
 
@@ -171,8 +175,9 @@ export class TFNeuralNet implements INeuralNetworkService {
       model.add(
         tf.layers.dense({
           units: config.layers[i] ?? 4,
-          activation: 'relu',
+          activation,
           kernelInitializer: 'heNormal',
+          kernelRegularizer: regularizer,
         })
       );
     }
@@ -185,13 +190,65 @@ export class TFNeuralNet implements INeuralNetworkService {
       })
     );
 
+    const optimizer = this.createOptimizer(
+      config.optimizer ?? DEFAULT_HYPERPARAMETERS.optimizer,
+      config.learningRate
+    );
+
     model.compile({
-      optimizer: tf.train.adam(config.learningRate),
+      optimizer,
       loss: 'binaryCrossentropy',
       metrics: ['accuracy'],
     });
 
     return model;
+  }
+
+  /**
+   * Creates a TensorFlow.js optimizer based on the specified type.
+   */
+  private createOptimizer(type: OptimizerType, learningRate: number): tf.Optimizer {
+    switch (type) {
+      case 'sgd':
+        return tf.train.sgd(learningRate);
+      case 'adam':
+        return tf.train.adam(learningRate);
+      case 'rmsprop':
+        return tf.train.rmsprop(learningRate);
+      case 'adagrad':
+        return tf.train.adagrad(learningRate);
+      default:
+        return tf.train.adam(learningRate);
+    }
+  }
+
+  /**
+   * Maps activation type to TensorFlow.js activation identifier.
+   * Returns a string literal that TensorFlow.js accepts.
+   */
+  private mapActivation(type: ActivationType): 'relu' | 'sigmoid' | 'tanh' | 'elu' {
+    switch (type) {
+      case 'relu':
+        return 'relu';
+      case 'sigmoid':
+        return 'sigmoid';
+      case 'tanh':
+        return 'tanh';
+      case 'elu':
+        return 'elu';
+      default:
+        return 'relu';
+    }
+  }
+
+  /**
+   * Creates an L2 regularizer if strength > 0.
+   */
+  private createRegularizer(l2Strength: number): ReturnType<typeof tf.regularizers.l2> | undefined {
+    if (l2Strength > 0) {
+      return tf.regularizers.l2({ l2: l2Strength });
+    }
+    return undefined;
   }
 
   /**
