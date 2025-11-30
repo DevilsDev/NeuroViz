@@ -67,7 +67,11 @@
 
   .panel-glow {
     @apply panel;
-    @apply hover:shadow-glow transition-shadow duration-300;
+    @apply transition-shadow duration-300;
+  }
+
+  .panel-glow:hover {
+    @apply shadow-glow;
   }
 
   /* ---------------------------------------------------------------------------
@@ -77,10 +81,19 @@
     @apply w-full px-3 py-2.5;
     @apply bg-navy-950 border border-navy-600;
     @apply rounded-lg text-slate-100 text-sm;
-    @apply placeholder:text-slate-500;
     @apply transition-all duration-200;
-    @apply hover:border-navy-500;
-    @apply focus:border-accent-500 focus:ring-1 focus:ring-accent-500/30;
+  }
+
+  .input-field::placeholder {
+    @apply text-slate-500;
+  }
+
+  .input-field:hover {
+    @apply border-navy-700;
+  }
+
+  .input-field:focus {
+    @apply border-accent-500 ring-1 ring-accent-500/30;
   }
 
   .select-field {
@@ -111,29 +124,50 @@
     @apply btn;
     @apply bg-gradient-to-r from-accent-500 to-accent-600;
     @apply text-white shadow-lg shadow-accent-500/25;
-    @apply hover:from-accent-400 hover:to-accent-500 hover:shadow-accent-500/40;
-    @apply active:scale-[0.98];
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    @apply from-accent-400 to-accent-500 shadow-accent-500/40;
+  }
+
+  .btn-primary:active:not(:disabled) {
+    @apply scale-[0.98];
   }
 
   .btn-secondary {
     @apply btn;
     @apply bg-navy-700 text-slate-200;
     @apply border border-navy-600;
-    @apply hover:bg-navy-600 hover:border-navy-500;
-    @apply active:scale-[0.98];
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    @apply bg-navy-600 border-navy-700;
+  }
+
+  .btn-secondary:active:not(:disabled) {
+    @apply scale-[0.98];
   }
 
   .btn-danger {
     @apply btn;
     @apply bg-red-600/90 text-white;
-    @apply hover:bg-red-500;
-    @apply active:scale-[0.98];
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    @apply bg-red-500;
+  }
+
+  .btn-danger:active:not(:disabled) {
+    @apply scale-[0.98];
   }
 
   .btn-icon {
     @apply btn p-2.5;
     @apply bg-navy-700/50 text-slate-300;
-    @apply hover:bg-navy-600 hover:text-white;
+  }
+
+  .btn-icon:hover:not(:disabled) {
+    @apply bg-navy-600 text-white;
   }
 
   /* ---------------------------------------------------------------------------
