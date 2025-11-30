@@ -8,6 +8,32 @@
 @tailwind utilities;
 
 /* =============================================================================
+   Theme Variables
+   ============================================================================= */
+:root {
+  /* Dark theme (default) */
+  --bg-primary: #0a0f1a;
+  --bg-secondary: #0f172a;
+  --bg-tertiary: #1e293b;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border-color: #334155;
+  --accent-color: #14b8a6;
+}
+
+[data-theme="light"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-tertiary: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --border-color: #cbd5e1;
+  --accent-color: #0d9488;
+}
+
+/* =============================================================================
    Base Layer - Global Resets & Defaults
    ============================================================================= */
 @layer base {
@@ -16,8 +42,19 @@
   }
 
   body {
-    @apply bg-navy-950 text-slate-100 font-sans antialiased;
-    @apply min-h-screen leading-relaxed;
+    @apply font-sans antialiased min-h-screen leading-relaxed;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+  }
+
+  /* Dark theme body (Tailwind classes) */
+  body:not([data-theme="light"]) {
+    @apply bg-navy-950 text-slate-100;
+  }
+
+  /* Light theme body */
+  body[data-theme="light"] {
+    @apply bg-slate-50 text-slate-900;
   }
 
   /* Focus ring for accessibility */
@@ -262,6 +299,12 @@
     box-shadow: 0 0 0 1px rgba(20, 184, 166, 0.3),
                 0 0 20px rgba(20, 184, 166, 0.1);
   }
+
+  .kbd {
+    @apply inline-block px-1.5 py-0.5 mx-0.5;
+    @apply bg-navy-700 rounded border border-navy-600;
+    @apply text-slate-400 font-mono text-[10px];
+  }
 }
 
 /* =============================================================================
@@ -389,3 +432,77 @@
     @apply transition-opacity cursor-pointer;
     @apply bg-transparent border-none text-current;
   }
+}
+
+/* =============================================================================
+   Light Theme Overrides
+   ============================================================================= */
+[data-theme="light"] {
+  .panel,
+  .panel-glow {
+    @apply bg-white border-slate-200 shadow-lg shadow-slate-200/50;
+  }
+
+  .control-fieldset {
+    @apply bg-slate-50 border-slate-200;
+  }
+
+  .control-legend {
+    @apply text-slate-700;
+  }
+
+  .input-field,
+  .select-field {
+    @apply bg-white border-slate-300 text-slate-900;
+  }
+
+  .input-label {
+    @apply text-slate-600;
+  }
+
+  .btn-primary {
+    @apply bg-teal-600 hover:bg-teal-700;
+  }
+
+  .btn-secondary {
+    @apply bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200;
+  }
+
+  .btn-danger {
+    @apply bg-red-100 border-red-300 text-red-700 hover:bg-red-200;
+  }
+
+  .metric-card {
+    @apply bg-slate-100 border-slate-200;
+  }
+
+  .metric-label {
+    @apply text-slate-500;
+  }
+
+  .metric-value,
+  .metric-value-accent {
+    @apply text-slate-800;
+  }
+
+  .text-gradient,
+  .text-gradient-purple {
+    @apply text-teal-600;
+    background: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
+    -webkit-text-fill-color: unset;
+  }
+
+  .glow-accent {
+    text-shadow: none;
+  }
+
+  .kbd {
+    @apply bg-slate-200 border-slate-300 text-slate-600;
+  }
+
+  header {
+    @apply border-slate-200;
+  }
+}

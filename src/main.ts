@@ -86,6 +86,11 @@ const elements = {
   // Export buttons
   btnExportJson: document.getElementById('btn-export-json') as HTMLButtonElement,
   btnExportCsv: document.getElementById('btn-export-csv') as HTMLButtonElement,
+
+  // Theme toggle
+  btnThemeToggle: document.getElementById('btn-theme-toggle') as HTMLButtonElement,
+  iconSun: document.getElementById('icon-sun') as HTMLElement,
+  iconMoon: document.getElementById('icon-moon') as HTMLElement,
 };
 
 // =============================================================================
@@ -513,6 +518,111 @@ function handleExportCsv(): void {
   toast.success('Training history exported as CSV');
 }
 
+// =============================================================================
+// Theme Toggle
+// =============================================================================
+
+const THEME_KEY = 'neuroviz-theme';
+
+/**
+ * Gets the current theme from localStorage or system preference.
+ */
+function getStoredTheme(): 'light' | 'dark' {
+  const stored = localStorage.getItem(THEME_KEY);
+  if (stored === 'light' || stored === 'dark') {
+    return stored;
+  }
+  // Fall back to system preference
+  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
+
+/**
+ * Applies the specified theme to the document.
+ */
+function applyTheme(theme: 'light' | 'dark'): void {
+  if (theme === 'light') {
+    document.body.setAttribute('data-theme', 'light');
+    elements.iconSun.classList.add('hidden');
+    elements.iconMoon.classList.remove('hidden');
+  } else {
+    document.body.removeAttribute('data-theme');
+    elements.iconSun.classList.remove('hidden');
+    elements.iconMoon.classList.add('hidden');
+  }
+  localStorage.setItem(THEME_KEY, theme);
+}
+
+/**
+ * Toggles between light and dark themes.
+ */
+function handleThemeToggle(): void {
+  const currentTheme = document.body.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+  applyTheme(newTheme);
+  toast.info(`Switched to ${newTheme} theme`);
+}
+
+// =============================================================================
+// Keyboard Shortcuts
+// =============================================================================
+
+/**
+ * Handles keyboard shortcuts for training controls.
+ * - Space: Start/Pause training
+ * - S: Single step
+ * - R: Reset training
+ * - Escape: Stop/Reset training
+ */
+function handleKeyboardShortcut(event: KeyboardEvent): void {
+  // Ignore if user is typing in an input field
+  const target = event.target as HTMLElement;
+  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
+    return;
+  }
+
+  const state = session.getState();
+
+  switch (event.code) {
+    case 'Space':
+      event.preventDefault();
+      if (state.isRunning) {
+        handlePause();
+        toast.info('Training paused (Space)');
+      } else if (state.isInitialised && state.datasetLoaded) {
+        handleStart();
+        toast.info('Training started (Space)');
+      }
+      break;
+
+    case 'KeyS':
+      if (!event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+        if (state.isInitialised && state.datasetLoaded && !state.isRunning) {
+          void handleStep();
+          toast.info('Single step (S)');
+        }
+      }
+      break;
+
+    case 'KeyR':
+      if (!event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+        handleReset();
+        toast.info('Training reset (R)');
+      }
+      break;
+
+    case 'Escape':
+      event.preventDefault();
+      if (state.isRunning) {
+        handlePause();
+      }
+      handleReset();
+      toast.info('Training stopped (Escape)');
+      break;
+  }
+}
+
 /**
  * Triggers a file download in the browser.
  */
@@ -572,6 +682,15 @@ function init(): void {
   // Bind event listeners - Export
   elements.btnExportJson.addEventListener('click', handleExportJson);
   elements.btnExportCsv.addEventListener('click', handleExportCsv);
+
+  // Bind keyboard shortcuts
+  document.addEventListener('keydown', handleKeyboardShortcut);
+
+  // Bind theme toggle
+  elements.btnThemeToggle.addEventListener('click', handleThemeToggle);
+
+  // Apply stored theme
+  applyTheme(getStoredTheme());
 
   // Initial UI state
   updateUI(session.getState());

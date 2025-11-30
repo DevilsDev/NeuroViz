@@ -15,11 +15,31 @@
   <body>
     <div class="app-container">
       <!-- Header -->
-      <header class="text-center py-6 border-b border-navy-700/50 mb-6">
-        <h1 class="text-3xl font-bold text-gradient glow-accent">NeuroViz</h1>
-        <p class="text-slate-400 text-sm mt-1">
-          Interactive Neural Network Decision Boundary Visualiser
-        </p>
+      <header class="flex items-center justify-between py-6 border-b border-navy-700/50 mb-6">
+        <div class="flex-1"></div>
+        <div class="text-center">
+          <h1 class="text-3xl font-bold text-gradient glow-accent">NeuroViz</h1>
+          <p class="text-slate-400 text-sm mt-1">
+            Interactive Neural Network Decision Boundary Visualiser
+          </p>
+        </div>
+        <div class="flex-1 flex justify-end">
+          <button
+            id="btn-theme-toggle"
+            class="p-2 rounded-lg bg-navy-800 hover:bg-navy-700 transition-colors"
+            aria-label="Toggle theme"
+            title="Toggle light/dark theme"
+          >
+            <!-- Sun icon (shown in dark mode) -->
+            <svg id="icon-sun" class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <!-- Moon icon (shown in light mode, hidden by default) -->
+            <svg id="icon-moon" class="w-5 h-5 text-slate-600 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+          </button>
+        </div>
       </header>
 
       <!-- Main Content Grid -->
@@ -309,6 +329,12 @@
                 </svg>
                 Reset
               </button>
+            </div>
+            <div class="text-xs text-slate-500 mt-2 text-center">
+              <kbd class="kbd">Space</kbd> Start/Pause
+              <kbd class="kbd">S</kbd> Step
+              <kbd class="kbd">R</kbd> Reset
+              <kbd class="kbd">Esc</kbd> Stop
             </div>
           </fieldset>
 
