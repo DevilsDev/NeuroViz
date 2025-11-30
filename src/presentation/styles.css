@@ -103,7 +103,9 @@
   }
 
   .panel-glow {
-    @apply panel;
+    @apply bg-navy-800/80 backdrop-blur-sm;
+    @apply border border-navy-700/50 rounded-xl;
+    @apply shadow-lg shadow-black/20;
     @apply transition-shadow duration-300;
   }
 
