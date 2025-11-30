@@ -8,7 +8,15 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint src --ext .ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:report": "playwright show-report tests/reports"
   },
   "keywords": [
     "neural-network",
@@ -23,9 +31,13 @@
     "d3": "^7.9.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.0",
     "@types/d3": "^7.4.3",
     "@types/node": "^22.10.1",
+    "@vitest/coverage-v8": "^2.1.6",
     "typescript": "^5.6.3",
-    "vite": "^6.0.1"
+    "vite": "^6.0.1",
+    "vitest": "^2.1.6",
+    "wait-on": "^8.0.1"
   }
 }
