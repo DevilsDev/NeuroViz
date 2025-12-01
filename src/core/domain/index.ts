@@ -5,10 +5,13 @@ export type {
   TrainingConfig,
   OptimizerType,
   ActivationType,
+  LRScheduleType,
+  LRScheduleConfig,
 } from './Hyperparameters';
 export {
   DEFAULT_HYPERPARAMETERS,
   DEFAULT_TRAINING_CONFIG,
+  DEFAULT_LR_SCHEDULE,
 } from './Hyperparameters';
 export type {
   TrainingRecord,

@@ -9,14 +9,14 @@
 // Import styles for Vite to process through PostCSS/Tailwind
 import './presentation/styles.css';
 
-import type { Hyperparameters, OptimizerType, ActivationType, ColourScheme, Point } from './core/domain';
+import type { Hyperparameters, OptimizerType, ActivationType, ColourScheme, Point, LRScheduleType } from './core/domain';
 import { MULTI_CLASS_COLOURS } from './core/domain';
 import type { TrainingState } from './core/application';
 import { TrainingSession } from './core/application';
 
 // Infrastructure adapters - only imported here at the composition root
 import { TFNeuralNet } from './infrastructure/tensorflow';
-import { D3Chart, D3LossChart } from './infrastructure/d3';
+import { D3Chart, D3LossChart, D3ConfusionMatrix, calculateConfusionMatrix, calculateClassMetrics, calculateMacroMetrics } from './infrastructure/d3';
 import { MockDataRepository } from './infrastructure/api';
 
 // Configuration
@@ -61,6 +61,7 @@ const elements = {
   inputActivation: document.getElementById('input-activation') as HTMLSelectElement,
   inputNumClasses: document.getElementById('input-num-classes') as HTMLSelectElement,
   inputL2: document.getElementById('input-l2') as HTMLInputElement,
+  inputDropout: document.getElementById('input-dropout') as HTMLSelectElement,
   btnInit: document.getElementById('btn-init') as HTMLButtonElement,
   drawClassButtons: document.getElementById('draw-class-buttons') as HTMLDivElement,
 
@@ -69,6 +70,8 @@ const elements = {
   inputMaxEpochs: document.getElementById('input-max-epochs') as HTMLInputElement,
   inputFps: document.getElementById('input-fps') as HTMLInputElement,
   fpsValue: document.getElementById('fps-value') as HTMLSpanElement,
+  inputLrSchedule: document.getElementById('input-lr-schedule') as HTMLSelectElement,
+  inputEarlyStop: document.getElementById('input-early-stop') as HTMLInputElement,
 
   // Training controls
   btnStart: document.getElementById('btn-start') as HTMLButtonElement,
@@ -86,6 +89,11 @@ const elements = {
 
   // Validation split
   inputValSplit: document.getElementById('input-val-split') as HTMLSelectElement,
+
+  // Classification metrics
+  metricPrecision: document.getElementById('metric-precision') as HTMLSpanElement,
+  metricRecall: document.getElementById('metric-recall') as HTMLSpanElement,
+  metricF1: document.getElementById('metric-f1') as HTMLSpanElement,
 
   // Export buttons
   btnExportJson: document.getElementById('btn-export-json') as HTMLButtonElement,
@@ -126,6 +134,9 @@ const dataRepository = new MockDataRepository(APP_CONFIG.api.latencyMs);
 
 // Loss chart for training history visualization
 const lossChart = new D3LossChart('loss-chart-container', 380, 180);
+
+// Confusion matrix visualization
+const confusionMatrix = new D3ConfusionMatrix('confusion-matrix-container');
 
 // Application layer receives adapters via constructor injection
 const session = new TrainingSession(neuralNetService, visualizerService, dataRepository, {
@@ -169,6 +180,11 @@ function updateUI(state: TrainingState): void {
 
   // Update loss chart
   lossChart.update(state.history);
+
+  // Update confusion matrix and metrics periodically
+  if (state.currentEpoch > 0 && state.currentEpoch % 10 === 0) {
+    void updateClassificationMetrics();
+  }
 }
 
 function getStateText(state: TrainingState): string {
@@ -187,6 +203,48 @@ function getStateClass(state: TrainingState): string {
 
 function showLoading(show: boolean): void {
   elements.loadingOverlay.classList.toggle('hidden', !show);
+}
+
+/**
+ * Updates the confusion matrix and classification metrics.
+ */
+async function updateClassificationMetrics(): Promise<void> {
+  const state = session.getState();
+  if (!state.isInitialised || !state.datasetLoaded) {
+    return;
+  }
+
+  try {
+    // Get current data and predictions
+    const data = session.getData();
+    if (data.length === 0) return;
+
+    // Get predictions for all data points
+    const predictions = await neuralNetService.predict(data);
+    
+    // Extract predicted and actual classes
+    const predictedClasses = predictions.map(p => p.predictedClass);
+    const actualClasses = data.map(p => p.label);
+    
+    // Determine number of classes
+    const numClasses = Math.max(...actualClasses, ...predictedClasses) + 1;
+    
+    // Calculate confusion matrix
+    const cmData = calculateConfusionMatrix(predictedClasses, actualClasses, numClasses);
+    
+    // Render confusion matrix
+    confusionMatrix.render(cmData);
+    
+    // Calculate and display metrics
+    const classMetrics = calculateClassMetrics(cmData.matrix);
+    const macroMetrics = calculateMacroMetrics(classMetrics);
+    
+    elements.metricPrecision.textContent = `${(macroMetrics.precision * 100).toFixed(1)}%`;
+    elements.metricRecall.textContent = `${(macroMetrics.recall * 100).toFixed(1)}%`;
+    elements.metricF1.textContent = `${(macroMetrics.f1 * 100).toFixed(1)}%`;
+  } catch (error) {
+    console.error('Failed to update classification metrics:', error);
+  }
 }
 
 function parseLayersInput(input: string): number[] {
@@ -399,6 +457,7 @@ async function handleInitialise(): Promise<void> {
   const activation = elements.inputActivation.value as ActivationType;
   const l2Regularization = parseFloat(elements.inputL2.value) || 0;
   const numClasses = parseInt(elements.inputNumClasses.value, 10) || 2;
+  const dropoutRate = parseFloat(elements.inputDropout.value) || 0;
 
   const config: Hyperparameters = {
     learningRate,
@@ -407,6 +466,7 @@ async function handleInitialise(): Promise<void> {
     activation,
     l2Regularization,
     numClasses,
+    dropoutRate,
   };
 
   elements.btnInit.disabled = true;
@@ -437,11 +497,19 @@ function applyTrainingConfig(): void {
   const batchSize = parseInt(elements.inputBatchSize.value, 10) || 0;
   const maxEpochs = parseInt(elements.inputMaxEpochs.value, 10) || 0;
   const targetFps = parseInt(elements.inputFps.value, 10) || 60;
+  const lrScheduleType = elements.inputLrSchedule.value as LRScheduleType;
+  const earlyStoppingPatience = parseInt(elements.inputEarlyStop.value, 10) || 0;
 
   session.setTrainingConfig({
     batchSize,
     maxEpochs,
     targetFps,
+    lrSchedule: {
+      type: lrScheduleType,
+      decayRate: 0.95,
+      decaySteps: 10,
+    },
+    earlyStoppingPatience,
   });
 }
 

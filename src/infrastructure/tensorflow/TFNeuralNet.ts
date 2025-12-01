@@ -236,6 +236,7 @@ export class TFNeuralNet implements INeuralNetworkService {
     const activation = this.mapActivation(config.activation ?? DEFAULT_HYPERPARAMETERS.activation);
     const regularizer = this.createRegularizer(config.l2Regularization ?? 0);
     const numClasses = config.numClasses ?? 2;
+    const dropoutRate = config.dropoutRate ?? 0;
 
     // Input layer (first hidden layer)
     model.add(
@@ -248,6 +249,11 @@ export class TFNeuralNet implements INeuralNetworkService {
       })
     );
 
+    // Add dropout after first hidden layer if enabled
+    if (dropoutRate > 0) {
+      model.add(tf.layers.dropout({ rate: dropoutRate }));
+    }
+
     // Additional hidden layers
     for (let i = 1; i < config.layers.length; i++) {
       model.add(
@@ -258,9 +264,14 @@ export class TFNeuralNet implements INeuralNetworkService {
           kernelRegularizer: regularizer,
         })
       );
+
+      // Add dropout after each hidden layer if enabled
+      if (dropoutRate > 0) {
+        model.add(tf.layers.dropout({ rate: dropoutRate }));
+      }
     }
 
-    // Output layer - binary or multi-class
+    // Output layer - binary or multi-class (no dropout before output)
     if (numClasses === 2) {
       // Binary classification: single sigmoid output
       model.add(

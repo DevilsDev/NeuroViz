@@ -1,5 +1,5 @@
-import type { Hyperparameters, Point, Prediction, TrainingConfig, TrainingHistory, ExportFormat } from '../domain';
-import { DEFAULT_TRAINING_CONFIG, createEmptyHistory, addHistoryRecord, exportHistory } from '../domain';
+import type { Hyperparameters, Point, Prediction, TrainingConfig, TrainingHistory, ExportFormat, LRScheduleConfig } from '../domain';
+import { DEFAULT_TRAINING_CONFIG, DEFAULT_LR_SCHEDULE, createEmptyHistory, addHistoryRecord, exportHistory } from '../domain';
 import type { INeuralNetworkService, IVisualizerService, IDatasetRepository, DatasetOptions } from '../ports';
 import type { ITrainingSession, TrainingState } from './ITrainingSession';
 
@@ -75,6 +75,15 @@ export class TrainingSession implements ITrainingSession {
   private lastFrameTime = 0;
   private frameInterval = 0; // ms between frames (0 = no limit)
 
+  // Early stopping tracking
+  private bestValLoss: number | null = null;
+  private epochsWithoutImprovement = 0;
+
+  // Learning rate scheduling
+  private initialLearningRate = 0.03;
+  private currentLearningRate = 0.03;
+  private currentHyperparameters: Hyperparameters | null = null;
+
   constructor(
     private readonly neuralNet: INeuralNetworkService,
     private readonly visualizer: IVisualizerService,
@@ -140,6 +149,16 @@ export class TrainingSession implements ITrainingSession {
     this.currentLoss = null;
     this.currentAccuracy = null;
     this.history = createEmptyHistory();
+    
+    // Store for LR scheduling
+    this.currentHyperparameters = config;
+    this.initialLearningRate = config.learningRate;
+    this.currentLearningRate = config.learningRate;
+    
+    // Reset early stopping
+    this.bestValLoss = null;
+    this.epochsWithoutImprovement = 0;
+    
     this.notifyListeners();
   }
 
@@ -399,6 +418,17 @@ export class TrainingSession implements ITrainingSession {
         timestamp: performance.now(),
       });
 
+      // Check early stopping
+      if (this.checkEarlyStopping(valLoss)) {
+        this.isTraining = false;
+        this.notifyListeners();
+        console.log(`Early stopping triggered at epoch ${this.currentEpoch}`);
+        return; // Exit loop
+      }
+
+      // Update learning rate based on schedule
+      await this.updateLearningRateIfNeeded();
+
       // Update visualisation at intervals (decouples rendering from training)
       if (this.currentEpoch % this.config.renderInterval === 0) {
         await this.updateVisualisation();
@@ -542,5 +572,102 @@ export class TrainingSession implements ITrainingSession {
    */
   getData(): Point[] {
     return [...this.allData];
+  }
+
+  // ===========================================================================
+  // Learning Rate Scheduling
+  // ===========================================================================
+
+  /**
+   * Calculates the learning rate based on the current epoch and schedule.
+   */
+  private calculateScheduledLR(epoch: number): number {
+    const schedule = this.trainingConfig.lrSchedule ?? DEFAULT_LR_SCHEDULE;
+    const initialLR = this.initialLearningRate;
+
+    switch (schedule.type) {
+      case 'exponential': {
+        // LR = initial_lr * decay_rate^epoch
+        const decayRate = schedule.decayRate ?? 0.95;
+        return initialLR * Math.pow(decayRate, epoch);
+      }
+
+      case 'step': {
+        // LR = initial_lr * decay_rate^(epoch / decay_steps)
+        const decayRate = schedule.decayRate ?? 0.5;
+        const decaySteps = schedule.decaySteps ?? 10;
+        const numDecays = Math.floor(epoch / decaySteps);
+        return initialLR * Math.pow(decayRate, numDecays);
+      }
+
+      case 'cosine': {
+        // Cosine annealing: LR = initial_lr * 0.5 * (1 + cos(pi * epoch / max_epochs))
+        const maxEpochs = this.trainingConfig.maxEpochs || 100;
+        const progress = Math.min(epoch / maxEpochs, 1);
+        return initialLR * 0.5 * (1 + Math.cos(Math.PI * progress));
+      }
+
+      case 'none':
+      default:
+        return initialLR;
+    }
+  }
+
+  /**
+   * Updates the learning rate if it has changed significantly.
+   * Recompiles the model with the new learning rate.
+   */
+  private async updateLearningRateIfNeeded(): Promise<void> {
+    const newLR = this.calculateScheduledLR(this.currentEpoch);
+    
+    // Only update if LR changed by more than 1%
+    const lrChangeRatio = Math.abs(newLR - this.currentLearningRate) / this.currentLearningRate;
+    if (lrChangeRatio > 0.01 && this.currentHyperparameters) {
+      this.currentLearningRate = newLR;
+      
+      // Reinitialize with new learning rate (keeps weights via TF.js optimizer update)
+      // Note: This is a simplified approach - ideally we'd just update the optimizer
+      await this.neuralNet.initialize({
+        ...this.currentHyperparameters,
+        learningRate: newLR,
+      });
+    }
+  }
+
+  // ===========================================================================
+  // Early Stopping
+  // ===========================================================================
+
+  /**
+   * Checks if training should stop early based on validation loss.
+   * Returns true if early stopping is triggered.
+   */
+  private checkEarlyStopping(valLoss: number | null): boolean {
+    const patience = this.trainingConfig.earlyStoppingPatience ?? 0;
+    
+    // Early stopping disabled
+    if (patience <= 0 || valLoss === null) {
+      return false;
+    }
+
+    // First validation loss - set as best
+    if (this.bestValLoss === null) {
+      this.bestValLoss = valLoss;
+      this.epochsWithoutImprovement = 0;
+      return false;
+    }
+
+    // Check if validation loss improved
+    if (valLoss < this.bestValLoss) {
+      this.bestValLoss = valLoss;
+      this.epochsWithoutImprovement = 0;
+      return false;
+    }
+
+    // No improvement
+    this.epochsWithoutImprovement++;
+    
+    // Trigger early stopping if patience exceeded
+    return this.epochsWithoutImprovement >= patience;
   }
 }

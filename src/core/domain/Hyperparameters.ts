@@ -9,6 +9,23 @@ export type OptimizerType = 'sgd' | 'adam' | 'rmsprop' | 'adagrad';
 export type ActivationType = 'relu' | 'sigmoid' | 'tanh' | 'elu';
 
 /**
+ * Learning rate schedule types.
+ */
+export type LRScheduleType = 'none' | 'exponential' | 'step' | 'cosine';
+
+/**
+ * Learning rate schedule configuration.
+ */
+export interface LRScheduleConfig {
+  /** Schedule type */
+  readonly type: LRScheduleType;
+  /** Decay rate for exponential/step decay (e.g., 0.95 = 5% decay) */
+  readonly decayRate?: number;
+  /** Steps between decay for step schedule */
+  readonly decaySteps?: number;
+}
+
+/**
  * Configuration for neural network architecture and training.
  * Encapsulates tuneable parameters that affect model behaviour.
  */
@@ -30,6 +47,9 @@ export interface Hyperparameters {
 
   /** Number of output classes (default: 2 for binary classification) */
   readonly numClasses?: number;
+
+  /** Dropout rate (0-1). 0 = disabled. Applied after each hidden layer. */
+  readonly dropoutRate?: number;
 }
 
 /**
@@ -50,6 +70,12 @@ export interface TrainingConfig {
 
   /** Fraction of data to use for validation (0-1). 0 = no validation. */
   readonly validationSplit?: number;
+
+  /** Learning rate schedule configuration */
+  readonly lrSchedule?: LRScheduleConfig;
+
+  /** Early stopping patience (epochs without improvement). 0 = disabled. */
+  readonly earlyStoppingPatience?: number;
 }
 
 /**
@@ -62,6 +88,16 @@ export const DEFAULT_HYPERPARAMETERS: Required<Hyperparameters> = {
   activation: 'relu',
   l2Regularization: 0,
   numClasses: 2,
+  dropoutRate: 0,
+};
+
+/**
+ * Default learning rate schedule.
+ */
+export const DEFAULT_LR_SCHEDULE: LRScheduleConfig = {
+  type: 'none',
+  decayRate: 0.95,
+  decaySteps: 10,
 };
 
 /**
@@ -73,4 +109,6 @@ export const DEFAULT_TRAINING_CONFIG: Required<TrainingConfig> = {
   targetFps: 60,
   epochDelayMs: 0,
   validationSplit: 0.2, // 20% validation by default
+  lrSchedule: DEFAULT_LR_SCHEDULE,
+  earlyStoppingPatience: 0, // 0 = disabled
 };

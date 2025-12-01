@@ -255,18 +255,30 @@
                   </select>
                 </label>
               </div>
-              <label class="block">
-                <span class="input-label">L2 Regularization</span>
-                <input
-                  type="number"
-                  id="input-l2"
-                  class="input-field"
-                  value="0"
-                  min="0"
-                  max="0.1"
-                  step="0.001"
-                />
-              </label>
+              <div class="grid grid-cols-2 gap-2">
+                <label class="block">
+                  <span class="input-label">L2 Regularization</span>
+                  <input
+                    type="number"
+                    id="input-l2"
+                    class="input-field"
+                    value="0"
+                    min="0"
+                    max="0.1"
+                    step="0.001"
+                  />
+                </label>
+                <label class="block">
+                  <span class="input-label">Dropout Rate</span>
+                  <select id="input-dropout" class="select-field">
+                    <option value="0" selected>None (0%)</option>
+                    <option value="0.1">10%</option>
+                    <option value="0.2">20%</option>
+                    <option value="0.3">30%</option>
+                    <option value="0.5">50%</option>
+                  </select>
+                </label>
+              </div>
               <button id="btn-init" class="btn-secondary w-full" aria-label="Initialize neural network">
                 <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -329,6 +341,31 @@
                     min="1"
                     max="60"
                     step="1"
+                  />
+                </label>
+              </div>
+              <!-- LR Schedule & Early Stopping -->
+              <div class="grid grid-cols-2 gap-2">
+                <label class="block">
+                  <span class="input-label">LR Schedule</span>
+                  <select id="input-lr-schedule" class="select-field">
+                    <option value="none" selected>None (constant)</option>
+                    <option value="exponential">Exponential Decay</option>
+                    <option value="step">Step Decay</option>
+                    <option value="cosine">Cosine Annealing</option>
+                  </select>
+                </label>
+                <label class="block">
+                  <span class="input-label">Early Stop Patience</span>
+                  <input
+                    type="number"
+                    id="input-early-stop"
+                    class="input-field"
+                    value="0"
+                    min="0"
+                    max="100"
+                    step="5"
+                    title="0 = disabled, epochs without improvement"
                   />
                 </label>
               </div>
@@ -418,6 +455,28 @@
               <button id="btn-export-csv" class="btn-secondary flex-1 text-xs" disabled>
                 Export CSV
               </button>
+            </div>
+          </fieldset>
+
+          <!-- Confusion Matrix & Metrics -->
+          <fieldset class="control-fieldset">
+            <legend class="control-legend">Classification Metrics</legend>
+            <div id="confusion-matrix-container" class="flex justify-center">
+              <!-- D3 confusion matrix renders here -->
+            </div>
+            <div class="grid grid-cols-3 gap-2 mt-3">
+              <div class="metric-card">
+                <span class="metric-label">Precision</span>
+                <span id="metric-precision" class="metric-value text-blue-400">—</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">Recall</span>
+                <span id="metric-recall" class="metric-value text-purple-400">—</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">F1 Score</span>
+                <span id="metric-f1" class="metric-value text-pink-400">—</span>
+              </div>
             </div>
           </fieldset>
 

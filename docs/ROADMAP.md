@@ -35,10 +35,10 @@ This document outlines planned features for NeuroViz, organized by priority and 
 |---------|------------|--------|-------|
 | Adam optimizer | S | ✅ | Default optimizer |
 | RMSprop, Adagrad optimizers | S | ✅ | Dropdown selector |
-| Learning rate scheduling | M | 🔲 | Decay, step, cosine |
+| Learning rate scheduling | M | ✅ | Exponential, step, cosine |
 | L2 regularization (weight decay) | S | ✅ | Slider control |
-| Dropout layers | M | 🔲 | Per-layer toggle |
-| Early stopping | M | 🔲 | Validation loss patience |
+| Dropout layers | M | ✅ | Per-layer toggle |
+| Early stopping | M | ✅ | Validation loss patience |
 
 ### 🟡 P2 — Advanced Training
 
@@ -75,8 +75,8 @@ This document outlines planned features for NeuroViz, organized by priority and 
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| Confusion matrix | M | 🔲 | Heatmap visualization |
-| Precision/Recall/F1 | S | 🔲 | Per-class metrics |
+| Confusion matrix | M | ✅ | Heatmap visualization |
+| Precision/Recall/F1 | S | ✅ | Macro-averaged metrics |
 | ROC curve | M | 🔲 | Binary classification |
 | Learning rate finder | L | 🔲 | Cyclic LR test |
 
@@ -151,9 +151,10 @@ This document outlines planned features for NeuroViz, organized by priority and 
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| ReLU activation | S | 🔲 | Default option |
-| Leaky ReLU | S | 🔲 | Configurable alpha |
-| Tanh activation | S | 🔲 | Alternative to sigmoid |
+| ReLU activation | S | ✅ | Default option |
+| Sigmoid activation | S | ✅ | Classic activation |
+| Tanh activation | S | ✅ | Alternative to sigmoid |
+| ELU activation | S | ✅ | Smooth alternative |
 | Per-layer activation selection | M | 🔲 | Dropdown per layer |
 
 ### 🟡 P2 — Model Management
@@ -318,6 +319,28 @@ This document outlines planned features for NeuroViz, organized by priority and 
 5. ✅ Preset configurations (5 quick start templates)
 6. ✅ Responsive mobile layout
 
+### ✅ Sprint 6: Advanced Training (Complete)
+
+1. ✅ Learning rate scheduling (exponential, step, cosine)
+2. ✅ Dropout layers (per-layer toggle)
+3. ✅ Early stopping (validation loss patience)
+4. ✅ Confusion matrix visualization
+5. ✅ Precision/Recall/F1 metrics
+
+### 🔲 Sprint 7: Export & Sharing
+
+1. 🔲 Download boundary as PNG
+2. 🔲 Download as SVG
+3. 🔲 Upload CSV files
+4. 🔲 Download current dataset
+
+### 🔲 Sprint 8: Advanced Visualization
+
+1. 🔲 Misclassified points highlighting
+2. 🔲 Click point for prediction details
+3. 🔲 Contour line count control
+4. 🔲 Confidence circles
+
 ---
 
 ## Contributing
@@ -332,3 +355,20 @@ To contribute a feature:
 ---
 
 Last updated: December 2024
+
+---
+
+## Progress Summary
+
+| Phase | Description | Completed | Total | Progress |
+|-------|-------------|-----------|-------|----------|
+| Phase 1 | Core Training | 6 | 11 | 55% |
+| Phase 2 | Metrics & History | 7 | 11 | 64% |
+| Phase 3 | Visualization | 6 | 14 | 43% |
+| Phase 4 | Data Management | 4 | 10 | 40% |
+| Phase 5 | Model Capabilities | 4 | 12 | 33% |
+| Phase 6 | UX & Polish | 10 | 15 | 67% |
+| Phase 7 | Educational | 0 | 6 | 0% |
+| Phase 8 | Performance | 0 | 7 | 0% |
+| Phase 9 | Research | 0 | 8 | 0% |
+| **Total** | | **37** | **94** | **39%** |
