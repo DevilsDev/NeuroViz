@@ -133,7 +133,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 |---------|------------|--------|-------|
 | Upload CSV files | M | ✅ | File input + parsing |
 | Download current dataset | S | ✅ | CSV export |
-| Real-world datasets (Iris, Wine) | M | 🔲 | Bundled or fetched |
+| Real-world datasets (Iris, Wine) | M | ✅ | PCA-reduced, bundled |
 
 ### 🟡 P2 — Preprocessing
 
@@ -155,13 +155,13 @@ This document outlines planned features for NeuroViz, organized by priority and 
 | Sigmoid activation | S | ✅ | Classic activation |
 | Tanh activation | S | ✅ | Alternative to sigmoid |
 | ELU activation | S | ✅ | Smooth alternative |
-| Per-layer activation selection | M | 🔲 | Dropdown per layer |
+| Per-layer activation selection | M | ✅ | Comma-separated input |
 
 ### 🟡 P2 — Model Management
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| Download trained model | M | 🔲 | TensorFlow.js format |
+| Download trained model | M | ✅ | TensorFlow.js format |
 | Load saved model | M | 🔲 | File upload |
 | Share via URL parameters | M | 🔲 | Encode config in URL |
 
@@ -194,7 +194,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 | Save session to localStorage | M | ✅ | Auto-save on close |
 | Load previous session | M | ✅ | Restore on load |
 | Preset configurations | S | ✅ | 5 quick start templates |
-| Bookmark configurations | S | 🔲 | Named presets |
+| Bookmark configurations | S | ✅ | Named presets with save/delete |
 
 ### 🟡 P2 — Export & Sharing
 
@@ -353,7 +353,7 @@ To contribute a feature:
 
 ---
 
-Last updated: December 2024
+Last updated: December 2025
 
 ---
 
@@ -364,10 +364,10 @@ Last updated: December 2024
 | Phase 1 | Core Training | 10 | 15 | 67% |
 | Phase 2 | Metrics & History | 9 | 11 | 82% |
 | Phase 3 | Visualization | 10 | 14 | 71% |
-| Phase 4 | Data Management | 7 | 10 | 70% |
-| Phase 5 | Model Capabilities | 4 | 12 | 33% |
-| Phase 6 | UX & Polish | 12 | 15 | 80% |
+| Phase 4 | Data Management | 8 | 10 | 80% |
+| Phase 5 | Model Capabilities | 6 | 12 | 50% |
+| Phase 6 | UX & Polish | 13 | 15 | 87% |
 | Phase 7 | Educational | 0 | 6 | 0% |
 | Phase 8 | Performance | 0 | 7 | 0% |
 | Phase 9 | Research | 0 | 8 | 0% |
-| **Total** | | **52** | **98** | **53%** |
+| **Total** | | **56** | **98** | **57%** |

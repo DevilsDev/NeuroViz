@@ -33,6 +33,9 @@ const elements = {
   // Preset controls
   presetSelect: document.getElementById('preset-select') as HTMLSelectElement,
   btnApplyPreset: document.getElementById('btn-apply-preset') as HTMLButtonElement,
+  btnSaveBookmark: document.getElementById('btn-save-bookmark') as HTMLButtonElement,
+  btnDeleteBookmark: document.getElementById('btn-delete-bookmark') as HTMLButtonElement,
+  bookmarkOptions: document.getElementById('bookmark-options') as HTMLOptGroupElement,
 
   // Dataset controls
   datasetSelect: document.getElementById('dataset-select') as HTMLSelectElement,
@@ -63,6 +66,7 @@ const elements = {
   // Hyperparameter inputs
   inputLr: document.getElementById('input-lr') as HTMLInputElement,
   inputLayers: document.getElementById('input-layers') as HTMLInputElement,
+  inputLayerActivations: document.getElementById('input-layer-activations') as HTMLInputElement,
   inputOptimizer: document.getElementById('input-optimizer') as HTMLSelectElement,
   inputActivation: document.getElementById('input-activation') as HTMLSelectElement,
   inputNumClasses: document.getElementById('input-num-classes') as HTMLSelectElement,
@@ -106,6 +110,7 @@ const elements = {
   btnExportCsv: document.getElementById('btn-export-csv') as HTMLButtonElement,
   btnExportPng: document.getElementById('btn-export-png') as HTMLButtonElement,
   btnExportSvg: document.getElementById('btn-export-svg') as HTMLButtonElement,
+  btnExportModel: document.getElementById('btn-export-model') as HTMLButtonElement,
 
   // Dataset import/export
   inputCsvUpload: document.getElementById('input-csv-upload') as HTMLInputElement,
@@ -191,6 +196,7 @@ function updateUI(state: TrainingState): void {
   elements.btnExportCsv.disabled = !hasHistory;
   elements.btnExportPng.disabled = !state.datasetLoaded;
   elements.btnExportSvg.disabled = !state.datasetLoaded;
+  elements.btnExportModel.disabled = !state.isInitialised;
   elements.btnDownloadDataset.disabled = !state.datasetLoaded;
 
   // Update loss chart
@@ -371,6 +377,21 @@ function parseLayersInput(input: string): number[] {
   return layers;
 }
 
+/**
+ * Parses per-layer activation input string.
+ * Returns empty array if input is empty or invalid.
+ */
+function parseLayerActivations(input: string): ActivationType[] {
+  if (!input.trim()) return [];
+  
+  const validActivations: ActivationType[] = ['relu', 'sigmoid', 'tanh', 'elu'];
+  
+  return input
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter((s): s is ActivationType => validActivations.includes(s as ActivationType));
+}
+
 // =============================================================================
 // Visualization Handlers
 // =============================================================================
@@ -527,7 +548,10 @@ async function handleLoadData(): Promise<void> {
   showLoading(true);
   elements.btnLoadData.disabled = true;
 
-  // Get dataset options from sliders
+  // Real-world datasets have fixed parameters
+  const isRealWorld = datasetType === 'iris' || datasetType === 'wine';
+  
+  // Get dataset options from sliders (ignored for real-world datasets)
   const samples = parseInt(elements.inputSamples.value, 10) || 200;
   const noise = (parseInt(elements.inputNoise.value, 10) || 10) / 100;
   const numClasses = parseInt(elements.inputNumClasses.value, 10) || 2;
@@ -535,7 +559,18 @@ async function handleLoadData(): Promise<void> {
 
   try {
     await session.loadData(datasetType, { samples, noise, numClasses, classBalance });
-    toast.success(`Dataset "${datasetType}" loaded (${samples} samples, ${numClasses} classes)`);
+    
+    if (isRealWorld) {
+      const datasetInfo = datasetType === 'iris' 
+        ? 'Iris (150 samples, 3 classes)' 
+        : 'Wine (178 samples, 3 classes)';
+      toast.success(`${datasetInfo} loaded`);
+      // Update numClasses to 3 for real-world datasets
+      elements.inputNumClasses.value = '3';
+      updateDrawClassButtons();
+    } else {
+      toast.success(`Dataset "${datasetType}" loaded (${samples} samples, ${numClasses} classes)`);
+    }
   } catch (error) {
     console.error('Failed to load dataset:', error);
     toast.error(
@@ -569,11 +604,15 @@ async function handleInitialise(): Promise<void> {
   const numClasses = parseInt(elements.inputNumClasses.value, 10) || 2;
   const dropoutRate = parseFloat(elements.inputDropout.value) || 0;
 
+  // Parse per-layer activations (optional)
+  const layerActivations = parseLayerActivations(elements.inputLayerActivations.value);
+
   const config: Hyperparameters = {
     learningRate,
     layers,
     optimizer,
     activation,
+    layerActivations: layerActivations.length > 0 ? layerActivations : undefined,
     l2Regularization,
     numClasses,
     dropoutRate,
@@ -719,6 +758,43 @@ function handleExportPng(): void {
 function handleExportSvg(): void {
   visualizerService.exportAsSVG('neuroviz-boundary');
   toast.success('Decision boundary exported as SVG');
+}
+
+/**
+ * Exports the trained model as TensorFlow.js format (model.json + weights.bin).
+ * Downloads as a ZIP file containing both files.
+ */
+async function handleExportModel(): Promise<void> {
+  const state = session.getState();
+  if (!state.isInitialised) {
+    toast.warning('Please initialise a model first');
+    return;
+  }
+
+  try {
+    const { modelJson, weightsBlob } = await neuralNetService.exportModel();
+    
+    // Download model.json
+    const modelUrl = URL.createObjectURL(modelJson);
+    const modelLink = document.createElement('a');
+    modelLink.href = modelUrl;
+    modelLink.download = 'model.json';
+    modelLink.click();
+    URL.revokeObjectURL(modelUrl);
+    
+    // Download weights.bin
+    const weightsUrl = URL.createObjectURL(weightsBlob);
+    const weightsLink = document.createElement('a');
+    weightsLink.href = weightsUrl;
+    weightsLink.download = 'weights.bin';
+    weightsLink.click();
+    URL.revokeObjectURL(weightsUrl);
+    
+    toast.success('Model exported (model.json + weights.bin)');
+  } catch (error) {
+    console.error('Failed to export model:', error);
+    toast.error('Failed to export model');
+  }
 }
 
 // =============================================================================
@@ -877,6 +953,29 @@ function handleThemeToggle(): void {
 // =============================================================================
 
 const SESSION_KEY = 'neuroviz-session';
+const BOOKMARKS_KEY = 'neuroviz-bookmarks';
+
+interface BookmarkConfig {
+  id: string;
+  name: string;
+  createdAt: number;
+  config: {
+    datasetType: string;
+    samples: number;
+    noise: number;
+    numClasses: number;
+    classBalance: number;
+    learningRate: number;
+    layers: string;
+    optimizer: string;
+    activation: string;
+    l2Regularization: number;
+    batchSize: number;
+    maxEpochs: number;
+    targetFps: number;
+    validationSplit: number;
+  };
+}
 
 interface SessionData {
   version: number;
@@ -1078,6 +1177,7 @@ function clearSession(): void {
   elements.inputNumClasses.value = '2';
   elements.inputLr.value = '0.03';
   elements.inputLayers.value = '4,4';
+  elements.inputLayerActivations.value = '';
   elements.inputOptimizer.value = 'adam';
   elements.inputActivation.value = 'relu';
   elements.inputL2.value = '0';
@@ -1101,6 +1201,165 @@ function clearSession(): void {
   updateDrawClassButtons();
 
   toast.info('Session cleared - all settings reset to defaults');
+}
+
+// =============================================================================
+// Bookmark Management
+// =============================================================================
+
+/**
+ * Loads bookmarks from localStorage.
+ */
+function loadBookmarks(): BookmarkConfig[] {
+  try {
+    const stored = localStorage.getItem(BOOKMARKS_KEY);
+    if (!stored) return [];
+    return JSON.parse(stored) as BookmarkConfig[];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Saves bookmarks to localStorage.
+ */
+function saveBookmarks(bookmarks: BookmarkConfig[]): void {
+  localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(bookmarks));
+}
+
+/**
+ * Renders bookmark options in the dropdown.
+ */
+function renderBookmarkOptions(): void {
+  const bookmarks = loadBookmarks();
+  elements.bookmarkOptions.innerHTML = '';
+  
+  if (bookmarks.length === 0) {
+    const placeholder = document.createElement('option');
+    placeholder.disabled = true;
+    placeholder.textContent = '(No saved bookmarks)';
+    elements.bookmarkOptions.appendChild(placeholder);
+    return;
+  }
+  
+  for (const bookmark of bookmarks) {
+    const option = document.createElement('option');
+    option.value = `bookmark:${bookmark.id}`;
+    option.textContent = `📌 ${bookmark.name}`;
+    elements.bookmarkOptions.appendChild(option);
+  }
+}
+
+/**
+ * Collects current configuration for bookmark.
+ */
+function collectBookmarkConfig(): BookmarkConfig['config'] {
+  return {
+    datasetType: elements.datasetSelect.value,
+    samples: parseInt(elements.inputSamples.value, 10) || 200,
+    noise: parseInt(elements.inputNoise.value, 10) || 10,
+    numClasses: parseInt(elements.inputNumClasses.value, 10) || 2,
+    classBalance: parseInt(elements.inputBalance.value, 10) || 50,
+    learningRate: parseFloat(elements.inputLr.value) || 0.03,
+    layers: elements.inputLayers.value || '4,4',
+    optimizer: elements.inputOptimizer.value || 'adam',
+    activation: elements.inputActivation.value || 'relu',
+    l2Regularization: parseFloat(elements.inputL2.value) || 0,
+    batchSize: parseInt(elements.inputBatchSize.value, 10) || 32,
+    maxEpochs: parseInt(elements.inputMaxEpochs.value, 10) || 500,
+    targetFps: parseInt(elements.inputFps.value, 10) || 30,
+    validationSplit: parseInt(elements.inputValSplit.value, 10) || 20,
+  };
+}
+
+/**
+ * Saves current configuration as a bookmark.
+ */
+function handleSaveBookmark(): void {
+  const name = prompt('Enter a name for this bookmark:');
+  if (!name || name.trim() === '') {
+    return;
+  }
+  
+  const bookmarks = loadBookmarks();
+  const newBookmark: BookmarkConfig = {
+    id: `bm-${Date.now()}`,
+    name: name.trim(),
+    createdAt: Date.now(),
+    config: collectBookmarkConfig(),
+  };
+  
+  bookmarks.push(newBookmark);
+  saveBookmarks(bookmarks);
+  renderBookmarkOptions();
+  
+  toast.success(`Bookmark "${name}" saved`);
+}
+
+/**
+ * Deletes the currently selected bookmark.
+ */
+function handleDeleteBookmark(): void {
+  const selectedValue = elements.presetSelect.value;
+  if (!selectedValue.startsWith('bookmark:')) {
+    toast.warning('Please select a bookmark to delete');
+    return;
+  }
+  
+  const bookmarkId = selectedValue.replace('bookmark:', '');
+  const bookmarks = loadBookmarks();
+  const bookmark = bookmarks.find(b => b.id === bookmarkId);
+  
+  if (!bookmark) {
+    toast.error('Bookmark not found');
+    return;
+  }
+  
+  if (!confirm(`Delete bookmark "${bookmark.name}"?`)) {
+    return;
+  }
+  
+  const filtered = bookmarks.filter(b => b.id !== bookmarkId);
+  saveBookmarks(filtered);
+  renderBookmarkOptions();
+  elements.presetSelect.value = '';
+  elements.btnDeleteBookmark.disabled = true;
+  
+  toast.info(`Bookmark "${bookmark.name}" deleted`);
+}
+
+/**
+ * Applies a bookmark configuration.
+ */
+function applyBookmarkConfig(bookmark: BookmarkConfig): void {
+  const { config } = bookmark;
+  
+  // Apply dataset settings
+  elements.datasetSelect.value = config.datasetType;
+  elements.inputSamples.value = String(config.samples);
+  elements.samplesValue.textContent = String(config.samples);
+  elements.inputNoise.value = String(config.noise);
+  elements.noiseValue.textContent = (config.noise / 100).toFixed(2);
+  elements.inputNumClasses.value = String(config.numClasses);
+  elements.inputBalance.value = String(config.classBalance);
+  elements.balanceValue.textContent = `${config.classBalance}%`;
+  
+  // Apply hyperparameters
+  elements.inputLr.value = String(config.learningRate);
+  elements.inputLayers.value = config.layers;
+  elements.inputOptimizer.value = config.optimizer;
+  elements.inputActivation.value = config.activation;
+  elements.inputL2.value = String(config.l2Regularization);
+  
+  // Apply training config
+  elements.inputBatchSize.value = String(config.batchSize);
+  elements.inputMaxEpochs.value = String(config.maxEpochs);
+  elements.inputFps.value = String(config.targetFps);
+  elements.fpsValue.textContent = String(config.targetFps);
+  elements.inputValSplit.value = String(config.validationSplit);
+  
+  // Update draw class buttons
+  updateDrawClassButtons();
 }
 
 /**
@@ -1248,6 +1507,9 @@ const PRESETS: Record<string, PresetConfig> = {
 function handlePresetChange(): void {
   const presetId = elements.presetSelect.value;
   elements.btnApplyPreset.disabled = !presetId;
+  
+  // Enable delete button only for bookmarks
+  elements.btnDeleteBookmark.disabled = !presetId.startsWith('bookmark:');
 }
 
 /**
@@ -1255,7 +1517,39 @@ function handlePresetChange(): void {
  */
 async function applyPreset(): Promise<void> {
   const presetId = elements.presetSelect.value;
-  if (!presetId || !PRESETS[presetId]) {
+  if (!presetId) {
+    toast.warning('Please select a preset first');
+    return;
+  }
+
+  // Handle bookmark presets
+  if (presetId.startsWith('bookmark:')) {
+    const bookmarkId = presetId.replace('bookmark:', '');
+    const bookmarks = loadBookmarks();
+    const bookmark = bookmarks.find(b => b.id === bookmarkId);
+    
+    if (!bookmark) {
+      toast.error('Bookmark not found');
+      return;
+    }
+    
+    applyBookmarkConfig(bookmark);
+    toast.info(`Applying bookmark "${bookmark.name}"...`);
+    
+    try {
+      await handleLoadData();
+      await handleInitialise();
+      handleStart();
+      toast.success(`🚀 "${bookmark.name}" is now training!`);
+    } catch (error) {
+      console.error('Failed to apply bookmark:', error);
+      toast.error(`Failed to apply bookmark: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+    return;
+  }
+
+  // Handle built-in presets
+  if (!PRESETS[presetId]) {
     toast.warning('Please select a preset first');
     return;
   }
@@ -1457,6 +1751,11 @@ function init(): void {
   // Bind event listeners - Presets
   elements.presetSelect.addEventListener('change', handlePresetChange);
   elements.btnApplyPreset.addEventListener('click', () => void applyPreset());
+  elements.btnSaveBookmark.addEventListener('click', handleSaveBookmark);
+  elements.btnDeleteBookmark.addEventListener('click', handleDeleteBookmark);
+
+  // Initialize bookmarks dropdown
+  renderBookmarkOptions();
 
   // Bind event listeners - Dataset
   elements.btnLoadData.addEventListener('click', () => void handleLoadData());
@@ -1503,6 +1802,7 @@ function init(): void {
   elements.btnExportCsv.addEventListener('click', handleExportCsv);
   elements.btnExportPng.addEventListener('click', handleExportPng);
   elements.btnExportSvg.addEventListener('click', handleExportSvg);
+  elements.btnExportModel.addEventListener('click', () => void handleExportModel());
 
   // Bind event listeners - Dataset import/export
   elements.inputCsvUpload.addEventListener('change', handleCsvUpload);

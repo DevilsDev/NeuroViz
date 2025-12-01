@@ -39,8 +39,11 @@ export interface Hyperparameters {
   /** Optimizer algorithm (default: 'adam') */
   readonly optimizer?: OptimizerType;
 
-  /** Activation function for hidden layers (default: 'relu') */
+  /** Default activation function for hidden layers (default: 'relu') */
   readonly activation?: ActivationType;
+
+  /** Per-layer activation functions. If provided, overrides `activation` for each layer. */
+  readonly layerActivations?: readonly ActivationType[];
 
   /** L2 regularization strength (weight decay). 0 = disabled. */
   readonly l2Regularization?: number;
@@ -86,6 +89,7 @@ export const DEFAULT_HYPERPARAMETERS: Required<Hyperparameters> = {
   layers: [8, 4],
   optimizer: 'adam',
   activation: 'relu',
+  layerActivations: [],
   l2Regularization: 0,
   numClasses: 2,
   dropoutRate: 0,

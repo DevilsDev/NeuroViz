@@ -212,6 +212,55 @@ export class TFNeuralNet implements INeuralNetworkService {
   }
 
   /**
+   * Exports the trained model as downloadable Blobs.
+   * Uses TensorFlow.js model serialization format.
+   */
+  async exportModel(): Promise<{ modelJson: Blob; weightsBlob: Blob }> {
+    const model = this.assertInitialised();
+    
+    // Use custom IOHandler to capture the model data
+    const modelArtifacts = await new Promise<tf.io.ModelArtifacts>((resolve, reject) => {
+      const saveHandler: tf.io.IOHandler = {
+        save: async (artifacts) => {
+          resolve(artifacts);
+          return { modelArtifactsInfo: { dateSaved: new Date(), modelTopologyType: 'JSON' } };
+        },
+      };
+      model.save(saveHandler).catch(reject);
+    });
+
+    // Create model.json blob
+    const modelTopology = modelArtifacts.modelTopology;
+    const weightsManifest = [{
+      paths: ['weights.bin'],
+      weights: modelArtifacts.weightSpecs ?? [],
+    }];
+    
+    const modelJson = JSON.stringify({
+      modelTopology,
+      weightsManifest,
+      format: 'layers-model',
+      generatedBy: 'NeuroViz',
+      convertedBy: null,
+    });
+    
+    const modelJsonBlob = new Blob([modelJson], { type: 'application/json' });
+    
+    // Create weights.bin blob
+    const weightsData = modelArtifacts.weightData;
+    let weightsBlob: Blob;
+    if (weightsData) {
+      // Handle both ArrayBuffer and ArrayBuffer[] cases
+      const buffers = Array.isArray(weightsData) ? weightsData : [weightsData];
+      weightsBlob = new Blob(buffers, { type: 'application/octet-stream' });
+    } else {
+      weightsBlob = new Blob([], { type: 'application/octet-stream' });
+    }
+    
+    return { modelJson: modelJsonBlob, weightsBlob };
+  }
+
+  /**
    * Returns the current number of tensors in GPU memory.
    * Useful for debugging memory leaks.
    */
@@ -228,22 +277,29 @@ export class TFNeuralNet implements INeuralNetworkService {
    *
    * Architecture:
    * - Input: 2 features (x, y coordinates)
-   * - Hidden: Configurable activation, He Normal initialisation
+   * - Hidden: Configurable activation (per-layer or global), He Normal initialisation
    * - Output: 1 unit sigmoid (binary) or N units softmax (multi-class)
    */
   private buildModel(config: Hyperparameters): tf.Sequential {
     const model = tf.sequential();
-    const activation = this.mapActivation(config.activation ?? DEFAULT_HYPERPARAMETERS.activation);
+    const defaultActivation = config.activation ?? DEFAULT_HYPERPARAMETERS.activation;
+    const layerActivations = config.layerActivations ?? [];
     const regularizer = this.createRegularizer(config.l2Regularization ?? 0);
     const numClasses = config.numClasses ?? 2;
     const dropoutRate = config.dropoutRate ?? 0;
+
+    // Helper to get activation for a specific layer index
+    const getActivation = (layerIndex: number): 'relu' | 'sigmoid' | 'tanh' | 'elu' => {
+      const act = layerActivations[layerIndex] ?? defaultActivation;
+      return this.mapActivation(act);
+    };
 
     // Input layer (first hidden layer)
     model.add(
       tf.layers.dense({
         inputShape: [2],
         units: config.layers[0] ?? 4,
-        activation,
+        activation: getActivation(0),
         kernelInitializer: 'heNormal',
         kernelRegularizer: regularizer,
       })
@@ -259,7 +315,7 @@ export class TFNeuralNet implements INeuralNetworkService {
       model.add(
         tf.layers.dense({
           units: config.layers[i] ?? 4,
-          activation,
+          activation: getActivation(i),
           kernelInitializer: 'heNormal',
           kernelRegularizer: regularizer,
         })

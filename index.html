@@ -77,11 +77,16 @@
             <legend class="control-legend">Quick Start</legend>
             <select id="preset-select" aria-label="Select preset configuration" class="select-field mb-2">
               <option value="">— Select a preset —</option>
-              <option value="quick-demo">🚀 Quick Demo (Simple Circle)</option>
-              <option value="xor-challenge">🎯 XOR Challenge (Classic Problem)</option>
-              <option value="spiral-deep">🌀 Deep Spiral (Complex Pattern)</option>
-              <option value="multiclass">🎨 Multi-class Clusters (4 Classes)</option>
-              <option value="overfit-demo">📈 Overfitting Demo (High Capacity)</option>
+              <optgroup label="Built-in Presets">
+                <option value="quick-demo">🚀 Quick Demo (Simple Circle)</option>
+                <option value="xor-challenge">🎯 XOR Challenge (Classic Problem)</option>
+                <option value="spiral-deep">🌀 Deep Spiral (Complex Pattern)</option>
+                <option value="multiclass">🎨 Multi-class Clusters (4 Classes)</option>
+                <option value="overfit-demo">📈 Overfitting Demo (High Capacity)</option>
+              </optgroup>
+              <optgroup id="bookmark-options" label="My Bookmarks">
+                <!-- Bookmarks populated dynamically -->
+              </optgroup>
             </select>
             <button id="btn-apply-preset" class="btn-primary w-full text-sm" disabled>
               <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,17 +94,37 @@
               </svg>
               Apply & Start Training
             </button>
+            <div class="flex gap-2 mt-2">
+              <button id="btn-save-bookmark" class="btn-secondary flex-1 text-xs">
+                <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+                Save
+              </button>
+              <button id="btn-delete-bookmark" class="btn-secondary flex-1 text-xs" disabled>
+                <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Delete
+              </button>
+            </div>
           </fieldset>
 
           <!-- Dataset Selection -->
           <fieldset class="control-fieldset">
             <legend class="control-legend">Dataset</legend>
             <select id="dataset-select" aria-label="Select dataset type" class="select-field mb-3">
-              <option value="circle">Circle (Concentric Rings)</option>
-              <option value="xor">XOR (Quadrants)</option>
-              <option value="spiral">Spiral (Multi-arm)</option>
-              <option value="gaussian">Gaussian (2 Clusters)</option>
-              <option value="clusters">Clusters (Multi-class)</option>
+              <optgroup label="Generated Datasets">
+                <option value="circle">Circle (Concentric Rings)</option>
+                <option value="xor">XOR (Quadrants)</option>
+                <option value="spiral">Spiral (Multi-arm)</option>
+                <option value="gaussian">Gaussian (2 Clusters)</option>
+                <option value="clusters">Clusters (Multi-class)</option>
+              </optgroup>
+              <optgroup label="Real-world Datasets">
+                <option value="iris">Iris (3 Classes, 150 samples)</option>
+                <option value="wine">Wine (3 Classes, 178 samples)</option>
+              </optgroup>
               <option value="custom">Custom (Draw Your Own)</option>
             </select>
             <!-- Dataset generation options -->
@@ -299,9 +324,19 @@
                   placeholder="e.g., 8, 4, 2"
                 />
               </label>
+              <label class="block">
+                <span class="input-label">Layer Activations <span class="text-slate-500">(optional)</span></span>
+                <input
+                  type="text"
+                  id="input-layer-activations"
+                  class="input-field"
+                  value=""
+                  placeholder="e.g., relu, tanh, sigmoid"
+                />
+              </label>
               <div class="grid grid-cols-2 gap-2">
                 <label class="block">
-                  <span class="input-label">Activation</span>
+                  <span class="input-label">Default Activation</span>
                   <select id="input-activation" class="select-field">
                     <option value="relu" selected>ReLU</option>
                     <option value="tanh">Tanh</option>
@@ -520,6 +555,12 @@
                 Export CSV
               </button>
             </div>
+            <button id="btn-export-model" class="btn-secondary w-full text-xs mt-2" disabled>
+              <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download Model (TF.js)
+            </button>
           </fieldset>
 
           <!-- Confusion Matrix & Metrics -->
