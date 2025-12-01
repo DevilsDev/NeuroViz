@@ -267,6 +267,21 @@ export class TrainingSession implements ITrainingSession {
   }
 
   /**
+   * Clears all data and resets to initial state.
+   * Use this for a full session clear.
+   */
+  clearAll(): void {
+    this.reset();
+    this.allData = [];
+    this.trainingData = [];
+    this.validationData = [];
+    this.datasetLoaded = false;
+    this.isInitialised = false;
+    this.visualizer.clear();
+    this.notifyListeners();
+  }
+
+  /**
    * Executes a single training step manually.
    * Useful for step-by-step debugging.
    */

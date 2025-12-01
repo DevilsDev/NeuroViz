@@ -62,6 +62,11 @@ export interface IVisualizerService {
   isDrawModeEnabled(): boolean;
 
   /**
+   * Clears all rendered content (data points and boundary).
+   */
+  clear(): void;
+
+  /**
    * Cleans up resources and removes DOM elements.
    */
   dispose(): void;

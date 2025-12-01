@@ -75,6 +75,12 @@ export interface ITrainingSession {
   reset(): void;
 
   /**
+   * Clears all data and resets to initial state.
+   * Use this for a full session clear.
+   */
+  clearAll(): void;
+
+  /**
    * Executes a single training step manually.
    * Useful for step-by-step debugging.
    */

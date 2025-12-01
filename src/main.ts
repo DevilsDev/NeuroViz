@@ -1022,11 +1022,51 @@ async function loadSession(): Promise<boolean> {
 }
 
 /**
- * Clears the saved session from localStorage.
+ * Clears the saved session from localStorage and resets the application state.
  */
 function clearSession(): void {
+  // Clear localStorage
   localStorage.removeItem(SESSION_KEY);
-  toast.info('Saved session cleared');
+
+  // Reset training session and clear visualisations
+  session.clearAll();
+  lossChart.clear();
+  confusionMatrix.clear();
+
+  // Clear custom data
+  customDataPoints = [];
+
+  // Reset UI inputs to defaults
+  elements.datasetSelect.value = 'circle';
+  elements.inputSamples.value = '200';
+  elements.samplesValue.textContent = '200';
+  elements.inputNoise.value = '10';
+  elements.noiseValue.textContent = '10';
+  elements.inputNumClasses.value = '2';
+  elements.inputLr.value = '0.03';
+  elements.inputLayers.value = '4,4';
+  elements.inputOptimizer.value = 'adam';
+  elements.inputActivation.value = 'relu';
+  elements.inputL2.value = '0';
+  elements.inputDropout.value = '0';
+  elements.inputBatchSize.value = '32';
+  elements.inputMaxEpochs.value = '500';
+  elements.inputValSplit.value = '20';
+  elements.inputFps.value = '30';
+  elements.fpsValue.textContent = '30';
+
+  // Reset metrics display
+  elements.metricPrecision.textContent = '-';
+  elements.metricRecall.textContent = '-';
+  elements.metricF1.textContent = '-';
+
+  // Reset highlight errors checkbox
+  elements.inputHighlightErrors.checked = false;
+
+  // Update draw class buttons
+  updateDrawClassButtons();
+
+  toast.info('Session cleared - all settings reset to defaults');
 }
 
 /**
