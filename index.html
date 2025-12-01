@@ -740,12 +740,20 @@
                 <input type="file" id="input-load-model" class="hidden" accept=".json" />
               </label>
             </div>
-            <button id="btn-export-python" class="btn-secondary w-full text-xs mt-2" disabled>
-              <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-              </svg>
-              Export Python Code
-            </button>
+            <div class="flex gap-2 mt-2">
+              <button id="btn-export-python" class="btn-secondary flex-1 text-xs" disabled>
+                <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                </svg>
+                Python
+              </button>
+              <button id="btn-export-onnx" class="btn-secondary flex-1 text-xs" disabled title="Export to ONNX format">
+                <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                ONNX
+              </button>
+            </div>
             <input type="file" id="input-load-weights" class="hidden" accept=".bin" />
           </fieldset>
 
@@ -866,9 +874,17 @@
             <div class="mt-3 pt-3 border-t border-navy-700/30">
               <div class="flex items-center justify-between mb-2">
                 <span class="text-xs text-slate-400">Model Comparison</span>
-                <button id="btn-save-baseline" class="btn-secondary text-xs px-2 py-1" disabled title="Save current results as baseline">
-                  Set Baseline
-                </button>
+                <div class="flex gap-1">
+                  <button id="btn-ab-compare" class="btn-secondary text-xs px-2 py-1" title="A/B comparison mode">
+                    A/B
+                  </button>
+                  <button id="btn-ensemble" class="btn-secondary text-xs px-2 py-1" title="Ensemble voting mode">
+                    Ensemble
+                  </button>
+                  <button id="btn-save-baseline" class="btn-secondary text-xs px-2 py-1" disabled title="Save current results as baseline">
+                    Base
+                  </button>
+                </div>
               </div>
               <div id="comparison-panel" class="hidden">
                 <div class="grid grid-cols-2 gap-2 text-xs">
@@ -888,6 +904,44 @@
                 <button id="btn-clear-baseline" class="btn-secondary w-full text-xs mt-2">
                   Clear Baseline
                 </button>
+              </div>
+              <!-- A/B Comparison Panel -->
+              <div id="ab-comparison-panel" class="hidden mt-2">
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                  <div class="bg-blue-900/30 border border-blue-700/50 rounded p-2">
+                    <div class="text-blue-400 font-medium mb-1">Model A</div>
+                    <div class="text-slate-300">Epoch: <span id="ab-epoch-a">0</span></div>
+                    <div class="text-slate-300">Acc: <span id="ab-accuracy-a">—</span></div>
+                    <div class="text-slate-300">Loss: <span id="ab-loss-a">—</span></div>
+                  </div>
+                  <div class="bg-red-900/30 border border-red-700/50 rounded p-2">
+                    <div class="text-red-400 font-medium mb-1">Model B</div>
+                    <div class="text-slate-300">Epoch: <span id="ab-epoch-b">0</span></div>
+                    <div class="text-slate-300">Acc: <span id="ab-accuracy-b">—</span></div>
+                    <div class="text-slate-300">Loss: <span id="ab-loss-b">—</span></div>
+                  </div>
+                </div>
+                <div id="ab-winner" class="text-center text-xs mt-2 py-1 rounded bg-navy-800"></div>
+                <button id="btn-stop-ab" class="btn-secondary w-full text-xs mt-2">
+                  Stop A/B Test
+                </button>
+              </div>
+              <!-- Ensemble Panel -->
+              <div id="ensemble-panel" class="hidden mt-2">
+                <div class="text-xs text-slate-400 mb-2">
+                  <span id="ensemble-member-count">0</span> models • Epoch <span id="ensemble-epoch">0</span>
+                </div>
+                <div id="ensemble-members" class="space-y-1 max-h-32 overflow-y-auto">
+                  <!-- Ensemble members rendered here -->
+                </div>
+                <div id="ensemble-agreement" class="text-center text-xs mt-2 py-1 rounded bg-navy-800">
+                  Agreement: <span id="ensemble-agreement-value">—</span>
+                </div>
+                <div class="flex gap-1 mt-2">
+                  <button id="btn-add-ensemble-member" class="btn-secondary flex-1 text-xs">+ Add</button>
+                  <button id="btn-train-ensemble" class="btn-primary flex-1 text-xs">Train</button>
+                  <button id="btn-stop-ensemble" class="btn-secondary flex-1 text-xs">Stop</button>
+                </div>
               </div>
             </div>
             <p class="text-xs text-slate-500 mt-2 text-center">
@@ -958,6 +1012,105 @@
             <li>• If the boundary is too complex, try reducing layers or adding dropout</li>
             <li>• Enable validation split to detect overfitting early</li>
           </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- A/B Test Modal -->
+    <div id="ab-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+      <div class="bg-navy-800 rounded-xl border border-navy-600 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+        <div class="flex items-center justify-between p-4 border-b border-navy-700">
+          <h2 class="text-xl font-semibold text-white">A/B Model Comparison</h2>
+          <button id="ab-modal-close" class="text-slate-400 hover:text-white">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="p-4 overflow-y-auto max-h-[calc(90vh-120px)]">
+          <p class="text-sm text-slate-400 mb-4">
+            Train two models side-by-side with different configurations to compare performance.
+          </p>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <!-- Model A Config -->
+            <div class="bg-blue-900/20 border border-blue-700/50 rounded-lg p-3">
+              <h3 class="text-blue-400 font-medium mb-3">Model A</h3>
+              <div class="space-y-2">
+                <div>
+                  <label class="text-xs text-slate-400">Learning Rate</label>
+                  <input type="number" id="ab-lr-a" value="0.03" step="0.001" min="0.0001" max="1" class="input-field w-full" />
+                </div>
+                <div>
+                  <label class="text-xs text-slate-400">Layers (comma-separated)</label>
+                  <input type="text" id="ab-layers-a" value="8,4" class="input-field w-full" />
+                </div>
+                <div>
+                  <label class="text-xs text-slate-400">Activation</label>
+                  <select id="ab-activation-a" class="input-field w-full">
+                    <option value="relu">ReLU</option>
+                    <option value="sigmoid">Sigmoid</option>
+                    <option value="tanh">Tanh</option>
+                    <option value="elu">ELU</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs text-slate-400">Optimizer</label>
+                  <select id="ab-optimizer-a" class="input-field w-full">
+                    <option value="adam">Adam</option>
+                    <option value="sgd">SGD</option>
+                    <option value="rmsprop">RMSprop</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Model B Config -->
+            <div class="bg-red-900/20 border border-red-700/50 rounded-lg p-3">
+              <h3 class="text-red-400 font-medium mb-3">Model B</h3>
+              <div class="space-y-2">
+                <div>
+                  <label class="text-xs text-slate-400">Learning Rate</label>
+                  <input type="number" id="ab-lr-b" value="0.1" step="0.001" min="0.0001" max="1" class="input-field w-full" />
+                </div>
+                <div>
+                  <label class="text-xs text-slate-400">Layers (comma-separated)</label>
+                  <input type="text" id="ab-layers-b" value="16,8" class="input-field w-full" />
+                </div>
+                <div>
+                  <label class="text-xs text-slate-400">Activation</label>
+                  <select id="ab-activation-b" class="input-field w-full">
+                    <option value="relu">ReLU</option>
+                    <option value="sigmoid">Sigmoid</option>
+                    <option value="tanh">Tanh</option>
+                    <option value="elu">ELU</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs text-slate-400">Optimizer</label>
+                  <select id="ab-optimizer-b" class="input-field w-full">
+                    <option value="adam">Adam</option>
+                    <option value="sgd">SGD</option>
+                    <option value="rmsprop">RMSprop</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mt-4">
+            <label class="text-xs text-slate-400">Epochs to train</label>
+            <input type="number" id="ab-epochs" value="100" min="10" max="1000" step="10" class="input-field w-32" />
+          </div>
+          
+          <div class="flex gap-2 mt-6">
+            <button id="btn-start-ab" class="btn-primary flex-1">
+              Start A/B Test
+            </button>
+            <button id="btn-cancel-ab" class="btn-secondary flex-1">
+              Cancel
+            </button>
+          </div>
         </div>
       </div>
     </div>

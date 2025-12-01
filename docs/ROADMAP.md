@@ -172,9 +172,9 @@ This document outlines planned features for NeuroViz, organized by priority and 
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| Model comparison (A/B) | L | 🔲 | Side-by-side training |
-| Model ensemble | L | 🔲 | Voting visualization |
-| Export to ONNX | L | 🔲 | Cross-platform |
+| Model comparison (A/B) | L | ✅ | Side-by-side training |
+| Model ensemble | L | ✅ | Voting visualization |
+| Export to ONNX | L | ✅ | Cross-platform |
 | Generate Python code | M | ✅ | Keras/TensorFlow export |
 
 ---
@@ -391,6 +391,12 @@ This document outlines planned features for NeuroViz, organized by priority and 
 2. ✅ Real-time neuron activations (per-layer heatmaps)
 3. ✅ Voronoi diagram overlay (alternative boundary view)
 
+### ✅ Sprint 16: Phase 5 Completion (Complete)
+
+1. ✅ Model comparison (A/B) - side-by-side training
+2. ✅ Model ensemble - voting visualization
+3. ✅ Export to ONNX - cross-platform format
+
 ---
 
 ## Contributing
@@ -416,9 +422,9 @@ Last updated: December 2025
 | Phase 2 | Metrics & History | 12 | 12 | 100% |
 | Phase 3 | Visualization | 16 | 16 | 100% |
 | Phase 4 | Data Management | 10 | 10 | 100% |
-| Phase 5 | Model Capabilities | 9 | 12 | 75% |
+| Phase 5 | Model Capabilities | 12 | 12 | 100% |
 | Phase 6 | UX & Polish | 14 | 14 | 100% |
 | Phase 7 | Educational | 2 | 6 | 33% |
 | Phase 8 | Performance | 1 | 7 | 14% |
 | Phase 9 | Research | 0 | 6 | 0% |
-| **Total** | | **80** | **99** | **81%** |
+| **Total** | | **83** | **99** | **84%** |

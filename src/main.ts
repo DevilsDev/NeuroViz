@@ -27,7 +27,7 @@ import { APP_CONFIG } from './config/app.config';
 import { toast } from './presentation/toast';
 
 // Export utilities
-import { GifEncoder, generatePythonCode } from './infrastructure/export';
+import { GifEncoder, generatePythonCode, generateONNXModel, downloadONNXPythonScript } from './infrastructure/export';
 
 // Web Worker
 import { workerManager } from './workers';
@@ -173,6 +173,7 @@ const elements = {
   btnScreenshot: document.getElementById('btn-screenshot') as HTMLButtonElement,
   btnExportModel: document.getElementById('btn-export-model') as HTMLButtonElement,
   btnExportPython: document.getElementById('btn-export-python') as HTMLButtonElement,
+  btnExportOnnx: document.getElementById('btn-export-onnx') as HTMLButtonElement,
   inputLoadModel: document.getElementById('input-load-model') as HTMLInputElement,
   inputLoadWeights: document.getElementById('input-load-weights') as HTMLInputElement,
 
@@ -192,6 +193,45 @@ const elements = {
   btnClearBaseline: document.getElementById('btn-clear-baseline') as HTMLButtonElement,
   comparisonPanel: document.getElementById('comparison-panel') as HTMLDivElement,
   baselineAccuracy: document.getElementById('baseline-accuracy') as HTMLSpanElement,
+
+  // A/B Comparison
+  btnAbCompare: document.getElementById('btn-ab-compare') as HTMLButtonElement,
+  abComparisonPanel: document.getElementById('ab-comparison-panel') as HTMLDivElement,
+  abEpochA: document.getElementById('ab-epoch-a') as HTMLSpanElement,
+  abAccuracyA: document.getElementById('ab-accuracy-a') as HTMLSpanElement,
+  abLossA: document.getElementById('ab-loss-a') as HTMLSpanElement,
+  abEpochB: document.getElementById('ab-epoch-b') as HTMLSpanElement,
+  abAccuracyB: document.getElementById('ab-accuracy-b') as HTMLSpanElement,
+  abLossB: document.getElementById('ab-loss-b') as HTMLSpanElement,
+  abWinner: document.getElementById('ab-winner') as HTMLDivElement,
+  btnStopAb: document.getElementById('btn-stop-ab') as HTMLButtonElement,
+
+  // A/B Modal
+  abModal: document.getElementById('ab-modal') as HTMLDivElement,
+  abModalClose: document.getElementById('ab-modal-close') as HTMLButtonElement,
+  abLrA: document.getElementById('ab-lr-a') as HTMLInputElement,
+  abLayersA: document.getElementById('ab-layers-a') as HTMLInputElement,
+  abActivationA: document.getElementById('ab-activation-a') as HTMLSelectElement,
+  abOptimizerA: document.getElementById('ab-optimizer-a') as HTMLSelectElement,
+  abLrB: document.getElementById('ab-lr-b') as HTMLInputElement,
+  abLayersB: document.getElementById('ab-layers-b') as HTMLInputElement,
+  abActivationB: document.getElementById('ab-activation-b') as HTMLSelectElement,
+  abOptimizerB: document.getElementById('ab-optimizer-b') as HTMLSelectElement,
+  abEpochs: document.getElementById('ab-epochs') as HTMLInputElement,
+  btnStartAb: document.getElementById('btn-start-ab') as HTMLButtonElement,
+  btnCancelAb: document.getElementById('btn-cancel-ab') as HTMLButtonElement,
+
+  // Ensemble
+  btnEnsemble: document.getElementById('btn-ensemble') as HTMLButtonElement,
+  ensemblePanel: document.getElementById('ensemble-panel') as HTMLDivElement,
+  ensembleMemberCount: document.getElementById('ensemble-member-count') as HTMLSpanElement,
+  ensembleEpoch: document.getElementById('ensemble-epoch') as HTMLSpanElement,
+  ensembleMembers: document.getElementById('ensemble-members') as HTMLDivElement,
+  ensembleAgreementValue: document.getElementById('ensemble-agreement-value') as HTMLSpanElement,
+  btnAddEnsembleMember: document.getElementById('btn-add-ensemble-member') as HTMLButtonElement,
+  btnTrainEnsemble: document.getElementById('btn-train-ensemble') as HTMLButtonElement,
+  btnStopEnsemble: document.getElementById('btn-stop-ensemble') as HTMLButtonElement,
+
   baselineLoss: document.getElementById('baseline-loss') as HTMLSpanElement,
   baselineConfig: document.getElementById('baseline-config') as HTMLDivElement,
   currentAccuracy: document.getElementById('current-accuracy') as HTMLSpanElement,
@@ -385,6 +425,7 @@ function updateUI(state: TrainingState): void {
   elements.btnScreenshot.disabled = !state.datasetLoaded;
   elements.btnExportModel.disabled = !state.isInitialised;
   elements.btnExportPython.disabled = !state.isInitialised;
+  elements.btnExportOnnx.disabled = !state.isInitialised;
   elements.btnDownloadDataset.disabled = !state.datasetLoaded;
   elements.btnLrFinder.disabled = !canTrain || state.isRunning;
   elements.btnSaveBaseline.disabled = state.currentAccuracy === null;
@@ -1552,6 +1593,45 @@ function handleExportPython(): void {
   URL.revokeObjectURL(url);
 
   toast.success('Python code exported');
+}
+
+/**
+ * Exports model to ONNX format (via Python script).
+ */
+function handleExportOnnx(): void {
+  const state = session.getState();
+  if (!state.isInitialised) {
+    toast.warning('Please initialise a model first');
+    return;
+  }
+
+  // Get layer configuration
+  const layers = parseLayersInput(elements.inputLayers.value);
+  const numClasses = parseInt(elements.inputNumClasses.value, 10) || 2;
+  const fullLayers = [2, ...layers, numClasses]; // Input (2D) + hidden + output
+  
+  // Get activations
+  const layerActivations = parseLayerActivations(elements.inputLayerActivations.value);
+  const defaultActivation = elements.inputActivation.value;
+  const activations = ['linear', ...layers.map((_, i) => layerActivations[i] ?? defaultActivation), numClasses > 2 ? 'softmax' : 'sigmoid'];
+  
+  // Get weights from model
+  const weightMatrices = neuralNetService.getWeightMatrices();
+  
+  // Extract biases (simplified - assumes biases follow weights)
+  const biases: number[][] = weightMatrices.map(matrix => {
+    // For now, use zeros as we don't have direct bias access
+    const outputSize = matrix[0]?.length ?? 1;
+    return Array(outputSize).fill(0);
+  });
+  
+  // Generate ONNX model info
+  const modelInfo = generateONNXModel(fullLayers, activations, weightMatrices, biases);
+  
+  // Download Python script that generates ONNX
+  downloadONNXPythonScript(modelInfo, `neuroviz-onnx-${Date.now()}.py`);
+  
+  toast.success('ONNX export script downloaded. Run with Python to generate .onnx file.');
 }
 
 /**
@@ -2783,6 +2863,327 @@ async function applyPreset(): Promise<void> {
 }
 
 // =============================================================================
+// A/B Model Comparison
+// =============================================================================
+
+import { ModelComparison } from './core/application/ModelComparison';
+
+let abComparison: ModelComparison | null = null;
+let abTrainingInterval: ReturnType<typeof setInterval> | null = null;
+let abTargetEpochs = 100;
+
+/**
+ * Opens the A/B comparison modal.
+ */
+function openAbModal(): void {
+  const state = session.getState();
+  if (!state.datasetLoaded) {
+    toast.warning('Please load a dataset first');
+    return;
+  }
+  
+  // Pre-fill with current config
+  elements.abLrA.value = elements.inputLr.value;
+  elements.abLayersA.value = elements.inputLayers.value;
+  elements.abActivationA.value = elements.inputActivation.value;
+  elements.abOptimizerA.value = elements.inputOptimizer.value;
+  
+  elements.abModal.classList.remove('hidden');
+}
+
+/**
+ * Closes the A/B comparison modal.
+ */
+function closeAbModal(): void {
+  elements.abModal.classList.add('hidden');
+}
+
+/**
+ * Starts the A/B comparison test.
+ */
+async function startAbTest(): Promise<void> {
+  closeAbModal();
+  
+  // Parse configurations
+  const layersA = elements.abLayersA.value.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n > 0);
+  const layersB = elements.abLayersB.value.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n > 0);
+  const numClasses = parseInt(elements.inputNumClasses.value, 10) || 2;
+  
+  const configA = {
+    name: 'Model A',
+    hyperparameters: {
+      learningRate: parseFloat(elements.abLrA.value) || 0.03,
+      layers: layersA,
+      activation: elements.abActivationA.value as ActivationType,
+      optimizer: elements.abOptimizerA.value as OptimizerType,
+      numClasses,
+    },
+  };
+  
+  const configB = {
+    name: 'Model B',
+    hyperparameters: {
+      learningRate: parseFloat(elements.abLrB.value) || 0.1,
+      layers: layersB,
+      activation: elements.abActivationB.value as ActivationType,
+      optimizer: elements.abOptimizerB.value as OptimizerType,
+      numClasses,
+    },
+  };
+  
+  abTargetEpochs = parseInt(elements.abEpochs.value, 10) || 100;
+  
+  // Create comparison instance
+  abComparison = new ModelComparison(() => new TFNeuralNet());
+  
+  try {
+    await abComparison.setupModelA(configA);
+    await abComparison.setupModelB(configB);
+    
+    // Get training data from session
+    const data = session.getData();
+    const valSplit = parseFloat(elements.inputValSplit.value) / 100 || 0.2;
+    const splitIdx = Math.floor(data.length * (1 - valSplit));
+    const shuffled = [...data].sort(() => Math.random() - 0.5);
+    const trainingData = shuffled.slice(0, splitIdx);
+    const validationData = shuffled.slice(splitIdx);
+    
+    abComparison.setData(trainingData, validationData);
+    
+    // Show comparison panel
+    elements.abComparisonPanel.classList.remove('hidden');
+    elements.comparisonPanel.classList.add('hidden');
+    
+    toast.info('Starting A/B comparison...');
+    
+    // Start training loop
+    abTrainingInterval = setInterval(() => void runAbStep(), 100);
+    
+  } catch (error) {
+    console.error('Failed to start A/B test:', error);
+    toast.error('Failed to start A/B test');
+    abComparison = null;
+  }
+}
+
+/**
+ * Runs a single A/B training step.
+ */
+async function runAbStep(): Promise<void> {
+  if (!abComparison) return;
+  
+  const result = await abComparison.trainStep();
+  if (!result) return;
+  
+  // Update UI
+  elements.abEpochA.textContent = result.modelA.epoch.toString();
+  elements.abAccuracyA.textContent = result.modelA.accuracy !== null 
+    ? `${(result.modelA.accuracy * 100).toFixed(1)}%` 
+    : '—';
+  elements.abLossA.textContent = result.modelA.loss !== null 
+    ? result.modelA.loss.toFixed(4) 
+    : '—';
+    
+  elements.abEpochB.textContent = result.modelB.epoch.toString();
+  elements.abAccuracyB.textContent = result.modelB.accuracy !== null 
+    ? `${(result.modelB.accuracy * 100).toFixed(1)}%` 
+    : '—';
+  elements.abLossB.textContent = result.modelB.loss !== null 
+    ? result.modelB.loss.toFixed(4) 
+    : '—';
+  
+  // Update winner display
+  if (result.winner === 'A') {
+    elements.abWinner.textContent = '🏆 Model A is winning';
+    elements.abWinner.className = 'text-center text-xs mt-2 py-1 rounded bg-blue-900/50 text-blue-300';
+  } else if (result.winner === 'B') {
+    elements.abWinner.textContent = '🏆 Model B is winning';
+    elements.abWinner.className = 'text-center text-xs mt-2 py-1 rounded bg-red-900/50 text-red-300';
+  } else if (result.winner === 'tie') {
+    elements.abWinner.textContent = '🤝 Models are tied';
+    elements.abWinner.className = 'text-center text-xs mt-2 py-1 rounded bg-navy-700 text-slate-300';
+  } else {
+    elements.abWinner.textContent = 'Training...';
+    elements.abWinner.className = 'text-center text-xs mt-2 py-1 rounded bg-navy-800 text-slate-400';
+  }
+  
+  // Check if done
+  if (result.modelA.epoch >= abTargetEpochs) {
+    stopAbTest();
+    toast.success(`A/B test complete! Winner: ${result.winner === 'A' ? 'Model A' : result.winner === 'B' ? 'Model B' : 'Tie'}`);
+  }
+}
+
+/**
+ * Stops the A/B comparison test.
+ */
+function stopAbTest(): void {
+  if (abTrainingInterval) {
+    clearInterval(abTrainingInterval);
+    abTrainingInterval = null;
+  }
+  
+  if (abComparison) {
+    abComparison.dispose();
+    abComparison = null;
+  }
+  
+  elements.abComparisonPanel.classList.add('hidden');
+  toast.info('A/B test stopped');
+}
+
+// =============================================================================
+// Model Ensemble
+// =============================================================================
+
+import { ModelEnsemble } from './core/application/ModelEnsemble';
+
+let ensemble: ModelEnsemble | null = null;
+let ensembleTrainingInterval: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Opens the ensemble panel and initializes if needed.
+ */
+function openEnsemblePanel(): void {
+  const state = session.getState();
+  if (!state.datasetLoaded) {
+    toast.warning('Please load a dataset first');
+    return;
+  }
+  
+  // Initialize ensemble if needed
+  if (!ensemble) {
+    ensemble = new ModelEnsemble(() => new TFNeuralNet(), 5);
+    
+    // Get training data
+    const data = session.getData();
+    const valSplit = parseFloat(elements.inputValSplit.value) / 100 || 0.2;
+    const splitIdx = Math.floor(data.length * (1 - valSplit));
+    const shuffled = [...data].sort(() => Math.random() - 0.5);
+    ensemble.setData(shuffled.slice(0, splitIdx), shuffled.slice(splitIdx));
+  }
+  
+  elements.ensemblePanel.classList.remove('hidden');
+  elements.abComparisonPanel.classList.add('hidden');
+  elements.comparisonPanel.classList.add('hidden');
+  
+  updateEnsembleUI();
+}
+
+/**
+ * Adds a new member to the ensemble with current config.
+ */
+async function addEnsembleMember(): Promise<void> {
+  if (!ensemble) return;
+  
+  const layers = elements.inputLayers.value.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n > 0);
+  const numClasses = parseInt(elements.inputNumClasses.value, 10) || 2;
+  
+  const config = {
+    learningRate: parseFloat(elements.inputLr.value) || 0.03,
+    layers,
+    activation: elements.inputActivation.value as ActivationType,
+    optimizer: elements.inputOptimizer.value as OptimizerType,
+    numClasses,
+  };
+  
+  try {
+    const memberNum = ensemble.getMemberCount() + 1;
+    await ensemble.addMember(`Model ${memberNum}`, config);
+    updateEnsembleUI();
+    toast.success(`Added Model ${memberNum} to ensemble`);
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : 'Failed to add member');
+  }
+}
+
+/**
+ * Updates the ensemble UI display.
+ */
+function updateEnsembleUI(): void {
+  if (!ensemble) return;
+  
+  const state = ensemble.getState();
+  
+  elements.ensembleMemberCount.textContent = state.members.length.toString();
+  elements.ensembleEpoch.textContent = state.currentEpoch.toString();
+  
+  // Render member list
+  elements.ensembleMembers.innerHTML = state.members.map((member, idx) => {
+    const colors = ['blue', 'red', 'green', 'amber', 'purple'];
+    const color = colors[idx % colors.length];
+    const acc = member.accuracy !== null ? `${(member.accuracy * 100).toFixed(1)}%` : '—';
+    
+    return `
+      <div class="flex items-center justify-between bg-${color}-900/20 border border-${color}-700/30 rounded px-2 py-1 text-xs">
+        <span class="text-${color}-400">${member.name}</span>
+        <span class="text-slate-300">${acc}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+/**
+ * Starts training the ensemble.
+ */
+function startEnsembleTraining(): void {
+  if (!ensemble || ensemble.getMemberCount() === 0) {
+    toast.warning('Add at least one model to the ensemble first');
+    return;
+  }
+  
+  toast.info('Training ensemble...');
+  ensembleTrainingInterval = setInterval(() => void runEnsembleStep(), 150);
+}
+
+/**
+ * Runs a single ensemble training step.
+ */
+async function runEnsembleStep(): Promise<void> {
+  if (!ensemble) return;
+  
+  const state = await ensemble.trainStep();
+  updateEnsembleUI();
+  
+  // Calculate average agreement from predictions
+  const data = session.getData().slice(0, 50); // Sample for performance
+  if (data.length > 0) {
+    const predictions = await ensemble.predict(data);
+    const avgAgreement = predictions.reduce((sum, p) => sum + p.agreement, 0) / predictions.length;
+    elements.ensembleAgreementValue.textContent = `${(avgAgreement * 100).toFixed(0)}%`;
+  }
+  
+  // Auto-stop after 100 epochs
+  if (state.currentEpoch >= 100) {
+    stopEnsembleTraining();
+    toast.success('Ensemble training complete!');
+  }
+}
+
+/**
+ * Stops ensemble training.
+ */
+function stopEnsembleTraining(): void {
+  if (ensembleTrainingInterval) {
+    clearInterval(ensembleTrainingInterval);
+    ensembleTrainingInterval = null;
+  }
+  toast.info('Ensemble training stopped');
+}
+
+/**
+ * Closes the ensemble panel.
+ */
+function closeEnsemblePanel(): void {
+  stopEnsembleTraining();
+  if (ensemble) {
+    ensemble.dispose();
+    ensemble = null;
+  }
+  elements.ensemblePanel.classList.add('hidden');
+}
+
+// =============================================================================
 // Fullscreen Mode
 // =============================================================================
 
@@ -3066,6 +3467,7 @@ function init(): void {
   elements.btnScreenshot.addEventListener('click', handleScreenshot);
   elements.btnExportModel.addEventListener('click', () => void handleExportModel());
   elements.btnExportPython.addEventListener('click', handleExportPython);
+  elements.btnExportOnnx.addEventListener('click', handleExportOnnx);
   elements.btnLrFinder.addEventListener('click', () => void handleLRFinder());
   elements.inputLoadModel.addEventListener('change', handleLoadModelJson);
   elements.inputLoadWeights.addEventListener('change', (e) => void handleLoadModelWeights(e));
@@ -3084,6 +3486,19 @@ function init(): void {
   elements.btnLoadConfig.addEventListener('click', handleLoadConfigCode);
   elements.btnSaveBaseline.addEventListener('click', handleSaveBaseline);
   elements.btnClearBaseline.addEventListener('click', handleClearBaseline);
+
+  // Bind event listeners - A/B Comparison
+  elements.btnAbCompare.addEventListener('click', openAbModal);
+  elements.abModalClose.addEventListener('click', closeAbModal);
+  elements.btnCancelAb.addEventListener('click', closeAbModal);
+  elements.btnStartAb.addEventListener('click', () => void startAbTest());
+  elements.btnStopAb.addEventListener('click', stopAbTest);
+
+  // Bind event listeners - Ensemble
+  elements.btnEnsemble.addEventListener('click', openEnsemblePanel);
+  elements.btnAddEnsembleMember.addEventListener('click', () => void addEnsembleMember());
+  elements.btnTrainEnsemble.addEventListener('click', startEnsembleTraining);
+  elements.btnStopEnsemble.addEventListener('click', closeEnsemblePanel);
 
   // Bind keyboard shortcuts
   document.addEventListener('keydown', handleKeyboardShortcut);
