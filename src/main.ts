@@ -137,6 +137,7 @@ const elements = {
   btnLoadSession: document.getElementById('btn-load-session') as HTMLButtonElement,
   btnClearSession: document.getElementById('btn-clear-session') as HTMLButtonElement,
   btnShareUrl: document.getElementById('btn-share-url') as HTMLButtonElement,
+  btnLoadConfig: document.getElementById('btn-load-config') as HTMLButtonElement,
 
   // Theme toggle
   btnThemeToggle: document.getElementById('btn-theme-toggle') as HTMLButtonElement,
@@ -1387,91 +1388,115 @@ function clearSession(): void {
 // =============================================================================
 
 /**
- * Encodes current configuration to URL parameters.
+ * Encodes current configuration to a shareable code string.
  */
-function encodeConfigToUrl(): string {
+function encodeConfigToCode(): string {
   const config = {
     lr: elements.inputLr.value,
     layers: elements.inputLayers.value,
     opt: elements.inputOptimizer.value,
+    mom: elements.inputMomentum.value,
     act: elements.inputActivation.value,
     l1: elements.inputL1.value,
     l2: elements.inputL2.value,
     drop: elements.inputDropout.value,
+    clip: elements.inputClipNorm.value,
+    bn: elements.inputBatchNorm.checked ? '1' : '0',
     batch: elements.inputBatchSize.value,
     epochs: elements.inputMaxEpochs.value,
     val: elements.inputValSplit.value,
     sched: elements.inputLrSchedule.value,
     warmup: elements.inputWarmup.value,
+    cycle: elements.inputCycleLength.value,
+    minlr: elements.inputMinLr.value,
     dataset: elements.datasetSelect.value,
     samples: elements.inputSamples.value,
     noise: elements.inputNoise.value,
     classes: elements.inputNumClasses.value,
   };
 
-  const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(config)) {
-    if (value && value !== '0' && value !== 'none' && value !== 'adam' && value !== 'relu') {
-      params.set(key, value);
-    }
-  }
-
-  return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+  // Encode as Base64
+  return btoa(JSON.stringify(config));
 }
 
 /**
- * Decodes URL parameters and applies configuration.
+ * Decodes a config code and applies it to the UI.
  */
-function applyUrlParameters(): boolean {
-  const params = new URLSearchParams(window.location.search);
-  if (params.toString() === '') return false;
+function applyConfigCode(code: string): boolean {
+  try {
+    const config = JSON.parse(atob(code)) as Record<string, string>;
+    
+    if (config.lr) elements.inputLr.value = config.lr;
+    if (config.layers) elements.inputLayers.value = config.layers;
+    if (config.opt) {
+      elements.inputOptimizer.value = config.opt;
+      if (config.opt === 'sgd') {
+        elements.momentumControl.classList.remove('hidden');
+      }
+    }
+    if (config.mom) {
+      elements.inputMomentum.value = config.mom;
+      elements.momentumValue.textContent = config.mom;
+    }
+    if (config.act) elements.inputActivation.value = config.act;
+    if (config.l1) elements.inputL1.value = config.l1;
+    if (config.l2) elements.inputL2.value = config.l2;
+    if (config.drop) elements.inputDropout.value = config.drop;
+    if (config.clip) elements.inputClipNorm.value = config.clip;
+    if (config.bn) elements.inputBatchNorm.checked = config.bn === '1';
+    if (config.batch) elements.inputBatchSize.value = config.batch;
+    if (config.epochs) elements.inputMaxEpochs.value = config.epochs;
+    if (config.val) elements.inputValSplit.value = config.val;
+    if (config.sched) {
+      elements.inputLrSchedule.value = config.sched;
+      handleLrScheduleChange();
+    }
+    if (config.warmup) elements.inputWarmup.value = config.warmup;
+    if (config.cycle) elements.inputCycleLength.value = config.cycle;
+    if (config.minlr) elements.inputMinLr.value = config.minlr;
+    if (config.dataset) elements.datasetSelect.value = config.dataset;
+    if (config.samples) {
+      elements.inputSamples.value = config.samples;
+      elements.samplesValue.textContent = config.samples;
+    }
+    if (config.noise) {
+      elements.inputNoise.value = config.noise;
+      elements.noiseValue.textContent = config.noise;
+    }
+    if (config.classes) {
+      elements.inputNumClasses.value = config.classes;
+      updateDrawClassButtons();
+    }
 
-  // Apply parameters to UI elements
-  if (params.has('lr')) elements.inputLr.value = params.get('lr') ?? '0.03';
-  if (params.has('layers')) elements.inputLayers.value = params.get('layers') ?? '4,4';
-  if (params.has('opt')) elements.inputOptimizer.value = params.get('opt') ?? 'adam';
-  if (params.has('act')) elements.inputActivation.value = params.get('act') ?? 'relu';
-  if (params.has('l1')) elements.inputL1.value = params.get('l1') ?? '0';
-  if (params.has('l2')) elements.inputL2.value = params.get('l2') ?? '0';
-  if (params.has('drop')) elements.inputDropout.value = params.get('drop') ?? '0';
-  if (params.has('batch')) elements.inputBatchSize.value = params.get('batch') ?? '32';
-  if (params.has('epochs')) elements.inputMaxEpochs.value = params.get('epochs') ?? '500';
-  if (params.has('val')) elements.inputValSplit.value = params.get('val') ?? '20';
-  if (params.has('sched')) {
-    elements.inputLrSchedule.value = params.get('sched') ?? 'none';
-    handleLrScheduleChange();
+    return true;
+  } catch {
+    return false;
   }
-  if (params.has('warmup')) elements.inputWarmup.value = params.get('warmup') ?? '0';
-  if (params.has('dataset')) elements.datasetSelect.value = params.get('dataset') ?? 'circle';
-  if (params.has('samples')) {
-    elements.inputSamples.value = params.get('samples') ?? '200';
-    elements.samplesValue.textContent = params.get('samples') ?? '200';
-  }
-  if (params.has('noise')) {
-    elements.inputNoise.value = params.get('noise') ?? '10';
-    elements.noiseValue.textContent = params.get('noise') ?? '10';
-  }
-  if (params.has('classes')) elements.inputNumClasses.value = params.get('classes') ?? '2';
-
-  // Show momentum control if SGD
-  if (params.get('opt') === 'sgd') {
-    elements.momentumControl.classList.remove('hidden');
-  }
-
-  return true;
 }
 
 /**
- * Copies share URL to clipboard.
+ * Copies share code to clipboard.
  */
 function handleShareUrl(): void {
-  const url = encodeConfigToUrl();
-  navigator.clipboard.writeText(url).then(() => {
-    toast.success('Share URL copied to clipboard');
+  const code = encodeConfigToCode();
+  navigator.clipboard.writeText(code).then(() => {
+    toast.success('Config code copied to clipboard');
   }).catch(() => {
-    // Fallback: show URL in prompt
-    prompt('Copy this URL to share:', url);
+    prompt('Copy this config code:', code);
   });
+}
+
+/**
+ * Prompts user to paste a config code and applies it.
+ */
+function handleLoadConfigCode(): void {
+  const code = prompt('Paste config code:');
+  if (code && applyConfigCode(code.trim())) {
+    toast.success('Configuration loaded from code');
+    updateUI(session.getState());
+  } else if (code) {
+    toast.error('Invalid config code');
+  }
 }
 
 // =============================================================================
@@ -2092,6 +2117,7 @@ function init(): void {
   elements.btnLoadSession.addEventListener('click', () => void loadSession());
   elements.btnClearSession.addEventListener('click', clearSession);
   elements.btnShareUrl.addEventListener('click', handleShareUrl);
+  elements.btnLoadConfig.addEventListener('click', handleLoadConfigCode);
 
   // Bind keyboard shortcuts
   document.addEventListener('keydown', handleKeyboardShortcut);
@@ -2109,13 +2135,8 @@ function init(): void {
   // Setup auto-save on page unload
   setupAutoSave();
 
-  // Check for URL parameters first, then try to restore previous session
-  const hasUrlParams = applyUrlParameters();
-  if (!hasUrlParams) {
-    void loadSession();
-  } else {
-    toast.info('Configuration loaded from URL');
-  }
+  // Try to restore previous session
+  void loadSession();
 
   // Initial UI state
   updateUI(session.getState());
