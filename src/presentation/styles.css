@@ -155,16 +155,30 @@ body[data-theme="light"] {
      Card / Panel Components
      --------------------------------------------------------------------------- */
   .panel {
-    @apply bg-navy-800/80 backdrop-blur-sm;
-    @apply border border-navy-700/50 rounded-xl;
+    @apply backdrop-blur-sm;
+    @apply border rounded-xl;
     @apply shadow-lg shadow-black/20;
+    background-color: rgba(30, 41, 59, 0.8);
+    border-color: rgba(51, 65, 85, 0.5);
+  }
+  
+  html:not(.dark) .panel {
+    background-color: rgba(226, 232, 240, 0.8);
+    border-color: rgba(203, 213, 225, 0.5);
   }
 
   .panel-glow {
-    @apply bg-navy-800/80 backdrop-blur-sm;
-    @apply border border-navy-700/50 rounded-xl;
+    @apply backdrop-blur-sm;
+    @apply border rounded-xl;
     @apply shadow-lg shadow-black/20;
     @apply transition-shadow duration-300;
+    background-color: rgba(30, 41, 59, 0.8);
+    border-color: rgba(51, 65, 85, 0.5);
+  }
+  
+  html:not(.dark) .panel-glow {
+    background-color: rgba(226, 232, 240, 0.8);
+    border-color: rgba(203, 213, 225, 0.5);
   }
 
   .panel-glow:hover {
@@ -296,11 +310,23 @@ body[data-theme="light"] {
     @apply text-sm font-semibold;
     @apply transition-all duration-200;
     @apply disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none;
-    @apply bg-navy-700/50 text-slate-300;
+    @apply text-slate-300;
+    background-color: rgba(51, 65, 85, 0.5);
+  }
+  
+  html:not(.dark) .btn-icon {
+    @apply text-slate-600;
+    background-color: rgba(203, 213, 225, 0.5);
   }
 
   .btn-icon:hover:not(:disabled) {
-    @apply bg-navy-600 text-white;
+    @apply text-white;
+    background-color: #475569;
+  }
+  
+  html:not(.dark) .btn-icon:hover:not(:disabled) {
+    @apply text-slate-900;
+    background-color: #cbd5e1;
   }
 
   /* ---------------------------------------------------------------------------
@@ -308,8 +334,14 @@ body[data-theme="light"] {
      --------------------------------------------------------------------------- */
   .metric-card {
     @apply text-center p-2 sm:p-3;
-    @apply bg-navy-950/60 rounded-lg;
-    @apply border border-navy-700/30;
+    @apply rounded-lg border;
+    background-color: rgba(10, 14, 26, 0.6);
+    border-color: rgba(51, 65, 85, 0.3);
+  }
+  
+  html:not(.dark) .metric-card {
+    background-color: rgba(241, 245, 249, 0.6);
+    border-color: rgba(203, 213, 225, 0.3);
   }
 
   .metric-label {
@@ -332,10 +364,17 @@ body[data-theme="light"] {
      Fieldset / Control Group
      --------------------------------------------------------------------------- */
   .control-fieldset {
-    @apply bg-navy-800/80 backdrop-blur-sm;
-    @apply border border-navy-700/50 rounded-xl;
+    @apply backdrop-blur-sm;
+    @apply border rounded-xl;
     @apply shadow-lg shadow-black/20;
     @apply p-3 sm:p-4 space-y-2 sm:space-y-3;
+    background-color: rgba(30, 41, 59, 0.8);
+    border-color: rgba(51, 65, 85, 0.5);
+  }
+  
+  html:not(.dark) .control-fieldset {
+    background-color: rgba(226, 232, 240, 0.8);
+    border-color: rgba(203, 213, 225, 0.5);
   }
 
   .control-legend {
@@ -349,8 +388,14 @@ body[data-theme="light"] {
   .loading-overlay {
     @apply absolute inset-0 z-20;
     @apply flex flex-col items-center justify-center gap-3;
-    @apply bg-navy-950/95 backdrop-blur-sm rounded-xl;
+    @apply backdrop-blur-sm rounded-xl;
     @apply text-slate-400 text-sm;
+    background-color: rgba(10, 14, 26, 0.95);
+  }
+  
+  html:not(.dark) .loading-overlay {
+    background-color: rgba(248, 250, 252, 0.95);
+    @apply text-slate-600;
   }
 
   .spinner {
