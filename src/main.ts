@@ -4194,6 +4194,30 @@ function restoreCollapsedSections(): void {
 // Restore collapsed sections on load
 restoreCollapsedSections();
 
+// Export dropdown toggle
+const exportMenuBtn = document.getElementById('btn-export-menu');
+const exportDropdown = document.getElementById('export-dropdown');
+
+if (exportMenuBtn && exportDropdown) {
+  exportMenuBtn.addEventListener('click', () => {
+    exportDropdown.classList.toggle('hidden');
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!exportMenuBtn.contains(e.target as Node) && !exportDropdown.contains(e.target as Node)) {
+      exportDropdown.classList.add('hidden');
+    }
+  });
+
+  // Close dropdown after clicking an item
+  exportDropdown.querySelectorAll('button, label').forEach(item => {
+    item.addEventListener('click', () => {
+      setTimeout(() => exportDropdown.classList.add('hidden'), 100);
+    });
+  });
+}
+
 // Cleanup on page unload
 window.addEventListener('beforeunload', () => {
   session.dispose();

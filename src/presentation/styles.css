@@ -433,21 +433,27 @@ body[data-theme="light"] {
     @apply w-4 h-4 transition-transform duration-200;
   }
 
-  .control-legend.collapsed .collapse-icon {
-    transform: rotate(-90deg);
-  }
-
   .section-content {
-    @apply overflow-hidden;
-    transition: max-height 0.3s ease-out, opacity 0.2s ease-out, padding 0.2s ease-out;
+    @apply overflow-hidden transition-all duration-200;
+    max-height: 2000px; /* Large enough for any content */
   }
 
   .section-content.collapsed {
-    max-height: 0 !important;
-    opacity: 0;
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
-    margin: 0 !important;
+    @apply max-h-0 opacity-0 pointer-events-none;
+    margin-top: 0 !important;
+  }
+
+  .collapse-icon.rotated {
+    transform: rotate(180deg);
+  }
+
+  /* Dropdown menu styles */
+  .dropdown-item {
+    @apply text-slate-300 transition-colors;
+  }
+  
+  .dropdown-item:hover {
+    @apply text-white;
   }
 
   /* Sticky training controls */
