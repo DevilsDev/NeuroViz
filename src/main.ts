@@ -63,6 +63,12 @@ import {
 // Storage
 import { storage } from './infrastructure/storage/LocalStorageService';
 
+// Logging
+import { logger } from './infrastructure/logging/Logger';
+
+// Error Handling
+import { errorBoundary } from './infrastructure/errorHandling/ErrorBoundary';
+
 // =============================================================================
 // DOM Element References
 // =============================================================================
@@ -4078,6 +4084,9 @@ function init(): void {
   elements.btnFullscreen.addEventListener('click', () => void handleFullscreenToggle());
   document.addEventListener('fullscreenchange', updateFullscreenIcons);
 
+  // Initialize global error boundary (catch all uncaught exceptions)
+  errorBoundary.init();
+
   // Apply stored theme
   applyTheme(getStoredTheme());
 
@@ -4087,7 +4096,10 @@ function init(): void {
   // Initialize Web Worker for background processing
   void workerManager.init().then(success => {
     if (success) {
-      console.log('Web Worker initialized for background processing');
+      logger.info('Web Worker initialized for background processing', {
+        component: 'WorkerManager',
+        action: 'initialize',
+      });
     }
   });
 

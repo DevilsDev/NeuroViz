@@ -1,11 +1,12 @@
 /**
  * REST API for Programmatic Control
- * 
+ *
  * Exposes NeuroViz functionality via a REST-like API that can be called
  * from browser console, bookmarklets, or external tools via postMessage.
  */
 
 import type { Point } from '../../core/domain';
+import { logger } from '../logging/Logger';
 
 export interface APIResponse<T = unknown> {
   success: boolean;
@@ -63,9 +64,12 @@ export class RestAPI {
     
     // Expose API on window for console access
     (window as Window & { neurovizAPI?: RestAPI }).neurovizAPI = this;
-    
+
     this.isEnabled = true;
-    console.log('NeuroViz REST API enabled. Access via window.neurovizAPI');
+    logger.info('NeuroViz REST API enabled. Access via window.neurovizAPI', {
+      component: 'RestAPI',
+      action: 'enable',
+    });
   }
 
   /**

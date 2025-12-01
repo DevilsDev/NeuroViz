@@ -1,9 +1,11 @@
 /**
  * WebGL-Accelerated 2D Renderer
- * 
+ *
  * Uses WebGL for fast rendering of decision boundaries and data points.
  * Falls back to Canvas 2D if WebGL is not available.
  */
+
+import { logger } from '../logging/Logger';
 
 export interface WebGLRendererConfig {
   width: number;
@@ -138,7 +140,12 @@ export class WebGLRenderer {
       }
 
       this.useWebGL = true;
-      console.log('WebGL renderer initialized');
+      logger.info('WebGL renderer initialized', {
+        component: 'WebGLRenderer',
+        action: 'initialize',
+        width: this.config.width,
+        height: this.config.height,
+      });
     } catch (error) {
       console.warn('WebGL not available, falling back to Canvas 2D:', error);
       this.ctx2d = this.canvas.getContext('2d');

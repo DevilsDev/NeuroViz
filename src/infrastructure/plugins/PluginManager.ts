@@ -1,9 +1,11 @@
 /**
  * Plugin System for NeuroViz
- * 
+ *
  * Enables extensibility through a plugin architecture.
  * Plugins can add new datasets, visualizations, export formats, and more.
  */
+
+import { logger } from '../logging/Logger';
 
 export interface PluginMetadata {
   id: string;
@@ -114,7 +116,13 @@ export class PluginManager {
     };
 
     this.plugins.set(id, state);
-    console.log(`Plugin registered: ${plugin.metadata.name} v${plugin.metadata.version}`);
+    logger.info(`Plugin registered: ${plugin.metadata.name} v${plugin.metadata.version}`, {
+      component: 'PluginManager',
+      action: 'register',
+      pluginId: id,
+      pluginName: plugin.metadata.name,
+      version: plugin.metadata.version,
+    });
 
     return true;
   }
@@ -150,7 +158,12 @@ export class PluginManager {
       state.loadedAt = Date.now();
       state.error = undefined;
 
-      console.log(`Plugin loaded: ${state.plugin.metadata.name}`);
+      logger.info(`Plugin loaded: ${state.plugin.metadata.name}`, {
+        component: 'PluginManager',
+        action: 'load',
+        pluginId,
+        pluginName: state.plugin.metadata.name,
+      });
       return true;
     } catch (error) {
       state.error = error instanceof Error ? error.message : 'Unknown error';
@@ -187,7 +200,12 @@ export class PluginManager {
       }
 
       state.isLoaded = false;
-      console.log(`Plugin unloaded: ${state.plugin.metadata.name}`);
+      logger.info(`Plugin unloaded: ${state.plugin.metadata.name}`, {
+        component: 'PluginManager',
+        action: 'unload',
+        pluginId,
+        pluginName: state.plugin.metadata.name,
+      });
       return true;
     } catch (error) {
       console.error(`Failed to unload plugin ${pluginId}:`, error);

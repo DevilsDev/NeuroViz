@@ -1,9 +1,11 @@
 /**
  * WebSocket Manager for Real-time Updates
- * 
+ *
  * Enables live collaboration and real-time synchronization between
  * multiple NeuroViz instances or external tools.
  */
+
+import { logger } from '../logging/Logger';
 
 export interface WebSocketConfig {
   url: string;
@@ -88,7 +90,11 @@ export class WebSocketManager {
         this.ws = new WebSocket(this.config.url);
 
         this.ws.onopen = () => {
-          console.log('WebSocket connected');
+          logger.info('WebSocket connected', {
+            component: 'WebSocketManager',
+            action: 'connect',
+            url: this.config.url,
+          });
           this.isConnecting = false;
           this.reconnectAttempts = 0;
           this.startHeartbeat();
@@ -97,7 +103,12 @@ export class WebSocketManager {
         };
 
         this.ws.onclose = (event) => {
-          console.log('WebSocket closed:', event.code, event.reason);
+          logger.info('WebSocket closed', {
+            component: 'WebSocketManager',
+            action: 'close',
+            code: event.code,
+            reason: event.reason,
+          });
           this.isConnecting = false;
           this.stopHeartbeat();
           this.emit('disconnected', { code: event.code, reason: event.reason });
@@ -278,13 +289,23 @@ export class WebSocketManager {
    */
   private scheduleReconnect(): void {
     if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
-      console.log('Max reconnect attempts reached');
+      logger.warn('Max reconnect attempts reached', {
+        component: 'WebSocketManager',
+        action: 'reconnect',
+        attempts: this.reconnectAttempts,
+        maxAttempts: this.config.maxReconnectAttempts,
+      });
       this.emit('reconnect:failed', { attempts: this.reconnectAttempts });
       return;
     }
 
     this.reconnectAttempts++;
-    console.log(`Scheduling reconnect attempt ${this.reconnectAttempts}/${this.config.maxReconnectAttempts}`);
+    logger.info(`Scheduling reconnect attempt ${this.reconnectAttempts}/${this.config.maxReconnectAttempts}`, {
+      component: 'WebSocketManager',
+      action: 'reconnect',
+      attempt: this.reconnectAttempts,
+      maxAttempts: this.config.maxReconnectAttempts,
+    });
 
     this.reconnectTimer = setTimeout(() => {
       this.emit('reconnect:attempt', { attempt: this.reconnectAttempts });

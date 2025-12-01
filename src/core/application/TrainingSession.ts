@@ -2,6 +2,7 @@ import type { Hyperparameters, Point, Prediction, TrainingConfig, TrainingHistor
 import { DEFAULT_TRAINING_CONFIG, DEFAULT_LR_SCHEDULE, createEmptyHistory, addHistoryRecord, exportHistory } from '../domain';
 import type { INeuralNetworkService, IVisualizerService, IDatasetRepository, DatasetOptions } from '../ports';
 import type { ITrainingSession, TrainingState } from './ITrainingSession';
+import { logger } from '../../infrastructure/logging/Logger';
 
 /**
  * Configuration for training session behaviour.
@@ -513,7 +514,11 @@ export class TrainingSession implements ITrainingSession {
         this.isTraining = false;
         this.notifyListeners();
         this.onCompleteCallback?.('earlyStopping');
-        console.log(`Early stopping triggered at epoch ${this.currentEpoch}`);
+        logger.info(`Early stopping triggered at epoch ${this.currentEpoch}`, {
+          component: 'TrainingSession',
+          action: 'earlyStopping',
+          epoch: this.currentEpoch,
+        });
         return; // Exit loop
       }
 
