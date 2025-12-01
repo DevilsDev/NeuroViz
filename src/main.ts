@@ -45,6 +45,8 @@ const elements = {
   samplesValue: document.getElementById('samples-value') as HTMLSpanElement,
   inputNoise: document.getElementById('input-noise') as HTMLInputElement,
   noiseValue: document.getElementById('noise-value') as HTMLSpanElement,
+  inputBalance: document.getElementById('input-balance') as HTMLInputElement,
+  balanceValue: document.getElementById('balance-value') as HTMLSpanElement,
 
   // Visualization controls
   inputColourScheme: document.getElementById('input-colour-scheme') as HTMLSelectElement,
@@ -440,6 +442,11 @@ function handleNoiseChange(): void {
   elements.noiseValue.textContent = (noisePercent / 100).toFixed(2);
 }
 
+function handleBalanceChange(): void {
+  const balancePercent = parseInt(elements.inputBalance.value, 10);
+  elements.balanceValue.textContent = `${balancePercent}%`;
+}
+
 function handleDrawClassSelect(label: number): void {
   currentDrawLabel = label;
   
@@ -524,9 +531,10 @@ async function handleLoadData(): Promise<void> {
   const samples = parseInt(elements.inputSamples.value, 10) || 200;
   const noise = (parseInt(elements.inputNoise.value, 10) || 10) / 100;
   const numClasses = parseInt(elements.inputNumClasses.value, 10) || 2;
+  const classBalance = (parseInt(elements.inputBalance.value, 10) || 50) / 100;
 
   try {
-    await session.loadData(datasetType, { samples, noise, numClasses });
+    await session.loadData(datasetType, { samples, noise, numClasses, classBalance });
     toast.success(`Dataset "${datasetType}" loaded (${samples} samples, ${numClasses} classes)`);
   } catch (error) {
     console.error('Failed to load dataset:', error);
@@ -1065,6 +1073,8 @@ function clearSession(): void {
   elements.samplesValue.textContent = '200';
   elements.inputNoise.value = '10';
   elements.noiseValue.textContent = '10';
+  elements.inputBalance.value = '50';
+  elements.balanceValue.textContent = '50%';
   elements.inputNumClasses.value = '2';
   elements.inputLr.value = '0.03';
   elements.inputLayers.value = '4,4';
@@ -1454,6 +1464,7 @@ function init(): void {
   elements.btnClearCustom.addEventListener('click', handleClearCustomData);
   elements.inputSamples.addEventListener('input', handleSamplesChange);
   elements.inputNoise.addEventListener('input', handleNoiseChange);
+  elements.inputBalance.addEventListener('input', handleBalanceChange);
   elements.inputNumClasses.addEventListener('change', updateDrawClassButtons);
 
   // Initialize draw class buttons

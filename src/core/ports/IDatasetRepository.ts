@@ -10,6 +10,8 @@ export interface DatasetOptions {
   readonly noise?: number;
   /** Number of classes for multi-class datasets. Default: 2 */
   readonly numClasses?: number;
+  /** Class balance ratio for class 0 (0.1-0.9). Default: 0.5 (balanced) */
+  readonly classBalance?: number;
 }
 
 /**

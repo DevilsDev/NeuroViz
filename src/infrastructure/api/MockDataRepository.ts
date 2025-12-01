@@ -30,9 +30,10 @@ export class MockDataRepository implements IDatasetRepository {
     const samples = options?.samples ?? 200;
     const noise = options?.noise ?? 0.1;
     const numClasses = options?.numClasses ?? 2;
+    const classBalance = options?.classBalance ?? 0.5;
 
     const generator = this.getDatasetGenerator(type);
-    return generator(samples, noise, numClasses);
+    return generator(samples, noise, numClasses, classBalance);
   }
 
   /**
@@ -47,13 +48,13 @@ export class MockDataRepository implements IDatasetRepository {
     return new Promise((resolve) => setTimeout(resolve, this.latencyMs));
   }
 
-  private getDatasetGenerator(type: string): (samples: number, noise: number, numClasses: number) => Point[] {
-    const generators: Record<string, (samples: number, noise: number, numClasses: number) => Point[]> = {
-      circle: (s, n, c) => this.generateCircleDataset(s, n, c),
-      xor: (s, n, c) => this.generateXorDataset(s, n, c),
-      spiral: (s, n, c) => this.generateSpiralDataset(s, n, c),
-      gaussian: (s, n, c) => this.generateGaussianDataset(s, n, c),
-      clusters: (s, n, c) => this.generateClustersDataset(s, n, c),
+  private getDatasetGenerator(type: string): (samples: number, noise: number, numClasses: number, classBalance: number) => Point[] {
+    const generators: Record<string, (samples: number, noise: number, numClasses: number, classBalance: number) => Point[]> = {
+      circle: (s, n, c, b) => this.generateCircleDataset(s, n, c, b),
+      xor: (s, n, c, b) => this.generateXorDataset(s, n, c, b),
+      spiral: (s, n, c, b) => this.generateSpiralDataset(s, n, c, b),
+      gaussian: (s, n, c, b) => this.generateGaussianDataset(s, n, c, b),
+      clusters: (s, n, c, b) => this.generateClustersDataset(s, n, c, b),
     };
 
     const generator = generators[type.toLowerCase()];
@@ -70,16 +71,19 @@ export class MockDataRepository implements IDatasetRepository {
    * Generates a circular dataset with concentric rings.
    * Each ring has a different label.
    */
-  private generateCircleDataset(samples: number, noise: number, numClasses: number): Point[] {
+  private generateCircleDataset(samples: number, noise: number, numClasses: number, classBalance: number): Point[] {
     const points: Point[] = [];
-    const samplesPerClass = Math.floor(samples / numClasses);
+    
+    // Calculate samples per class based on balance (for binary, balance affects class 0)
+    const classSamples = this.calculateClassSamples(samples, numClasses, classBalance);
 
     // Generate concentric rings for each class
     for (let classIdx = 0; classIdx < numClasses; classIdx++) {
       const baseRadius = 0.2 + (classIdx * 0.6) / Math.max(numClasses - 1, 1);
+      const samplesForClass = classSamples[classIdx] ?? 0;
       
-      for (let i = 0; i < samplesPerClass; i++) {
-        const angle = (2 * Math.PI * i) / samplesPerClass;
+      for (let i = 0; i < samplesForClass; i++) {
+        const angle = (2 * Math.PI * i) / samplesForClass;
         const radius = baseRadius + this.noise(0.05 * noise * 5);
         points.push({
           x: radius * Math.cos(angle) + this.noise(noise * 0.2),
@@ -96,25 +100,38 @@ export class MockDataRepository implements IDatasetRepository {
    * Generates an XOR dataset with four quadrants.
    * Diagonal quadrants share the same label (binary only).
    */
-  private generateXorDataset(samples: number, noise: number, _numClasses: number): Point[] {
+  private generateXorDataset(samples: number, noise: number, _numClasses: number, classBalance: number): Point[] {
     const points: Point[] = [];
-    const samplesPerQuadrant = Math.floor(samples / 4);
+    const classSamples = this.calculateClassSamples(samples, 2, classBalance);
+    const samplesClass0 = classSamples[0] ?? 0;
+    const samplesClass1 = classSamples[1] ?? 0;
 
-    const quadrants = [
-      { xSign: 1, ySign: 1, label: 0 },
-      { xSign: -1, ySign: -1, label: 0 },
-      { xSign: 1, ySign: -1, label: 1 },
-      { xSign: -1, ySign: 1, label: 1 },
-    ];
+    // Class 0: top-right and bottom-left quadrants
+    for (let i = 0; i < Math.floor(samplesClass0 / 2); i++) {
+      points.push({
+        x: (0.2 + Math.random() * 0.6) + this.noise(noise * 0.3),
+        y: (0.2 + Math.random() * 0.6) + this.noise(noise * 0.3),
+        label: 0,
+      });
+      points.push({
+        x: -(0.2 + Math.random() * 0.6) + this.noise(noise * 0.3),
+        y: -(0.2 + Math.random() * 0.6) + this.noise(noise * 0.3),
+        label: 0,
+      });
+    }
 
-    for (const { xSign, ySign, label } of quadrants) {
-      for (let i = 0; i < samplesPerQuadrant; i++) {
-        points.push({
-          x: xSign * (0.2 + Math.random() * 0.6) + this.noise(noise * 0.3),
-          y: ySign * (0.2 + Math.random() * 0.6) + this.noise(noise * 0.3),
-          label,
-        });
-      }
+    // Class 1: top-left and bottom-right quadrants
+    for (let i = 0; i < Math.floor(samplesClass1 / 2); i++) {
+      points.push({
+        x: (0.2 + Math.random() * 0.6) + this.noise(noise * 0.3),
+        y: -(0.2 + Math.random() * 0.6) + this.noise(noise * 0.3),
+        label: 1,
+      });
+      points.push({
+        x: -(0.2 + Math.random() * 0.6) + this.noise(noise * 0.3),
+        y: (0.2 + Math.random() * 0.6) + this.noise(noise * 0.3),
+        label: 1,
+      });
     }
 
     return this.shuffle(points);
@@ -124,15 +141,16 @@ export class MockDataRepository implements IDatasetRepository {
    * Generates a multi-arm spiral dataset.
    * Each arm has a different label.
    */
-  private generateSpiralDataset(samples: number, noise: number, numClasses: number): Point[] {
+  private generateSpiralDataset(samples: number, noise: number, numClasses: number, classBalance: number): Point[] {
     const points: Point[] = [];
-    const samplesPerArm = Math.floor(samples / numClasses);
+    const classSamples = this.calculateClassSamples(samples, numClasses, classBalance);
 
     for (let arm = 0; arm < numClasses; arm++) {
       const deltaAngle = (arm * 2 * Math.PI) / numClasses;
+      const samplesForArm = classSamples[arm] ?? 0;
 
-      for (let i = 0; i < samplesPerArm; i++) {
-        const t = (i / samplesPerArm) * 2 * Math.PI;
+      for (let i = 0; i < samplesForArm; i++) {
+        const t = (i / samplesForArm) * 2 * Math.PI;
         const radius = (0.1 + (t / (2 * Math.PI)) * 0.8) * (1 + this.noise(noise));
         const angle = t + deltaAngle;
 
@@ -150,17 +168,17 @@ export class MockDataRepository implements IDatasetRepository {
   /**
    * Generates Gaussian clusters (diagonal placement for binary).
    */
-  private generateGaussianDataset(samples: number, noise: number, _numClasses: number): Point[] {
+  private generateGaussianDataset(samples: number, noise: number, _numClasses: number, classBalance: number): Point[] {
     const points: Point[] = [];
-    const samplesPerCluster = Math.floor(samples / 2);
+    const classSamples = this.calculateClassSamples(samples, 2, classBalance);
 
     const clusters = [
-      { cx: -0.5, cy: -0.5, label: 0 },
-      { cx: 0.5, cy: 0.5, label: 1 },
+      { cx: -0.5, cy: -0.5, label: 0, count: classSamples[0] ?? 0 },
+      { cx: 0.5, cy: 0.5, label: 1, count: classSamples[1] ?? 0 },
     ];
 
-    for (const { cx, cy, label } of clusters) {
-      for (let i = 0; i < samplesPerCluster; i++) {
+    for (const { cx, cy, label, count } of clusters) {
+      for (let i = 0; i < count; i++) {
         points.push({
           x: cx + this.gaussianNoise(0.15 + noise * 0.3),
           y: cy + this.gaussianNoise(0.15 + noise * 0.3),
@@ -176,9 +194,9 @@ export class MockDataRepository implements IDatasetRepository {
    * Generates multiple Gaussian clusters arranged in a grid.
    * Supports any number of classes.
    */
-  private generateClustersDataset(samples: number, noise: number, numClasses: number): Point[] {
+  private generateClustersDataset(samples: number, noise: number, numClasses: number, classBalance: number): Point[] {
     const points: Point[] = [];
-    const samplesPerCluster = Math.floor(samples / numClasses);
+    const classSamples = this.calculateClassSamples(samples, numClasses, classBalance);
 
     // Arrange clusters in a grid pattern
     const gridSize = Math.ceil(Math.sqrt(numClasses));
@@ -190,8 +208,9 @@ export class MockDataRepository implements IDatasetRepository {
       // Map to [-0.7, 0.7] range
       const cx = ((col + 0.5) / gridSize) * 1.4 - 0.7;
       const cy = ((row + 0.5) / gridSize) * 1.4 - 0.7;
+      const samplesForCluster = classSamples[classIdx] ?? 0;
       
-      for (let i = 0; i < samplesPerCluster; i++) {
+      for (let i = 0; i < samplesForCluster; i++) {
         points.push({
           x: cx + this.gaussianNoise(0.12 + noise * 0.2),
           y: cy + this.gaussianNoise(0.12 + noise * 0.2),
@@ -201,6 +220,32 @@ export class MockDataRepository implements IDatasetRepository {
     }
 
     return this.shuffle(points);
+  }
+
+  /**
+   * Calculates samples per class based on balance ratio.
+   * For binary: balance is the ratio of class 0 samples.
+   * For multi-class: balance affects class 0, rest are distributed equally.
+   */
+  private calculateClassSamples(totalSamples: number, numClasses: number, classBalance: number): number[] {
+    if (numClasses === 2) {
+      // Binary: balance directly controls class 0 ratio
+      const class0Samples = Math.round(totalSamples * classBalance);
+      const class1Samples = totalSamples - class0Samples;
+      return [class0Samples, class1Samples];
+    }
+    
+    // Multi-class: balance affects class 0, rest distributed equally
+    const class0Samples = Math.round(totalSamples * classBalance);
+    const remainingSamples = totalSamples - class0Samples;
+    const samplesPerOtherClass = Math.floor(remainingSamples / (numClasses - 1));
+    
+    const result = [class0Samples];
+    for (let i = 1; i < numClasses; i++) {
+      result.push(samplesPerOtherClass);
+    }
+    
+    return result;
   }
 
   private noise(scale: number): number {

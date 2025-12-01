@@ -125,7 +125,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 | Draw your own data (click to add) | M | ✅ | Click chart, toggle class |
 | Noise level slider | S | ✅ | 0-50% noise |
 | Sample count slider | S | ✅ | 50-500 points |
-| Class imbalance ratio | S | 🔲 | Slider control |
+| Class imbalance ratio | S | ✅ | Slider control (10-90%) |
 
 ### 🟡 P2 — Data Import/Export
 
@@ -308,7 +308,6 @@ This document outlines planned features for NeuroViz, organized by priority and 
 1. ✅ Draw your own data (click to add)
 2. ✅ Noise/sample sliders
 3. ✅ Multi-class support (2-5 classes)
-4. 🔲 Upload CSV (moved to Sprint 5)
 
 ### ✅ Sprint 5: UX & Persistence (Complete)
 
@@ -364,11 +363,11 @@ Last updated: December 2024
 |-------|-------------|-----------|-------|----------|
 | Phase 1 | Core Training | 10 | 15 | 67% |
 | Phase 2 | Metrics & History | 9 | 11 | 82% |
-| Phase 3 | Visualization | 9 | 14 | 64% |
-| Phase 4 | Data Management | 6 | 10 | 60% |
+| Phase 3 | Visualization | 10 | 14 | 71% |
+| Phase 4 | Data Management | 7 | 10 | 70% |
 | Phase 5 | Model Capabilities | 4 | 12 | 33% |
 | Phase 6 | UX & Polish | 12 | 15 | 80% |
 | Phase 7 | Educational | 0 | 6 | 0% |
 | Phase 8 | Performance | 0 | 7 | 0% |
 | Phase 9 | Research | 0 | 8 | 0% |
-| **Total** | | **50** | **98** | **51%** |
+| **Total** | | **52** | **98** | **53%** |
