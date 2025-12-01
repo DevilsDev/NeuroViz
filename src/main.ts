@@ -60,6 +60,9 @@ import {
   runNAS, formatNASResultHTML,
 } from './core/research';
 
+// Storage
+import { storage } from './infrastructure/storage/LocalStorageService';
+
 // =============================================================================
 // DOM Element References
 // =============================================================================
@@ -2450,9 +2453,9 @@ const THEME_KEY = 'neuroviz-theme';
  * Gets the current theme from localStorage or system preference.
  */
 function getStoredTheme(): 'light' | 'dark' {
-  const stored = localStorage.getItem(THEME_KEY);
-  if (stored === 'light' || stored === 'dark') {
-    return stored;
+  const result = storage.getItem<'light' | 'dark'>(THEME_KEY);
+  if (result.success && result.data && (result.data === 'light' || result.data === 'dark')) {
+    return result.data;
   }
   // Fall back to system preference
   return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
@@ -2464,7 +2467,7 @@ function getStoredTheme(): 'light' | 'dark' {
  */
 function applyTheme(theme: 'light' | 'dark'): void {
   const html = document.documentElement;
-  
+
   if (theme === 'dark') {
     html.classList.add('dark');
     document.body.removeAttribute('data-theme');
@@ -2476,7 +2479,11 @@ function applyTheme(theme: 'light' | 'dark'): void {
     elements.iconSun.classList.add('hidden');
     elements.iconMoon.classList.remove('hidden');
   }
-  localStorage.setItem(THEME_KEY, theme);
+
+  const result = storage.setItem(THEME_KEY, theme);
+  if (!result.success) {
+    console.warn('Failed to save theme preference:', result.error);
+  }
 }
 
 /**
@@ -2617,7 +2624,7 @@ function applySessionConfig(config: SessionData['config']): void {
 function saveSession(): void {
   const state = session.getState();
   const data = session.getData();
-  
+
   const sessionData: SessionData = {
     version: 1,
     timestamp: Date.now(),
@@ -2635,12 +2642,15 @@ function saveSession(): void {
     },
   };
 
-  try {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+  const result = storage.setItem(SESSION_KEY, sessionData);
+  if (result.success) {
     toast.success('Session saved');
-  } catch (error) {
-    console.error('Failed to save session:', error);
-    toast.error('Failed to save session (storage full?)');
+  } else {
+    console.error('Failed to save session:', result.error);
+    const message = result.error === 'Storage quota exceeded'
+      ? 'Failed to save session (storage full?)'
+      : 'Failed to save session';
+    toast.error(message);
   }
 }
 
@@ -2728,48 +2738,47 @@ function updateComparisonDisplay(): void {
  * Loads a saved session from localStorage.
  */
 async function loadSession(): Promise<boolean> {
-  const stored = localStorage.getItem(SESSION_KEY);
-  if (!stored) {
+  const result = storage.getItem<SessionData>(SESSION_KEY);
+
+  if (!result.success || !result.data) {
+    if (result.error) {
+      console.warn('Failed to load session:', result.error);
+    }
     return false;
   }
 
-  try {
-    const sessionData: SessionData = JSON.parse(stored);
-    
-    // Version check for future compatibility
-    if (sessionData.version !== 1) {
-      console.warn('Session version mismatch, skipping restore');
-      return false;
-    }
+  const sessionData = result.data;
 
-    // Apply UI configuration
-    applySessionConfig(sessionData.config);
-
-    // Restore dataset if available
-    if (sessionData.data && sessionData.data.length > 0) {
-      session.setCustomData(sessionData.data);
-      visualizerService.renderData(sessionData.data);
-      
-      // Apply visualization settings via UI handlers
-      handleColourSchemeChange();
-      handlePointSizeChange();
-      handleOpacityChange();
-      handleZoomToggle();
-      handleTooltipsToggle();
-    }
-
-    const age = Date.now() - sessionData.timestamp;
-    const ageMinutes = Math.floor(age / 60000);
-    const ageText = ageMinutes < 60 
-      ? `${ageMinutes} min ago` 
-      : `${Math.floor(ageMinutes / 60)} hours ago`;
-    
-    toast.info(`Session restored (saved ${ageText})`);
-    return true;
-  } catch (error) {
-    console.error('Failed to load session:', error);
+  // Version check for future compatibility
+  if (sessionData.version !== 1) {
+    console.warn('Session version mismatch, skipping restore');
     return false;
   }
+
+  // Apply UI configuration
+  applySessionConfig(sessionData.config);
+
+  // Restore dataset if available
+  if (sessionData.data && sessionData.data.length > 0) {
+    session.setCustomData(sessionData.data);
+    visualizerService.renderData(sessionData.data);
+
+    // Apply visualization settings via UI handlers
+    handleColourSchemeChange();
+    handlePointSizeChange();
+    handleOpacityChange();
+    handleZoomToggle();
+    handleTooltipsToggle();
+  }
+
+  const age = Date.now() - sessionData.timestamp;
+  const ageMinutes = Math.floor(age / 60000);
+  const ageText = ageMinutes < 60
+    ? `${ageMinutes} min ago`
+    : `${Math.floor(ageMinutes / 60)} hours ago`;
+
+  toast.info(`Session restored (saved ${ageText})`);
+  return true;
 }
 
 /**
@@ -2777,7 +2786,7 @@ async function loadSession(): Promise<boolean> {
  */
 function clearSession(): void {
   // Clear localStorage
-  localStorage.removeItem(SESSION_KEY);
+  storage.removeItem(SESSION_KEY);
 
   // Reset training session and clear visualisations
   session.clearAll();
@@ -3008,20 +3017,19 @@ function handleLoadConfigCode(): void {
  * Loads bookmarks from localStorage.
  */
 function loadBookmarks(): BookmarkConfig[] {
-  try {
-    const stored = localStorage.getItem(BOOKMARKS_KEY);
-    if (!stored) return [];
-    return JSON.parse(stored) as BookmarkConfig[];
-  } catch {
-    return [];
-  }
+  const result = storage.getItem<BookmarkConfig[]>(BOOKMARKS_KEY, []);
+  return result.data ?? [];
 }
 
 /**
  * Saves bookmarks to localStorage.
  */
 function saveBookmarks(bookmarks: BookmarkConfig[]): void {
-  localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(bookmarks));
+  const result = storage.setItem(BOOKMARKS_KEY, bookmarks);
+  if (!result.success) {
+    console.warn('Failed to save bookmarks:', result.error);
+    toast.warning('Failed to save bookmark');
+  }
 }
 
 /**
@@ -3185,11 +3193,9 @@ function setupAutoSave(): void {
           })),
         },
       };
-      try {
-        localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
-      } catch {
-        // Ignore errors on unload
-      }
+
+      // Silently save on unload - errors don't matter here
+      storage.setItem(SESSION_KEY, sessionData);
     }
   });
 }
