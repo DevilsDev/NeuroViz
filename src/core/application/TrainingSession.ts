@@ -716,6 +716,33 @@ export class TrainingSession implements ITrainingSession {
         return initialLR * 0.5 * (1 + Math.cos(Math.PI * progress));
       }
 
+      case 'cyclic_triangular': {
+        // Triangle wave between minLR and maxLR (initialLR)
+        const cycleLength = schedule.cycleLength ?? 20;
+        const minLR = schedule.minLR ?? initialLR / 10;
+        const cyclePosition = effectiveEpoch % cycleLength;
+        const halfCycle = cycleLength / 2;
+        
+        // Triangle: rise for first half, fall for second half
+        const triangleValue = cyclePosition < halfCycle
+          ? cyclePosition / halfCycle
+          : 1 - (cyclePosition - halfCycle) / halfCycle;
+        
+        return minLR + (initialLR - minLR) * triangleValue;
+      }
+
+      case 'cyclic_cosine': {
+        // Cosine wave between minLR and maxLR (initialLR)
+        const cycleLength = schedule.cycleLength ?? 20;
+        const minLR = schedule.minLR ?? initialLR / 10;
+        const cyclePosition = effectiveEpoch % cycleLength;
+        
+        // Cosine: smooth oscillation
+        const cosineValue = 0.5 * (1 + Math.cos(Math.PI * cyclePosition / cycleLength));
+        
+        return minLR + (initialLR - minLR) * cosineValue;
+      }
+
       case 'none':
       default:
         return initialLR;

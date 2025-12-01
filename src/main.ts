@@ -17,7 +17,7 @@ import { TrainingSession } from './core/application';
 
 // Infrastructure adapters - only imported here at the composition root
 import { TFNeuralNet } from './infrastructure/tensorflow';
-import { D3Chart, D3LossChart, D3ConfusionMatrix, D3WeightHistogram, calculateConfusionMatrix, calculateClassMetrics, calculateMacroMetrics } from './infrastructure/d3';
+import { D3Chart, D3LossChart, D3ConfusionMatrix, D3WeightHistogram, D3RocCurve, calculateConfusionMatrix, calculateClassMetrics, calculateMacroMetrics, calculateRocCurve } from './infrastructure/d3';
 import { MockDataRepository } from './infrastructure/api';
 
 // Configuration
@@ -90,6 +90,9 @@ const elements = {
   fpsValue: document.getElementById('fps-value') as HTMLSpanElement,
   inputLrSchedule: document.getElementById('input-lr-schedule') as HTMLSelectElement,
   inputWarmup: document.getElementById('input-warmup') as HTMLInputElement,
+  cyclicLrControls: document.getElementById('cyclic-lr-controls') as HTMLDivElement,
+  inputCycleLength: document.getElementById('input-cycle-length') as HTMLInputElement,
+  inputMinLr: document.getElementById('input-min-lr') as HTMLInputElement,
   inputEarlyStop: document.getElementById('input-early-stop') as HTMLInputElement,
 
   // Training controls
@@ -133,6 +136,7 @@ const elements = {
   btnSaveSession: document.getElementById('btn-save-session') as HTMLButtonElement,
   btnLoadSession: document.getElementById('btn-load-session') as HTMLButtonElement,
   btnClearSession: document.getElementById('btn-clear-session') as HTMLButtonElement,
+  btnShareUrl: document.getElementById('btn-share-url') as HTMLButtonElement,
 
   // Theme toggle
   btnThemeToggle: document.getElementById('btn-theme-toggle') as HTMLButtonElement,
@@ -171,6 +175,11 @@ const confusionMatrix = new D3ConfusionMatrix('confusion-matrix-container');
 // Weight histogram visualization
 const weightHistogramContainer = document.getElementById('weight-histogram');
 const weightHistogram = weightHistogramContainer ? new D3WeightHistogram(weightHistogramContainer) : null;
+
+// ROC curve visualization (binary classification only)
+const rocCurveContainer = document.getElementById('roc-curve-container');
+const rocCurveSection = document.getElementById('roc-curve-section');
+const rocCurve = rocCurveContainer ? new D3RocCurve(rocCurveContainer) : null;
 
 // Application layer receives adapters via constructor injection
 const session = new TrainingSession(neuralNetService, visualizerService, dataRepository, {
@@ -290,6 +299,17 @@ async function updateClassificationMetrics(): Promise<void> {
     if (weightHistogram) {
       const weights = neuralNetService.getWeights();
       weightHistogram.update(weights);
+    }
+
+    // Update ROC curve (binary classification only)
+    if (rocCurve && rocCurveSection && numClasses === 2) {
+      rocCurveSection.classList.remove('hidden');
+      // Get confidence scores for positive class
+      const confidences = predictions.map(p => p.confidence);
+      const { points, auc } = calculateRocCurve(confidences, actualClasses);
+      rocCurve.render(points, auc);
+    } else if (rocCurveSection) {
+      rocCurveSection.classList.add('hidden');
     }
 
     // Highlight misclassified points if enabled
@@ -695,6 +715,8 @@ function applyTrainingConfig(): void {
   const targetFps = parseInt(elements.inputFps.value, 10) || 60;
   const lrScheduleType = elements.inputLrSchedule.value as LRScheduleType;
   const warmupEpochs = parseInt(elements.inputWarmup.value, 10) || 0;
+  const cycleLength = parseInt(elements.inputCycleLength.value, 10) || 20;
+  const minLR = parseFloat(elements.inputMinLr.value) || 0.001;
   const earlyStoppingPatience = parseInt(elements.inputEarlyStop.value, 10) || 0;
 
   session.setTrainingConfig({
@@ -706,9 +728,28 @@ function applyTrainingConfig(): void {
       decayRate: 0.95,
       decaySteps: 10,
       warmupEpochs,
+      cycleLength,
+      minLR,
     },
     earlyStoppingPatience,
   });
+}
+
+/**
+ * Handles LR schedule dropdown changes.
+ * Shows/hides cyclic LR controls based on selection.
+ */
+function handleLrScheduleChange(): void {
+  const scheduleType = elements.inputLrSchedule.value;
+  const isCyclic = scheduleType === 'cyclic_triangular' || scheduleType === 'cyclic_cosine';
+  
+  if (isCyclic) {
+    elements.cyclicLrControls.classList.remove('hidden');
+  } else {
+    elements.cyclicLrControls.classList.add('hidden');
+  }
+  
+  applyTrainingConfig();
 }
 
 /**
@@ -1287,6 +1328,7 @@ function clearSession(): void {
   lossChart.clear();
   confusionMatrix.clear();
   weightHistogram?.clear();
+  rocCurve?.clear();
 
   // Clear custom data
   customDataPoints = [];
@@ -1320,6 +1362,9 @@ function clearSession(): void {
   elements.inputFps.value = '30';
   elements.fpsValue.textContent = '30';
   elements.inputWarmup.value = '0';
+  elements.inputCycleLength.value = '20';
+  elements.inputMinLr.value = '0.001';
+  elements.cyclicLrControls.classList.add('hidden');
 
   // Reset metrics display
   elements.metricPrecision.textContent = '-';
@@ -1335,6 +1380,98 @@ function clearSession(): void {
   updateDrawClassButtons();
 
   toast.info('Session cleared - all settings reset to defaults');
+}
+
+// =============================================================================
+// URL Parameter Sharing
+// =============================================================================
+
+/**
+ * Encodes current configuration to URL parameters.
+ */
+function encodeConfigToUrl(): string {
+  const config = {
+    lr: elements.inputLr.value,
+    layers: elements.inputLayers.value,
+    opt: elements.inputOptimizer.value,
+    act: elements.inputActivation.value,
+    l1: elements.inputL1.value,
+    l2: elements.inputL2.value,
+    drop: elements.inputDropout.value,
+    batch: elements.inputBatchSize.value,
+    epochs: elements.inputMaxEpochs.value,
+    val: elements.inputValSplit.value,
+    sched: elements.inputLrSchedule.value,
+    warmup: elements.inputWarmup.value,
+    dataset: elements.datasetSelect.value,
+    samples: elements.inputSamples.value,
+    noise: elements.inputNoise.value,
+    classes: elements.inputNumClasses.value,
+  };
+
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(config)) {
+    if (value && value !== '0' && value !== 'none' && value !== 'adam' && value !== 'relu') {
+      params.set(key, value);
+    }
+  }
+
+  return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+}
+
+/**
+ * Decodes URL parameters and applies configuration.
+ */
+function applyUrlParameters(): boolean {
+  const params = new URLSearchParams(window.location.search);
+  if (params.toString() === '') return false;
+
+  // Apply parameters to UI elements
+  if (params.has('lr')) elements.inputLr.value = params.get('lr') ?? '0.03';
+  if (params.has('layers')) elements.inputLayers.value = params.get('layers') ?? '4,4';
+  if (params.has('opt')) elements.inputOptimizer.value = params.get('opt') ?? 'adam';
+  if (params.has('act')) elements.inputActivation.value = params.get('act') ?? 'relu';
+  if (params.has('l1')) elements.inputL1.value = params.get('l1') ?? '0';
+  if (params.has('l2')) elements.inputL2.value = params.get('l2') ?? '0';
+  if (params.has('drop')) elements.inputDropout.value = params.get('drop') ?? '0';
+  if (params.has('batch')) elements.inputBatchSize.value = params.get('batch') ?? '32';
+  if (params.has('epochs')) elements.inputMaxEpochs.value = params.get('epochs') ?? '500';
+  if (params.has('val')) elements.inputValSplit.value = params.get('val') ?? '20';
+  if (params.has('sched')) {
+    elements.inputLrSchedule.value = params.get('sched') ?? 'none';
+    handleLrScheduleChange();
+  }
+  if (params.has('warmup')) elements.inputWarmup.value = params.get('warmup') ?? '0';
+  if (params.has('dataset')) elements.datasetSelect.value = params.get('dataset') ?? 'circle';
+  if (params.has('samples')) {
+    elements.inputSamples.value = params.get('samples') ?? '200';
+    elements.samplesValue.textContent = params.get('samples') ?? '200';
+  }
+  if (params.has('noise')) {
+    elements.inputNoise.value = params.get('noise') ?? '10';
+    elements.noiseValue.textContent = params.get('noise') ?? '10';
+  }
+  if (params.has('classes')) elements.inputNumClasses.value = params.get('classes') ?? '2';
+
+  // Show momentum control if SGD
+  if (params.get('opt') === 'sgd') {
+    elements.momentumControl.classList.remove('hidden');
+  }
+
+  return true;
+}
+
+/**
+ * Copies share URL to clipboard.
+ */
+function handleShareUrl(): void {
+  const url = encodeConfigToUrl();
+  navigator.clipboard.writeText(url).then(() => {
+    toast.success('Share URL copied to clipboard');
+  }).catch(() => {
+    // Fallback: show URL in prompt
+    prompt('Copy this URL to share:', url);
+  });
 }
 
 // =============================================================================
@@ -1926,6 +2063,9 @@ function init(): void {
   elements.inputBatchSize.addEventListener('change', handleBatchSizeChange);
   elements.inputMaxEpochs.addEventListener('change', handleMaxEpochsChange);
   elements.inputValSplit.addEventListener('change', handleValSplitChange);
+  elements.inputLrSchedule.addEventListener('change', handleLrScheduleChange);
+  elements.inputCycleLength.addEventListener('change', applyTrainingConfig);
+  elements.inputMinLr.addEventListener('change', applyTrainingConfig);
 
   // Bind event listeners - Training controls
   elements.btnStart.addEventListener('click', handleStart);
@@ -1951,6 +2091,7 @@ function init(): void {
   elements.btnSaveSession.addEventListener('click', saveSession);
   elements.btnLoadSession.addEventListener('click', () => void loadSession());
   elements.btnClearSession.addEventListener('click', clearSession);
+  elements.btnShareUrl.addEventListener('click', handleShareUrl);
 
   // Bind keyboard shortcuts
   document.addEventListener('keydown', handleKeyboardShortcut);
@@ -1968,8 +2109,13 @@ function init(): void {
   // Setup auto-save on page unload
   setupAutoSave();
 
-  // Try to restore previous session
-  void loadSession();
+  // Check for URL parameters first, then try to restore previous session
+  const hasUrlParams = applyUrlParameters();
+  if (!hasUrlParams) {
+    void loadSession();
+  } else {
+    toast.info('Configuration loaded from URL');
+  }
 
   // Initial UI state
   updateUI(session.getState());

@@ -49,7 +49,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 | Gradient clipping | S | ✅ | Prevent exploding gradients |
 | Batch normalization | M | ✅ | Between layers |
 | Learning rate warmup | S | ✅ | Gradual increase (0-50 epochs) |
-| Cyclic learning rate | M | 🔲 | Triangle/cosine cycles |
+| Cyclic learning rate | M | ✅ | Triangle/cosine cycles |
 
 ---
 
@@ -79,7 +79,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 | Confusion matrix | M | ✅ | Heatmap visualization |
 | Precision/Recall/F1 | S | ✅ | Macro-averaged metrics |
 | Learning rate display | S | ✅ | Show current LR during training |
-| ROC curve | M | 🔲 | Binary classification |
+| ROC curve | M | ✅ | Binary classification with AUC |
 | Learning rate finder | L | 🔲 | Cyclic LR test |
 
 ---
@@ -166,7 +166,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 |---------|------------|--------|-------|
 | Download trained model | M | ✅ | TensorFlow.js format |
 | Load saved model | M | ✅ | File upload (JSON + weights) |
-| Share via URL parameters | M | 🔲 | Encode config in URL |
+| Share via URL parameters | M | ✅ | Encode config in URL |
 
 ### 🟢 P3 — Advanced Models
 
@@ -359,6 +359,12 @@ This document outlines planned features for NeuroViz, organized by priority and 
 3. ✅ Load saved model
 4. ✅ Screenshot with metadata
 
+### ✅ Sprint 11: Advanced Features (Complete)
+
+1. ✅ Cyclic learning rate (triangle + cosine)
+2. ✅ ROC curve with AUC
+3. ✅ Share via URL parameters
+
 ---
 
 ## Contributing
@@ -380,13 +386,13 @@ Last updated: December 2025
 
 | Phase | Description | Completed | Total | Progress |
 |-------|-------------|-----------|-------|----------|
-| Phase 1 | Core Training | 15 | 16 | 94% |
-| Phase 2 | Metrics & History | 10 | 12 | 83% |
+| Phase 1 | Core Training | 16 | 16 | 100% |
+| Phase 2 | Metrics & History | 11 | 12 | 92% |
 | Phase 3 | Visualization | 10 | 16 | 63% |
 | Phase 4 | Data Management | 10 | 10 | 100% |
-| Phase 5 | Model Capabilities | 7 | 12 | 58% |
+| Phase 5 | Model Capabilities | 8 | 12 | 67% |
 | Phase 6 | UX & Polish | 11 | 14 | 79% |
 | Phase 7 | Educational | 0 | 6 | 0% |
 | Phase 8 | Performance | 0 | 7 | 0% |
 | Phase 9 | Research | 0 | 6 | 0% |
-| **Total** | | **63** | **99** | **64%** |
+| **Total** | | **66** | **99** | **67%** |

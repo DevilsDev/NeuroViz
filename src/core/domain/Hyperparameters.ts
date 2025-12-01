@@ -10,8 +10,14 @@ export type ActivationType = 'relu' | 'sigmoid' | 'tanh' | 'elu';
 
 /**
  * Learning rate schedule types.
+ * - none: constant learning rate
+ * - exponential: LR * decayRate^(epoch/decaySteps)
+ * - step: LR * decayRate every decaySteps epochs
+ * - cosine: cosine annealing to 0
+ * - cyclic_triangular: triangle wave between minLR and maxLR
+ * - cyclic_cosine: cosine wave between minLR and maxLR
  */
-export type LRScheduleType = 'none' | 'exponential' | 'step' | 'cosine';
+export type LRScheduleType = 'none' | 'exponential' | 'step' | 'cosine' | 'cyclic_triangular' | 'cyclic_cosine';
 
 /**
  * Learning rate schedule configuration.
@@ -25,6 +31,10 @@ export interface LRScheduleConfig {
   readonly decaySteps?: number;
   /** Number of warmup epochs (gradual increase from 0 to target LR). 0 = disabled. */
   readonly warmupEpochs?: number;
+  /** Cycle length in epochs for cyclic schedules (default: 20) */
+  readonly cycleLength?: number;
+  /** Minimum learning rate for cyclic schedules (default: LR/10) */
+  readonly minLR?: number;
 }
 
 /**
@@ -121,6 +131,8 @@ export const DEFAULT_LR_SCHEDULE: LRScheduleConfig = {
   decayRate: 0.95,
   decaySteps: 10,
   warmupEpochs: 0,
+  cycleLength: 20,
+  minLR: 0.001,
 };
 
 /**
