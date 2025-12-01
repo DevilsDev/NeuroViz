@@ -17,7 +17,7 @@ import { TrainingSession } from './core/application';
 
 // Infrastructure adapters - only imported here at the composition root
 import { TFNeuralNet } from './infrastructure/tensorflow';
-import { D3Chart, D3LossChart, D3ConfusionMatrix, D3WeightHistogram, D3RocCurve, D3LRFinder, D3NetworkDiagram, D3ActivationHeatmap, calculateConfusionMatrix, calculateClassMetrics, calculateMacroMetrics, calculateRocCurve, findOptimalLR } from './infrastructure/d3';
+import { D3Chart, D3LossChart, D3ConfusionMatrix, D3WeightHistogram, D3RocCurve, D3LRFinder, D3NetworkDiagram, D3ActivationHeatmap, D3GradientFlow, estimateGradients, calculateConfusionMatrix, calculateClassMetrics, calculateMacroMetrics, calculateRocCurve, findOptimalLR } from './infrastructure/d3';
 import { MockDataRepository } from './infrastructure/api';
 
 // Configuration
@@ -37,6 +37,15 @@ import type { ThreeVisualization, Prediction3D, Point3D } from './infrastructure
 
 // Tutorial system
 import { tutorialManager, TUTORIALS } from './presentation/Tutorial';
+
+// ELI5 Tooltips
+import { initELI5Tooltips } from './presentation/ELI5Tooltips';
+
+// Suggested Fixes
+import { diagnoseTraining, formatSuggestionsHTML, type DiagnosisResult } from './presentation/SuggestedFixes';
+
+// What-If Analysis
+import { runWhatIfAnalysis, formatWhatIfResultsHTML, PARAMETER_VARIATIONS } from './presentation/WhatIfAnalysis';
 
 // =============================================================================
 // DOM Element References
@@ -143,6 +152,18 @@ const elements = {
   fitWarning: document.getElementById('fit-warning') as HTMLDivElement,
   fitWarningMessage: document.getElementById('fit-warning-message') as HTMLDivElement,
   fitWarningSuggestion: document.getElementById('fit-warning-suggestion') as HTMLDivElement,
+  suggestionsPanel: document.getElementById('suggestions-panel') as HTMLDivElement,
+  suggestionsContent: document.getElementById('suggestions-content') as HTMLDivElement,
+  btnDismissSuggestions: document.getElementById('btn-dismiss-suggestions') as HTMLButtonElement,
+
+  // What-If Analysis
+  whatifParameter: document.getElementById('whatif-parameter') as HTMLSelectElement,
+  btnWhatif: document.getElementById('btn-whatif') as HTMLButtonElement,
+  whatifResults: document.getElementById('whatif-results') as HTMLDivElement,
+
+  // Gradient Flow
+  inputShowGradients: document.getElementById('input-show-gradients') as HTMLInputElement,
+  gradientFlowContainer: document.getElementById('gradient-flow-container') as HTMLDivElement,
 
   // Validation split
   inputValSplit: document.getElementById('input-val-split') as HTMLSelectElement,
@@ -428,6 +449,7 @@ function updateUI(state: TrainingState): void {
   elements.btnExportOnnx.disabled = !state.isInitialised;
   elements.btnDownloadDataset.disabled = !state.datasetLoaded;
   elements.btnLrFinder.disabled = !canTrain || state.isRunning;
+  elements.btnWhatif.disabled = !state.datasetLoaded || state.isRunning;
   elements.btnSaveBaseline.disabled = state.currentAccuracy === null;
 
   // Update comparison display if baseline is set
@@ -456,6 +478,16 @@ function updateUI(state: TrainingState): void {
   // Update network diagram with weights periodically
   if (elements.inputShowWeights.checked && state.currentEpoch > 0 && state.currentEpoch % 10 === 0) {
     updateNetworkDiagram();
+  }
+
+  // Update suggestions periodically
+  if (state.currentEpoch > 0 && state.currentEpoch % 20 === 0) {
+    updateSuggestions(state);
+  }
+
+  // Update gradient flow periodically
+  if (state.currentEpoch > 0 && state.currentEpoch % 5 === 0) {
+    updateGradientFlow();
   }
 }
 
@@ -610,6 +642,253 @@ function updateFitWarning(state: TrainingState): void {
 
 function showLoading(show: boolean): void {
   elements.loadingOverlay.classList.toggle('hidden', !show);
+}
+
+// =============================================================================
+// Suggested Fixes Integration
+// =============================================================================
+
+let lastDiagnosis: DiagnosisResult | null = null;
+let suggestionsDismissed = false;
+
+/**
+ * Updates the suggestions panel based on current training state.
+ */
+function updateSuggestions(state: TrainingState): void {
+  if (suggestionsDismissed || !state.isRunning) return;
+
+  const records = state.history.records;
+  if (records.length < 10) {
+    elements.suggestionsPanel.classList.add('hidden');
+    return;
+  }
+
+  const metrics = {
+    epoch: state.currentEpoch,
+    trainLoss: state.currentLoss ?? 0,
+    valLoss: state.currentValLoss,
+    trainAccuracy: state.currentAccuracy ?? 0,
+    valAccuracy: state.currentValAccuracy,
+    learningRate: parseFloat(elements.inputLr.value) || 0.03,
+    lossHistory: records.map(r => r.loss),
+    valLossHistory: records.filter(r => r.valLoss !== null).map(r => r.valLoss as number),
+  };
+
+  const diagnosis = diagnoseTraining(metrics);
+  lastDiagnosis = diagnosis;
+
+  if (diagnosis.suggestions.length === 0) {
+    elements.suggestionsPanel.classList.add('hidden');
+    return;
+  }
+
+  elements.suggestionsPanel.classList.remove('hidden');
+  elements.suggestionsContent.innerHTML = formatSuggestionsHTML(diagnosis.suggestions);
+
+  // Attach action handlers
+  elements.suggestionsContent.querySelectorAll('[data-suggestion-action]').forEach(btn => {
+    btn.addEventListener('click', handleSuggestionAction);
+  });
+}
+
+/**
+ * Handles clicking a suggestion action button.
+ */
+function handleSuggestionAction(e: Event): void {
+  const btn = e.target as HTMLButtonElement;
+  const action = btn.dataset.suggestionAction;
+  const params = JSON.parse(btn.dataset.suggestionParams ?? '{}');
+
+  switch (action) {
+    case 'setLearningRate':
+      elements.inputLr.value = String(params.value);
+      toast.info(`Learning rate set to ${params.value}`);
+      break;
+    case 'multiplyLearningRate': {
+      const currentLr = parseFloat(elements.inputLr.value) || 0.03;
+      const newLr = Math.min(1, Math.max(0.0001, currentLr * params.factor));
+      elements.inputLr.value = newLr.toFixed(4);
+      toast.info(`Learning rate changed to ${newLr.toFixed(4)}`);
+      break;
+    }
+    case 'resetNetwork':
+      handleReset();
+      break;
+    case 'addHiddenLayer': {
+      const layers = elements.inputLayers.value.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+      layers.push(4);
+      elements.inputLayers.value = layers.join(', ');
+      toast.info('Added hidden layer with 4 neurons');
+      break;
+    }
+    case 'doubleLayerSize': {
+      const layers = elements.inputLayers.value.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+      const doubled = layers.map(n => n * 2);
+      elements.inputLayers.value = doubled.join(', ');
+      toast.info('Doubled layer sizes');
+      break;
+    }
+    case 'setDropout':
+      elements.inputDropout.value = String(params.value);
+      toast.info(`Dropout set to ${params.value * 100}%`);
+      break;
+    case 'setL2':
+      elements.inputL2.value = String(params.value);
+      toast.info(`L2 regularization set to ${params.value}`);
+      break;
+    case 'setBatchSize':
+      elements.inputBatchSize.value = String(params.value);
+      toast.info(`Batch size set to ${params.value}`);
+      break;
+    case 'setValSplit':
+      elements.inputValSplit.value = String(params.value);
+      toast.info('Validation split enabled');
+      break;
+    case 'stopTraining':
+      handlePause();
+      break;
+    default:
+      console.warn('Unknown suggestion action:', action);
+  }
+
+  // Hide suggestions after action
+  dismissSuggestions();
+}
+
+/**
+ * Dismisses the suggestions panel.
+ */
+function dismissSuggestions(): void {
+  suggestionsDismissed = true;
+  elements.suggestionsPanel.classList.add('hidden');
+}
+
+/**
+ * Resets suggestion dismissal state (e.g., on new training session).
+ */
+function resetSuggestionsDismissal(): void {
+  suggestionsDismissed = false;
+}
+
+// =============================================================================
+// What-If Analysis
+// =============================================================================
+
+/**
+ * Runs what-if analysis for the selected parameter.
+ */
+async function handleWhatIfAnalysis(): Promise<void> {
+  const state = session.getState();
+  if (!state.datasetLoaded) {
+    toast.warning('Please load a dataset first');
+    return;
+  }
+
+  const parameterKey = elements.whatifParameter.value;
+  const variation = PARAMETER_VARIATIONS.find(v => v.parameter === parameterKey);
+  
+  if (!variation) {
+    toast.error('Unknown parameter');
+    return;
+  }
+
+  // Get current config
+  const layers = elements.inputLayers.value.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n > 0);
+  const numClasses = parseInt(elements.inputNumClasses.value, 10) || 2;
+  
+  const baseConfig = {
+    learningRate: parseFloat(elements.inputLr.value) || 0.03,
+    layers,
+    activation: elements.inputActivation.value as ActivationType,
+    optimizer: elements.inputOptimizer.value as OptimizerType,
+    numClasses,
+    dropoutRate: parseFloat(elements.inputDropout.value) || 0,
+    l2Regularization: parseFloat(elements.inputL2.value) || 0,
+  };
+
+  // Get training data
+  const data = session.getData();
+  if (data.length === 0) {
+    toast.warning('No training data available');
+    return;
+  }
+
+  // Disable button and show progress
+  elements.btnWhatif.disabled = true;
+  elements.btnWhatif.textContent = 'Analyzing...';
+  elements.whatifResults.classList.remove('hidden');
+  elements.whatifResults.innerHTML = '<div class="text-center text-slate-400">Running simulations...</div>';
+
+  try {
+    const result = await runWhatIfAnalysis(
+      () => new TFNeuralNet(),
+      baseConfig,
+      data,
+      variation,
+      30,
+      (current, total) => {
+        elements.whatifResults.innerHTML = `<div class="text-center text-slate-400">Testing ${current}/${total}...</div>`;
+      }
+    );
+
+    elements.whatifResults.innerHTML = formatWhatIfResultsHTML(result);
+    toast.success('What-if analysis complete');
+  } catch (error) {
+    console.error('What-if analysis failed:', error);
+    toast.error('Analysis failed');
+    elements.whatifResults.classList.add('hidden');
+  } finally {
+    elements.btnWhatif.disabled = false;
+    elements.btnWhatif.innerHTML = `
+      <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+      </svg>
+      Run Analysis
+    `;
+  }
+}
+
+// =============================================================================
+// Gradient Flow Visualization
+// =============================================================================
+
+let gradientFlow: D3GradientFlow | null = null;
+let previousWeights: number[][][] = [];
+
+/**
+ * Toggles gradient flow visualization.
+ */
+function handleGradientToggle(): void {
+  if (elements.inputShowGradients.checked) {
+    elements.gradientFlowContainer.classList.remove('hidden');
+    if (!gradientFlow) {
+      gradientFlow = new D3GradientFlow(elements.gradientFlowContainer);
+    }
+    // Store current weights as baseline
+    previousWeights = neuralNetService.getWeightMatrices();
+  } else {
+    elements.gradientFlowContainer.classList.add('hidden');
+  }
+}
+
+/**
+ * Updates gradient flow visualization.
+ */
+function updateGradientFlow(): void {
+  if (!elements.inputShowGradients.checked || !gradientFlow) return;
+
+  const currentWeights = neuralNetService.getWeightMatrices();
+  if (previousWeights.length === 0 || currentWeights.length === 0) {
+    previousWeights = currentWeights;
+    return;
+  }
+
+  const lr = parseFloat(elements.inputLr.value) || 0.03;
+  const gradientData = estimateGradients(previousWeights, currentWeights, lr);
+  gradientFlow.render(gradientData);
+
+  // Update previous weights for next comparison
+  previousWeights = currentWeights;
 }
 
 /**
@@ -1481,6 +1760,7 @@ function handleValSplitChange(): void {
 
 function handleStart(): void {
   try {
+    resetSuggestionsDismissal();
     session.start();
   } catch (error) {
     console.error('Failed to start training:', error);
@@ -3379,6 +3659,9 @@ function init(): void {
   // Subscribe to state changes
   session.onStateChange(updateUI);
 
+  // Initialize ELI5 tooltips
+  initELI5Tooltips();
+
   // Bind event listeners - Presets
   elements.presetSelect.addEventListener('change', handlePresetChange);
   elements.btnApplyPreset.addEventListener('click', () => void applyPreset());
@@ -3459,6 +3742,12 @@ function init(): void {
   elements.btnStep.addEventListener('click', () => void handleStep());
   elements.btnReset.addEventListener('click', handleReset);
 
+  // Bind event listeners - Suggestions
+  elements.btnDismissSuggestions.addEventListener('click', dismissSuggestions);
+
+  // Bind event listeners - What-If Analysis
+  elements.btnWhatif.addEventListener('click', () => void handleWhatIfAnalysis());
+
   // Bind event listeners - Export
   elements.btnExportJson.addEventListener('click', handleExportJson);
   elements.btnExportCsv.addEventListener('click', handleExportCsv);
@@ -3473,6 +3762,7 @@ function init(): void {
   elements.inputLoadWeights.addEventListener('change', (e) => void handleLoadModelWeights(e));
   elements.inputShowWeights.addEventListener('change', updateNetworkDiagram);
   elements.inputShowActivations.addEventListener('change', handleActivationToggle);
+  elements.inputShowGradients.addEventListener('change', handleGradientToggle);
 
   // Bind event listeners - Dataset import/export
   elements.inputCsvUpload.addEventListener('change', handleCsvUpload);

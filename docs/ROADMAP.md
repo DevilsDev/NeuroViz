@@ -223,17 +223,17 @@ This document outlines planned features for NeuroViz, organized by priority and 
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| "Explain like I'm 5" tooltips | M | 🔲 | Hover explanations |
+| "Explain like I'm 5" tooltips | M | ✅ | Hover explanations |
 | Overfitting/underfitting warnings | M | ✅ | Automatic detection |
-| Suggested fixes | M | 🔲 | Actionable recommendations |
+| Suggested fixes | M | ✅ | Actionable recommendations |
 
 ### 🟢 P3 — Interactive Learning
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
 | Guided tutorials | L | ✅ | Step-by-step walkthrough |
-| What-if analysis | L | 🔲 | Parameter sensitivity |
-| Gradient visualization | L | 🔲 | Backprop animation |
+| What-if analysis | L | ✅ | Parameter sensitivity |
+| Gradient visualization | L | ✅ | Backprop animation |
 
 ---
 
@@ -397,6 +397,13 @@ This document outlines planned features for NeuroViz, organized by priority and 
 2. ✅ Model ensemble - voting visualization
 3. ✅ Export to ONNX - cross-platform format
 
+### ✅ Sprint 17: Phase 7 Completion (Complete)
+
+1. ✅ ELI5 tooltips - beginner-friendly hover explanations
+2. ✅ Suggested fixes - actionable recommendations with one-click apply
+3. ✅ What-if analysis - parameter sensitivity testing
+4. ✅ Gradient visualization - backprop flow animation
+
 ---
 
 ## Contributing
@@ -424,7 +431,7 @@ Last updated: December 2025
 | Phase 4 | Data Management | 10 | 10 | 100% |
 | Phase 5 | Model Capabilities | 12 | 12 | 100% |
 | Phase 6 | UX & Polish | 14 | 14 | 100% |
-| Phase 7 | Educational | 2 | 6 | 33% |
+| Phase 7 | Educational | 6 | 6 | 100% |
 | Phase 8 | Performance | 1 | 7 | 14% |
 | Phase 9 | Research | 0 | 6 | 0% |
-| **Total** | | **83** | **99** | **84%** |
+| **Total** | | **87** | **99** | **88%** |

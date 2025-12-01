@@ -366,7 +366,7 @@
             <div class="space-y-3">
               <div class="grid grid-cols-2 gap-2">
                 <label class="block">
-                  <span class="input-label">Learning Rate</span>
+                  <span class="input-label" data-eli5="learning-rate">Learning Rate <span class="text-slate-500 cursor-help">ⓘ</span></span>
                   <input
                     type="number"
                     id="input-lr"
@@ -378,7 +378,7 @@
                   />
                 </label>
                 <label class="block">
-                  <span class="input-label">Optimizer</span>
+                  <span class="input-label" data-eli5="optimizer-adam">Optimizer <span class="text-slate-500 cursor-help">ⓘ</span></span>
                   <select id="input-optimizer" class="select-field">
                     <option value="adam" selected>Adam</option>
                     <option value="sgd">SGD</option>
@@ -402,7 +402,7 @@
                 </label>
               </div>
               <label class="block">
-                <span class="input-label">Hidden Layers</span>
+                <span class="input-label" data-eli5="layers">Hidden Layers <span class="text-slate-500 cursor-help">ⓘ</span></span>
                 <input
                   type="text"
                   id="input-layers"
@@ -423,7 +423,7 @@
               </label>
               <div class="grid grid-cols-2 gap-2">
                 <label class="block">
-                  <span class="input-label">Default Activation</span>
+                  <span class="input-label" data-eli5="activation-relu">Default Activation <span class="text-slate-500 cursor-help">ⓘ</span></span>
                   <select id="input-activation" class="select-field">
                     <option value="relu" selected>ReLU</option>
                     <option value="tanh">Tanh</option>
@@ -443,7 +443,7 @@
               </div>
               <div class="grid grid-cols-2 gap-2">
                 <label class="block">
-                  <span class="input-label">L1 Reg (Sparsity)</span>
+                  <span class="input-label" data-eli5="l1-regularization">L1 Reg <span class="text-slate-500 cursor-help">ⓘ</span></span>
                   <input
                     type="number"
                     id="input-l1"
@@ -455,7 +455,7 @@
                   />
                 </label>
                 <label class="block">
-                  <span class="input-label">L2 Reg (Decay)</span>
+                  <span class="input-label" data-eli5="l2-regularization">L2 Reg <span class="text-slate-500 cursor-help">ⓘ</span></span>
                   <input
                     type="number"
                     id="input-l2"
@@ -469,7 +469,7 @@
               </div>
               <div class="grid grid-cols-2 gap-2">
                 <label class="block">
-                  <span class="input-label">Dropout Rate</span>
+                  <span class="input-label" data-eli5="dropout">Dropout <span class="text-slate-500 cursor-help">ⓘ</span></span>
                   <select id="input-dropout" class="select-field">
                     <option value="0" selected>None (0%)</option>
                     <option value="0.1">10%</option>
@@ -510,7 +510,7 @@
             <div class="space-y-3">
               <div class="grid grid-cols-2 gap-2">
                 <label class="block">
-                  <span class="input-label">Batch Size</span>
+                  <span class="input-label" data-eli5="batch-size">Batch Size <span class="text-slate-500 cursor-help">ⓘ</span></span>
                   <input
                     type="number"
                     id="input-batch-size"
@@ -523,7 +523,7 @@
                   />
                 </label>
                 <label class="block">
-                  <span class="input-label">Max Epochs</span>
+                  <span class="input-label" data-eli5="epochs">Max Epochs <span class="text-slate-500 cursor-help">ⓘ</span></span>
                   <input
                     type="number"
                     id="input-max-epochs"
@@ -538,7 +538,7 @@
               </div>
               <div class="grid grid-cols-2 gap-2">
                 <label class="block">
-                  <span class="input-label">Validation Split</span>
+                  <span class="input-label" data-eli5="validation-split">Validation Split <span class="text-slate-500 cursor-help">ⓘ</span></span>
                   <select id="input-val-split" class="select-field">
                     <option value="0">None</option>
                     <option value="0.1">10%</option>
@@ -667,6 +667,26 @@
               <kbd class="kbd">R</kbd> Reset
               <kbd class="kbd">Esc</kbd> Stop
             </div>
+            <!-- What-If Analysis -->
+            <div class="mt-3 pt-3 border-t border-navy-700/30">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-slate-400" data-eli5="what-if">What-If Analysis</span>
+                <select id="whatif-parameter" class="select-field text-xs py-1 w-28">
+                  <option value="learningRate">Learning Rate</option>
+                  <option value="layers">Network Depth</option>
+                  <option value="dropout">Dropout</option>
+                </select>
+              </div>
+              <button id="btn-whatif" class="btn-secondary w-full text-xs" disabled>
+                <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                Run Analysis
+              </button>
+              <div id="whatif-results" class="hidden mt-2 p-2 bg-navy-900/50 rounded text-xs max-h-48 overflow-y-auto">
+                <!-- Results rendered here -->
+              </div>
+            </div>
           </fieldset>
 
           <!-- Status Display -->
@@ -674,11 +694,11 @@
             <legend class="control-legend">Metrics</legend>
             <div class="grid grid-cols-3 gap-2 mb-2">
               <div class="metric-card">
-                <span class="metric-label">Epoch</span>
+                <span class="metric-label" data-eli5="epochs">Epoch</span>
                 <span id="status-epoch" class="metric-value-accent">0</span>
               </div>
               <div class="metric-card">
-                <span class="metric-label">Train Loss</span>
+                <span class="metric-label" data-eli5="loss">Train Loss</span>
                 <span id="status-loss" class="metric-value text-orange-400">—</span>
               </div>
               <div class="metric-card">
@@ -696,7 +716,7 @@
                 <span id="status-lr" class="metric-value text-cyan-400">—</span>
               </div>
               <div class="metric-card">
-                <span class="metric-label">Train Acc</span>
+                <span class="metric-label" data-eli5="accuracy">Train Acc</span>
                 <span id="status-accuracy" class="metric-value text-emerald-400">—</span>
               </div>
               <div class="metric-card">
@@ -716,6 +736,16 @@
             <div id="fit-warning" class="hidden mt-2 p-2 rounded text-xs">
               <div id="fit-warning-message" class="font-medium"></div>
               <div id="fit-warning-suggestion" class="text-slate-400 mt-1"></div>
+            </div>
+            <!-- Suggested Fixes Panel -->
+            <div id="suggestions-panel" class="hidden mt-2">
+              <div class="text-xs text-slate-400 mb-1 flex items-center gap-1">
+                <span>💡 Suggestions</span>
+                <button id="btn-dismiss-suggestions" class="ml-auto text-slate-500 hover:text-slate-300">✕</button>
+              </div>
+              <div id="suggestions-content" class="max-h-40 overflow-y-auto">
+                <!-- Suggestions rendered here -->
+              </div>
             </div>
             <div class="flex gap-2 mt-2">
               <button id="btn-export-json" class="btn-secondary flex-1 text-xs" disabled>
@@ -815,6 +845,19 @@
               </div>
               <div id="network-diagram" class="h-32 bg-navy-800 rounded border border-navy-600">
                 <!-- D3 network diagram renders here -->
+              </div>
+            </div>
+            <!-- Gradient Flow -->
+            <div class="mt-3">
+              <div class="flex items-center justify-between mb-1">
+                <span class="input-label mb-0" data-eli5="gradient-flow">Gradient Flow</span>
+                <label class="flex items-center gap-1 text-xs text-slate-400">
+                  <input type="checkbox" id="input-show-gradients" class="accent-accent-500" />
+                  Show
+                </label>
+              </div>
+              <div id="gradient-flow-container" class="h-28 bg-navy-800 rounded border border-navy-600 hidden">
+                <!-- D3 gradient flow renders here -->
               </div>
             </div>
             <!-- Neuron Activations -->
