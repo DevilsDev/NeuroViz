@@ -17,7 +17,7 @@ import { TrainingSession } from './core/application';
 
 // Infrastructure adapters - only imported here at the composition root
 import { TFNeuralNet } from './infrastructure/tensorflow';
-import { D3Chart, D3LossChart, D3ConfusionMatrix, D3WeightHistogram, D3RocCurve, D3LRFinder, D3NetworkDiagram, calculateConfusionMatrix, calculateClassMetrics, calculateMacroMetrics, calculateRocCurve, findOptimalLR } from './infrastructure/d3';
+import { D3Chart, D3LossChart, D3ConfusionMatrix, D3WeightHistogram, D3RocCurve, D3LRFinder, D3NetworkDiagram, D3ActivationHeatmap, calculateConfusionMatrix, calculateClassMetrics, calculateMacroMetrics, calculateRocCurve, findOptimalLR } from './infrastructure/d3';
 import { MockDataRepository } from './infrastructure/api';
 
 // Configuration
@@ -91,6 +91,9 @@ const elements = {
   btn3dTop: document.getElementById('btn-3d-top') as HTMLButtonElement,
   btn3dSide: document.getElementById('btn-3d-side') as HTMLButtonElement,
 
+  // Voronoi overlay
+  inputVoronoi: document.getElementById('input-voronoi') as HTMLInputElement,
+
   // Hyperparameter inputs
   inputLr: document.getElementById('input-lr') as HTMLInputElement,
   inputLayers: document.getElementById('input-layers') as HTMLInputElement,
@@ -153,6 +156,14 @@ const elements = {
   btnLrFinder: document.getElementById('btn-lr-finder') as HTMLButtonElement,
   lrFinderContainer: document.getElementById('lr-finder-container') as HTMLDivElement,
   lrFinderResult: document.getElementById('lr-finder-result') as HTMLParagraphElement,
+
+  // Network Diagram
+  inputShowWeights: document.getElementById('input-show-weights') as HTMLInputElement,
+
+  // Activation Heatmap
+  inputShowActivations: document.getElementById('input-show-activations') as HTMLInputElement,
+  activationHeatmap: document.getElementById('activation-heatmap') as HTMLDivElement,
+  activationHint: document.getElementById('activation-hint') as HTMLParagraphElement,
 
   // Export buttons
   btnExportJson: document.getElementById('btn-export-json') as HTMLButtonElement,
@@ -245,6 +256,9 @@ const networkDiagram = networkDiagramContainer ? new D3NetworkDiagram(networkDia
 
 // 3D Visualization (lazy loaded)
 let threeViz: ThreeVisualization | null = null;
+
+// Activation heatmap (initialized lazily)
+let activationHeatmap: D3ActivationHeatmap | null = null;
 
 // Application layer receives adapters via constructor injection
 const session = new TrainingSession(neuralNetService, visualizerService, dataRepository, {
@@ -396,6 +410,11 @@ function updateUI(state: TrainingState): void {
   // Update 3D view periodically
   if (state.currentEpoch > 0 && state.currentEpoch % 10 === 0) {
     void update3dView();
+  }
+
+  // Update network diagram with weights periodically
+  if (elements.inputShowWeights.checked && state.currentEpoch > 0 && state.currentEpoch % 10 === 0) {
+    updateNetworkDiagram();
   }
 }
 
@@ -553,7 +572,74 @@ function showLoading(show: boolean): void {
 }
 
 /**
- * Updates the confusion matrix and classification metrics.
+ * Shows neuron activations for a given point.
+ */
+function showActivationsForPoint(point: Point): void {
+  const state = session.getState();
+  if (!state.isInitialised) return;
+  
+  // Initialize heatmap if needed
+  if (!activationHeatmap) {
+    activationHeatmap = new D3ActivationHeatmap(elements.activationHeatmap);
+  }
+  
+  // Show container
+  elements.activationHeatmap.classList.remove('hidden');
+  elements.activationHint.classList.add('hidden');
+  
+  // Get activations
+  const activations = neuralNetService.getLayerActivations(point);
+  
+  // Get layer names
+  const layersStr = elements.inputLayers.value;
+  const layers = layersStr.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n > 0);
+  const layerNames = ['Input', ...layers.map((_, i) => `H${i + 1}`), 'Output'];
+  
+  activationHeatmap.render(activations, layerNames);
+}
+
+/**
+ * Handles activation toggle.
+ */
+function handleActivationToggle(): void {
+  if (elements.inputShowActivations.checked) {
+    elements.activationHeatmap.classList.remove('hidden');
+    elements.activationHint.textContent = 'Hover over data points or click to see activations';
+  } else {
+    elements.activationHeatmap.classList.add('hidden');
+    elements.activationHint.textContent = 'Hover over data points to see activations';
+    elements.activationHint.classList.remove('hidden');
+  }
+}
+
+/**
+ * Updates the network diagram with current architecture and optionally weights.
+ */
+function updateNetworkDiagram(): void {
+  if (!networkDiagram) return;
+  
+  const state = session.getState();
+  if (!state.isInitialised) return;
+  
+  // Get layer configuration from UI
+  const layersStr = elements.inputLayers.value;
+  const layers = layersStr.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n > 0);
+  const numClasses = parseInt(elements.inputNumClasses.value, 10) || 2;
+  const activation = elements.inputActivation.value;
+  const layerActivationsStr = elements.inputLayerActivations.value.trim();
+  const layerActivations = layerActivationsStr ? layerActivationsStr.split(',').map(s => s.trim()) : [];
+  
+  const fullLayers = [2, ...layers, numClasses]; // Input (2D) + hidden + output
+  const activations = ['', ...(layerActivations.length > 0 ? layerActivations : layers.map(() => activation)), numClasses > 2 ? 'softmax' : 'sigmoid'];
+  
+  // Get weights if checkbox is checked
+  const weights = elements.inputShowWeights.checked ? neuralNetService.getWeightMatrices() : undefined;
+  
+  networkDiagram.render(fullLayers, activations, weights);
+}
+
+/**
+ * Updates classification metrics (confusion matrix, precision, recall, F1).
  */
 async function updateClassificationMetrics(): Promise<void> {
   const state = session.getState();
@@ -952,6 +1038,11 @@ async function handlePointClick(point: Point): Promise<void> {
     toast.info(
       `${status} | Actual: ${point.label}, Predicted: ${pred.predictedClass} (${confidence}% confidence)`
     );
+
+    // Show activations if enabled
+    if (elements.inputShowActivations.checked) {
+      showActivationsForPoint(point);
+    }
   } catch (error) {
     console.error('Failed to get prediction:', error);
     toast.info(`Point: (${point.x.toFixed(3)}, ${point.y.toFixed(3)}) - Class ${point.label}`);
@@ -1254,11 +1345,7 @@ async function handleInitialise(): Promise<void> {
     applyTrainingConfig();
 
     // Update network diagram
-    if (networkDiagram) {
-      const fullLayers = [2, ...layers, numClasses]; // Input (2D) + hidden + output
-      const activations = ['', ...(layerActivations.length > 0 ? layerActivations : layers.map(() => activation)), numClasses > 2 ? 'softmax' : 'sigmoid'];
-      networkDiagram.render(fullLayers, activations);
-    }
+    updateNetworkDiagram();
 
     toast.success(`Network initialized with ${optimizer.toUpperCase()} optimizer!`);
   } catch (error) {
@@ -2948,6 +3035,11 @@ function init(): void {
   elements.btn3dTop.addEventListener('click', () => threeViz?.setTopView());
   elements.btn3dSide.addEventListener('click', () => threeViz?.setSideView());
 
+  // Bind event listeners - Voronoi overlay
+  elements.inputVoronoi.addEventListener('change', () => {
+    visualizerService.setVoronoiOverlay(elements.inputVoronoi.checked);
+  });
+
   // Bind event listeners - Hyperparameters
   elements.btnInit.addEventListener('click', () => void handleInitialise());
 
@@ -2977,6 +3069,8 @@ function init(): void {
   elements.btnLrFinder.addEventListener('click', () => void handleLRFinder());
   elements.inputLoadModel.addEventListener('change', handleLoadModelJson);
   elements.inputLoadWeights.addEventListener('change', (e) => void handleLoadModelWeights(e));
+  elements.inputShowWeights.addEventListener('change', updateNetworkDiagram);
+  elements.inputShowActivations.addEventListener('change', handleActivationToggle);
 
   // Bind event listeners - Dataset import/export
   elements.inputCsvUpload.addEventListener('change', handleCsvUpload);

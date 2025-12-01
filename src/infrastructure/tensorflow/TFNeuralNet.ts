@@ -326,6 +326,89 @@ export class TFNeuralNet implements INeuralNetworkService {
   }
 
   /**
+   * Gets weight matrices for each layer connection.
+   * Used for network diagram weight visualization.
+   * @returns Array of weight matrices [layer][fromNode][toNode]
+   */
+  getWeightMatrices(): number[][][] {
+    if (!this.model) {
+      return [];
+    }
+
+    const matrices: number[][][] = [];
+    const weights = this.model.getWeights();
+    
+    // Weights come in pairs: [kernel, bias, kernel, bias, ...]
+    // We only want the kernels (even indices)
+    for (let i = 0; i < weights.length; i += 2) {
+      const kernel = weights[i];
+      if (!kernel) continue;
+      
+      const shape = kernel.shape;
+      const data = kernel.dataSync();
+      const [inputSize, outputSize] = shape;
+      
+      if (inputSize === undefined || outputSize === undefined) continue;
+      
+      const matrix: number[][] = [];
+      for (let from = 0; from < inputSize; from++) {
+        const row: number[] = [];
+        for (let to = 0; to < outputSize; to++) {
+          const idx = from * outputSize + to;
+          row.push(data[idx] ?? 0);
+        }
+        matrix.push(row);
+      }
+      matrices.push(matrix);
+    }
+    
+    return matrices;
+  }
+
+  /**
+   * Gets activations for each layer given an input point.
+   * Used for neuron activation visualization.
+   * @param point - Input point to get activations for
+   * @returns Array of activation arrays per layer
+   */
+  getLayerActivations(point: Point): number[][] {
+    if (!this.model) {
+      return [];
+    }
+
+    const activations: number[][] = [];
+    
+    // Create input tensor
+    const input = tf.tensor2d([[point.x, point.y]]);
+    
+    try {
+      // Get activations from each layer
+      let currentInput: tf.Tensor = input;
+      
+      for (const layer of this.model.layers) {
+        const output = layer.apply(currentInput) as tf.Tensor;
+        const data = output.dataSync();
+        activations.push(Array.from(data));
+        
+        // Use this layer's output as next layer's input
+        if (currentInput !== input) {
+          currentInput.dispose();
+        }
+        currentInput = output;
+      }
+      
+      // Dispose final output
+      if (currentInput !== input) {
+        currentInput.dispose();
+      }
+    } finally {
+      input.dispose();
+    }
+    
+    return activations;
+  }
+
+  /**
    * Builds a sequential model with the specified architecture.
    *
    * Architecture:

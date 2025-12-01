@@ -2,6 +2,7 @@ import * as d3 from 'd3';
 import type { IVisualizerService, PointAddedCallback } from '../../core/ports';
 import type { Point, Prediction, VisualizationConfig } from '../../core/domain';
 import { DEFAULT_VISUALIZATION_CONFIG, COLOUR_PALETTES, MULTI_CLASS_COLOURS } from '../../core/domain';
+import { D3VoronoiOverlay } from './D3VoronoiOverlay';
 
 /**
  * D3.js implementation of IVisualizerService.
@@ -37,6 +38,10 @@ export class D3Chart implements IVisualizerService {
   private drawModeEnabled = false;
   private drawModeLabel = 0;
   private drawModeCallback: PointAddedCallback | null = null;
+
+  // Voronoi overlay
+  private voronoiOverlay: D3VoronoiOverlay | null = null;
+  private voronoiEnabled = false;
 
   /**
    * @param containerId - DOM element ID where the chart will be rendered
@@ -705,5 +710,41 @@ export class D3Chart implements IVisualizerService {
       
       el.setAttribute('style', `${style}; ${inlined}`);
     });
+  }
+
+  /**
+   * Enables or disables the Voronoi diagram overlay.
+   * @param enabled - Whether to show the Voronoi overlay
+   */
+  setVoronoiOverlay(enabled: boolean): void {
+    this.voronoiEnabled = enabled;
+
+    if (enabled) {
+      // Initialize overlay if needed
+      if (!this.voronoiOverlay) {
+        this.voronoiOverlay = new D3VoronoiOverlay(
+          this.chartGroup,
+          this.width,
+          this.height,
+          this.xScale,
+          this.yScale
+        );
+      }
+
+      // Render if we have cached data
+      if (this.cachedPoints.length > 0 && this.cachedPredictions.length > 0) {
+        this.voronoiOverlay.render(this.cachedPoints, this.cachedPredictions, this.config.boundaryOpacity);
+      }
+    } else {
+      // Clear overlay
+      this.voronoiOverlay?.clear();
+    }
+  }
+
+  /**
+   * Returns whether Voronoi overlay is enabled.
+   */
+  isVoronoiEnabled(): boolean {
+    return this.voronoiEnabled;
   }
 }

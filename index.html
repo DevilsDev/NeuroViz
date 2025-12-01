@@ -298,6 +298,10 @@
                   <input type="checkbox" id="input-3d-view" class="accent-accent-500" />
                   3D View
                 </label>
+                <label class="flex items-center gap-2 text-xs text-slate-400" title="Show Voronoi diagram overlay">
+                  <input type="checkbox" id="input-voronoi" class="accent-accent-500" />
+                  Voronoi
+                </label>
               </div>
               <!-- 3D View Container -->
               <div id="three-container" class="hidden mt-2 h-64 bg-navy-900 rounded-lg border border-navy-600 relative">
@@ -794,10 +798,30 @@
             </div>
             <!-- Network Architecture Diagram -->
             <div class="mt-3">
-              <span class="input-label">Network Architecture</span>
+              <div class="flex items-center justify-between mb-1">
+                <span class="input-label mb-0">Network Architecture</span>
+                <label class="flex items-center gap-1 text-xs text-slate-400">
+                  <input type="checkbox" id="input-show-weights" class="accent-accent-500" />
+                  Show Weights
+                </label>
+              </div>
               <div id="network-diagram" class="h-32 bg-navy-800 rounded border border-navy-600">
                 <!-- D3 network diagram renders here -->
               </div>
+            </div>
+            <!-- Neuron Activations -->
+            <div class="mt-3">
+              <div class="flex items-center justify-between mb-1">
+                <span class="input-label mb-0">Neuron Activations</span>
+                <label class="flex items-center gap-1 text-xs text-slate-400">
+                  <input type="checkbox" id="input-show-activations" class="accent-accent-500" />
+                  Live Update
+                </label>
+              </div>
+              <div id="activation-heatmap" class="h-24 bg-navy-800 rounded border border-navy-600 hidden">
+                <!-- D3 activation heatmap renders here -->
+              </div>
+              <p id="activation-hint" class="text-xs text-slate-500 mt-1">Hover over data points to see activations</p>
             </div>
           </fieldset>
 

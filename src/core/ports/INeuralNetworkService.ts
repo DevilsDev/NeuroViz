@@ -74,6 +74,23 @@ export interface INeuralNetworkService {
   getWeights(): number[];
 
   /**
+   * Gets weight matrices for each layer connection.
+   * Used for network diagram weight visualization.
+   *
+   * @returns Array of weight matrices [layer][fromNode][toNode]
+   */
+  getWeightMatrices(): number[][][];
+
+  /**
+   * Gets activations for each layer given an input point.
+   * Used for neuron activation visualization.
+   *
+   * @param point - Input point to get activations for
+   * @returns Array of activation arrays per layer
+   */
+  getLayerActivations(point: Point): number[][];
+
+  /**
    * Loads a model from JSON and weights files.
    *
    * @param modelJson - The model topology JSON file

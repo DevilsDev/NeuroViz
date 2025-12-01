@@ -113,9 +113,9 @@ This document outlines planned features for NeuroViz, organized by priority and 
 | 3D visualization (Three.js) | XL | ✅ | Height = confidence |
 | Network architecture diagram | L | ✅ | Interactive D3 node graph |
 | Weight histogram | S | ✅ | Layer weight distribution |
-| Weight magnitude visualization | M | 🔲 | Color-coded connections |
-| Real-time neuron activations | L | 🔲 | Per-layer heatmaps |
-| Voronoi diagram overlay | M | 🔲 | Alternative boundary view |
+| Weight magnitude visualization | M | ✅ | Color-coded connections |
+| Real-time neuron activations | L | ✅ | Per-layer heatmaps |
+| Voronoi diagram overlay | M | ✅ | Alternative boundary view |
 
 ---
 
@@ -385,6 +385,12 @@ This document outlines planned features for NeuroViz, organized by priority and 
 2. ✅ 3D visualization with Three.js
 3. ✅ Guided tutorials system
 
+### ✅ Sprint 15: Phase 3 Completion (Complete)
+
+1. ✅ Weight magnitude visualization (color-coded connections)
+2. ✅ Real-time neuron activations (per-layer heatmaps)
+3. ✅ Voronoi diagram overlay (alternative boundary view)
+
 ---
 
 ## Contributing
@@ -408,11 +414,11 @@ Last updated: December 2025
 |-------|-------------|-----------|-------|----------|
 | Phase 1 | Core Training | 16 | 16 | 100% |
 | Phase 2 | Metrics & History | 12 | 12 | 100% |
-| Phase 3 | Visualization | 13 | 16 | 81% |
+| Phase 3 | Visualization | 16 | 16 | 100% |
 | Phase 4 | Data Management | 10 | 10 | 100% |
 | Phase 5 | Model Capabilities | 9 | 12 | 75% |
 | Phase 6 | UX & Polish | 14 | 14 | 100% |
 | Phase 7 | Educational | 2 | 6 | 33% |
 | Phase 8 | Performance | 1 | 7 | 14% |
 | Phase 9 | Research | 0 | 6 | 0% |
-| **Total** | | **77** | **99** | **78%** |
+| **Total** | | **80** | **99** | **81%** |

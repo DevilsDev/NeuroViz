@@ -8,3 +8,5 @@ export type { RocPoint } from './D3RocCurve';
 export { D3LRFinder, findOptimalLR } from './D3LRFinder';
 export type { LRFinderPoint } from './D3LRFinder';
 export { D3NetworkDiagram } from './D3NetworkDiagram';
+export { D3ActivationHeatmap } from './D3ActivationHeatmap';
+export { D3VoronoiOverlay } from './D3VoronoiOverlay';
