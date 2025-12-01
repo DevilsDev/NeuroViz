@@ -524,10 +524,21 @@ export class TrainingSession implements ITrainingSession {
    * @remarks
    * The predictionGrid is reused across calls (no new allocations for input).
    * Predictions are immutable by design, so we replace the cached array.
+   * Guards against rendering after session has been cleared.
    */
   private async updateVisualisation(): Promise<void> {
+    // Guard: don't render if session was cleared while async operation was pending
+    if (!this.datasetLoaded || !this.isTraining) {
+      return;
+    }
+    
     // Get predictions (predictionGrid is reused, reducing input allocations)
     this.cachedPredictions = await this.neuralNet.predict(this.predictionGrid);
+
+    // Guard again after async operation - session may have been cleared
+    if (!this.datasetLoaded || !this.isTraining) {
+      return;
+    }
 
     // Render boundary, then data points on top
     this.visualizer.renderBoundary(this.cachedPredictions, this.config.gridSize);
