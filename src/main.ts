@@ -2459,9 +2459,13 @@ const THEME_KEY = 'neuroviz-theme';
  * Gets the current theme from localStorage or system preference.
  */
 function getStoredTheme(): 'light' | 'dark' {
-  const result = storage.getItem<'light' | 'dark'>(THEME_KEY);
-  if (result.success && result.data && (result.data === 'light' || result.data === 'dark')) {
-    return result.data;
+  try {
+    const stored = localStorage.getItem(THEME_KEY);
+    if (stored === 'light' || stored === 'dark') {
+      return stored;
+    }
+  } catch (error) {
+    logger.warn('Failed to read theme from localStorage', { error });
   }
   // Fall back to system preference
   return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
@@ -2486,9 +2490,10 @@ function applyTheme(theme: 'light' | 'dark'): void {
     elements.iconMoon.classList.remove('hidden');
   }
 
-  const result = storage.setItem(THEME_KEY, theme);
-  if (!result.success) {
-    console.warn('Failed to save theme preference:', result.error);
+  try {
+    localStorage.setItem(THEME_KEY, theme);
+  } catch (error) {
+    logger.warn('Failed to save theme preference', { error });
   }
 }
 
@@ -4112,6 +4117,82 @@ function init(): void {
 
 // Start the application
 init();
+
+// =============================================================================
+// Collapsible Sections
+// =============================================================================
+
+const COLLAPSED_SECTIONS_KEY = 'neuroviz-collapsed-sections';
+
+/**
+ * Toggles a collapsible section.
+ */
+function toggleSection(legendElement: HTMLElement): void {
+  const fieldset = legendElement.closest('fieldset');
+  if (!fieldset) return;
+
+  const sectionContent = fieldset.querySelector('.section-content');
+  if (!sectionContent) return;
+
+  const isCollapsed = legendElement.classList.contains('collapsed');
+
+  if (isCollapsed) {
+    // Expand
+    legendElement.classList.remove('collapsed');
+    sectionContent.classList.remove('collapsed');
+    (sectionContent as HTMLElement).style.maxHeight = sectionContent.scrollHeight + 'px';
+  } else {
+    // Collapse
+    legendElement.classList.add('collapsed');
+    sectionContent.classList.add('collapsed');
+    (sectionContent as HTMLElement).style.maxHeight = '0';
+  }
+
+  // Save state
+  saveCollapsedSections();
+}
+
+/**
+ * Saves collapsed section state to localStorage.
+ */
+function saveCollapsedSections(): void {
+  const collapsed: string[] = [];
+  document.querySelectorAll('[data-collapsible]').forEach(fieldset => {
+    const legend = fieldset.querySelector('.control-legend');
+    if (legend?.classList.contains('collapsed')) {
+      collapsed.push(fieldset.getAttribute('data-collapsible') ?? '');
+    }
+  });
+  storage.setItem(COLLAPSED_SECTIONS_KEY, collapsed);
+}
+
+/**
+ * Restores collapsed section state from localStorage.
+ */
+function restoreCollapsedSections(): void {
+  const result = storage.getItem<string[]>(COLLAPSED_SECTIONS_KEY, []);
+  const collapsed = result.data ?? [];
+
+  collapsed.forEach(sectionId => {
+    const fieldset = document.querySelector(`[data-collapsible="${sectionId}"]`);
+    if (!fieldset) return;
+
+    const legend = fieldset.querySelector('.control-legend');
+    const sectionContent = fieldset.querySelector('.section-content');
+
+    if (legend && sectionContent) {
+      legend.classList.add('collapsed');
+      sectionContent.classList.add('collapsed');
+      (sectionContent as HTMLElement).style.maxHeight = '0';
+    }
+  });
+}
+
+// Expose toggleSection globally for onclick handlers
+(window as Window & { toggleSection?: typeof toggleSection }).toggleSection = toggleSection;
+
+// Restore collapsed sections on load
+restoreCollapsedSections();
 
 // Cleanup on page unload
 window.addEventListener('beforeunload', () => {

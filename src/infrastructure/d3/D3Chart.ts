@@ -20,7 +20,7 @@ export class D3Chart implements IVisualizerService {
   private readonly chartGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
   private readonly width: number;
   private readonly height: number;
-  private readonly margin = { top: 20, right: 20, bottom: 30, left: 40 };
+  private readonly margin = { top: 8, right: 8, bottom: 28, left: 32 };
 
   private xScale: d3.ScaleLinear<number, number>;
   private yScale: d3.ScaleLinear<number, number>;
@@ -61,11 +61,13 @@ export class D3Chart implements IVisualizerService {
     // Clear any existing content
     this.container.selectAll('*').remove();
 
-    // Create SVG with clip path for zoom
+    // Create SVG with viewBox for responsive sizing
     this.svg = this.container
       .append('svg')
-      .attr('width', width)
-      .attr('height', height) as d3.Selection<SVGSVGElement, unknown, null, undefined>;
+      .attr('viewBox', `0 0 ${width} ${height}`)
+      .attr('preserveAspectRatio', 'xMidYMid meet')
+      .style('width', '100%')
+      .style('height', '100%') as d3.Selection<SVGSVGElement, unknown, null, undefined>;
 
     // Add clip path to prevent rendering outside chart area
     this.svg

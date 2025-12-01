@@ -84,7 +84,7 @@
         <aside class="flex flex-col gap-4">
           <!-- Quick Presets -->
           <fieldset class="control-fieldset">
-            <legend class="control-legend">Quick Start</legend>
+            <legend class="control-legend">⚡ Quick Start</legend>
             <select id="preset-select" aria-label="Select preset configuration" class="select-field mb-2">
               <option value="">— Select a preset —</option>
               <optgroup label="Built-in Presets">
@@ -122,7 +122,7 @@
 
           <!-- Dataset Selection -->
           <fieldset class="control-fieldset">
-            <legend class="control-legend">Dataset</legend>
+            <legend class="control-legend">📊 Dataset</legend>
             <select id="dataset-select" aria-label="Select dataset type" class="select-field mb-3">
               <optgroup label="Generated Datasets">
                 <option value="circle">Circle (Concentric Rings)</option>
@@ -221,7 +221,7 @@
 
           <!-- Visualization Settings -->
           <fieldset class="control-fieldset">
-            <legend class="control-legend">Visualization</legend>
+            <legend class="control-legend">🎨 Visualization</legend>
             <div class="space-y-3">
               <div class="grid grid-cols-2 gap-2">
                 <label class="block">
@@ -362,7 +362,7 @@
 
           <!-- Hyperparameters -->
           <fieldset class="control-fieldset">
-            <legend class="control-legend">Hyperparameters</legend>
+            <legend class="control-legend">⚙️ Hyperparameters</legend>
             <div class="space-y-3">
               <div class="grid grid-cols-2 gap-2">
                 <label class="block">
@@ -506,7 +506,7 @@
 
           <!-- Training Configuration -->
           <fieldset class="control-fieldset">
-            <legend class="control-legend">Training Config</legend>
+            <legend class="control-legend">🔧 Training Config</legend>
             <div class="space-y-3">
               <div class="grid grid-cols-2 gap-2">
                 <label class="block">
@@ -645,40 +645,42 @@
             </div>
           </fieldset>
 
-          <!-- Training Controls -->
-          <fieldset class="control-fieldset">
-            <legend class="control-legend">Training</legend>
-            <div class="grid grid-cols-2 gap-2">
-              <button id="btn-start" class="btn-primary" disabled aria-label="Start training">
-                <svg aria-hidden="true" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-                Start
-              </button>
-              <button id="btn-pause" class="btn-secondary" disabled aria-label="Pause training">
-                <svg aria-hidden="true" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                </svg>
-                Pause
-              </button>
-              <button id="btn-step" class="btn-secondary" disabled aria-label="Execute single training step">
-                <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                </svg>
-                Step
-              </button>
-              <button id="btn-reset" class="btn-danger" disabled aria-label="Reset training">
-                <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Reset
-              </button>
-            </div>
-            <div class="text-xs text-slate-500 mt-2 text-center">
-              <kbd class="kbd">Space</kbd> Start/Pause
-              <kbd class="kbd">S</kbd> Step
-              <kbd class="kbd">R</kbd> Reset
-              <kbd class="kbd">Esc</kbd> Stop
+          <!-- Training Controls (Sticky) -->
+          <fieldset class="control-fieldset" id="training-fieldset">
+            <div class="training-sticky">
+              <legend class="control-legend mb-3">▶️ Training</legend>
+              <div class="grid grid-cols-2 gap-2">
+                <button id="btn-start" class="btn-primary" disabled aria-label="Start training">
+                  <svg aria-hidden="true" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                  Start
+                </button>
+                <button id="btn-pause" class="btn-secondary" disabled aria-label="Pause training">
+                  <svg aria-hidden="true" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                  </svg>
+                  Pause
+                </button>
+                <button id="btn-step" class="btn-secondary" disabled aria-label="Execute single training step">
+                  <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                  </svg>
+                  Step
+                </button>
+                <button id="btn-reset" class="btn-danger" disabled aria-label="Reset training">
+                  <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Reset
+                </button>
+              </div>
+              <div class="text-xs text-slate-500 mt-2 text-center">
+                <kbd class="kbd">Space</kbd> Start/Pause
+                <kbd class="kbd">S</kbd> Step
+                <kbd class="kbd">R</kbd> Reset
+                <kbd class="kbd">Esc</kbd> Stop
+              </div>
             </div>
             <!-- What-If Analysis -->
             <div class="mt-3 pt-3 border-t border-navy-700/30">
@@ -704,21 +706,25 @@
 
           <!-- Status Display -->
           <fieldset class="control-fieldset">
-            <legend class="control-legend">Metrics</legend>
-            <div class="grid grid-cols-3 gap-2 mb-2">
-              <div class="metric-card">
-                <span class="metric-label" data-eli5="epochs">Epoch</span>
-                <span id="status-epoch" class="metric-value-accent">0</span>
+            <legend class="control-legend">📈 Metrics</legend>
+            <!-- Hero metrics row -->
+            <div class="flex items-center justify-between p-3 bg-gradient-to-r from-navy-900/80 to-navy-800/60 rounded-xl mb-3 border border-navy-700/30">
+              <div class="text-center flex-1">
+                <div id="status-epoch" class="text-2xl font-bold text-accent-400 tabular-nums">0</div>
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider" data-eli5="epochs">Epoch</div>
               </div>
-              <div class="metric-card">
-                <span class="metric-label" data-eli5="loss">Train Loss</span>
-                <span id="status-loss" class="metric-value text-orange-400">—</span>
+              <div class="h-10 w-px bg-navy-700/50"></div>
+              <div class="text-center flex-1">
+                <div id="status-loss" class="text-xl font-mono font-bold text-orange-400 tabular-nums">—</div>
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider" data-eli5="loss">Loss</div>
               </div>
-              <div class="metric-card">
-                <span class="metric-label">Val Loss</span>
-                <span id="status-val-loss" class="metric-value text-red-400">—</span>
+              <div class="h-10 w-px bg-navy-700/50"></div>
+              <div class="text-center flex-1">
+                <div id="status-accuracy" class="text-xl font-mono font-bold text-emerald-400 tabular-nums">—</div>
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider" data-eli5="accuracy">Accuracy</div>
               </div>
             </div>
+            <!-- Secondary metrics -->
             <div class="grid grid-cols-4 gap-2">
               <div class="metric-card">
                 <span class="metric-label">State</span>
@@ -729,8 +735,8 @@
                 <span id="status-lr" class="metric-value text-cyan-400">—</span>
               </div>
               <div class="metric-card">
-                <span class="metric-label" data-eli5="accuracy">Train Acc</span>
-                <span id="status-accuracy" class="metric-value text-emerald-400">—</span>
+                <span class="metric-label">Val Loss</span>
+                <span id="status-val-loss" class="metric-value text-red-400">—</span>
               </div>
               <div class="metric-card">
                 <span class="metric-label">Val Acc</span>
@@ -741,9 +747,16 @@
 
           <!-- Training History Chart -->
           <fieldset class="control-fieldset">
-            <legend class="control-legend">Training History</legend>
+            <legend class="control-legend">📉 Training History</legend>
             <div id="loss-chart-container" class="w-full h-48 bg-navy-900/50 rounded-lg">
               <!-- D3 loss chart renders here -->
+              <div id="loss-chart-empty" class="empty-state h-full">
+                <svg class="empty-state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <div class="empty-state-title">No training data yet</div>
+                <div class="empty-state-description">Start training to see loss curves</div>
+              </div>
             </div>
             <!-- Fit Analysis Warning -->
             <div id="fit-warning" class="hidden mt-2 p-2 rounded text-xs">
@@ -801,10 +814,23 @@
           </fieldset>
 
           <!-- Confusion Matrix & Metrics -->
-          <fieldset class="control-fieldset">
-            <legend class="control-legend">Classification Metrics</legend>
-            <div id="confusion-matrix-container" class="flex justify-center">
+          <fieldset class="control-fieldset" data-collapsible="classification-metrics">
+            <legend class="control-legend collapsible" onclick="toggleSection(this)">
+              <span>🎯 Classification Metrics</span>
+              <svg class="collapse-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </legend>
+            <div class="section-content">
+            <div id="confusion-matrix-container" class="flex justify-center min-h-[120px]">
               <!-- D3 confusion matrix renders here -->
+              <div id="confusion-matrix-empty" class="empty-state">
+                <svg class="empty-state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                </svg>
+                <div class="empty-state-title">No predictions yet</div>
+                <div class="empty-state-description">Train a model to see the confusion matrix</div>
+              </div>
             </div>
             <div class="grid grid-cols-3 gap-2 mt-3">
               <div class="metric-card">
@@ -887,11 +913,18 @@
               </div>
               <p id="activation-hint" class="text-xs text-slate-500 mt-1">Hover over data points to see activations</p>
             </div>
+            </div><!-- End section-content -->
           </fieldset>
 
           <!-- Research Tools -->
-          <fieldset class="control-fieldset">
-            <legend class="control-legend">Research Tools</legend>
+          <fieldset class="control-fieldset" data-collapsible="research-tools">
+            <legend class="control-legend collapsible" onclick="toggleSection(this)">
+              <span>🔬 Research Tools</span>
+              <svg class="collapse-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </legend>
+            <div class="section-content">
             <div class="space-y-2">
               <div class="grid grid-cols-2 gap-2">
                 <button id="btn-feature-importance" class="btn-secondary text-xs py-1" disabled title="Permutation importance">
@@ -921,11 +954,12 @@
                 <!-- Research results rendered here -->
               </div>
             </div>
+            </div><!-- End section-content -->
           </fieldset>
 
           <!-- Session Management -->
           <fieldset class="control-fieldset">
-            <legend class="control-legend">Session</legend>
+            <legend class="control-legend">💾 Session</legend>
             <div class="flex gap-2">
               <button id="btn-save-session" class="btn-secondary flex-1 text-xs">
                 <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -199,25 +199,45 @@ export class Logger {
    * Outputs log entry to console.
    */
   private logToConsole(entry: LogEntry): void {
-    const prefix = `[${this.getLevelName(entry.level)}]`;
-    const timestamp = new Date(entry.timestamp).toISOString();
-    const contextStr = entry.context ? JSON.stringify(entry.context) : '';
+    const time = new Date(entry.timestamp).toLocaleTimeString();
+    const component = entry.context?.component ? `[${entry.context.component}]` : '';
+    const message = `${component} ${entry.message}`;
 
     switch (entry.level) {
       case LogLevel.DEBUG:
-        console.log(`${prefix} ${timestamp} ${entry.message}`, contextStr);
+        if (entry.context && Object.keys(entry.context).length > 0) {
+          console.log(`%c${time} DEBUG`, 'color: #888', message, entry.context);
+        } else {
+          console.log(`%c${time} DEBUG`, 'color: #888', message);
+        }
         break;
       case LogLevel.INFO:
-        console.log(`${prefix} ${timestamp} ${entry.message}`, contextStr);
+        if (entry.context && Object.keys(entry.context).length > 0) {
+          console.log(`%c${time} INFO`, 'color: #0ea5e9', message, entry.context);
+        } else {
+          console.log(`%c${time} INFO`, 'color: #0ea5e9', message);
+        }
         break;
       case LogLevel.WARN:
-        console.warn(`${prefix} ${timestamp} ${entry.message}`, contextStr);
+        if (entry.context && Object.keys(entry.context).length > 0) {
+          console.warn(`%c${time} WARN`, 'color: #f59e0b', message, entry.context);
+        } else {
+          console.warn(`%c${time} WARN`, 'color: #f59e0b', message);
+        }
         break;
       case LogLevel.ERROR:
         if (entry.error) {
-          console.error(`${prefix} ${timestamp} ${entry.message}`, entry.error, contextStr);
+          if (entry.context && Object.keys(entry.context).length > 0) {
+            console.error(`%c${time} ERROR`, 'color: #ef4444', message, entry.error, entry.context);
+          } else {
+            console.error(`%c${time} ERROR`, 'color: #ef4444', message, entry.error);
+          }
         } else {
-          console.error(`${prefix} ${timestamp} ${entry.message}`, contextStr);
+          if (entry.context && Object.keys(entry.context).length > 0) {
+            console.error(`%c${time} ERROR`, 'color: #ef4444', message, entry.context);
+          } else {
+            console.error(`%c${time} ERROR`, 'color: #ef4444', message);
+          }
         }
         break;
     }

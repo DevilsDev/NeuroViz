@@ -84,14 +84,16 @@ html.dark {
 
 /* Dark theme (default - when html has 'dark' class) */
 html.dark body {
-  background-color: #0a0f1a !important;
+  background: linear-gradient(135deg, #0a0f1a 0%, #0f172a 50%, #0a0f1a 100%) !important;
+  background-attachment: fixed !important;
   color: #f1f5f9 !important;
 }
 
 /* Light theme (when html does NOT have 'dark' class) */
 html:not(.dark) body,
 body[data-theme="light"] {
-  background-color: #f8fafc !important;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f8fafc 100%) !important;
+  background-attachment: fixed !important;
   color: #0f172a !important;
 }
 
@@ -145,128 +147,167 @@ body[data-theme="light"] {
   }
 
   .main-grid {
-    @apply grid gap-4 flex-1;
+    @apply grid gap-4;
     @apply grid-cols-1;
-    @apply md:gap-6 md:grid-cols-[1fr_320px];
-    @apply lg:grid-cols-[1fr_360px];
+    @apply md:gap-5 md:grid-cols-[1fr_340px];
+    @apply lg:grid-cols-[1fr_380px];
+    align-items: start; /* Prevent stretching */
+  }
+
+  /* Visualization panel - compact, no extra space */
+  .main-grid > section:first-child {
+    @apply sticky top-4;
+  }
+
+  /* Sidebar - scrollable independently */
+  .main-grid > aside {
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    scrollbar-width: thin;
   }
 
   /* ---------------------------------------------------------------------------
-     Card / Panel Components
+     Card / Panel Components - Modern Glass Morphism
      --------------------------------------------------------------------------- */
   .panel {
-    @apply backdrop-blur-sm;
-    @apply border rounded-xl;
-    @apply shadow-lg shadow-black/20;
-    background-color: rgba(30, 41, 59, 0.8);
-    border-color: rgba(51, 65, 85, 0.5);
+    @apply backdrop-blur-md;
+    @apply border rounded-2xl;
+    @apply shadow-xl;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+    border-color: rgba(71, 85, 105, 0.3);
   }
   
   html:not(.dark) .panel {
-    background-color: rgba(226, 232, 240, 0.8);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(241, 245, 249, 0.98) 100%);
     border-color: rgba(203, 213, 225, 0.5);
   }
 
   .panel-glow {
-    @apply backdrop-blur-sm;
-    @apply border rounded-xl;
-    @apply shadow-lg shadow-black/20;
-    @apply transition-shadow duration-300;
-    background-color: rgba(30, 41, 59, 0.8);
-    border-color: rgba(51, 65, 85, 0.5);
+    @apply backdrop-blur-md;
+    @apply border rounded-2xl;
+    @apply shadow-xl;
+    @apply transition-all duration-300;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+    border-color: rgba(71, 85, 105, 0.3);
   }
   
   html:not(.dark) .panel-glow {
-    background-color: rgba(226, 232, 240, 0.8);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(241, 245, 249, 0.98) 100%);
     border-color: rgba(203, 213, 225, 0.5);
   }
 
   .panel-glow:hover {
-    @apply shadow-glow;
+    border-color: rgba(20, 184, 166, 0.3);
+    box-shadow: 0 0 30px rgba(20, 184, 166, 0.1);
   }
 
   /* ---------------------------------------------------------------------------
-     Form Controls
+     Form Controls - Modern Minimal Style
      --------------------------------------------------------------------------- */
   .input-field {
-    @apply w-full px-3 py-2.5;
-    @apply bg-navy-950 border border-navy-600;
-    @apply rounded-lg text-slate-100 text-sm;
+    @apply w-full px-3 py-2;
+    @apply border rounded-lg text-sm;
     @apply transition-all duration-200;
+    background: rgba(15, 23, 42, 0.5);
+    border-color: rgba(71, 85, 105, 0.4);
+    color: #e2e8f0;
   }
 
   .input-field::placeholder {
-    @apply text-slate-500;
+    color: rgba(148, 163, 184, 0.6);
   }
 
   .input-field:hover {
-    @apply border-navy-700;
+    border-color: rgba(71, 85, 105, 0.6);
   }
 
   .input-field:focus {
-    @apply border-accent-500 ring-1 ring-accent-500/30;
+    @apply outline-none;
+    border-color: rgba(20, 184, 166, 0.6);
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
   }
 
   .select-field {
-    @apply w-full px-3 py-2.5;
-    @apply bg-navy-950 border border-navy-600;
-    @apply rounded-lg text-slate-100 text-sm;
+    @apply w-full px-3 py-2;
+    @apply border rounded-lg text-sm;
     @apply transition-all duration-200;
-    @apply cursor-pointer appearance-none bg-no-repeat bg-right pr-8;
+    @apply cursor-pointer appearance-none pr-8;
+    background-color: rgba(15, 23, 42, 0.5);
+    border-color: rgba(71, 85, 105, 0.4);
+    color: #e2e8f0;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-    background-size: 1.25rem;
+    background-repeat: no-repeat;
+    background-size: 1rem;
     background-position: right 0.5rem center;
   }
 
   .input-label {
-    @apply block text-xs font-medium text-slate-400 uppercase tracking-wider mb-1.5;
+    @apply block text-[10px] font-medium uppercase tracking-wider mb-1;
+    color: rgba(148, 163, 184, 0.8);
   }
 
   /* ---------------------------------------------------------------------------
-     Button Components
+     Button Components - Modern Refined Style
      --------------------------------------------------------------------------- */
   .btn {
     @apply inline-flex items-center justify-center gap-2;
-    @apply px-4 py-2.5 rounded-lg;
-    @apply text-sm font-semibold;
+    @apply px-4 py-2 rounded-lg;
+    @apply text-sm font-medium;
     @apply transition-all duration-200;
-    @apply disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none;
+    @apply disabled:opacity-40 disabled:cursor-not-allowed;
   }
 
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2;
-    @apply px-4 py-2.5 rounded-lg;
-    @apply text-sm font-semibold;
+    @apply px-4 py-2 rounded-lg;
+    @apply text-sm font-medium;
     @apply transition-all duration-200;
-    @apply disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none;
-    @apply bg-gradient-to-r from-accent-500 to-accent-600;
-    @apply text-white shadow-lg shadow-accent-500/25;
+    @apply disabled:opacity-40 disabled:cursor-not-allowed;
+    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(20, 184, 166, 0.3);
   }
 
   .btn-primary:hover:not(:disabled) {
-    @apply from-accent-400 to-accent-500 shadow-accent-500/40;
+    background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 100%);
+    box-shadow: 0 4px 12px rgba(20, 184, 166, 0.4);
+    transform: translateY(-1px);
   }
 
   .btn-primary:active:not(:disabled) {
-    @apply scale-[0.98];
+    transform: translateY(0);
   }
 
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2;
-    @apply px-4 py-2.5 rounded-lg;
-    @apply text-sm font-semibold;
+    @apply px-4 py-2 rounded-lg;
+    @apply text-sm font-medium;
     @apply transition-all duration-200;
-    @apply disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none;
-    @apply bg-navy-700 text-slate-200;
-    @apply border border-navy-600;
+    @apply disabled:opacity-40 disabled:cursor-not-allowed;
+    background: rgba(51, 65, 85, 0.5);
+    color: #cbd5e1;
+    border: 1px solid rgba(71, 85, 105, 0.4);
   }
 
   .btn-secondary:hover:not(:disabled) {
-    @apply bg-navy-600 border-navy-700;
+    background: rgba(71, 85, 105, 0.5);
+    border-color: rgba(100, 116, 139, 0.5);
   }
 
   .btn-secondary:active:not(:disabled) {
-    @apply scale-[0.98];
+    background: rgba(51, 65, 85, 0.7);
+  }
+
+  /* Small button variant - still meets touch target */
+  .btn-sm {
+    @apply px-3 py-2 text-xs;
+    min-height: 36px;
+  }
+
+  /* Extra small for dense UIs - use sparingly */
+  .btn-xs {
+    @apply px-2 py-1.5 text-xs;
+    min-height: 32px;
   }
 
   .btn-danger {
@@ -330,56 +371,105 @@ body[data-theme="light"] {
   }
 
   /* ---------------------------------------------------------------------------
-     Status / Metrics Display
+     Status / Metrics Display - Clean Modern Cards
      --------------------------------------------------------------------------- */
   .metric-card {
-    @apply text-center p-2 sm:p-3;
-    @apply rounded-lg border;
-    background-color: rgba(10, 14, 26, 0.6);
-    border-color: rgba(51, 65, 85, 0.3);
+    @apply text-center p-2;
+    @apply rounded-lg;
+    background: rgba(15, 23, 42, 0.4);
   }
   
   html:not(.dark) .metric-card {
-    background-color: rgba(241, 245, 249, 0.6);
-    border-color: rgba(203, 213, 225, 0.3);
+    background: rgba(241, 245, 249, 0.6);
   }
 
   .metric-label {
-    @apply block text-[9px] sm:text-[10px] font-bold uppercase tracking-widest;
-    @apply text-slate-500 mb-0.5 sm:mb-1;
+    @apply block text-[9px] font-medium uppercase tracking-wider;
+    color: rgba(148, 163, 184, 0.7);
+    margin-bottom: 2px;
   }
 
   .metric-value {
-    @apply block text-sm sm:text-lg font-mono font-bold;
-    @apply tabular-nums tracking-tight;
+    @apply block text-sm font-mono font-semibold;
+    @apply tabular-nums;
   }
 
   .metric-value-accent {
-    @apply block text-sm sm:text-lg font-mono font-bold;
-    @apply tabular-nums tracking-tight;
+    @apply block text-sm font-mono font-semibold;
+    @apply tabular-nums;
     @apply text-accent-400;
   }
 
   /* ---------------------------------------------------------------------------
-     Fieldset / Control Group
+     Fieldset / Control Group - Compact Modern Style
      --------------------------------------------------------------------------- */
   .control-fieldset {
     @apply backdrop-blur-sm;
-    @apply border rounded-xl;
-    @apply shadow-lg shadow-black/20;
-    @apply p-3 sm:p-4 space-y-2 sm:space-y-3;
-    background-color: rgba(30, 41, 59, 0.8);
-    border-color: rgba(51, 65, 85, 0.5);
+    @apply border rounded-lg;
+    @apply p-3 space-y-2;
+    background: rgba(15, 23, 42, 0.5);
+    border-color: rgba(51, 65, 85, 0.3);
   }
   
   html:not(.dark) .control-fieldset {
-    background-color: rgba(226, 232, 240, 0.8);
-    border-color: rgba(203, 213, 225, 0.5);
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(203, 213, 225, 0.6);
   }
 
   .control-legend {
-    @apply text-xs font-bold uppercase tracking-widest;
-    @apply text-accent-400/80 px-2;
+    @apply text-[10px] font-semibold uppercase tracking-wider;
+    @apply text-accent-400 px-1;
+    letter-spacing: 0.08em;
+  }
+
+  /* Collapsible sections */
+  .control-legend.collapsible {
+    @apply cursor-pointer select-none;
+    @apply flex items-center justify-between w-full;
+    @apply hover:text-accent-300 transition-colors;
+  }
+
+  .collapse-icon {
+    @apply w-4 h-4 transition-transform duration-200;
+  }
+
+  .control-legend.collapsed .collapse-icon {
+    transform: rotate(-90deg);
+  }
+
+  .section-content {
+    @apply overflow-hidden;
+    transition: max-height 0.3s ease-out, opacity 0.2s ease-out, padding 0.2s ease-out;
+  }
+
+  .section-content.collapsed {
+    max-height: 0 !important;
+    opacity: 0;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Sticky training controls */
+  .training-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    margin: -1rem;
+    margin-bottom: 0;
+    padding: 1rem;
+    border-radius: 0.75rem 0.75rem 0 0;
+    backdrop-filter: blur(12px);
+  }
+
+  html.dark .training-sticky {
+    background: rgba(15, 23, 42, 0.95);
+    border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+  }
+
+  html:not(.dark) .training-sticky {
+    background: rgba(248, 250, 252, 0.95);
+    border-bottom: 1px solid rgba(203, 213, 225, 0.5);
   }
 
   /* ---------------------------------------------------------------------------
@@ -402,6 +492,48 @@ body[data-theme="light"] {
     @apply w-10 h-10;
     @apply border-[3px] border-navy-600 border-t-accent-400;
     @apply rounded-full animate-spin;
+  }
+
+  /* Skeleton loader for charts */
+  .skeleton {
+    @apply relative overflow-hidden;
+    background: linear-gradient(90deg, 
+      rgba(51, 65, 85, 0.3) 0%, 
+      rgba(71, 85, 105, 0.5) 50%, 
+      rgba(51, 65, 85, 0.3) 100%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s infinite;
+  }
+
+  @keyframes skeleton-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .skeleton-text {
+    @apply h-4 rounded;
+  }
+
+  .skeleton-chart {
+    @apply w-full h-full rounded-lg;
+  }
+
+  /* Empty state styling */
+  .empty-state {
+    @apply flex flex-col items-center justify-center p-6 text-center;
+    @apply text-slate-500;
+  }
+
+  .empty-state-icon {
+    @apply w-12 h-12 mb-3 opacity-50;
+  }
+
+  .empty-state-title {
+    @apply text-sm font-medium text-slate-400 mb-1;
+  }
+
+  .empty-state-description {
+    @apply text-xs text-slate-500;
   }
 }
 
@@ -439,13 +571,29 @@ body[data-theme="light"] {
    D3 Chart Overrides
    ============================================================================= */
 #viz-container {
-  @apply w-full aspect-square;
-  @apply max-h-[300px] sm:max-h-[400px] md:max-h-[500px] lg:max-h-[600px];
+  @apply w-full;
+  /* Constrained, balanced chart size */
+  height: 320px;
   @apply flex items-center justify-center;
+  @apply rounded-lg;
+  background-color: rgba(15, 23, 42, 0.3);
+}
+
+@media (min-width: 768px) {
+  #viz-container {
+    height: 380px;
+  }
+}
+
+@media (min-width: 1024px) {
+  #viz-container {
+    height: 420px;
+  }
 }
 
 #viz-container svg {
-  @apply max-w-full max-h-full;
+  @apply w-full h-full;
+  display: block;
 }
 
 #viz-container .x-axis,
