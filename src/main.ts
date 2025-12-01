@@ -50,6 +50,16 @@ import { runWhatIfAnalysis, formatWhatIfResultsHTML, PARAMETER_VARIATIONS } from
 // Performance
 import { frameRateLimiter, type PerformanceMode } from './infrastructure/performance';
 
+// Research Tools
+import {
+  calculateFeatureImportance, formatFeatureImportanceHTML,
+  explainPrediction, formatLIMEExplanationHTML,
+  computeSaliencyMap, formatSaliencyStatsHTML,
+  generateAdversarialFGSM, formatAdversarialResultHTML,
+  estimateUncertainty, formatUncertaintyHTML,
+  runNAS, formatNASResultHTML,
+} from './core/research';
+
 // =============================================================================
 // DOM Element References
 // =============================================================================
@@ -171,6 +181,15 @@ const elements = {
   // Performance
   inputPerfMode: document.getElementById('input-perf-mode') as HTMLSelectElement,
   perfStats: document.getElementById('perf-stats') as HTMLSpanElement,
+
+  // Research Tools
+  btnFeatureImportance: document.getElementById('btn-feature-importance') as HTMLButtonElement,
+  btnLimeExplain: document.getElementById('btn-lime-explain') as HTMLButtonElement,
+  btnSaliencyMap: document.getElementById('btn-saliency-map') as HTMLButtonElement,
+  btnAdversarial: document.getElementById('btn-adversarial') as HTMLButtonElement,
+  btnUncertainty: document.getElementById('btn-uncertainty') as HTMLButtonElement,
+  btnNas: document.getElementById('btn-nas') as HTMLButtonElement,
+  researchResults: document.getElementById('research-results') as HTMLDivElement,
 
   // Validation split
   inputValSplit: document.getElementById('input-val-split') as HTMLSelectElement,
@@ -458,6 +477,15 @@ function updateUI(state: TrainingState): void {
   elements.btnLrFinder.disabled = !canTrain || state.isRunning;
   elements.btnWhatif.disabled = !state.datasetLoaded || state.isRunning;
   elements.btnSaveBaseline.disabled = state.currentAccuracy === null;
+
+  // Research tools
+  const canResearch = state.isInitialised && state.datasetLoaded && !state.isRunning;
+  elements.btnFeatureImportance.disabled = !canResearch;
+  elements.btnLimeExplain.disabled = !canResearch;
+  elements.btnSaliencyMap.disabled = !state.isInitialised || state.isRunning;
+  elements.btnAdversarial.disabled = !canResearch;
+  elements.btnUncertainty.disabled = !canResearch;
+  elements.btnNas.disabled = !state.datasetLoaded || state.isRunning;
 
   // Update comparison display if baseline is set
   if (baseline) {
@@ -885,6 +913,195 @@ function handlePerfModeChange(): void {
 function updatePerfStats(): void {
   const stats = frameRateLimiter.getStats();
   elements.perfStats.textContent = `${stats.averageFps} FPS avg`;
+}
+
+// =============================================================================
+// Research Tools
+// =============================================================================
+
+/**
+ * Runs feature importance analysis.
+ */
+async function handleFeatureImportance(): Promise<void> {
+  const state = session.getState();
+  if (!state.isInitialised || !state.datasetLoaded) return;
+
+  elements.btnFeatureImportance.disabled = true;
+  elements.btnFeatureImportance.textContent = 'Analyzing...';
+  elements.researchResults.classList.remove('hidden');
+  elements.researchResults.innerHTML = '<div class="text-slate-400">Computing feature importance...</div>';
+
+  try {
+    const data = session.getData();
+    const results = await calculateFeatureImportance(neuralNetService, data, ['X', 'Y'], { iterations: 5 });
+    elements.researchResults.innerHTML = formatFeatureImportanceHTML(results);
+    toast.success('Feature importance computed');
+  } catch (error) {
+    console.error('Feature importance failed:', error);
+    toast.error('Feature importance failed');
+    elements.researchResults.classList.add('hidden');
+  } finally {
+    elements.btnFeatureImportance.disabled = false;
+    elements.btnFeatureImportance.textContent = 'Feature Importance';
+  }
+}
+
+/**
+ * Runs LIME explanation for a random point.
+ */
+async function handleLIMEExplain(): Promise<void> {
+  const state = session.getState();
+  if (!state.isInitialised || !state.datasetLoaded) return;
+
+  elements.btnLimeExplain.disabled = true;
+  elements.btnLimeExplain.textContent = 'Explaining...';
+  elements.researchResults.classList.remove('hidden');
+
+  try {
+    const data = session.getData();
+    const randomPoint = data[Math.floor(Math.random() * data.length)];
+    if (!randomPoint) throw new Error('No data');
+
+    const explanation = await explainPrediction(neuralNetService, randomPoint);
+    elements.researchResults.innerHTML = formatLIMEExplanationHTML(explanation);
+    toast.success('LIME explanation generated');
+  } catch (error) {
+    console.error('LIME failed:', error);
+    toast.error('LIME explanation failed');
+    elements.researchResults.classList.add('hidden');
+  } finally {
+    elements.btnLimeExplain.disabled = false;
+    elements.btnLimeExplain.textContent = 'LIME Explain';
+  }
+}
+
+/**
+ * Computes saliency map.
+ */
+async function handleSaliencyMap(): Promise<void> {
+  const state = session.getState();
+  if (!state.isInitialised) return;
+
+  elements.btnSaliencyMap.disabled = true;
+  elements.btnSaliencyMap.textContent = 'Computing...';
+  elements.researchResults.classList.remove('hidden');
+
+  try {
+    const result = await computeSaliencyMap(neuralNetService, { resolution: 20, epsilon: 0.01, targetClass: null });
+    elements.researchResults.innerHTML = formatSaliencyStatsHTML(result);
+    toast.success('Saliency map computed');
+  } catch (error) {
+    console.error('Saliency map failed:', error);
+    toast.error('Saliency map failed');
+    elements.researchResults.classList.add('hidden');
+  } finally {
+    elements.btnSaliencyMap.disabled = false;
+    elements.btnSaliencyMap.textContent = 'Saliency Map';
+  }
+}
+
+/**
+ * Generates adversarial example.
+ */
+async function handleAdversarial(): Promise<void> {
+  const state = session.getState();
+  if (!state.isInitialised || !state.datasetLoaded) return;
+
+  elements.btnAdversarial.disabled = true;
+  elements.btnAdversarial.textContent = 'Attacking...';
+  elements.researchResults.classList.remove('hidden');
+
+  try {
+    const data = session.getData();
+    const randomPoint = data[Math.floor(Math.random() * data.length)];
+    if (!randomPoint) throw new Error('No data');
+
+    const result = await generateAdversarialFGSM(neuralNetService, randomPoint, {
+      epsilon: 0.5,
+      gradientStep: 0.01,
+      targetClass: null,
+      maxIterations: 10,
+    });
+    elements.researchResults.innerHTML = formatAdversarialResultHTML(result);
+    toast.success(result.success ? 'Adversarial attack succeeded!' : 'Model is robust');
+  } catch (error) {
+    console.error('Adversarial failed:', error);
+    toast.error('Adversarial generation failed');
+    elements.researchResults.classList.add('hidden');
+  } finally {
+    elements.btnAdversarial.disabled = false;
+    elements.btnAdversarial.textContent = 'Adversarial';
+  }
+}
+
+/**
+ * Estimates uncertainty for a random point.
+ */
+async function handleUncertainty(): Promise<void> {
+  const state = session.getState();
+  if (!state.isInitialised || !state.datasetLoaded) return;
+
+  elements.btnUncertainty.disabled = true;
+  elements.btnUncertainty.textContent = 'Estimating...';
+  elements.researchResults.classList.remove('hidden');
+
+  try {
+    const data = session.getData();
+    const randomPoint = data[Math.floor(Math.random() * data.length)];
+    if (!randomPoint) throw new Error('No data');
+
+    const result = await estimateUncertainty(neuralNetService, randomPoint, { numSamples: 30, dropoutRate: 0.1 });
+    elements.researchResults.innerHTML = formatUncertaintyHTML(result);
+    toast.success('Uncertainty estimated');
+  } catch (error) {
+    console.error('Uncertainty failed:', error);
+    toast.error('Uncertainty estimation failed');
+    elements.researchResults.classList.add('hidden');
+  } finally {
+    elements.btnUncertainty.disabled = false;
+    elements.btnUncertainty.textContent = 'Uncertainty';
+  }
+}
+
+/**
+ * Runs Neural Architecture Search.
+ */
+async function handleNAS(): Promise<void> {
+  const state = session.getState();
+  if (!state.datasetLoaded) return;
+
+  elements.btnNas.disabled = true;
+  elements.btnNas.textContent = 'Searching...';
+  elements.researchResults.classList.remove('hidden');
+  elements.researchResults.innerHTML = '<div class="text-slate-400">Running Neural Architecture Search...</div>';
+
+  try {
+    const data = session.getData();
+    // Split data for train/val
+    const splitIdx = Math.floor(data.length * 0.8);
+    const trainData = data.slice(0, splitIdx);
+    const valData = data.slice(splitIdx);
+
+    const result = await runNAS(
+      () => new TFNeuralNet(),
+      trainData,
+      valData,
+      { numCandidates: 10, epochsPerCandidate: 20, strategy: 'random', populationSize: 5, mutationRate: 0.3 },
+      (current, total, best) => {
+        elements.researchResults.innerHTML = `<div class="text-slate-400">Testing architecture ${current}/${total}...<br/>Best so far: ${best ? (best.accuracy * 100).toFixed(1) + '%' : '—'}</div>`;
+      }
+    );
+
+    elements.researchResults.innerHTML = formatNASResultHTML(result);
+    toast.success(`Best architecture: ${(result.best.accuracy * 100).toFixed(1)}% accuracy`);
+  } catch (error) {
+    console.error('NAS failed:', error);
+    toast.error('Architecture search failed');
+    elements.researchResults.classList.add('hidden');
+  } finally {
+    elements.btnNas.disabled = false;
+    elements.btnNas.textContent = 'Auto-Optimize';
+  }
 }
 
 // =============================================================================
@@ -3803,6 +4020,14 @@ function init(): void {
   elements.inputShowActivations.addEventListener('change', handleActivationToggle);
   elements.inputShowGradients.addEventListener('change', handleGradientToggle);
   elements.inputPerfMode.addEventListener('change', handlePerfModeChange);
+
+  // Bind event listeners - Research Tools
+  elements.btnFeatureImportance.addEventListener('click', () => void handleFeatureImportance());
+  elements.btnLimeExplain.addEventListener('click', () => void handleLIMEExplain());
+  elements.btnSaliencyMap.addEventListener('click', () => void handleSaliencyMap());
+  elements.btnAdversarial.addEventListener('click', () => void handleAdversarial());
+  elements.btnUncertainty.addEventListener('click', () => void handleUncertainty());
+  elements.btnNas.addEventListener('click', () => void handleNAS());
 
   // Bind event listeners - Dataset import/export
   elements.inputCsvUpload.addEventListener('change', handleCsvUpload);

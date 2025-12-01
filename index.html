@@ -889,6 +889,40 @@
             </div>
           </fieldset>
 
+          <!-- Research Tools -->
+          <fieldset class="control-fieldset">
+            <legend class="control-legend">Research Tools</legend>
+            <div class="space-y-2">
+              <div class="grid grid-cols-2 gap-2">
+                <button id="btn-feature-importance" class="btn-secondary text-xs py-1" disabled title="Permutation importance">
+                  Feature Importance
+                </button>
+                <button id="btn-lime-explain" class="btn-secondary text-xs py-1" disabled title="LIME explanation">
+                  LIME Explain
+                </button>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <button id="btn-saliency-map" class="btn-secondary text-xs py-1" disabled title="Gradient saliency">
+                  Saliency Map
+                </button>
+                <button id="btn-adversarial" class="btn-secondary text-xs py-1" disabled title="FGSM attack">
+                  Adversarial
+                </button>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <button id="btn-uncertainty" class="btn-secondary text-xs py-1" disabled title="MC Dropout uncertainty">
+                  Uncertainty
+                </button>
+                <button id="btn-nas" class="btn-secondary text-xs py-1" disabled title="Neural Architecture Search">
+                  Auto-Optimize
+                </button>
+              </div>
+              <div id="research-results" class="hidden mt-2 p-2 bg-navy-900/50 rounded text-xs max-h-64 overflow-y-auto">
+                <!-- Research results rendered here -->
+              </div>
+            </div>
+          </fieldset>
+
           <!-- Session Management -->
           <fieldset class="control-fieldset">
             <legend class="control-legend">Session</legend>
