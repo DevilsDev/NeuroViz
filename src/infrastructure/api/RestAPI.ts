@@ -5,7 +5,7 @@
  * from browser console, bookmarklets, or external tools via postMessage.
  */
 
-import type { Hyperparameters, Point } from '../../core/domain';
+import type { Point } from '../../core/domain';
 
 export interface APIResponse<T = unknown> {
   success: boolean;

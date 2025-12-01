@@ -129,10 +129,6 @@ export class D3Chart implements IVisualizerService {
     // Remove existing data points
     this.chartGroup.selectAll('.data-point').remove();
 
-    // Determine number of classes from data
-    const uniqueLabels = [...new Set(points.map((p) => p.label))].sort((a, b) => a - b);
-    const numClasses = Math.max(...uniqueLabels, 1) + 1;
-
     // Use multi-class colours (supports up to 10 classes)
     const getColour = (label: number): string => {
       return MULTI_CLASS_COLOURS[label % MULTI_CLASS_COLOURS.length] ?? '#888888';

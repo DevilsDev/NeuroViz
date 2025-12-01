@@ -358,9 +358,8 @@ async function evaluateArchitecture(
   await model.initialize(hyperparams);
 
   // Train
-  let lastResult = { loss: Infinity, accuracy: 0 };
   for (let epoch = 0; epoch < epochs; epoch++) {
-    lastResult = await model.train(trainingData);
+    await model.train(trainingData);
   }
 
   // Evaluate on validation set

@@ -194,7 +194,7 @@ function solveLinearSystem(A: number[][], b: number[]): number[] {
       const factor = pivot !== 0 ? (aug[k]?.[i] ?? 0) / pivot : 0;
       for (let j = i; j <= n; j++) {
         if (aug[k] && aug[i]) {
-          aug[k][j] = (aug[k][j] ?? 0) - factor * (aug[i][j] ?? 0);
+          aug[k]![j] = (aug[k]![j] ?? 0) - factor * (aug[i]![j] ?? 0);
         }
       }
     }

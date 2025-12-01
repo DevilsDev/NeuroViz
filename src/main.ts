@@ -42,7 +42,7 @@ import { tutorialManager, TUTORIALS } from './presentation/Tutorial';
 import { initELI5Tooltips } from './presentation/ELI5Tooltips';
 
 // Suggested Fixes
-import { diagnoseTraining, formatSuggestionsHTML, type DiagnosisResult } from './presentation/SuggestedFixes';
+import { diagnoseTraining, formatSuggestionsHTML } from './presentation/SuggestedFixes';
 
 // What-If Analysis
 import { runWhatIfAnalysis, formatWhatIfResultsHTML, PARAMETER_VARIATIONS } from './presentation/WhatIfAnalysis';
@@ -688,7 +688,6 @@ function showLoading(show: boolean): void {
 // Suggested Fixes Integration
 // =============================================================================
 
-let lastDiagnosis: DiagnosisResult | null = null;
 let suggestionsDismissed = false;
 
 /**
@@ -715,7 +714,6 @@ function updateSuggestions(state: TrainingState): void {
   };
 
   const diagnosis = diagnoseTraining(metrics);
-  lastDiagnosis = diagnosis;
 
   if (diagnosis.suggestions.length === 0) {
     elements.suggestionsPanel.classList.add('hidden');
@@ -3942,7 +3940,7 @@ function init(): void {
   updateDrawClassButtons();
 
   // Set up point click handler for prediction details
-  visualizerService.onPointClick(handlePointClick);
+  visualizerService.onPointClick((point) => void handlePointClick(point));
 
   // Bind event listeners - Visualization (live updates)
   elements.inputColourScheme.addEventListener('change', handleColourSchemeChange);
@@ -3953,16 +3951,18 @@ function init(): void {
   elements.inputTooltips.addEventListener('change', handleTooltipsToggle);
   elements.inputHighlightErrors.addEventListener('change', () => void handleHighlightErrorsToggle());
   elements.inputConfidenceCircles.addEventListener('change', () => void handleConfidenceCirclesToggle());
-  elements.inputNotifications.addEventListener('change', async () => {
-    if (elements.inputNotifications.checked) {
-      const granted = await requestNotificationPermission();
-      if (!granted) {
-        elements.inputNotifications.checked = false;
-        toast.warning('Notification permission denied');
-      } else {
-        toast.success('Notifications enabled');
+  elements.inputNotifications.addEventListener('change', () => {
+    void (async () => {
+      if (elements.inputNotifications.checked) {
+        const granted = await requestNotificationPermission();
+        if (!granted) {
+          elements.inputNotifications.checked = false;
+          toast.warning('Notification permission denied');
+        } else {
+          toast.success('Notifications enabled');
+        }
       }
-    }
+    })();
   });
   elements.inputRecordEvolution.addEventListener('change', handleRecordEvolutionToggle);
   elements.btnPlayEvolution.addEventListener('click', playEvolution);

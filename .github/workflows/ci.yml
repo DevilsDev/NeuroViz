@@ -56,6 +56,9 @@ jobs:
       # -----------------------------------------------------------------------
       # Quality Checks
       # -----------------------------------------------------------------------
+      - name: Lint code
+        run: npm run lint
+
       - name: Type check
         run: npm run typecheck
 

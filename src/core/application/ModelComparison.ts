@@ -4,7 +4,7 @@
  */
 
 import type { Hyperparameters, Point } from '../domain';
-import type { INeuralNetworkService, TrainResult } from '../ports';
+import type { INeuralNetworkService } from '../ports';
 
 export interface ModelConfig {
   name: string;

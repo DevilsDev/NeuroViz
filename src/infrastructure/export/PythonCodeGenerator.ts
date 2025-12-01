@@ -129,10 +129,11 @@ export function generatePythonCode(
   const lr = hyperparams.learningRate;
   
   switch (hyperparams.optimizer) {
-    case 'sgd':
+    case 'sgd': {
       const momentum = hyperparams.momentum ?? 0.9;
       lines.push(`optimizer = optimizers.SGD(learning_rate=${lr}, momentum=${momentum})`);
       break;
+    }
     case 'adam':
       lines.push(`optimizer = optimizers.Adam(learning_rate=${lr})`);
       break;

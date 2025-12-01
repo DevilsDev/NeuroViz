@@ -144,14 +144,6 @@ export class D3GradientFlow {
     const legendX = this.width - legendWidth - 10;
     const legendY = 5;
 
-    const legendScale = d3.scaleLinear()
-      .domain([0, maxGradient])
-      .range([0, legendWidth]);
-
-    const legendAxis = d3.axisBottom(legendScale)
-      .ticks(3)
-      .tickFormat(d3.format('.1e'));
-
     // Gradient bar
     const defs = this.svg.append('defs');
     const gradient = defs.append('linearGradient')

@@ -42,7 +42,7 @@ export function diagnoseTraining(metrics: TrainingMetrics): DiagnosisResult {
   let status: DiagnosisResult['status'] = 'healthy';
   let confidence = 0;
 
-  const { epoch, trainLoss, valLoss, trainAccuracy, valAccuracy, learningRate, lossHistory, valLossHistory } = metrics;
+  const { epoch, trainLoss, valLoss, trainAccuracy, valAccuracy, lossHistory, valLossHistory } = metrics;
 
   // Need at least some epochs to diagnose
   if (epoch < 5) {
@@ -155,8 +155,7 @@ export function diagnoseTraining(metrics: TrainingMetrics): DiagnosisResult {
   // Check for overfitting
   if (valLoss !== null && valAccuracy !== null && valLossHistory.length >= 10) {
     const recentValLoss = valLossHistory.slice(-5);
-    const earlierValLoss = valLossHistory.slice(-10, -5);
-    const valLossIncreasing = recentValLoss.every((v, i) => 
+    const valLossIncreasing = recentValLoss.every((v, i) =>
       i === 0 || v >= (recentValLoss[i - 1] ?? 0) * 0.98
     );
     const trainValGap = trainAccuracy - valAccuracy;

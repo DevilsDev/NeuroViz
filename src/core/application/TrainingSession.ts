@@ -1,4 +1,4 @@
-import type { Hyperparameters, Point, Prediction, TrainingConfig, TrainingHistory, ExportFormat, LRScheduleConfig } from '../domain';
+import type { Hyperparameters, Point, Prediction, TrainingConfig, TrainingHistory, ExportFormat } from '../domain';
 import { DEFAULT_TRAINING_CONFIG, DEFAULT_LR_SCHEDULE, createEmptyHistory, addHistoryRecord, exportHistory } from '../domain';
 import type { INeuralNetworkService, IVisualizerService, IDatasetRepository, DatasetOptions } from '../ports';
 import type { ITrainingSession, TrainingState } from './ITrainingSession';
