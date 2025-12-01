@@ -67,6 +67,29 @@ export interface IVisualizerService {
   clear(): void;
 
   /**
+   * Highlights misclassified points with visual indicator.
+   * @param predictions - Array of predictions corresponding to rendered points
+   */
+  highlightMisclassified(predictions: Prediction[]): void;
+
+  /**
+   * Clears misclassified highlighting.
+   */
+  clearMisclassifiedHighlight(): void;
+
+  /**
+   * Renders confidence circles around data points.
+   * Circle radius represents uncertainty (1 - confidence).
+   * @param predictions - Array of predictions corresponding to rendered points
+   */
+  renderConfidenceCircles(predictions: Prediction[]): void;
+
+  /**
+   * Removes confidence circles from the chart.
+   */
+  clearConfidenceCircles(): void;
+
+  /**
    * Cleans up resources and removes DOM elements.
    */
   dispose(): void;

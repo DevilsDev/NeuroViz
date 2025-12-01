@@ -101,7 +101,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 | Zoom and pan | M | ✅ | D3 zoom with double-click reset |
 | Hover tooltips | S | ✅ | Point coordinates and class |
 | Click point for prediction details | S | ✅ | Toast with confidence |
-| Confidence circles | M | 🔲 | Radius = uncertainty |
+| Confidence circles | M | ✅ | Radius = uncertainty |
 | Boundary evolution animation | L | 🔲 | Replay training |
 
 ### 🟢 P3 — Advanced Visualization
@@ -339,7 +339,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 1. ✅ Misclassified points highlighting
 2. ✅ Click point for prediction details
 3. ✅ Contour line count control
-4. 🔲 Confidence circles (deferred - complex feature)
+4. ✅ Confidence circles
 
 ---
 

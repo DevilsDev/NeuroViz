@@ -340,6 +340,59 @@ export class D3Chart implements IVisualizerService {
   }
 
   /**
+   * Renders confidence circles around data points.
+   * Circle radius represents uncertainty (1 - confidence).
+   * Larger circles = more uncertain predictions.
+   * @param predictions - Array of predictions corresponding to cached points
+   */
+  renderConfidenceCircles(predictions: Prediction[]): void {
+    if (predictions.length !== this.cachedPoints.length) return;
+
+    // Remove existing confidence circles
+    this.chartGroup.selectAll('.confidence-circle').remove();
+
+    // Maximum radius for uncertainty circle (in pixels)
+    const maxRadius = 25;
+    const minRadius = 3;
+
+    // Create confidence circles behind data points
+    this.chartGroup
+      .selectAll('.confidence-circle')
+      .data(this.cachedPoints)
+      .enter()
+      .insert('circle', '.data-point')
+      .attr('class', 'confidence-circle')
+      .attr('cx', (d) => this.xScale(d.x))
+      .attr('cy', (d) => this.yScale(d.y))
+      .attr('r', (_, i) => {
+        const pred = predictions[i];
+        if (!pred) return minRadius;
+        // Uncertainty = 1 - confidence
+        const uncertainty = 1 - pred.confidence;
+        return minRadius + uncertainty * (maxRadius - minRadius);
+      })
+      .attr('fill', 'none')
+      .attr('stroke', (_, i) => {
+        const pred = predictions[i];
+        if (!pred) return '#888';
+        // Colour based on whether prediction matches actual label
+        const point = this.cachedPoints[i];
+        const isCorrect = point && pred.predictedClass === point.label;
+        return isCorrect ? 'rgba(34, 197, 94, 0.6)' : 'rgba(239, 68, 68, 0.6)';
+      })
+      .attr('stroke-width', 2)
+      .attr('stroke-dasharray', '4,2')
+      .attr('opacity', 0.8);
+  }
+
+  /**
+   * Removes confidence circles from the chart.
+   */
+  clearConfidenceCircles(): void {
+    this.chartGroup.selectAll('.confidence-circle').remove();
+  }
+
+  /**
    * Disposes of all SVG elements and cleans up resources.
    * Call this when the chart is no longer needed to prevent memory leaks.
    */

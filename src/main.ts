@@ -56,6 +56,7 @@ const elements = {
   inputZoom: document.getElementById('input-zoom') as HTMLInputElement,
   inputTooltips: document.getElementById('input-tooltips') as HTMLInputElement,
   inputHighlightErrors: document.getElementById('input-highlight-errors') as HTMLInputElement,
+  inputConfidenceCircles: document.getElementById('input-confidence-circles') as HTMLInputElement,
 
   // Hyperparameter inputs
   inputLr: document.getElementById('input-lr') as HTMLInputElement,
@@ -284,6 +285,28 @@ async function handleHighlightErrorsToggle(): Promise<void> {
     }
   } else {
     visualizerService.clearMisclassifiedHighlight();
+  }
+}
+
+/**
+ * Handles the confidence circles toggle.
+ */
+async function handleConfidenceCirclesToggle(): Promise<void> {
+  if (elements.inputConfidenceCircles.checked) {
+    const state = session.getState();
+    if (!state.isInitialised || !state.datasetLoaded) return;
+    
+    const data = session.getData();
+    if (data.length === 0) return;
+    
+    try {
+      const predictions = await neuralNetService.predict(data);
+      visualizerService.renderConfidenceCircles(predictions);
+    } catch (error) {
+      console.error('Failed to render confidence circles:', error);
+    }
+  } else {
+    visualizerService.clearConfidenceCircles();
   }
 }
 
@@ -1060,8 +1083,9 @@ function clearSession(): void {
   elements.metricRecall.textContent = '-';
   elements.metricF1.textContent = '-';
 
-  // Reset highlight errors checkbox
+  // Reset visualization checkboxes
   elements.inputHighlightErrors.checked = false;
+  elements.inputConfidenceCircles.checked = false;
 
   // Update draw class buttons
   updateDrawClassButtons();
@@ -1446,6 +1470,7 @@ function init(): void {
   elements.inputZoom.addEventListener('change', handleZoomToggle);
   elements.inputTooltips.addEventListener('change', handleTooltipsToggle);
   elements.inputHighlightErrors.addEventListener('change', () => void handleHighlightErrorsToggle());
+  elements.inputConfidenceCircles.addEventListener('change', () => void handleConfidenceCirclesToggle());
 
   // Bind event listeners - Hyperparameters
   elements.btnInit.addEventListener('click', () => void handleInitialise());
