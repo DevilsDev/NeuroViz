@@ -5,13 +5,19 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Deep navy/black background palette
+        // Theme-aware surface colors (use CSS variables)
+        surface: {
+          DEFAULT: 'var(--color-surface)',
+          secondary: 'var(--color-surface-secondary)',
+          tertiary: 'var(--color-surface-tertiary)',
+        },
+        // Theme-aware navy colors (use CSS variables)
         navy: {
-          950: '#0a0e1a',
-          900: '#0f172a',
-          800: '#1e293b',
-          700: '#334155',
-          600: '#475569',
+          950: 'var(--navy-950)',
+          900: 'var(--navy-900)',
+          800: 'var(--navy-800)',
+          700: 'var(--navy-700)',
+          600: 'var(--navy-600)',
         },
         // Electric teal accent
         accent: {

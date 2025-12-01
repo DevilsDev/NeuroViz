@@ -20,6 +20,38 @@
   --text-muted: #64748b;
   --border-color: #334155;
   --accent-color: #14b8a6;
+  
+  /* Navy color overrides for light mode */
+  --navy-950: #0a0e1a;
+  --navy-900: #0f172a;
+  --navy-800: #1e293b;
+  --navy-700: #334155;
+  --navy-600: #475569;
+}
+
+/* Light mode - redefine navy colors to light equivalents */
+html:not(.dark) {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-tertiary: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --border-color: #cbd5e1;
+  --accent-color: #0d9488;
+  
+  /* Override navy to light colors */
+  --navy-950: #f8fafc;
+  --navy-900: #f1f5f9;
+  --navy-800: #e2e8f0;
+  --navy-700: #cbd5e1;
+  --navy-600: #94a3b8;
+  
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 [data-theme="light"] {
@@ -774,21 +806,12 @@ html:not(.dark) .app-container {
   background-color: #f8fafc !important;
 }
 
-/* Override any remaining navy backgrounds */
-html:not(.dark) [class*="bg-navy"] {
-  background-color: #e2e8f0 !important;
-}
-
-html:not(.dark) [class*="border-navy"] {
-  border-color: #cbd5e1 !important;
-}
-
 /* =============================================================================
-   Force Light Theme - Override OS Dark Mode Preference
-   When html does NOT have .dark class, force light colors regardless of OS
+   Light Theme - Navy colors now use CSS variables, so they auto-switch.
+   These are fallback overrides for any edge cases.
    ============================================================================= */
 
-/* Force light background on html and body */
+/* Ensure light background on body */
 html:not(.dark),
 html:not(.dark) body {
   background-color: #f8fafc !important;
@@ -796,34 +819,40 @@ html:not(.dark) body {
   color-scheme: light !important;
 }
 
-/* Force all text to be dark in light mode */
-html:not(.dark) * {
-  --tw-text-opacity: 1;
+/* Slate text colors need to be darker in light mode */
+html:not(.dark) .text-slate-100,
+html:not(.dark) .text-slate-200,
+html:not(.dark) .text-slate-300 {
+  color: #334155 !important;
 }
 
-html:not(.dark) h1,
-html:not(.dark) h2,
-html:not(.dark) h3,
-html:not(.dark) h4,
-html:not(.dark) h5,
-html:not(.dark) h6,
-html:not(.dark) p,
-html:not(.dark) span,
-html:not(.dark) label,
-html:not(.dark) div {
-  color: inherit;
+html:not(.dark) .text-slate-400,
+html:not(.dark) .text-slate-500 {
+  color: #64748b !important;
 }
 
-/* Ensure inputs have dark text */
+/* Ensure inputs have dark text and light background */
 html:not(.dark) input,
 html:not(.dark) select,
 html:not(.dark) textarea {
   color: #0f172a !important;
   background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
 }
 
 html:not(.dark) input::placeholder {
   color: #94a3b8 !important;
+}
+
+/* Range inputs */
+html:not(.dark) input[type="range"] {
+  background-color: #e2e8f0 !important;
+}
+
+/* Checkboxes */
+html:not(.dark) input[type="checkbox"] {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
 }
 
 /* Force SVG icons to be visible */
