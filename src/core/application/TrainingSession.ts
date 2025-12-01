@@ -271,13 +271,29 @@ export class TrainingSession implements ITrainingSession {
    * Use this for a full session clear.
    */
   clearAll(): void {
-    this.reset();
+    // Stop training
+    this.isTraining = false;
+    this.isPaused = false;
+    this.isProcessingStep = false;
+    
+    // Clear training progress
+    this.currentEpoch = 0;
+    this.currentLoss = null;
+    this.currentAccuracy = null;
+    this.currentValLoss = null;
+    this.currentValAccuracy = null;
+    this.history = createEmptyHistory();
+    
+    // Clear all data
     this.allData = [];
     this.trainingData = [];
     this.validationData = [];
     this.datasetLoaded = false;
     this.isInitialised = false;
+    
+    // Clear visualisation
     this.visualizer.clear();
+    
     this.notifyListeners();
   }
 
