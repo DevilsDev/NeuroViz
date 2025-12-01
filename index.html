@@ -25,6 +25,16 @@
         </div>
         <div class="flex-1 flex justify-end gap-1 sm:gap-2">
           <button
+            id="btn-help"
+            class="p-2 rounded-lg bg-navy-800 hover:bg-navy-700 transition-colors"
+            aria-label="Help & Tutorials"
+            title="Help & Tutorials"
+          >
+            <svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </button>
+          <button
             id="btn-fullscreen"
             class="p-2 rounded-lg bg-navy-800 hover:bg-navy-700 transition-colors"
             aria-label="Toggle fullscreen"
@@ -284,6 +294,18 @@
                   <input type="checkbox" id="input-record-evolution" class="accent-accent-500" />
                   Record
                 </label>
+                <label class="flex items-center gap-2 text-xs text-slate-400" title="Toggle 3D visualization">
+                  <input type="checkbox" id="input-3d-view" class="accent-accent-500" />
+                  3D View
+                </label>
+              </div>
+              <!-- 3D View Container -->
+              <div id="three-container" class="hidden mt-2 h-64 bg-navy-900 rounded-lg border border-navy-600 relative">
+                <div class="absolute top-2 right-2 flex gap-1 z-10">
+                  <button id="btn-3d-reset" class="btn-secondary text-xs px-2 py-1">Reset</button>
+                  <button id="btn-3d-top" class="btn-secondary text-xs px-2 py-1">Top</button>
+                  <button id="btn-3d-side" class="btn-secondary text-xs px-2 py-1">Side</button>
+                </div>
               </div>
               <!-- Evolution Replay Controls -->
               <div id="evolution-controls" class="hidden pt-2 border-t border-navy-700/30 mt-2">
@@ -857,6 +879,63 @@
           Hexagonal Architecture Demo • Modular Monolith
         </p>
       </footer>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="help-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+      <div class="bg-navy-800 rounded-xl border border-navy-600 shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden">
+        <div class="flex items-center justify-between p-4 border-b border-navy-700">
+          <h2 class="text-xl font-semibold text-white">Help & Tutorials</h2>
+          <button id="help-close" class="text-slate-400 hover:text-white">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="p-4 overflow-y-auto max-h-[60vh]">
+          <h3 class="text-sm font-semibold text-slate-300 mb-3">Interactive Tutorials</h3>
+          <div id="tutorial-list" class="space-y-2 mb-6">
+            <!-- Tutorial buttons generated dynamically -->
+          </div>
+          
+          <h3 class="text-sm font-semibold text-slate-300 mb-3">Keyboard Shortcuts</h3>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="flex justify-between bg-navy-900/50 p-2 rounded">
+              <span class="text-slate-400">Start/Resume</span>
+              <kbd class="bg-navy-700 px-2 py-0.5 rounded text-slate-300">Space</kbd>
+            </div>
+            <div class="flex justify-between bg-navy-900/50 p-2 rounded">
+              <span class="text-slate-400">Step</span>
+              <kbd class="bg-navy-700 px-2 py-0.5 rounded text-slate-300">S</kbd>
+            </div>
+            <div class="flex justify-between bg-navy-900/50 p-2 rounded">
+              <span class="text-slate-400">Reset</span>
+              <kbd class="bg-navy-700 px-2 py-0.5 rounded text-slate-300">R</kbd>
+            </div>
+            <div class="flex justify-between bg-navy-900/50 p-2 rounded">
+              <span class="text-slate-400">Pause</span>
+              <kbd class="bg-navy-700 px-2 py-0.5 rounded text-slate-300">Escape</kbd>
+            </div>
+            <div class="flex justify-between bg-navy-900/50 p-2 rounded">
+              <span class="text-slate-400">Fullscreen</span>
+              <kbd class="bg-navy-700 px-2 py-0.5 rounded text-slate-300">F</kbd>
+            </div>
+            <div class="flex justify-between bg-navy-900/50 p-2 rounded">
+              <span class="text-slate-400">Help</span>
+              <kbd class="bg-navy-700 px-2 py-0.5 rounded text-slate-300">?</kbd>
+            </div>
+          </div>
+          
+          <h3 class="text-sm font-semibold text-slate-300 mt-6 mb-3">Quick Tips</h3>
+          <ul class="text-xs text-slate-400 space-y-2">
+            <li>• Start with a simple dataset like "Circle" to understand the basics</li>
+            <li>• Watch the loss chart - it should decrease over time</li>
+            <li>• If training is slow, try increasing the learning rate</li>
+            <li>• If the boundary is too complex, try reducing layers or adding dropout</li>
+            <li>• Enable validation split to detect overfitting early</li>
+          </ul>
+        </div>
+      </div>
     </div>
 
     <script type="module" src="/src/main.ts"></script>

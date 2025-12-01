@@ -110,7 +110,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| 3D visualization (Three.js) | XL | 🔲 | Height = confidence |
+| 3D visualization (Three.js) | XL | ✅ | Height = confidence |
 | Network architecture diagram | L | ✅ | Interactive D3 node graph |
 | Weight histogram | S | ✅ | Layer weight distribution |
 | Weight magnitude visualization | M | 🔲 | Color-coded connections |
@@ -231,7 +231,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| Guided tutorials | L | 🔲 | Step-by-step walkthrough |
+| Guided tutorials | L | ✅ | Step-by-step walkthrough |
 | What-if analysis | L | 🔲 | Parameter sensitivity |
 | Gradient visualization | L | 🔲 | Backprop animation |
 
@@ -243,7 +243,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| Web Worker for training | L | 🔲 | Non-blocking UI |
+| Web Worker for training | L | ✅ | Non-blocking UI |
 | Frame rate limiter | S | 🔲 | Battery saving mode |
 | Progressive grid rendering | M | 🔲 | Large grid optimization |
 
@@ -379,6 +379,12 @@ This document outlines planned features for NeuroViz, organized by priority and 
 4. ✅ Generate Python code
 5. ✅ Overfitting/underfitting warnings
 
+### ✅ Sprint 14: Infrastructure & Education (Complete)
+
+1. ✅ Web Worker for background processing
+2. ✅ 3D visualization with Three.js
+3. ✅ Guided tutorials system
+
 ---
 
 ## Contributing
@@ -402,11 +408,11 @@ Last updated: December 2025
 |-------|-------------|-----------|-------|----------|
 | Phase 1 | Core Training | 16 | 16 | 100% |
 | Phase 2 | Metrics & History | 12 | 12 | 100% |
-| Phase 3 | Visualization | 12 | 16 | 75% |
+| Phase 3 | Visualization | 13 | 16 | 81% |
 | Phase 4 | Data Management | 10 | 10 | 100% |
 | Phase 5 | Model Capabilities | 9 | 12 | 75% |
 | Phase 6 | UX & Polish | 14 | 14 | 100% |
-| Phase 7 | Educational | 1 | 6 | 17% |
-| Phase 8 | Performance | 0 | 7 | 0% |
+| Phase 7 | Educational | 2 | 6 | 33% |
+| Phase 8 | Performance | 1 | 7 | 14% |
 | Phase 9 | Research | 0 | 6 | 0% |
-| **Total** | | **74** | **99** | **75%** |
+| **Total** | | **77** | **99** | **78%** |

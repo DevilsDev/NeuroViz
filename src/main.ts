@@ -29,6 +29,15 @@ import { toast } from './presentation/toast';
 // Export utilities
 import { GifEncoder, generatePythonCode } from './infrastructure/export';
 
+// Web Worker
+import { workerManager } from './workers';
+
+// 3D Visualization (lazy loaded)
+import type { ThreeVisualization, Prediction3D, Point3D } from './infrastructure/three';
+
+// Tutorial system
+import { tutorialManager, TUTORIALS } from './presentation/Tutorial';
+
 // =============================================================================
 // DOM Element References
 // =============================================================================
@@ -74,6 +83,13 @@ const elements = {
   evolutionSlider: document.getElementById('evolution-slider') as HTMLInputElement,
   evolutionEpoch: document.getElementById('evolution-epoch') as HTMLSpanElement,
   btnExportGif: document.getElementById('btn-export-gif') as HTMLButtonElement,
+
+  // 3D View
+  input3dView: document.getElementById('input-3d-view') as HTMLInputElement,
+  threeContainer: document.getElementById('three-container') as HTMLDivElement,
+  btn3dReset: document.getElementById('btn-3d-reset') as HTMLButtonElement,
+  btn3dTop: document.getElementById('btn-3d-top') as HTMLButtonElement,
+  btn3dSide: document.getElementById('btn-3d-side') as HTMLButtonElement,
 
   // Hyperparameter inputs
   inputLr: document.getElementById('input-lr') as HTMLInputElement,
@@ -176,6 +192,12 @@ const elements = {
   iconSun: document.getElementById('icon-sun') as HTMLElement,
   iconMoon: document.getElementById('icon-moon') as HTMLElement,
 
+  // Help & Tutorials
+  btnHelp: document.getElementById('btn-help') as HTMLButtonElement,
+  helpModal: document.getElementById('help-modal') as HTMLDivElement,
+  helpClose: document.getElementById('help-close') as HTMLButtonElement,
+  tutorialList: document.getElementById('tutorial-list') as HTMLDivElement,
+
   // Fullscreen toggle
   btnFullscreen: document.getElementById('btn-fullscreen') as HTMLButtonElement,
   iconExpand: document.getElementById('icon-expand') as HTMLElement,
@@ -220,6 +242,9 @@ let lrFinderChart: D3LRFinder | null = null;
 // Network diagram
 const networkDiagramContainer = document.getElementById('network-diagram');
 const networkDiagram = networkDiagramContainer ? new D3NetworkDiagram(networkDiagramContainer) : null;
+
+// 3D Visualization (lazy loaded)
+let threeViz: ThreeVisualization | null = null;
 
 // Application layer receives adapters via constructor injection
 const session = new TrainingSession(neuralNetService, visualizerService, dataRepository, {
@@ -366,6 +391,11 @@ function updateUI(state: TrainingState): void {
   // Update fit warning (check every 20 epochs)
   if (state.currentEpoch > 0 && state.currentEpoch % 20 === 0) {
     updateFitWarning(state);
+  }
+
+  // Update 3D view periodically
+  if (state.currentEpoch > 0 && state.currentEpoch % 10 === 0) {
+    void update3dView();
   }
 }
 
@@ -583,6 +613,88 @@ async function updateClassificationMetrics(): Promise<void> {
     }
   } catch (error) {
     console.error('Failed to update classification metrics:', error);
+  }
+}
+
+// =============================================================================
+// 3D Visualization
+// =============================================================================
+
+/**
+ * Toggles 3D visualization on/off.
+ */
+async function handle3dViewToggle(): Promise<void> {
+  if (elements.input3dView.checked) {
+    elements.threeContainer.classList.remove('hidden');
+    
+    // Lazy load Three.js
+    if (!threeViz) {
+      try {
+        const { ThreeVisualization } = await import('./infrastructure/three');
+        threeViz = new ThreeVisualization(elements.threeContainer);
+        toast.success('3D view enabled');
+      } catch (error) {
+        console.error('Failed to load 3D visualization:', error);
+        toast.error('Failed to load 3D visualization');
+        elements.input3dView.checked = false;
+        elements.threeContainer.classList.add('hidden');
+        return;
+      }
+    }
+    
+    // Update 3D view with current data
+    await update3dView();
+  } else {
+    elements.threeContainer.classList.add('hidden');
+  }
+}
+
+/**
+ * Updates the 3D visualization with current predictions.
+ */
+async function update3dView(): Promise<void> {
+  if (!threeViz || !elements.input3dView.checked) return;
+  
+  const state = session.getState();
+  if (!state.isInitialised || !state.datasetLoaded) return;
+  
+  try {
+    // Get predictions for grid
+    const gridSize = APP_CONFIG.visualization.gridSize;
+    const gridPoints: Point[] = [];
+    
+    for (let i = 0; i < gridSize; i++) {
+      for (let j = 0; j < gridSize; j++) {
+        gridPoints.push({
+          x: -1 + (2 * j) / (gridSize - 1),
+          y: -1 + (2 * i) / (gridSize - 1),
+          label: 0,
+        });
+      }
+    }
+    
+    const predictions = await neuralNetService.predict(gridPoints);
+    
+    // Convert to 3D format
+    const predictions3d: Prediction3D[] = predictions.map(p => ({
+      x: p.x,
+      y: p.y,
+      confidence: p.confidence,
+      predictedClass: p.predictedClass,
+    }));
+    
+    threeViz.renderSurface(predictions3d, gridSize);
+    
+    // Render data points
+    const data = session.getData();
+    const points3d: Point3D[] = data.map(p => ({
+      x: p.x,
+      y: p.y,
+      label: p.label,
+    }));
+    threeViz.renderPoints(points3d);
+  } catch (error) {
+    console.error('Failed to update 3D view:', error);
   }
 }
 
@@ -2575,6 +2687,45 @@ async function handleFullscreenToggle(): Promise<void> {
 }
 
 // =============================================================================
+// Help & Tutorials
+// =============================================================================
+
+/**
+ * Shows the help modal.
+ */
+function showHelpModal(): void {
+  // Populate tutorial list
+  elements.tutorialList.innerHTML = TUTORIALS.map(tutorial => `
+    <button class="tutorial-btn w-full text-left p-3 bg-navy-900/50 hover:bg-navy-700 rounded-lg transition-colors" data-tutorial="${tutorial.id}">
+      <div class="font-medium text-white">${tutorial.name}</div>
+      <div class="text-xs text-slate-400 mt-1">${tutorial.description}</div>
+    </button>
+  `).join('');
+
+  // Add click handlers
+  elements.tutorialList.querySelectorAll('.tutorial-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tutorialId = btn.getAttribute('data-tutorial');
+      if (tutorialId) {
+        elements.helpModal.classList.add('hidden');
+        tutorialManager.start(tutorialId, () => {
+          toast.success('Tutorial completed!');
+        });
+      }
+    });
+  });
+
+  elements.helpModal.classList.remove('hidden');
+}
+
+/**
+ * Hides the help modal.
+ */
+function hideHelpModal(): void {
+  elements.helpModal.classList.add('hidden');
+}
+
+// =============================================================================
 // Keyboard Shortcuts
 // =============================================================================
 
@@ -2585,6 +2736,7 @@ async function handleFullscreenToggle(): Promise<void> {
  * - R: Reset training
  * - Escape: Stop/Reset training
  * - F: Toggle fullscreen
+ * - ?: Show help modal
  */
 function handleKeyboardShortcut(event: KeyboardEvent): void {
   // Ignore if user is typing in an input field
@@ -2600,6 +2752,13 @@ function handleKeyboardShortcut(event: KeyboardEvent): void {
       if (!event.ctrlKey && !event.metaKey) {
         event.preventDefault();
         void handleFullscreenToggle();
+      }
+      break;
+
+    case 'Slash': // ? key
+      if (event.shiftKey) {
+        event.preventDefault();
+        showHelpModal();
       }
       break;
 
@@ -2737,6 +2896,12 @@ function init(): void {
   elements.evolutionSlider.addEventListener('input', handleEvolutionSliderChange);
   elements.btnExportGif.addEventListener('click', () => void handleExportGif());
 
+  // Bind event listeners - 3D View
+  elements.input3dView.addEventListener('change', () => void handle3dViewToggle());
+  elements.btn3dReset.addEventListener('click', () => threeViz?.resetCamera());
+  elements.btn3dTop.addEventListener('click', () => threeViz?.setTopView());
+  elements.btn3dSide.addEventListener('click', () => threeViz?.setSideView());
+
   // Bind event listeners - Hyperparameters
   elements.btnInit.addEventListener('click', () => void handleInitialise());
 
@@ -2786,6 +2951,13 @@ function init(): void {
   // Bind theme toggle
   elements.btnThemeToggle.addEventListener('click', handleThemeToggle);
 
+  // Bind help modal
+  elements.btnHelp.addEventListener('click', showHelpModal);
+  elements.helpClose.addEventListener('click', hideHelpModal);
+  elements.helpModal.addEventListener('click', (e) => {
+    if (e.target === elements.helpModal) hideHelpModal();
+  });
+
   // Bind fullscreen toggle
   elements.btnFullscreen.addEventListener('click', () => void handleFullscreenToggle());
   document.addEventListener('fullscreenchange', updateFullscreenIcons);
@@ -2795,6 +2967,13 @@ function init(): void {
 
   // Setup auto-save on page unload
   setupAutoSave();
+
+  // Initialize Web Worker for background processing
+  void workerManager.init().then(success => {
+    if (success) {
+      console.log('Web Worker initialized for background processing');
+    }
+  });
 
   // Try to restore previous session
   void loadSession();
@@ -2812,4 +2991,5 @@ window.addEventListener('beforeunload', () => {
   neuralNetService.dispose();
   visualizerService.dispose();
   lossChart.dispose();
+  workerManager.terminate();
 });
