@@ -84,6 +84,14 @@ export class TrainingSession implements ITrainingSession {
   private currentLearningRate = 0.03;
   private currentHyperparameters: Hyperparameters | null = null;
 
+  // Completion callback
+  private onCompleteCallback: ((reason: 'maxEpochs' | 'earlyStopping' | 'manual') => void) | null = null;
+
+  // Boundary evolution recording
+  private boundarySnapshots: Array<{ epoch: number; predictions: Prediction[] }> = [];
+  private recordingEnabled = false;
+  private snapshotInterval = 10; // Record every N epochs
+
   constructor(
     private readonly neuralNet: INeuralNetworkService,
     private readonly visualizer: IVisualizerService,
@@ -446,6 +454,7 @@ export class TrainingSession implements ITrainingSession {
     if (maxEpochs > 0 && this.currentEpoch >= maxEpochs) {
       this.isTraining = false;
       this.notifyListeners();
+      this.onCompleteCallback?.('maxEpochs');
       return;
     }
 
@@ -503,6 +512,7 @@ export class TrainingSession implements ITrainingSession {
       if (this.checkEarlyStopping(valLoss)) {
         this.isTraining = false;
         this.notifyListeners();
+        this.onCompleteCallback?.('earlyStopping');
         console.log(`Early stopping triggered at epoch ${this.currentEpoch}`);
         return; // Exit loop
       }
@@ -513,6 +523,14 @@ export class TrainingSession implements ITrainingSession {
       // Update visualisation at intervals (decouples rendering from training)
       if (this.currentEpoch % this.config.renderInterval === 0) {
         await this.updateVisualisation();
+      }
+
+      // Record boundary snapshot if recording is enabled
+      if (this.recordingEnabled && this.currentEpoch % this.snapshotInterval === 0) {
+        this.boundarySnapshots.push({
+          epoch: this.currentEpoch,
+          predictions: [...this.cachedPredictions],
+        });
       }
 
       this.notifyListeners();
@@ -535,6 +553,7 @@ export class TrainingSession implements ITrainingSession {
         // Reached epoch limit
         this.isTraining = false;
         this.notifyListeners();
+        this.onCompleteCallback?.('maxEpochs');
       }
     }
   }
@@ -805,5 +824,97 @@ export class TrainingSession implements ITrainingSession {
     
     // Trigger early stopping if patience exceeded
     return this.epochsWithoutImprovement >= patience;
+  }
+
+  /**
+   * Sets a callback to be called when training completes.
+   * @param callback - Function called with completion reason
+   */
+  onComplete(callback: (reason: 'maxEpochs' | 'earlyStopping' | 'manual') => void): void {
+    this.onCompleteCallback = callback;
+  }
+
+  /**
+   * Enables or disables boundary evolution recording.
+   * @param enabled - Whether to record snapshots
+   * @param interval - Epochs between snapshots (default: 10)
+   */
+  setRecording(enabled: boolean, interval = 10): void {
+    this.recordingEnabled = enabled;
+    this.snapshotInterval = interval;
+    if (enabled) {
+      this.boundarySnapshots = [];
+    }
+  }
+
+  /**
+   * Returns recorded boundary snapshots.
+   */
+  getBoundarySnapshots(): Array<{ epoch: number; predictions: Prediction[] }> {
+    return [...this.boundarySnapshots];
+  }
+
+  /**
+   * Clears recorded boundary snapshots.
+   */
+  clearBoundarySnapshots(): void {
+    this.boundarySnapshots = [];
+  }
+
+  /**
+   * Runs learning rate finder test.
+   * Trains with exponentially increasing LR and records loss at each step.
+   * @param minLR - Starting learning rate (default: 1e-7)
+   * @param maxLR - Ending learning rate (default: 1)
+   * @param steps - Number of steps (default: 100)
+   * @returns Array of {lr, loss} points
+   */
+  async runLRFinder(
+    minLR = 1e-7,
+    maxLR = 1,
+    steps = 100
+  ): Promise<Array<{ lr: number; loss: number }>> {
+    this.assertReadyToTrain();
+
+    const results: Array<{ lr: number; loss: number }> = [];
+    const lrMultiplier = Math.pow(maxLR / minLR, 1 / steps);
+    let currentLR = minLR;
+
+    // Store original hyperparameters to restore later
+    const originalHyperparams = this.currentHyperparameters;
+    if (!originalHyperparams) {
+      throw new Error('Model not initialized');
+    }
+
+    // Run training steps with increasing LR
+    for (let i = 0; i < steps; i++) {
+      // Reinitialize with new LR (keeps architecture, resets weights each time would be too slow)
+      await this.neuralNet.initialize({
+        ...originalHyperparams,
+        learningRate: currentLR,
+      });
+
+      // Train one batch
+      const batch = this.getTrainingBatch();
+      const result = await this.neuralNet.train(batch);
+
+      results.push({
+        lr: currentLR,
+        loss: result.loss,
+      });
+
+      // Stop if loss explodes
+      if (!isFinite(result.loss) || result.loss > 1e10) {
+        break;
+      }
+
+      // Increase LR exponentially
+      currentLR *= lrMultiplier;
+    }
+
+    // Restore original model
+    await this.neuralNet.initialize(originalHyperparams);
+
+    return results;
   }
 }

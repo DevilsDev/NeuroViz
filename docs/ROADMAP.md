@@ -80,7 +80,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 | Precision/Recall/F1 | S | ✅ | Macro-averaged metrics |
 | Learning rate display | S | ✅ | Show current LR during training |
 | ROC curve | M | ✅ | Binary classification with AUC |
-| Learning rate finder | L | 🔲 | Cyclic LR test |
+| Learning rate finder | L | ✅ | Cyclic LR test with chart |
 
 ---
 
@@ -104,7 +104,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 | Hover tooltips | S | ✅ | Point coordinates and class |
 | Click point for prediction details | S | ✅ | Toast with confidence |
 | Confidence circles | M | ✅ | Radius = uncertainty |
-| Boundary evolution animation | L | 🔲 | Replay training |
+| Boundary evolution animation | L | ✅ | Record & replay training |
 
 ### 🟢 P3 — Advanced Visualization
 
@@ -166,7 +166,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 |---------|------------|--------|-------|
 | Download trained model | M | ✅ | TensorFlow.js format |
 | Load saved model | M | ✅ | File upload (JSON + weights) |
-| Share via URL parameters | M | ✅ | Encode config in URL |
+| Share config code | M | ✅ | Copy/paste Base64 config |
 
 ### 🟢 P3 — Advanced Models
 
@@ -213,7 +213,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 |---------|------------|--------|-------|
 | Record training as GIF | L | 🔲 | Frame capture |
 | Split-screen comparison | M | 🔲 | Two models side-by-side |
-| Browser notifications | S | 🔲 | Training complete alert |
+| Browser notifications | S | ✅ | Training complete alert |
 
 ---
 
@@ -363,7 +363,13 @@ This document outlines planned features for NeuroViz, organized by priority and 
 
 1. ✅ Cyclic learning rate (triangle + cosine)
 2. ✅ ROC curve with AUC
-3. ✅ Share via URL parameters
+3. ✅ Share config code (copy/paste)
+
+### ✅ Sprint 12: High-Value Quick Wins (Complete)
+
+1. ✅ Browser notifications
+2. ✅ Learning rate finder
+3. ✅ Boundary evolution animation
 
 ---
 
@@ -387,12 +393,12 @@ Last updated: December 2025
 | Phase | Description | Completed | Total | Progress |
 |-------|-------------|-----------|-------|----------|
 | Phase 1 | Core Training | 16 | 16 | 100% |
-| Phase 2 | Metrics & History | 11 | 12 | 92% |
-| Phase 3 | Visualization | 10 | 16 | 63% |
+| Phase 2 | Metrics & History | 12 | 12 | 100% |
+| Phase 3 | Visualization | 11 | 16 | 69% |
 | Phase 4 | Data Management | 10 | 10 | 100% |
 | Phase 5 | Model Capabilities | 8 | 12 | 67% |
-| Phase 6 | UX & Polish | 11 | 14 | 79% |
+| Phase 6 | UX & Polish | 12 | 14 | 86% |
 | Phase 7 | Educational | 0 | 6 | 0% |
 | Phase 8 | Performance | 0 | 7 | 0% |
 | Phase 9 | Research | 0 | 6 | 0% |
-| **Total** | | **66** | **99** | **67%** |
+| **Total** | | **69** | **99** | **70%** |

@@ -17,7 +17,7 @@ import { TrainingSession } from './core/application';
 
 // Infrastructure adapters - only imported here at the composition root
 import { TFNeuralNet } from './infrastructure/tensorflow';
-import { D3Chart, D3LossChart, D3ConfusionMatrix, D3WeightHistogram, D3RocCurve, calculateConfusionMatrix, calculateClassMetrics, calculateMacroMetrics, calculateRocCurve } from './infrastructure/d3';
+import { D3Chart, D3LossChart, D3ConfusionMatrix, D3WeightHistogram, D3RocCurve, D3LRFinder, calculateConfusionMatrix, calculateClassMetrics, calculateMacroMetrics, calculateRocCurve, findOptimalLR } from './infrastructure/d3';
 import { MockDataRepository } from './infrastructure/api';
 
 // Configuration
@@ -64,6 +64,12 @@ const elements = {
   inputTooltips: document.getElementById('input-tooltips') as HTMLInputElement,
   inputHighlightErrors: document.getElementById('input-highlight-errors') as HTMLInputElement,
   inputConfidenceCircles: document.getElementById('input-confidence-circles') as HTMLInputElement,
+  inputNotifications: document.getElementById('input-notifications') as HTMLInputElement,
+  inputRecordEvolution: document.getElementById('input-record-evolution') as HTMLInputElement,
+  evolutionControls: document.getElementById('evolution-controls') as HTMLDivElement,
+  btnPlayEvolution: document.getElementById('btn-play-evolution') as HTMLButtonElement,
+  evolutionSlider: document.getElementById('evolution-slider') as HTMLInputElement,
+  evolutionEpoch: document.getElementById('evolution-epoch') as HTMLSpanElement,
 
   // Hyperparameter inputs
   inputLr: document.getElementById('input-lr') as HTMLInputElement,
@@ -117,6 +123,11 @@ const elements = {
   metricPrecision: document.getElementById('metric-precision') as HTMLSpanElement,
   metricRecall: document.getElementById('metric-recall') as HTMLSpanElement,
   metricF1: document.getElementById('metric-f1') as HTMLSpanElement,
+
+  // LR Finder
+  btnLrFinder: document.getElementById('btn-lr-finder') as HTMLButtonElement,
+  lrFinderContainer: document.getElementById('lr-finder-container') as HTMLDivElement,
+  lrFinderResult: document.getElementById('lr-finder-result') as HTMLParagraphElement,
 
   // Export buttons
   btnExportJson: document.getElementById('btn-export-json') as HTMLButtonElement,
@@ -182,10 +193,90 @@ const rocCurveContainer = document.getElementById('roc-curve-container');
 const rocCurveSection = document.getElementById('roc-curve-section');
 const rocCurve = rocCurveContainer ? new D3RocCurve(rocCurveContainer) : null;
 
+// LR Finder chart (initialized lazily)
+let lrFinderChart: D3LRFinder | null = null;
+
 // Application layer receives adapters via constructor injection
 const session = new TrainingSession(neuralNetService, visualizerService, dataRepository, {
   renderInterval: APP_CONFIG.visualization.renderInterval,
   gridSize: APP_CONFIG.visualization.gridSize,
+});
+
+// =============================================================================
+// Browser Notifications
+// =============================================================================
+
+/**
+ * Requests notification permission from the user.
+ */
+async function requestNotificationPermission(): Promise<boolean> {
+  if (!('Notification' in window)) {
+    return false;
+  }
+  
+  if (Notification.permission === 'granted') {
+    return true;
+  }
+  
+  if (Notification.permission !== 'denied') {
+    const permission = await Notification.requestPermission();
+    return permission === 'granted';
+  }
+  
+  return false;
+}
+
+/**
+ * Shows a browser notification for training completion.
+ */
+function showTrainingCompleteNotification(reason: 'maxEpochs' | 'earlyStopping' | 'manual'): void {
+  // Check if notifications are enabled in UI
+  if (!elements.inputNotifications.checked) {
+    return;
+  }
+
+  if (!('Notification' in window) || Notification.permission !== 'granted') {
+    return;
+  }
+
+  // Only notify if page is not visible
+  if (document.visibilityState === 'visible') {
+    return;
+  }
+
+  const state = session.getState();
+  const reasonText = reason === 'maxEpochs' ? 'Max epochs reached' 
+    : reason === 'earlyStopping' ? 'Early stopping triggered' 
+    : 'Training stopped';
+
+  const notification = new Notification('NeuroViz - Training Complete', {
+    body: `${reasonText}\nEpoch: ${state.currentEpoch} | Accuracy: ${state.currentAccuracy ? (state.currentAccuracy * 100).toFixed(1) : '—'}%`,
+    icon: '/favicon.ico',
+    tag: 'training-complete',
+  });
+
+  // Focus window when notification is clicked
+  notification.onclick = () => {
+    window.focus();
+    notification.close();
+  };
+
+  // Auto-close after 5 seconds
+  setTimeout(() => notification.close(), 5000);
+}
+
+// Set up training completion callback
+session.onComplete((reason) => {
+  const state = session.getState();
+  const reasonText = reason === 'maxEpochs' ? 'Max epochs reached' 
+    : reason === 'earlyStopping' ? 'Early stopping triggered' 
+    : 'Training stopped';
+  
+  toast.success(`Training complete: ${reasonText}`);
+  showTrainingCompleteNotification(reason);
+  void updateClassificationMetrics();
+  updateUI(state);
+  updateEvolutionControls();
 });
 
 // =============================================================================
@@ -230,6 +321,7 @@ function updateUI(state: TrainingState): void {
   elements.btnScreenshot.disabled = !state.datasetLoaded;
   elements.btnExportModel.disabled = !state.isInitialised;
   elements.btnDownloadDataset.disabled = !state.datasetLoaded;
+  elements.btnLrFinder.disabled = !canTrain || state.isRunning;
 
   // Update loss chart
   lossChart.update(state.history);
@@ -365,6 +457,99 @@ async function handleConfidenceCirclesToggle(): Promise<void> {
   } else {
     visualizerService.clearConfidenceCircles();
   }
+}
+
+// =============================================================================
+// Evolution Replay
+// =============================================================================
+
+let evolutionPlayInterval: number | null = null;
+let isPlayingEvolution = false;
+
+/**
+ * Handles record evolution checkbox toggle.
+ */
+function handleRecordEvolutionToggle(): void {
+  const enabled = elements.inputRecordEvolution.checked;
+  session.setRecording(enabled, 5); // Record every 5 epochs
+  
+  if (enabled) {
+    elements.evolutionControls.classList.remove('hidden');
+    toast.info('Recording boundary evolution');
+  } else {
+    elements.evolutionControls.classList.add('hidden');
+    session.clearBoundarySnapshots();
+  }
+}
+
+/**
+ * Updates evolution controls based on recorded snapshots.
+ */
+function updateEvolutionControls(): void {
+  const snapshots = session.getBoundarySnapshots();
+  const hasSnapshots = snapshots.length > 0;
+  
+  elements.btnPlayEvolution.disabled = !hasSnapshots;
+  elements.evolutionSlider.disabled = !hasSnapshots;
+  
+  if (hasSnapshots) {
+    elements.evolutionSlider.max = (snapshots.length - 1).toString();
+  }
+}
+
+/**
+ * Displays a specific evolution snapshot.
+ */
+function showEvolutionSnapshot(index: number): void {
+  const snapshots = session.getBoundarySnapshots();
+  const snapshot = snapshots[index];
+  if (!snapshot) return;
+  
+  elements.evolutionEpoch.textContent = `Epoch: ${snapshot.epoch}`;
+  visualizerService.renderBoundary(snapshot.predictions, APP_CONFIG.visualization.gridSize);
+}
+
+/**
+ * Handles evolution slider change.
+ */
+function handleEvolutionSliderChange(): void {
+  const index = parseInt(elements.evolutionSlider.value, 10);
+  showEvolutionSnapshot(index);
+}
+
+/**
+ * Plays evolution animation.
+ */
+function playEvolution(): void {
+  const snapshots = session.getBoundarySnapshots();
+  if (snapshots.length === 0) return;
+  
+  if (isPlayingEvolution) {
+    // Stop playback
+    if (evolutionPlayInterval) {
+      clearInterval(evolutionPlayInterval);
+      evolutionPlayInterval = null;
+    }
+    isPlayingEvolution = false;
+    elements.btnPlayEvolution.textContent = '▶ Play';
+    return;
+  }
+  
+  // Start playback
+  isPlayingEvolution = true;
+  elements.btnPlayEvolution.textContent = '⏸ Pause';
+  
+  let currentIndex = parseInt(elements.evolutionSlider.value, 10);
+  
+  evolutionPlayInterval = window.setInterval(() => {
+    currentIndex++;
+    if (currentIndex >= snapshots.length) {
+      currentIndex = 0; // Loop
+    }
+    
+    elements.evolutionSlider.value = currentIndex.toString();
+    showEvolutionSnapshot(currentIndex);
+  }, 200); // 5 FPS
 }
 
 /**
@@ -875,6 +1060,59 @@ function handleScreenshot(): void {
 function handleExportSvg(): void {
   visualizerService.exportAsSVG('neuroviz-boundary');
   toast.success('Decision boundary exported as SVG');
+}
+
+/**
+ * Runs the learning rate finder and displays results.
+ */
+async function handleLRFinder(): Promise<void> {
+  const state = session.getState();
+  if (!state.isInitialised || !state.datasetLoaded) {
+    toast.warning('Please load data and initialise model first');
+    return;
+  }
+
+  elements.btnLrFinder.disabled = true;
+  elements.btnLrFinder.textContent = 'Finding...';
+  toast.info('Running LR finder (this may take a moment)...');
+
+  try {
+    const results = await session.runLRFinder(1e-7, 1, 100);
+    
+    // Show container and initialize chart if needed
+    elements.lrFinderContainer.classList.remove('hidden');
+    if (!lrFinderChart) {
+      lrFinderChart = new D3LRFinder(elements.lrFinderContainer);
+    }
+
+    // Find optimal LR
+    const optimalLR = findOptimalLR(results);
+    
+    // Render chart
+    lrFinderChart.render(results, optimalLR ?? undefined);
+
+    // Show result
+    elements.lrFinderResult.classList.remove('hidden');
+    if (optimalLR) {
+      elements.lrFinderResult.innerHTML = `Suggested LR: <strong class="text-green-400">${optimalLR.toExponential(2)}</strong> — <button class="text-accent-400 underline" id="btn-apply-lr">Apply</button>`;
+      
+      // Add click handler to apply LR
+      document.getElementById('btn-apply-lr')?.addEventListener('click', () => {
+        elements.inputLr.value = optimalLR.toFixed(6);
+        toast.success(`Learning rate set to ${optimalLR.toExponential(2)}`);
+      });
+    } else {
+      elements.lrFinderResult.textContent = 'Could not determine optimal LR. Try different data or architecture.';
+    }
+
+    toast.success('LR finder complete');
+  } catch (error) {
+    console.error('LR finder error:', error);
+    toast.error('LR finder failed');
+  } finally {
+    elements.btnLrFinder.disabled = false;
+    elements.btnLrFinder.textContent = 'Find LR';
+  }
 }
 
 /**
@@ -2079,6 +2317,20 @@ function init(): void {
   elements.inputTooltips.addEventListener('change', handleTooltipsToggle);
   elements.inputHighlightErrors.addEventListener('change', () => void handleHighlightErrorsToggle());
   elements.inputConfidenceCircles.addEventListener('change', () => void handleConfidenceCirclesToggle());
+  elements.inputNotifications.addEventListener('change', async () => {
+    if (elements.inputNotifications.checked) {
+      const granted = await requestNotificationPermission();
+      if (!granted) {
+        elements.inputNotifications.checked = false;
+        toast.warning('Notification permission denied');
+      } else {
+        toast.success('Notifications enabled');
+      }
+    }
+  });
+  elements.inputRecordEvolution.addEventListener('change', handleRecordEvolutionToggle);
+  elements.btnPlayEvolution.addEventListener('click', playEvolution);
+  elements.evolutionSlider.addEventListener('input', handleEvolutionSliderChange);
 
   // Bind event listeners - Hyperparameters
   elements.btnInit.addEventListener('click', () => void handleInitialise());
@@ -2105,6 +2357,7 @@ function init(): void {
   elements.btnExportSvg.addEventListener('click', handleExportSvg);
   elements.btnScreenshot.addEventListener('click', handleScreenshot);
   elements.btnExportModel.addEventListener('click', () => void handleExportModel());
+  elements.btnLrFinder.addEventListener('click', () => void handleLRFinder());
   elements.inputLoadModel.addEventListener('change', handleLoadModelJson);
   elements.inputLoadWeights.addEventListener('change', (e) => void handleLoadModelWeights(e));
 

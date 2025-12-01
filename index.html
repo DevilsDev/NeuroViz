@@ -276,6 +276,32 @@
                   <input type="checkbox" id="input-confidence-circles" class="accent-accent-500" />
                   Confidence
                 </label>
+                <label class="flex items-center gap-2 text-xs text-slate-400" title="Browser notification when training completes">
+                  <input type="checkbox" id="input-notifications" class="accent-accent-500" />
+                  Notify
+                </label>
+                <label class="flex items-center gap-2 text-xs text-slate-400" title="Record boundary evolution for replay">
+                  <input type="checkbox" id="input-record-evolution" class="accent-accent-500" />
+                  Record
+                </label>
+              </div>
+              <!-- Evolution Replay Controls -->
+              <div id="evolution-controls" class="hidden pt-2 border-t border-navy-700/30 mt-2">
+                <div class="flex items-center gap-2">
+                  <button id="btn-play-evolution" class="btn-secondary text-xs px-2 py-1" disabled>
+                    ▶ Play
+                  </button>
+                  <input
+                    type="range"
+                    id="evolution-slider"
+                    class="flex-1 h-1 accent-accent-500"
+                    min="0"
+                    max="100"
+                    value="0"
+                    disabled
+                  />
+                  <span id="evolution-epoch" class="text-xs text-slate-400 w-16 text-right">Epoch: 0</span>
+                </div>
               </div>
               <!-- Export Buttons -->
               <div class="flex gap-2 pt-2 border-t border-navy-700/30">
@@ -713,6 +739,19 @@
               <div id="weight-histogram" class="h-20 bg-navy-800 rounded border border-navy-600">
                 <!-- D3 weight histogram renders here -->
               </div>
+            </div>
+            <!-- LR Finder -->
+            <div class="mt-3">
+              <div class="flex items-center justify-between mb-1">
+                <span class="input-label mb-0">Learning Rate Finder</span>
+                <button id="btn-lr-finder" class="btn-secondary text-xs px-2 py-1" disabled>
+                  Find LR
+                </button>
+              </div>
+              <div id="lr-finder-container" class="h-32 bg-navy-800 rounded border border-navy-600 hidden">
+                <!-- D3 LR finder chart renders here -->
+              </div>
+              <p id="lr-finder-result" class="text-xs text-slate-400 mt-1 hidden"></p>
             </div>
           </fieldset>
 
