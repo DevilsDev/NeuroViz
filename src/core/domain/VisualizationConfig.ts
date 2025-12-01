@@ -21,6 +21,9 @@ export interface VisualizationConfig {
 
   /** Whether tooltips are shown on hover. Default: true */
   readonly tooltipsEnabled: boolean;
+
+  /** Number of contour lines for binary classification. Default: 10 */
+  readonly contourCount: number;
 }
 
 /**
@@ -32,6 +35,7 @@ export const DEFAULT_VISUALIZATION_CONFIG: VisualizationConfig = {
   colourScheme: 'default',
   zoomEnabled: true,
   tooltipsEnabled: true,
+  contourCount: 10,
 };
 
 /**

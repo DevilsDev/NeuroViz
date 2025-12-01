@@ -162,6 +162,25 @@ export class D3Chart implements IVisualizerService {
           tooltip.style('opacity', 0);
         });
     }
+
+    // Add click handler for prediction details
+    dataPoints.on('click', (event, d) => {
+      event.stopPropagation();
+      if (this.pointClickCallback) {
+        this.pointClickCallback(d);
+      }
+    });
+  }
+
+  // Callback for point clicks
+  private pointClickCallback: ((point: Point) => void) | null = null;
+
+  /**
+   * Sets a callback for when a data point is clicked.
+   * @param callback - Function to call with the clicked point
+   */
+  onPointClick(callback: (point: Point) => void): void {
+    this.pointClickCallback = callback;
   }
 
   /**
@@ -200,11 +219,12 @@ export class D3Chart implements IVisualizerService {
     // Extract confidence values as a flat array for contour generation
     const confidenceValues = predictions.map((p) => p.confidence);
 
-    // Generate contours
+    // Generate contours with configurable count
+    const step = 1 / (this.config.contourCount || 10);
     const contourGenerator = d3
       .contours()
       .size([gridSize, gridSize])
-      .thresholds(d3.range(0, 1.1, 0.1));
+      .thresholds(d3.range(0, 1 + step, step));
 
     const contours = contourGenerator(confidenceValues);
 
@@ -278,6 +298,40 @@ export class D3Chart implements IVisualizerService {
   clear(): void {
     this.svg.selectAll('.data-point').remove();
     this.svg.selectAll('.boundary').remove();
+  }
+
+  /**
+   * Highlights misclassified points with a red outline.
+   * @param predictions - Array of predictions corresponding to cached points
+   */
+  highlightMisclassified(predictions: Prediction[]): void {
+    if (predictions.length !== this.cachedPoints.length) return;
+
+    // Create a set of misclassified indices
+    const misclassifiedIndices = new Set<number>();
+    for (let i = 0; i < predictions.length; i++) {
+      const point = this.cachedPoints[i];
+      const pred = predictions[i];
+      if (point && pred && point.label !== pred.predictedClass) {
+        misclassifiedIndices.add(i);
+      }
+    }
+
+    // Update point styling
+    this.chartGroup
+      .selectAll<SVGCircleElement, Point>('.data-point')
+      .attr('stroke', (_, i) => misclassifiedIndices.has(i) ? '#ef4444' : '#fff')
+      .attr('stroke-width', (_, i) => misclassifiedIndices.has(i) ? 3 : 1.5);
+  }
+
+  /**
+   * Clears misclassified highlighting, restoring default styling.
+   */
+  clearMisclassifiedHighlight(): void {
+    this.chartGroup
+      .selectAll<SVGCircleElement, Point>('.data-point')
+      .attr('stroke', '#fff')
+      .attr('stroke-width', 1.5);
   }
 
   /**
@@ -398,5 +452,110 @@ export class D3Chart implements IVisualizerService {
       .style('opacity', 0)
       .style('z-index', '1000')
       .style('box-shadow', '0 4px 6px rgba(0, 0, 0, 0.3)');
+  }
+
+  // ===========================================================================
+  // Export Methods
+  // ===========================================================================
+
+  /**
+   * Exports the current chart as a PNG image.
+   * @param filename - Name of the downloaded file (without extension)
+   */
+  exportAsPNG(filename = 'neuroviz-boundary'): void {
+    const svgElement = this.svg.node();
+    if (!svgElement) return;
+
+    // Clone SVG and inline styles
+    const clonedSvg = svgElement.cloneNode(true) as SVGSVGElement;
+    this.inlineStyles(clonedSvg);
+
+    // Add white background for PNG
+    const background = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    background.setAttribute('width', '100%');
+    background.setAttribute('height', '100%');
+    background.setAttribute('fill', '#0a0f1a');
+    clonedSvg.insertBefore(background, clonedSvg.firstChild);
+
+    // Serialize SVG to string
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(clonedSvg);
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+
+    // Create canvas and draw SVG
+    const canvas = document.createElement('canvas');
+    const scale = 2; // Higher resolution
+    canvas.width = this.width * scale;
+    canvas.height = this.height * scale;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const img = new Image();
+    img.onload = () => {
+      ctx.scale(scale, scale);
+      ctx.drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+
+      // Download PNG
+      const pngUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `${filename}.png`;
+      link.href = pngUrl;
+      link.click();
+    };
+    img.src = url;
+  }
+
+  /**
+   * Exports the current chart as an SVG file.
+   * @param filename - Name of the downloaded file (without extension)
+   */
+  exportAsSVG(filename = 'neuroviz-boundary'): void {
+    const svgElement = this.svg.node();
+    if (!svgElement) return;
+
+    // Clone SVG and inline styles
+    const clonedSvg = svgElement.cloneNode(true) as SVGSVGElement;
+    this.inlineStyles(clonedSvg);
+
+    // Add background
+    const background = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    background.setAttribute('width', '100%');
+    background.setAttribute('height', '100%');
+    background.setAttribute('fill', '#0a0f1a');
+    clonedSvg.insertBefore(background, clonedSvg.firstChild);
+
+    // Serialize and download
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(clonedSvg);
+    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.download = `${filename}.svg`;
+    link.href = url;
+    link.click();
+
+    URL.revokeObjectURL(url);
+  }
+
+  /**
+   * Inlines computed styles into SVG elements for export.
+   */
+  private inlineStyles(svg: SVGSVGElement): void {
+    const elements = svg.querySelectorAll('*');
+    elements.forEach((el) => {
+      const computed = window.getComputedStyle(el);
+      const style = el.getAttribute('style') || '';
+      
+      // Copy key styles
+      const stylesToCopy = ['fill', 'stroke', 'stroke-width', 'opacity', 'font-family', 'font-size'];
+      const inlined = stylesToCopy
+        .map((prop) => `${prop}: ${computed.getPropertyValue(prop)}`)
+        .join('; ');
+      
+      el.setAttribute('style', `${style}; ${inlined}`);
+    });
   }
 }

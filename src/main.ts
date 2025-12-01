@@ -51,8 +51,11 @@ const elements = {
   inputPointSize: document.getElementById('input-point-size') as HTMLSelectElement,
   inputOpacity: document.getElementById('input-opacity') as HTMLInputElement,
   opacityValue: document.getElementById('opacity-value') as HTMLSpanElement,
+  inputContours: document.getElementById('input-contours') as HTMLInputElement,
+  contourValue: document.getElementById('contour-value') as HTMLSpanElement,
   inputZoom: document.getElementById('input-zoom') as HTMLInputElement,
   inputTooltips: document.getElementById('input-tooltips') as HTMLInputElement,
+  inputHighlightErrors: document.getElementById('input-highlight-errors') as HTMLInputElement,
 
   // Hyperparameter inputs
   inputLr: document.getElementById('input-lr') as HTMLInputElement,
@@ -98,6 +101,12 @@ const elements = {
   // Export buttons
   btnExportJson: document.getElementById('btn-export-json') as HTMLButtonElement,
   btnExportCsv: document.getElementById('btn-export-csv') as HTMLButtonElement,
+  btnExportPng: document.getElementById('btn-export-png') as HTMLButtonElement,
+  btnExportSvg: document.getElementById('btn-export-svg') as HTMLButtonElement,
+
+  // Dataset import/export
+  inputCsvUpload: document.getElementById('input-csv-upload') as HTMLInputElement,
+  btnDownloadDataset: document.getElementById('btn-download-dataset') as HTMLButtonElement,
 
   // Session management
   btnSaveSession: document.getElementById('btn-save-session') as HTMLButtonElement,
@@ -177,6 +186,9 @@ function updateUI(state: TrainingState): void {
   // Update export buttons
   elements.btnExportJson.disabled = !hasHistory;
   elements.btnExportCsv.disabled = !hasHistory;
+  elements.btnExportPng.disabled = !state.datasetLoaded;
+  elements.btnExportSvg.disabled = !state.datasetLoaded;
+  elements.btnDownloadDataset.disabled = !state.datasetLoaded;
 
   // Update loss chart
   lossChart.update(state.history);
@@ -242,8 +254,69 @@ async function updateClassificationMetrics(): Promise<void> {
     elements.metricPrecision.textContent = `${(macroMetrics.precision * 100).toFixed(1)}%`;
     elements.metricRecall.textContent = `${(macroMetrics.recall * 100).toFixed(1)}%`;
     elements.metricF1.textContent = `${(macroMetrics.f1 * 100).toFixed(1)}%`;
+
+    // Highlight misclassified points if enabled
+    if (elements.inputHighlightErrors.checked) {
+      visualizerService.highlightMisclassified(predictions);
+    }
   } catch (error) {
     console.error('Failed to update classification metrics:', error);
+  }
+}
+
+/**
+ * Handles the highlight errors toggle.
+ */
+async function handleHighlightErrorsToggle(): Promise<void> {
+  if (elements.inputHighlightErrors.checked) {
+    // Get predictions and highlight
+    const state = session.getState();
+    if (!state.isInitialised || !state.datasetLoaded) return;
+    
+    const data = session.getData();
+    if (data.length === 0) return;
+    
+    try {
+      const predictions = await neuralNetService.predict(data);
+      visualizerService.highlightMisclassified(predictions);
+    } catch (error) {
+      console.error('Failed to highlight misclassified:', error);
+    }
+  } else {
+    visualizerService.clearMisclassifiedHighlight();
+  }
+}
+
+/**
+ * Handles clicking on a data point to show prediction details.
+ */
+async function handlePointClick(point: Point): Promise<void> {
+  const state = session.getState();
+  if (!state.isInitialised) {
+    toast.info(`Point: (${point.x.toFixed(3)}, ${point.y.toFixed(3)}) - Class ${point.label}`);
+    return;
+  }
+
+  try {
+    // Get prediction for this single point
+    const predictions = await neuralNetService.predict([point]);
+    const pred = predictions[0];
+    
+    if (!pred) {
+      toast.info(`Point: (${point.x.toFixed(3)}, ${point.y.toFixed(3)}) - Class ${point.label}`);
+      return;
+    }
+
+    const isCorrect = pred.predictedClass === point.label;
+    const status = isCorrect ? '✓ Correct' : '✗ Wrong';
+    const confidence = (pred.confidence * 100).toFixed(1);
+
+    toast.info(
+      `${status} | Actual: ${point.label}, Predicted: ${pred.predictedClass} (${confidence}% confidence)`
+    );
+  } catch (error) {
+    console.error('Failed to get prediction:', error);
+    toast.info(`Point: (${point.x.toFixed(3)}, ${point.y.toFixed(3)}) - Class ${point.label}`);
   }
 }
 
@@ -291,6 +364,12 @@ function handleOpacityChange(): void {
   const opacity = parseInt(elements.inputOpacity.value, 10) / 100;
   elements.opacityValue.textContent = elements.inputOpacity.value;
   visualizerService.setConfig({ boundaryOpacity: opacity });
+}
+
+function handleContourChange(): void {
+  const count = parseInt(elements.inputContours.value, 10);
+  elements.contourValue.textContent = elements.inputContours.value;
+  visualizerService.setConfig({ contourCount: count });
 }
 
 function handleZoomToggle(): void {
@@ -599,6 +678,118 @@ function handleExportCsv(): void {
   const data = session.exportHistory('csv');
   downloadFile(data, 'training-history.csv', 'text/csv');
   toast.success('Training history exported as CSV');
+}
+
+function handleExportPng(): void {
+  visualizerService.exportAsPNG('neuroviz-boundary');
+  toast.success('Decision boundary exported as PNG');
+}
+
+function handleExportSvg(): void {
+  visualizerService.exportAsSVG('neuroviz-boundary');
+  toast.success('Decision boundary exported as SVG');
+}
+
+// =============================================================================
+// CSV Upload & Dataset Download
+// =============================================================================
+
+/**
+ * Handles CSV file upload.
+ * Expected format: x,y,label (with optional header row)
+ */
+function handleCsvUpload(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const text = e.target?.result as string;
+      const points = parseCsvData(text);
+      
+      if (points.length === 0) {
+        toast.error('No valid data points found in CSV');
+        return;
+      }
+
+      // Set as custom data
+      customDataPoints = points;
+      session.setCustomData(points);
+      visualizerService.renderData(points);
+      
+      // Update num classes based on data
+      const maxLabel = Math.max(...points.map(p => p.label));
+      elements.inputNumClasses.value = String(maxLabel + 1);
+      updateDrawClassButtons();
+
+      toast.success(`Loaded ${points.length} points from CSV`);
+    } catch (error) {
+      console.error('Failed to parse CSV:', error);
+      toast.error('Failed to parse CSV file');
+    }
+  };
+  reader.readAsText(file);
+  
+  // Reset input so same file can be uploaded again
+  input.value = '';
+}
+
+/**
+ * Parses CSV text into Point array.
+ * Supports formats: x,y,label or label,x,y
+ */
+function parseCsvData(text: string): Point[] {
+  const lines = text.trim().split('\n');
+  const points: Point[] = [];
+  
+  // Skip header if present
+  const startIndex = lines[0]?.match(/^[a-zA-Z]/) ? 1 : 0;
+  
+  for (let i = startIndex; i < lines.length; i++) {
+    const line = lines[i]?.trim();
+    if (!line) continue;
+    
+    const parts = line.split(',').map(s => s.trim());
+    if (parts.length < 3) continue;
+    
+    // Try x,y,label format first
+    let x = parseFloat(parts[0] ?? '');
+    let y = parseFloat(parts[1] ?? '');
+    let label = parseInt(parts[2] ?? '', 10);
+    
+    // If label is NaN, try label,x,y format
+    if (isNaN(label)) {
+      label = parseInt(parts[0] ?? '', 10);
+      x = parseFloat(parts[1] ?? '');
+      y = parseFloat(parts[2] ?? '');
+    }
+    
+    if (!isNaN(x) && !isNaN(y) && !isNaN(label)) {
+      points.push({ x, y, label });
+    }
+  }
+  
+  return points;
+}
+
+/**
+ * Downloads the current dataset as CSV.
+ */
+function handleDownloadDataset(): void {
+  const data = session.getData();
+  if (data.length === 0) {
+    toast.warning('No data to download');
+    return;
+  }
+
+  const header = 'x,y,label\n';
+  const rows = data.map(p => `${p.x},${p.y},${p.label}`).join('\n');
+  const csv = header + rows;
+  
+  downloadFile(csv, 'neuroviz-dataset.csv', 'text/csv');
+  toast.success(`Downloaded ${data.length} data points`);
 }
 
 // =============================================================================
@@ -1204,12 +1395,17 @@ function init(): void {
   // Initialize draw class buttons
   updateDrawClassButtons();
 
+  // Set up point click handler for prediction details
+  visualizerService.onPointClick(handlePointClick);
+
   // Bind event listeners - Visualization (live updates)
   elements.inputColourScheme.addEventListener('change', handleColourSchemeChange);
   elements.inputPointSize.addEventListener('change', handlePointSizeChange);
   elements.inputOpacity.addEventListener('input', handleOpacityChange);
+  elements.inputContours.addEventListener('input', handleContourChange);
   elements.inputZoom.addEventListener('change', handleZoomToggle);
   elements.inputTooltips.addEventListener('change', handleTooltipsToggle);
+  elements.inputHighlightErrors.addEventListener('change', () => void handleHighlightErrorsToggle());
 
   // Bind event listeners - Hyperparameters
   elements.btnInit.addEventListener('click', () => void handleInitialise());
@@ -1229,6 +1425,12 @@ function init(): void {
   // Bind event listeners - Export
   elements.btnExportJson.addEventListener('click', handleExportJson);
   elements.btnExportCsv.addEventListener('click', handleExportCsv);
+  elements.btnExportPng.addEventListener('click', handleExportPng);
+  elements.btnExportSvg.addEventListener('click', handleExportSvg);
+
+  // Bind event listeners - Dataset import/export
+  elements.inputCsvUpload.addEventListener('change', handleCsvUpload);
+  elements.btnDownloadDataset.addEventListener('click', handleDownloadDataset);
 
   // Bind event listeners - Session management
   elements.btnSaveSession.addEventListener('click', saveSession);

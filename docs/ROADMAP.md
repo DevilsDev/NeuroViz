@@ -89,10 +89,10 @@ This document outlines planned features for NeuroViz, organized by priority and 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
 | Heatmap intensity slider | S | ✅ | Opacity control (10-100%) |
-| Contour line count | S | 🔲 | Threshold adjustment |
+| Contour line count | S | ✅ | Slider 3-20 contours |
 | Custom color schemes | S | ✅ | 5 presets (default, viridis, plasma, cool, warm) |
 | Point size control | S | ✅ | Small/Medium/Large |
-| Misclassified points highlighting | S | 🔲 | Red outline/marker |
+| Misclassified points highlighting | S | ✅ | Red outline toggle |
 
 ### 🟡 P2 — Interactive Features
 
@@ -100,7 +100,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 |---------|------------|--------|-------|
 | Zoom and pan | M | ✅ | D3 zoom with double-click reset |
 | Hover tooltips | S | ✅ | Point coordinates and class |
-| Click point for prediction details | S | 🔲 | Tooltip with confidence |
+| Click point for prediction details | S | ✅ | Toast with confidence |
 | Confidence circles | M | 🔲 | Radius = uncertainty |
 | Boundary evolution animation | L | 🔲 | Replay training |
 
@@ -131,8 +131,8 @@ This document outlines planned features for NeuroViz, organized by priority and 
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| Upload CSV files | M | 🔲 | File input + parsing |
-| Download current dataset | S | 🔲 | CSV export |
+| Upload CSV files | M | ✅ | File input + parsing |
+| Download current dataset | S | ✅ | CSV export |
 | Real-world datasets (Iris, Wine) | M | 🔲 | Bundled or fetched |
 
 ### 🟡 P2 — Preprocessing
@@ -200,8 +200,8 @@ This document outlines planned features for NeuroViz, organized by priority and 
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| Download boundary as PNG | S | 🔲 | Canvas to image |
-| Download as SVG | S | 🔲 | D3 SVG export |
+| Download boundary as PNG | S | ✅ | Canvas to image |
+| Download as SVG | S | ✅ | D3 SVG export |
 | Screenshot with metadata | M | 🔲 | Overlay config info |
 
 ### 🟢 P3 — Advanced UX
@@ -327,19 +327,19 @@ This document outlines planned features for NeuroViz, organized by priority and 
 4. ✅ Confusion matrix visualization
 5. ✅ Precision/Recall/F1 metrics
 
-### 🔲 Sprint 7: Export & Sharing
+### ✅ Sprint 7: Export & Sharing (Complete)
 
-1. 🔲 Download boundary as PNG
-2. 🔲 Download as SVG
-3. 🔲 Upload CSV files
-4. 🔲 Download current dataset
+1. ✅ Download boundary as PNG
+2. ✅ Download as SVG
+3. ✅ Upload CSV files
+4. ✅ Download current dataset
 
-### 🔲 Sprint 8: Advanced Visualization
+### ✅ Sprint 8: Advanced Visualization (Complete)
 
-1. 🔲 Misclassified points highlighting
-2. 🔲 Click point for prediction details
-3. 🔲 Contour line count control
-4. 🔲 Confidence circles
+1. ✅ Misclassified points highlighting
+2. ✅ Click point for prediction details
+3. ✅ Contour line count control
+4. 🔲 Confidence circles (deferred - complex feature)
 
 ---
 
@@ -362,13 +362,13 @@ Last updated: December 2024
 
 | Phase | Description | Completed | Total | Progress |
 |-------|-------------|-----------|-------|----------|
-| Phase 1 | Core Training | 6 | 11 | 55% |
-| Phase 2 | Metrics & History | 7 | 11 | 64% |
-| Phase 3 | Visualization | 6 | 14 | 43% |
-| Phase 4 | Data Management | 4 | 10 | 40% |
+| Phase 1 | Core Training | 10 | 15 | 67% |
+| Phase 2 | Metrics & History | 9 | 11 | 82% |
+| Phase 3 | Visualization | 9 | 14 | 64% |
+| Phase 4 | Data Management | 6 | 10 | 60% |
 | Phase 5 | Model Capabilities | 4 | 12 | 33% |
-| Phase 6 | UX & Polish | 10 | 15 | 67% |
+| Phase 6 | UX & Polish | 12 | 15 | 80% |
 | Phase 7 | Educational | 0 | 6 | 0% |
 | Phase 8 | Performance | 0 | 7 | 0% |
 | Phase 9 | Research | 0 | 8 | 0% |
-| **Total** | | **37** | **94** | **39%** |
+| **Total** | | **50** | **98** | **51%** |
