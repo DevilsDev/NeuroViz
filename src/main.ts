@@ -17,7 +17,7 @@ import { TrainingSession } from './core/application';
 
 // Infrastructure adapters - only imported here at the composition root
 import { TFNeuralNet } from './infrastructure/tensorflow';
-import { D3Chart, D3LossChart, D3ConfusionMatrix, D3WeightHistogram, D3RocCurve, D3LRFinder, calculateConfusionMatrix, calculateClassMetrics, calculateMacroMetrics, calculateRocCurve, findOptimalLR } from './infrastructure/d3';
+import { D3Chart, D3LossChart, D3ConfusionMatrix, D3WeightHistogram, D3RocCurve, D3LRFinder, D3NetworkDiagram, calculateConfusionMatrix, calculateClassMetrics, calculateMacroMetrics, calculateRocCurve, findOptimalLR } from './infrastructure/d3';
 import { MockDataRepository } from './infrastructure/api';
 
 // Configuration
@@ -25,6 +25,9 @@ import { APP_CONFIG } from './config/app.config';
 
 // UI utilities
 import { toast } from './presentation/toast';
+
+// Export utilities
+import { GifEncoder, generatePythonCode } from './infrastructure/export';
 
 // =============================================================================
 // DOM Element References
@@ -70,6 +73,7 @@ const elements = {
   btnPlayEvolution: document.getElementById('btn-play-evolution') as HTMLButtonElement,
   evolutionSlider: document.getElementById('evolution-slider') as HTMLInputElement,
   evolutionEpoch: document.getElementById('evolution-epoch') as HTMLSpanElement,
+  btnExportGif: document.getElementById('btn-export-gif') as HTMLButtonElement,
 
   // Hyperparameter inputs
   inputLr: document.getElementById('input-lr') as HTMLInputElement,
@@ -116,6 +120,11 @@ const elements = {
   statusLr: document.getElementById('status-lr') as HTMLSpanElement,
   statusState: document.getElementById('status-state') as HTMLSpanElement,
 
+  // Fit warning
+  fitWarning: document.getElementById('fit-warning') as HTMLDivElement,
+  fitWarningMessage: document.getElementById('fit-warning-message') as HTMLDivElement,
+  fitWarningSuggestion: document.getElementById('fit-warning-suggestion') as HTMLDivElement,
+
   // Validation split
   inputValSplit: document.getElementById('input-val-split') as HTMLSelectElement,
 
@@ -136,6 +145,7 @@ const elements = {
   btnExportSvg: document.getElementById('btn-export-svg') as HTMLButtonElement,
   btnScreenshot: document.getElementById('btn-screenshot') as HTMLButtonElement,
   btnExportModel: document.getElementById('btn-export-model') as HTMLButtonElement,
+  btnExportPython: document.getElementById('btn-export-python') as HTMLButtonElement,
   inputLoadModel: document.getElementById('input-load-model') as HTMLInputElement,
   inputLoadWeights: document.getElementById('input-load-weights') as HTMLInputElement,
 
@@ -149,6 +159,17 @@ const elements = {
   btnClearSession: document.getElementById('btn-clear-session') as HTMLButtonElement,
   btnShareUrl: document.getElementById('btn-share-url') as HTMLButtonElement,
   btnLoadConfig: document.getElementById('btn-load-config') as HTMLButtonElement,
+
+  // Model comparison
+  btnSaveBaseline: document.getElementById('btn-save-baseline') as HTMLButtonElement,
+  btnClearBaseline: document.getElementById('btn-clear-baseline') as HTMLButtonElement,
+  comparisonPanel: document.getElementById('comparison-panel') as HTMLDivElement,
+  baselineAccuracy: document.getElementById('baseline-accuracy') as HTMLSpanElement,
+  baselineLoss: document.getElementById('baseline-loss') as HTMLSpanElement,
+  baselineConfig: document.getElementById('baseline-config') as HTMLDivElement,
+  currentAccuracy: document.getElementById('current-accuracy') as HTMLSpanElement,
+  currentLoss: document.getElementById('current-loss') as HTMLSpanElement,
+  comparisonDiff: document.getElementById('comparison-diff') as HTMLDivElement,
 
   // Theme toggle
   btnThemeToggle: document.getElementById('btn-theme-toggle') as HTMLButtonElement,
@@ -195,6 +216,10 @@ const rocCurve = rocCurveContainer ? new D3RocCurve(rocCurveContainer) : null;
 
 // LR Finder chart (initialized lazily)
 let lrFinderChart: D3LRFinder | null = null;
+
+// Network diagram
+const networkDiagramContainer = document.getElementById('network-diagram');
+const networkDiagram = networkDiagramContainer ? new D3NetworkDiagram(networkDiagramContainer) : null;
 
 // Application layer receives adapters via constructor injection
 const session = new TrainingSession(neuralNetService, visualizerService, dataRepository, {
@@ -320,8 +345,15 @@ function updateUI(state: TrainingState): void {
   elements.btnExportSvg.disabled = !state.datasetLoaded;
   elements.btnScreenshot.disabled = !state.datasetLoaded;
   elements.btnExportModel.disabled = !state.isInitialised;
+  elements.btnExportPython.disabled = !state.isInitialised;
   elements.btnDownloadDataset.disabled = !state.datasetLoaded;
   elements.btnLrFinder.disabled = !canTrain || state.isRunning;
+  elements.btnSaveBaseline.disabled = state.currentAccuracy === null;
+
+  // Update comparison display if baseline is set
+  if (baseline) {
+    updateComparisonDisplay();
+  }
 
   // Update loss chart
   lossChart.update(state.history);
@@ -329,6 +361,11 @@ function updateUI(state: TrainingState): void {
   // Update confusion matrix and metrics periodically
   if (state.currentEpoch > 0 && state.currentEpoch % 10 === 0) {
     void updateClassificationMetrics();
+  }
+
+  // Update fit warning (check every 20 epochs)
+  if (state.currentEpoch > 0 && state.currentEpoch % 20 === 0) {
+    updateFitWarning(state);
   }
 }
 
@@ -344,6 +381,141 @@ function getStateClass(state: TrainingState): string {
   if (state.isRunning && !state.isPaused) return 'status-running';
   if (state.isPaused) return 'status-paused';
   return 'status-idle';
+}
+
+// =============================================================================
+// Overfitting/Underfitting Detection
+// =============================================================================
+
+type FitWarning = 'overfitting' | 'underfitting' | 'good' | 'unknown';
+
+interface FitAnalysis {
+  status: FitWarning;
+  message: string;
+  suggestion: string;
+}
+
+/**
+ * Analyzes training history to detect overfitting or underfitting.
+ */
+function analyzeFit(state: TrainingState): FitAnalysis {
+  const records = state.history.records;
+  
+  // Need enough data to analyze
+  if (records.length < 20) {
+    return { status: 'unknown', message: '', suggestion: '' };
+  }
+
+  const recentRecords = records.slice(-20);
+  const hasValidation = recentRecords.some(r => r.valLoss !== null);
+
+  if (!hasValidation) {
+    return { status: 'unknown', message: 'Enable validation split for fit analysis', suggestion: '' };
+  }
+
+  // Calculate recent trends
+  const recentTrainLoss = recentRecords.map(r => r.loss);
+  const recentValLoss = recentRecords.map(r => r.valLoss ?? r.loss);
+  
+  const trainTrend = calculateTrend(recentTrainLoss);
+  const valTrend = calculateTrend(recentValLoss);
+  
+  // Get latest values
+  const latestTrain = recentTrainLoss[recentTrainLoss.length - 1] ?? 0;
+  const latestVal = recentValLoss[recentValLoss.length - 1] ?? 0;
+  const latestAcc = state.currentAccuracy ?? 0;
+  const latestValAcc = state.currentValAccuracy ?? 0;
+
+  // Overfitting: validation loss increasing while training loss decreasing
+  // or large gap between train and val accuracy
+  const valTrainGap = latestVal - latestTrain;
+  const accGap = latestAcc - latestValAcc;
+
+  if (valTrend > 0.01 && trainTrend < 0 && valTrainGap > 0.1) {
+    return {
+      status: 'overfitting',
+      message: '⚠️ Overfitting detected: validation loss increasing',
+      suggestion: 'Try: increase dropout, add regularization, reduce model complexity, or get more data',
+    };
+  }
+
+  if (accGap > 0.15) {
+    return {
+      status: 'overfitting',
+      message: `⚠️ Overfitting: ${(accGap * 100).toFixed(0)}% accuracy gap`,
+      suggestion: 'Try: increase dropout, add L2 regularization, or use data augmentation',
+    };
+  }
+
+  // Underfitting: both losses high and not decreasing
+  if (latestTrain > 0.5 && trainTrend > -0.001 && latestAcc < 0.7) {
+    return {
+      status: 'underfitting',
+      message: '⚠️ Underfitting: model not learning effectively',
+      suggestion: 'Try: increase model capacity, train longer, increase learning rate, or reduce regularization',
+    };
+  }
+
+  // Good fit: losses decreasing, small gap
+  if (trainTrend < 0 && valTrend < 0.005 && valTrainGap < 0.1) {
+    return {
+      status: 'good',
+      message: '✓ Good fit: model is learning well',
+      suggestion: '',
+    };
+  }
+
+  return { status: 'unknown', message: '', suggestion: '' };
+}
+
+/**
+ * Calculates the trend (slope) of a series of values.
+ */
+function calculateTrend(values: number[]): number {
+  if (values.length < 2) return 0;
+  
+  const n = values.length;
+  let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+  
+  for (let i = 0; i < n; i++) {
+    sumX += i;
+    sumY += values[i] ?? 0;
+    sumXY += i * (values[i] ?? 0);
+    sumX2 += i * i;
+  }
+  
+  const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+  return slope;
+}
+
+/**
+ * Updates the fit warning display.
+ */
+function updateFitWarning(state: TrainingState): void {
+  const analysis = analyzeFit(state);
+  
+  if (analysis.status === 'unknown' || !analysis.message) {
+    elements.fitWarning.classList.add('hidden');
+    return;
+  }
+
+  elements.fitWarning.classList.remove('hidden');
+  elements.fitWarningMessage.textContent = analysis.message;
+  elements.fitWarningSuggestion.textContent = analysis.suggestion;
+
+  // Set background colour based on status
+  elements.fitWarning.className = 'mt-2 p-2 rounded text-xs';
+  switch (analysis.status) {
+    case 'overfitting':
+      elements.fitWarning.classList.add('bg-red-900/30', 'border', 'border-red-700/50');
+      break;
+    case 'underfitting':
+      elements.fitWarning.classList.add('bg-yellow-900/30', 'border', 'border-yellow-700/50');
+      break;
+    case 'good':
+      elements.fitWarning.classList.add('bg-green-900/30', 'border', 'border-green-700/50');
+      break;
+  }
 }
 
 function showLoading(show: boolean): void {
@@ -491,6 +663,7 @@ function updateEvolutionControls(): void {
   
   elements.btnPlayEvolution.disabled = !hasSnapshots;
   elements.evolutionSlider.disabled = !hasSnapshots;
+  elements.btnExportGif.disabled = !hasSnapshots;
   
   if (hasSnapshots) {
     elements.evolutionSlider.max = (snapshots.length - 1).toString();
@@ -550,6 +723,94 @@ function playEvolution(): void {
     elements.evolutionSlider.value = currentIndex.toString();
     showEvolutionSnapshot(currentIndex);
   }, 200); // 5 FPS
+}
+
+/**
+ * Exports evolution animation as GIF.
+ */
+async function handleExportGif(): Promise<void> {
+  const snapshots = session.getBoundarySnapshots();
+  if (snapshots.length === 0) {
+    toast.warning('No evolution snapshots to export');
+    return;
+  }
+
+  elements.btnExportGif.disabled = true;
+  elements.btnExportGif.textContent = 'Encoding...';
+  toast.info('Generating GIF (this may take a moment)...');
+
+  try {
+    const svg = document.querySelector('#chart svg') as SVGSVGElement;
+    if (!svg) {
+      throw new Error('Chart SVG not found');
+    }
+
+    const width = 400;
+    const height = 400;
+    const encoder = new GifEncoder(width, height);
+
+    // Create a temporary canvas for rendering
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Could not get canvas context');
+
+    // Render each snapshot
+    for (let i = 0; i < snapshots.length; i++) {
+      const snapshot = snapshots[i];
+      if (!snapshot) continue;
+
+      // Render the boundary for this snapshot
+      visualizerService.renderBoundary(snapshot.predictions, APP_CONFIG.visualization.gridSize);
+      
+      // Wait for render to complete
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Capture SVG to canvas
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+
+      await new Promise<void>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          URL.revokeObjectURL(url);
+          
+          const imageData = ctx.getImageData(0, 0, width, height);
+          encoder.addFrame(imageData, 200); // 200ms per frame
+          resolve();
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error('Failed to load SVG frame'));
+        };
+        img.src = url;
+      });
+    }
+
+    // Generate GIF
+    const blob = await encoder.encode();
+    
+    // Download
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `neuroviz-evolution-${Date.now()}.gif`;
+    link.click();
+    URL.revokeObjectURL(downloadUrl);
+
+    toast.success('GIF exported successfully');
+  } catch (error) {
+    console.error('GIF export error:', error);
+    toast.error('Failed to export GIF');
+  } finally {
+    elements.btnExportGif.disabled = false;
+    elements.btnExportGif.textContent = 'Export as GIF';
+  }
 }
 
 /**
@@ -880,6 +1141,13 @@ async function handleInitialise(): Promise<void> {
     // Apply training config
     applyTrainingConfig();
 
+    // Update network diagram
+    if (networkDiagram) {
+      const fullLayers = [2, ...layers, numClasses]; // Input (2D) + hidden + output
+      const activations = ['', ...(layerActivations.length > 0 ? layerActivations : layers.map(() => activation)), numClasses > 2 ? 'softmax' : 'sigmoid'];
+      networkDiagram.render(fullLayers, activations);
+    }
+
     toast.success(`Network initialized with ${optimizer.toUpperCase()} optimizer!`);
   } catch (error) {
     console.error('Failed to initialise network:', error);
@@ -1029,6 +1297,62 @@ function handleExportCsv(): void {
 function handleExportPng(): void {
   visualizerService.exportAsPNG('neuroviz-boundary');
   toast.success('Decision boundary exported as PNG');
+}
+
+/**
+ * Exports equivalent Python/Keras code for the current model.
+ */
+function handleExportPython(): void {
+  const state = session.getState();
+  if (!state.isInitialised) {
+    toast.warning('Please initialise a model first');
+    return;
+  }
+
+  // Build hyperparameters from current config
+  const layers = parseLayersInput(elements.inputLayers.value);
+  const layerActivations = parseLayerActivations(elements.inputLayerActivations.value);
+  
+  const hyperparams = {
+    learningRate: parseFloat(elements.inputLr.value),
+    layers,
+    optimizer: elements.inputOptimizer.value as OptimizerType,
+    momentum: parseFloat(elements.inputMomentum.value) || 0.9,
+    activation: elements.inputActivation.value as ActivationType,
+    layerActivations: layerActivations.length > 0 ? layerActivations : undefined,
+    l1Regularization: parseFloat(elements.inputL1.value) || 0,
+    l2Regularization: parseFloat(elements.inputL2.value) || 0,
+    numClasses: parseInt(elements.inputNumClasses.value, 10) || 2,
+    dropoutRate: parseFloat(elements.inputDropout.value) || 0,
+    clipNorm: parseFloat(elements.inputClipNorm.value) || 0,
+    batchNorm: elements.inputBatchNorm.checked,
+  };
+
+  const lrSchedule = {
+    type: elements.inputLrSchedule.value as LRScheduleType,
+    warmupEpochs: parseInt(elements.inputWarmup.value, 10) || 0,
+    cycleLength: parseInt(elements.inputCycleLength.value, 10) || 20,
+    minLR: parseFloat(elements.inputMinLr.value) || 0.001,
+  };
+
+  const datasetInfo = {
+    samples: parseInt(elements.inputSamples.value, 10) || 200,
+    noise: (parseInt(elements.inputNoise.value, 10) || 10) / 100,
+    datasetType: elements.datasetSelect.value,
+  };
+
+  const code = generatePythonCode(hyperparams, lrSchedule, datasetInfo);
+
+  // Download as .py file
+  const blob = new Blob([code], { type: 'text/x-python' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `neuroviz-model-${Date.now()}.py`;
+  link.click();
+  URL.revokeObjectURL(url);
+
+  toast.success('Python code exported');
 }
 
 /**
@@ -1504,6 +1828,86 @@ function saveSession(): void {
   } catch (error) {
     console.error('Failed to save session:', error);
     toast.error('Failed to save session (storage full?)');
+  }
+}
+
+// =============================================================================
+// Model Comparison
+// =============================================================================
+
+interface BaselineData {
+  accuracy: number;
+  loss: number;
+  config: string;
+}
+
+let baseline: BaselineData | null = null;
+
+/**
+ * Saves current model results as baseline for comparison.
+ */
+function handleSaveBaseline(): void {
+  const state = session.getState();
+  if (state.currentAccuracy === null || state.currentLoss === null) {
+    toast.warning('Train a model first to set baseline');
+    return;
+  }
+
+  const configSummary = `${elements.inputLayers.value} | ${elements.inputOptimizer.value} | LR ${elements.inputLr.value}`;
+  
+  baseline = {
+    accuracy: state.currentAccuracy,
+    loss: state.currentLoss,
+    config: configSummary,
+  };
+
+  elements.comparisonPanel.classList.remove('hidden');
+  elements.baselineAccuracy.textContent = `${(baseline.accuracy * 100).toFixed(1)}%`;
+  elements.baselineLoss.textContent = baseline.loss.toFixed(4);
+  elements.baselineConfig.textContent = baseline.config;
+
+  updateComparisonDisplay();
+  toast.success('Baseline saved');
+}
+
+/**
+ * Clears the baseline comparison.
+ */
+function handleClearBaseline(): void {
+  baseline = null;
+  elements.comparisonPanel.classList.add('hidden');
+  toast.info('Baseline cleared');
+}
+
+/**
+ * Updates the comparison display with current vs baseline.
+ */
+function updateComparisonDisplay(): void {
+  if (!baseline) return;
+
+  const state = session.getState();
+  
+  if (state.currentAccuracy !== null) {
+    elements.currentAccuracy.textContent = `${(state.currentAccuracy * 100).toFixed(1)}%`;
+  }
+  if (state.currentLoss !== null) {
+    elements.currentLoss.textContent = state.currentLoss.toFixed(4);
+  }
+
+  // Calculate and display difference
+  if (state.currentAccuracy !== null && state.currentLoss !== null) {
+    const accDiff = (state.currentAccuracy - baseline.accuracy) * 100;
+    const lossDiff = state.currentLoss - baseline.loss;
+
+    const accClass = accDiff >= 0 ? 'text-green-400' : 'text-red-400';
+    const lossClass = lossDiff <= 0 ? 'text-green-400' : 'text-red-400';
+    const accSign = accDiff >= 0 ? '+' : '';
+    const lossSign = lossDiff >= 0 ? '+' : '';
+
+    elements.comparisonDiff.innerHTML = `
+      <span class="${accClass}">${accSign}${accDiff.toFixed(1)}% acc</span> | 
+      <span class="${lossClass}">${lossSign}${lossDiff.toFixed(4)} loss</span>
+    `;
   }
 }
 
@@ -2331,6 +2735,7 @@ function init(): void {
   elements.inputRecordEvolution.addEventListener('change', handleRecordEvolutionToggle);
   elements.btnPlayEvolution.addEventListener('click', playEvolution);
   elements.evolutionSlider.addEventListener('input', handleEvolutionSliderChange);
+  elements.btnExportGif.addEventListener('click', () => void handleExportGif());
 
   // Bind event listeners - Hyperparameters
   elements.btnInit.addEventListener('click', () => void handleInitialise());
@@ -2357,6 +2762,7 @@ function init(): void {
   elements.btnExportSvg.addEventListener('click', handleExportSvg);
   elements.btnScreenshot.addEventListener('click', handleScreenshot);
   elements.btnExportModel.addEventListener('click', () => void handleExportModel());
+  elements.btnExportPython.addEventListener('click', handleExportPython);
   elements.btnLrFinder.addEventListener('click', () => void handleLRFinder());
   elements.inputLoadModel.addEventListener('change', handleLoadModelJson);
   elements.inputLoadWeights.addEventListener('change', (e) => void handleLoadModelWeights(e));
@@ -2371,6 +2777,8 @@ function init(): void {
   elements.btnClearSession.addEventListener('click', clearSession);
   elements.btnShareUrl.addEventListener('click', handleShareUrl);
   elements.btnLoadConfig.addEventListener('click', handleLoadConfigCode);
+  elements.btnSaveBaseline.addEventListener('click', handleSaveBaseline);
+  elements.btnClearBaseline.addEventListener('click', handleClearBaseline);
 
   // Bind keyboard shortcuts
   document.addEventListener('keydown', handleKeyboardShortcut);

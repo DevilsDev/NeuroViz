@@ -111,7 +111,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
 | 3D visualization (Three.js) | XL | 🔲 | Height = confidence |
-| Network architecture diagram | L | 🔲 | Interactive node graph |
+| Network architecture diagram | L | ✅ | Interactive D3 node graph |
 | Weight histogram | S | ✅ | Layer weight distribution |
 | Weight magnitude visualization | M | 🔲 | Color-coded connections |
 | Real-time neuron activations | L | 🔲 | Per-layer heatmaps |
@@ -175,7 +175,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 | Model comparison (A/B) | L | 🔲 | Side-by-side training |
 | Model ensemble | L | 🔲 | Voting visualization |
 | Export to ONNX | L | 🔲 | Cross-platform |
-| Generate Python code | M | 🔲 | Keras equivalent |
+| Generate Python code | M | ✅ | Keras/TensorFlow export |
 
 ---
 
@@ -211,8 +211,8 @@ This document outlines planned features for NeuroViz, organized by priority and 
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| Record training as GIF | L | 🔲 | Frame capture |
-| Split-screen comparison | M | 🔲 | Two models side-by-side |
+| Record training as GIF | L | ✅ | Frame capture from evolution |
+| Split-screen comparison | M | ✅ | Model comparison panel |
 | Browser notifications | S | ✅ | Training complete alert |
 
 ---
@@ -224,7 +224,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
 | "Explain like I'm 5" tooltips | M | 🔲 | Hover explanations |
-| Overfitting/underfitting warnings | M | 🔲 | Automatic detection |
+| Overfitting/underfitting warnings | M | ✅ | Automatic detection |
 | Suggested fixes | M | 🔲 | Actionable recommendations |
 
 ### 🟢 P3 — Interactive Learning
@@ -371,6 +371,14 @@ This document outlines planned features for NeuroViz, organized by priority and 
 2. ✅ Learning rate finder
 3. ✅ Boundary evolution animation
 
+### ✅ Sprint 13: Advanced Features (Complete)
+
+1. ✅ Record training as GIF
+2. ✅ Model comparison panel
+3. ✅ Network architecture diagram
+4. ✅ Generate Python code
+5. ✅ Overfitting/underfitting warnings
+
 ---
 
 ## Contributing
@@ -394,11 +402,11 @@ Last updated: December 2025
 |-------|-------------|-----------|-------|----------|
 | Phase 1 | Core Training | 16 | 16 | 100% |
 | Phase 2 | Metrics & History | 12 | 12 | 100% |
-| Phase 3 | Visualization | 11 | 16 | 69% |
+| Phase 3 | Visualization | 12 | 16 | 75% |
 | Phase 4 | Data Management | 10 | 10 | 100% |
-| Phase 5 | Model Capabilities | 8 | 12 | 67% |
-| Phase 6 | UX & Polish | 12 | 14 | 86% |
-| Phase 7 | Educational | 0 | 6 | 0% |
+| Phase 5 | Model Capabilities | 9 | 12 | 75% |
+| Phase 6 | UX & Polish | 14 | 14 | 100% |
+| Phase 7 | Educational | 1 | 6 | 17% |
 | Phase 8 | Performance | 0 | 7 | 0% |
 | Phase 9 | Research | 0 | 6 | 0% |
-| **Total** | | **69** | **99** | **70%** |
+| **Total** | | **74** | **99** | **75%** |

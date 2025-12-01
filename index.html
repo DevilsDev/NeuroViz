@@ -302,6 +302,12 @@
                   />
                   <span id="evolution-epoch" class="text-xs text-slate-400 w-16 text-right">Epoch: 0</span>
                 </div>
+                <button id="btn-export-gif" class="btn-secondary w-full text-xs mt-2" disabled>
+                  <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+                  </svg>
+                  Export as GIF
+                </button>
               </div>
               <!-- Export Buttons -->
               <div class="flex gap-2 pt-2 border-t border-navy-700/30">
@@ -680,6 +686,11 @@
             <div id="loss-chart-container" class="w-full h-48 bg-navy-900/50 rounded-lg">
               <!-- D3 loss chart renders here -->
             </div>
+            <!-- Fit Analysis Warning -->
+            <div id="fit-warning" class="hidden mt-2 p-2 rounded text-xs">
+              <div id="fit-warning-message" class="font-medium"></div>
+              <div id="fit-warning-suggestion" class="text-slate-400 mt-1"></div>
+            </div>
             <div class="flex gap-2 mt-2">
               <button id="btn-export-json" class="btn-secondary flex-1 text-xs" disabled>
                 Export JSON
@@ -703,6 +714,12 @@
                 <input type="file" id="input-load-model" class="hidden" accept=".json" />
               </label>
             </div>
+            <button id="btn-export-python" class="btn-secondary w-full text-xs mt-2" disabled>
+              <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              </svg>
+              Export Python Code
+            </button>
             <input type="file" id="input-load-weights" class="hidden" accept=".bin" />
           </fieldset>
 
@@ -753,6 +770,13 @@
               </div>
               <p id="lr-finder-result" class="text-xs text-slate-400 mt-1 hidden"></p>
             </div>
+            <!-- Network Architecture Diagram -->
+            <div class="mt-3">
+              <span class="input-label">Network Architecture</span>
+              <div id="network-diagram" class="h-32 bg-navy-800 rounded border border-navy-600">
+                <!-- D3 network diagram renders here -->
+              </div>
+            </div>
           </fieldset>
 
           <!-- Session Management -->
@@ -791,6 +815,34 @@
                 </svg>
                 Paste Config
               </button>
+            </div>
+            <!-- Model Comparison -->
+            <div class="mt-3 pt-3 border-t border-navy-700/30">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-slate-400">Model Comparison</span>
+                <button id="btn-save-baseline" class="btn-secondary text-xs px-2 py-1" disabled title="Save current results as baseline">
+                  Set Baseline
+                </button>
+              </div>
+              <div id="comparison-panel" class="hidden">
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                  <div class="bg-navy-800 rounded p-2">
+                    <div class="text-slate-500 mb-1">Baseline</div>
+                    <div class="text-slate-300">Acc: <span id="baseline-accuracy">—</span></div>
+                    <div class="text-slate-300">Loss: <span id="baseline-loss">—</span></div>
+                    <div class="text-slate-400 text-[10px]" id="baseline-config"></div>
+                  </div>
+                  <div class="bg-navy-800 rounded p-2">
+                    <div class="text-slate-500 mb-1">Current</div>
+                    <div class="text-slate-300">Acc: <span id="current-accuracy">—</span></div>
+                    <div class="text-slate-300">Loss: <span id="current-loss">—</span></div>
+                    <div id="comparison-diff" class="text-[10px] mt-1"></div>
+                  </div>
+                </div>
+                <button id="btn-clear-baseline" class="btn-secondary w-full text-xs mt-2">
+                  Clear Baseline
+                </button>
+              </div>
             </div>
             <p class="text-xs text-slate-500 mt-2 text-center">
               Auto-saves on page close
