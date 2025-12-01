@@ -296,8 +296,13 @@ export class D3Chart implements IVisualizerService {
    * Clears all rendered content and resets the chart.
    */
   clear(): void {
-    this.svg.selectAll('.data-point').remove();
-    this.svg.selectAll('.boundary').remove();
+    // Clear caches first to prevent re-render
+    this.cachedPoints = [];
+    this.cachedPredictions = [];
+    this.cachedGridSize = 0;
+    
+    // Remove ALL children of chartGroup (axes are in a separate group on svg)
+    this.chartGroup.selectAll('*').remove();
   }
 
   /**
