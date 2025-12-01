@@ -17,7 +17,7 @@ import { TrainingSession } from './core/application';
 
 // Infrastructure adapters - only imported here at the composition root
 import { TFNeuralNet } from './infrastructure/tensorflow';
-import { D3Chart, D3LossChart, D3ConfusionMatrix, calculateConfusionMatrix, calculateClassMetrics, calculateMacroMetrics } from './infrastructure/d3';
+import { D3Chart, D3LossChart, D3ConfusionMatrix, D3WeightHistogram, calculateConfusionMatrix, calculateClassMetrics, calculateMacroMetrics } from './infrastructure/d3';
 import { MockDataRepository } from './infrastructure/api';
 
 // Configuration
@@ -78,6 +78,7 @@ const elements = {
   inputL1: document.getElementById('input-l1') as HTMLInputElement,
   inputL2: document.getElementById('input-l2') as HTMLInputElement,
   inputDropout: document.getElementById('input-dropout') as HTMLSelectElement,
+  inputClipNorm: document.getElementById('input-clip-norm') as HTMLSelectElement,
   btnInit: document.getElementById('btn-init') as HTMLButtonElement,
   drawClassButtons: document.getElementById('draw-class-buttons') as HTMLDivElement,
 
@@ -102,6 +103,7 @@ const elements = {
   statusValLoss: document.getElementById('status-val-loss') as HTMLSpanElement,
   statusAccuracy: document.getElementById('status-accuracy') as HTMLSpanElement,
   statusValAccuracy: document.getElementById('status-val-accuracy') as HTMLSpanElement,
+  statusLr: document.getElementById('status-lr') as HTMLSpanElement,
   statusState: document.getElementById('status-state') as HTMLSpanElement,
 
   // Validation split
@@ -162,6 +164,10 @@ const lossChart = new D3LossChart('loss-chart-container', 380, 180);
 // Confusion matrix visualization
 const confusionMatrix = new D3ConfusionMatrix('confusion-matrix-container');
 
+// Weight histogram visualization
+const weightHistogramContainer = document.getElementById('weight-histogram');
+const weightHistogram = weightHistogramContainer ? new D3WeightHistogram(weightHistogramContainer) : null;
+
 // Application layer receives adapters via constructor injection
 const session = new TrainingSession(neuralNetService, visualizerService, dataRepository, {
   renderInterval: APP_CONFIG.visualization.renderInterval,
@@ -183,6 +189,10 @@ function updateUI(state: TrainingState): void {
     state.currentAccuracy !== null ? `${(state.currentAccuracy * 100).toFixed(1)}%` : '—';
   elements.statusValAccuracy.textContent =
     state.currentValAccuracy !== null ? `${(state.currentValAccuracy * 100).toFixed(1)}%` : '—';
+
+  // Update learning rate display
+  const currentLR = session.getCurrentLearningRate();
+  elements.statusLr.textContent = currentLR.toExponential(2);
 
   // Update state indicator
   const stateText = getStateText(state);
@@ -270,6 +280,12 @@ async function updateClassificationMetrics(): Promise<void> {
     elements.metricPrecision.textContent = `${(macroMetrics.precision * 100).toFixed(1)}%`;
     elements.metricRecall.textContent = `${(macroMetrics.recall * 100).toFixed(1)}%`;
     elements.metricF1.textContent = `${(macroMetrics.f1 * 100).toFixed(1)}%`;
+
+    // Update weight histogram
+    if (weightHistogram) {
+      const weights = neuralNetService.getWeights();
+      weightHistogram.update(weights);
+    }
 
     // Highlight misclassified points if enabled
     if (elements.inputHighlightErrors.checked) {
@@ -623,6 +639,7 @@ async function handleInitialise(): Promise<void> {
   const l2Regularization = parseFloat(elements.inputL2.value) || 0;
   const numClasses = parseInt(elements.inputNumClasses.value, 10) || 2;
   const dropoutRate = parseFloat(elements.inputDropout.value) || 0;
+  const clipNorm = parseFloat(elements.inputClipNorm.value) || 0;
 
   // Parse per-layer activations (optional)
   const layerActivations = parseLayerActivations(elements.inputLayerActivations.value);
@@ -638,6 +655,7 @@ async function handleInitialise(): Promise<void> {
     l2Regularization,
     numClasses,
     dropoutRate,
+    clipNorm,
   };
 
   elements.btnInit.disabled = true;
@@ -1186,6 +1204,7 @@ function clearSession(): void {
   session.clearAll();
   lossChart.clear();
   confusionMatrix.clear();
+  weightHistogram?.clear();
 
   // Clear custom data
   customDataPoints = [];
@@ -1211,6 +1230,7 @@ function clearSession(): void {
   elements.inputL1.value = '0';
   elements.inputL2.value = '0';
   elements.inputDropout.value = '0';
+  elements.inputClipNorm.value = '0';
   elements.inputBatchSize.value = '32';
   elements.inputMaxEpochs.value = '500';
   elements.inputValSplit.value = '20';
@@ -1222,6 +1242,7 @@ function clearSession(): void {
   elements.metricPrecision.textContent = '-';
   elements.metricRecall.textContent = '-';
   elements.metricF1.textContent = '-';
+  elements.statusLr.textContent = '—';
 
   // Reset visualization checkboxes
   elements.inputHighlightErrors.checked = false;

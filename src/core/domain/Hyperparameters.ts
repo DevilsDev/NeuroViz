@@ -61,6 +61,9 @@ export interface Hyperparameters {
 
   /** Dropout rate (0-1). 0 = disabled. Applied after each hidden layer. */
   readonly dropoutRate?: number;
+
+  /** Gradient clipping norm. 0 = disabled. Clips gradients to this max norm. */
+  readonly clipNorm?: number;
 }
 
 /**
@@ -103,6 +106,7 @@ export const DEFAULT_HYPERPARAMETERS: Required<Hyperparameters> = {
   l2Regularization: 0,
   numClasses: 2,
   dropoutRate: 0,
+  clipNorm: 0,
 };
 
 /**

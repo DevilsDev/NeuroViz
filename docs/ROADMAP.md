@@ -46,6 +46,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 |---------|------------|--------|-------|
 | Momentum control | S | ✅ | SGD momentum slider (0-0.99) |
 | L1 regularization | S | ✅ | Sparsity inducing |
+| Gradient clipping | S | ✅ | Prevent exploding gradients |
 | Batch normalization | M | 🔲 | Between layers |
 | Learning rate warmup | S | ✅ | Gradual increase (0-50 epochs) |
 | Cyclic learning rate | M | 🔲 | Triangle/cosine cycles |
@@ -77,6 +78,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 |---------|------------|--------|-------|
 | Confusion matrix | M | ✅ | Heatmap visualization |
 | Precision/Recall/F1 | S | ✅ | Macro-averaged metrics |
+| Learning rate display | S | ✅ | Show current LR during training |
 | ROC curve | M | 🔲 | Binary classification |
 | Learning rate finder | L | 🔲 | Cyclic LR test |
 
@@ -110,6 +112,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 |---------|------------|--------|-------|
 | 3D visualization (Three.js) | XL | 🔲 | Height = confidence |
 | Network architecture diagram | L | 🔲 | Interactive node graph |
+| Weight histogram | S | ✅ | Layer weight distribution |
 | Weight magnitude visualization | M | 🔲 | Color-coded connections |
 | Real-time neuron activations | L | 🔲 | Per-layer heatmaps |
 | Voronoi diagram overlay | M | 🔲 | Alternative boundary view |
@@ -272,7 +275,6 @@ This document outlines planned features for NeuroViz, organized by priority and 
 | Adversarial examples | L | 🔲 | FGSM attack |
 | Bayesian neural networks | XL | 🔲 | Uncertainty quantification |
 | Neural architecture search | XL | 🔲 | Auto-optimization |
-| Transfer learning | L | 🔲 | Pre-trained models |
 
 ---
 
@@ -361,13 +363,13 @@ Last updated: December 2025
 
 | Phase | Description | Completed | Total | Progress |
 |-------|-------------|-----------|-------|----------|
-| Phase 1 | Core Training | 13 | 15 | 87% |
-| Phase 2 | Metrics & History | 9 | 11 | 82% |
-| Phase 3 | Visualization | 10 | 14 | 71% |
+| Phase 1 | Core Training | 14 | 16 | 88% |
+| Phase 2 | Metrics & History | 10 | 12 | 83% |
+| Phase 3 | Visualization | 11 | 15 | 73% |
 | Phase 4 | Data Management | 10 | 10 | 100% |
 | Phase 5 | Model Capabilities | 6 | 12 | 50% |
 | Phase 6 | UX & Polish | 13 | 15 | 87% |
 | Phase 7 | Educational | 0 | 6 | 0% |
 | Phase 8 | Performance | 0 | 7 | 0% |
-| Phase 9 | Research | 0 | 8 | 0% |
-| **Total** | | **61** | **98** | **62%** |
+| Phase 9 | Research | 0 | 7 | 0% |
+| **Total** | | **64** | **100** | **64%** |

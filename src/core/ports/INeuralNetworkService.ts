@@ -64,4 +64,12 @@ export interface INeuralNetworkService {
    * @throws If called before initialize() or if export fails
    */
   exportModel(): Promise<{ modelJson: Blob; weightsBlob: Blob }>;
+
+  /**
+   * Gets all weights from the model as a flat array.
+   * Used for weight histogram visualization.
+   *
+   * @returns Array of all weight values, or empty array if not initialized
+   */
+  getWeights(): number[];
 }

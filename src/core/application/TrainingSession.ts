@@ -663,6 +663,13 @@ export class TrainingSession implements ITrainingSession {
     return [...this.allData];
   }
 
+  /**
+   * Returns the current learning rate (after warmup/decay adjustments).
+   */
+  getCurrentLearningRate(): number {
+    return this.currentLearningRate;
+  }
+
   // ===========================================================================
   // Learning Rate Scheduling
   // ===========================================================================
