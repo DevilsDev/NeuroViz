@@ -2084,9 +2084,23 @@ function clearSession(): void {
   confusionMatrix.clear();
   weightHistogram?.clear();
   rocCurve?.clear();
+  networkDiagram?.clear();
+  threeViz?.clear();
 
   // Clear custom data
   customDataPoints = [];
+
+  // Clear evolution snapshots
+  session.clearBoundarySnapshots();
+
+  // Clear baseline comparison
+  baseline = null;
+  elements.comparisonPanel.classList.add('hidden');
+
+  // Clear fit warnings
+  if (elements.fitWarning) {
+    elements.fitWarning.classList.add('hidden');
+  }
 
   // Reset UI inputs to defaults
   elements.datasetSelect.value = 'circle';
@@ -2114,12 +2128,14 @@ function clearSession(): void {
   elements.inputBatchSize.value = '32';
   elements.inputMaxEpochs.value = '500';
   elements.inputValSplit.value = '20';
+  elements.inputLrSchedule.value = 'constant';
   elements.inputFps.value = '30';
   elements.fpsValue.textContent = '30';
   elements.inputWarmup.value = '0';
   elements.inputCycleLength.value = '20';
   elements.inputMinLr.value = '0.001';
   elements.cyclicLrControls.classList.add('hidden');
+  elements.inputEarlyStop.value = '0';
 
   // Reset metrics display
   elements.metricPrecision.textContent = '-';
@@ -2130,9 +2146,39 @@ function clearSession(): void {
   // Reset visualization checkboxes
   elements.inputHighlightErrors.checked = false;
   elements.inputConfidenceCircles.checked = false;
+  elements.inputNotifications.checked = false;
+  elements.inputRecordEvolution.checked = false;
+  elements.input3dView.checked = false;
+  elements.inputZoom.checked = true;
+  elements.inputTooltips.checked = true;
+
+  // Hide optional UI panels
+  elements.evolutionControls.classList.add('hidden');
+  elements.threeContainer.classList.add('hidden');
+  elements.lrFinderContainer.classList.add('hidden');
+  elements.lrFinderResult.classList.add('hidden');
+
+  // Reset evolution controls
+  elements.evolutionSlider.value = '0';
+  elements.evolutionSlider.max = '0';
+  elements.evolutionEpoch.textContent = '0';
+  elements.btnPlayEvolution.disabled = true;
+  elements.btnExportGif.disabled = true;
+
+  // Reset colour scheme and point size
+  elements.inputColourScheme.value = 'default';
+  elements.inputPointSize.value = '5';
+  elements.inputOpacity.value = '70';
+  elements.opacityValue.textContent = '70';
+
+  // Reset preset selector
+  elements.presetSelect.value = '';
 
   // Update draw class buttons
   updateDrawClassButtons();
+
+  // Update UI state
+  updateUI(session.getState());
 
   toast.info('Session cleared - all settings reset to defaults');
 }

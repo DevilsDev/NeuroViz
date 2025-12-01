@@ -49,6 +49,7 @@ export class MockNeuralNetworkService implements INeuralNetworkService {
       x: point.x,
       y: point.y,
       confidence: 0.5 + point.x * 0.25, // Deterministic confidence
+      predictedClass: point.x > 0 ? 1 : 0,
     }));
   });
 
@@ -57,6 +58,21 @@ export class MockNeuralNetworkService implements INeuralNetworkService {
     const loss = this.valLossSequence[this.lossIndex] ?? 0.02;
     const accuracy = this.valAccuracySequence[this.lossIndex] ?? 0.98;
     return { loss, accuracy };
+  });
+
+  readonly exportModel = vi.fn(async (): Promise<{ modelJson: Blob; weightsBlob: Blob }> => {
+    return {
+      modelJson: new Blob(['{}'], { type: 'application/json' }),
+      weightsBlob: new Blob([new ArrayBuffer(0)], { type: 'application/octet-stream' }),
+    };
+  });
+
+  readonly getWeights = vi.fn((): number[] => {
+    return [0.1, 0.2, 0.3, 0.4];
+  });
+
+  readonly loadModel = vi.fn(async (_modelJson: File, _weightsBlob: File): Promise<void> => {
+    // No-op for mock
   });
 
   /**

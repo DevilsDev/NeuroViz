@@ -597,7 +597,7 @@ export class TrainingSession implements ITrainingSession {
    */
   private async updateVisualisation(): Promise<void> {
     // Guard: don't render if session was cleared while async operation was pending
-    if (!this.datasetLoaded || !this.isTraining) {
+    if (!this.datasetLoaded) {
       return;
     }
     
@@ -605,13 +605,13 @@ export class TrainingSession implements ITrainingSession {
     this.cachedPredictions = await this.neuralNet.predict(this.predictionGrid);
 
     // Guard again after async operation - session may have been cleared
-    if (!this.datasetLoaded || !this.isTraining) {
+    if (!this.datasetLoaded) {
       return;
     }
 
     // Render boundary, then data points on top
     this.visualizer.renderBoundary(this.cachedPredictions, this.config.gridSize);
-    this.visualizer.renderData(this.trainingData);
+    this.visualizer.renderData(this.allData);
   }
 
   // ===========================================================================

@@ -132,7 +132,7 @@ describe('TrainingSession', () => {
       await session.loadData('circle');
 
       expect(dataRepo.getDataset).toHaveBeenCalledTimes(1);
-      expect(dataRepo.getDataset).toHaveBeenCalledWith('circle');
+      expect(dataRepo.getDataset).toHaveBeenCalledWith('circle', undefined);
     });
 
     it('should call visualizer.renderData() with loaded points', async () => {
@@ -145,7 +145,9 @@ describe('TrainingSession', () => {
       await session.loadData('test');
 
       expect(visualizer.renderData).toHaveBeenCalledTimes(1);
-      expect(visualizer.renderData).toHaveBeenCalledWith(mockPoints);
+      // Data may be augmented with isValidation property and reordered due to split
+      const calledWith = visualizer.renderData.mock.calls[0]?.[0] as Point[];
+      expect(calledWith).toHaveLength(mockPoints.length);
     });
 
     it('should update state to datasetLoaded after loading', async () => {

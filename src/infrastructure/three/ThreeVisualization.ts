@@ -4,7 +4,7 @@
  */
 
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 export interface Prediction3D {
   x: number;
@@ -221,7 +221,7 @@ export class ThreeVisualization {
    * @param predictions - Map of point index to confidence
    */
   updatePointHeights(confidences: number[]): void {
-    this.pointsGroup.children.forEach((child, index) => {
+    this.pointsGroup.children.forEach((child: THREE.Object3D, index: number) => {
       if (child instanceof THREE.Mesh) {
         const confidence = confidences[index] ?? 0.5;
         child.position.y = 0.05 + confidence * 0.5;

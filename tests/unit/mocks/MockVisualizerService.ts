@@ -45,6 +45,35 @@ export class MockVisualizerService implements IVisualizerService {
     // No-op for mock
   });
 
+  readonly clear = vi.fn((): void => {
+    this.lastRenderedPoints = [];
+    this.lastRenderedPredictions = [];
+  });
+
+  readonly highlightMisclassified = vi.fn((_predictions: Prediction[]): void => {
+    // No-op for mock
+  });
+
+  readonly clearMisclassifiedHighlight = vi.fn((): void => {
+    // No-op for mock
+  });
+
+  readonly renderConfidenceCircles = vi.fn((_predictions: Prediction[]): void => {
+    // No-op for mock
+  });
+
+  readonly clearConfidenceCircles = vi.fn((): void => {
+    // No-op for mock
+  });
+
+  readonly exportAsPng = vi.fn(async (_metadata?: Record<string, string>): Promise<Blob> => {
+    return new Blob(['mock-png'], { type: 'image/png' });
+  });
+
+  readonly exportAsPNGWithMetadata = vi.fn((_filename: string, _metadata: Record<string, string>): void => {
+    // No-op for mock - triggers download in real implementation
+  });
+
   // Draw mode state
   private drawModeEnabled = false;
   private drawModeLabel = 0;

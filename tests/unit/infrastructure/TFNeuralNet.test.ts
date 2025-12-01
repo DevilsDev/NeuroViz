@@ -108,20 +108,21 @@ describe('TFNeuralNet', () => {
     });
 
     it('should train successfully and return a loss value', async () => {
-      const loss = await neuralNet.train(sampleData);
+      const result = await neuralNet.train(sampleData);
 
-      expect(loss).toBeTypeOf('number');
-      expect(loss).toBeGreaterThan(0);
-      expect(isNaN(loss)).toBe(false);
-      expect(isFinite(loss)).toBe(true);
+      expect(result).toBeTypeOf('object');
+      expect(result.loss).toBeTypeOf('number');
+      expect(result.loss).toBeGreaterThan(0);
+      expect(isNaN(result.loss)).toBe(false);
+      expect(isFinite(result.loss)).toBe(true);
     });
 
     it('should reduce loss over multiple training steps', async () => {
       const losses: number[] = [];
 
       for (let i = 0; i < 10; i++) {
-        const loss = await neuralNet.train(sampleData);
-        losses.push(loss);
+        const result = await neuralNet.train(sampleData);
+        losses.push(result.loss);
       }
 
       // Loss should generally trend downward (with some tolerance for fluctuation)
@@ -137,9 +138,9 @@ describe('TFNeuralNet', () => {
 
     it('should handle dataset with single point', async () => {
       const singlePoint: Point[] = [{ x: 0.5, y: 0.5, label: 1 }];
-      const loss = await neuralNet.train(singlePoint);
+      const result = await neuralNet.train(singlePoint);
 
-      expect(isFinite(loss)).toBe(true);
+      expect(isFinite(result.loss)).toBe(true);
     });
 
     it('should throw GradientExplosionError for very high learning rate', async () => {
