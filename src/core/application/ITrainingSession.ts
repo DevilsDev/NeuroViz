@@ -100,6 +100,12 @@ export interface ITrainingSession {
   setCustomData(points: Point[]): void;
 
   /**
+   * Returns the current dataset points.
+   * Useful for session persistence.
+   */
+  getData(): Point[];
+
+  /**
    * Registers a callback for state changes.
    * @returns Unsubscribe function
    */

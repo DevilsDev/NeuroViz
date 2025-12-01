@@ -184,7 +184,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 | Keyboard shortcuts | S | ✅ | Space, S, R, Escape |
 | Dark/light theme toggle | M | ✅ | CSS variables + Tailwind dark mode |
 | Responsive mobile layout | M | 🔲 | Tailwind breakpoints |
-| Fullscreen mode | S | 🔲 | Fullscreen API |
+| Fullscreen mode | S | ✅ | Fullscreen API + F key |
 
 ### 🟡 P2 — Session Management
 
@@ -311,12 +311,12 @@ This document outlines planned features for NeuroViz, organized by priority and 
 
 ### 🟡 Sprint 5: UX & Persistence (In Progress)
 
-1. ✅ Keyboard shortcuts (Space, S, R)
+1. ✅ Keyboard shortcuts (Space, S, R, F)
 2. ✅ Dark/light theme toggle
-3. 🔲 Session save/load
-4. 🔲 Preset configurations
-5. 🔲 Responsive mobile layout
-6. 🔲 Fullscreen mode
+3. ✅ Fullscreen mode (F key)
+4. 🔲 Session save/load
+5. 🔲 Preset configurations
+6. 🔲 Responsive mobile layout
 
 ---
 

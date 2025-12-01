@@ -535,4 +535,12 @@ export class TrainingSession implements ITrainingSession {
 
     this.notifyListeners();
   }
+
+  /**
+   * Returns the current dataset points.
+   * Useful for session persistence.
+   */
+  getData(): Point[] {
+    return [...this.allData];
+  }
 }

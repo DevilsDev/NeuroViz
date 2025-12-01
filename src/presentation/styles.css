@@ -96,6 +96,20 @@ body[data-theme="light"] {
     @apply lg:px-6;
   }
 
+  /* Fullscreen mode styles */
+  .app-container:fullscreen {
+    @apply max-w-none w-full h-full overflow-auto;
+    @apply bg-navy-950 p-6;
+  }
+
+  .app-container:fullscreen .main-grid {
+    @apply h-full;
+  }
+
+  .app-container:fullscreen #viz-container {
+    @apply max-h-none h-full;
+  }
+
   .main-grid {
     @apply grid gap-6 flex-1;
     @apply grid-cols-1 lg:grid-cols-[1fr_340px];
@@ -562,12 +576,23 @@ html:not(.dark) .toast-container .toast {
 }
 
 /* Theme toggle button in light mode */
-html:not(.dark) #btn-theme-toggle {
+html:not(.dark) #btn-theme-toggle,
+html:not(.dark) #btn-fullscreen {
   background-color: #e2e8f0 !important;
 }
 
-html:not(.dark) #btn-theme-toggle:hover {
+html:not(.dark) #btn-theme-toggle:hover,
+html:not(.dark) #btn-fullscreen:hover {
   background-color: #cbd5e1 !important;
+}
+
+html:not(.dark) #btn-fullscreen svg {
+  color: #475569 !important;
+}
+
+/* Fullscreen mode in light theme */
+html:not(.dark) .app-container:fullscreen {
+  background-color: #f8fafc !important;
 }
 
 /* Draw buttons in light mode */
@@ -705,4 +730,50 @@ html:not(.dark) .hover\:bg-navy-700:hover {
 
 html:not(.dark) .hover\:bg-navy-600:hover {
   background-color: #94a3b8 !important;
+}
+
+/* Additional navy overrides for light mode */
+html:not(.dark) .bg-navy-900,
+html:not(.dark) .bg-navy-900\/50 {
+  background-color: #f1f5f9 !important;
+}
+
+html:not(.dark) .border-navy-700\/50 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Loss chart container in light mode */
+html:not(.dark) #loss-chart-container {
+  background-color: #f1f5f9 !important;
+}
+
+/* Ensure all text is dark in light mode */
+html:not(.dark) .text-slate-100,
+html:not(.dark) .text-slate-200,
+html:not(.dark) .text-slate-300,
+html:not(.dark) .text-white {
+  color: #334155 !important;
+}
+
+/* Header and footer borders */
+html:not(.dark) .border-navy-700\/50 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Ensure body and app container have light background */
+html:not(.dark) {
+  background-color: #f8fafc !important;
+}
+
+html:not(.dark) .app-container {
+  background-color: #f8fafc !important;
+}
+
+/* Override any remaining navy backgrounds */
+html:not(.dark) [class*="bg-navy"] {
+  background-color: #e2e8f0 !important;
+}
+
+html:not(.dark) [class*="border-navy"] {
+  border-color: #cbd5e1 !important;
 }

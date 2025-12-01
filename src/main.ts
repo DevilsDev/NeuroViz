@@ -87,10 +87,21 @@ const elements = {
   btnExportJson: document.getElementById('btn-export-json') as HTMLButtonElement,
   btnExportCsv: document.getElementById('btn-export-csv') as HTMLButtonElement,
 
+  // Session management
+  btnSaveSession: document.getElementById('btn-save-session') as HTMLButtonElement,
+  btnLoadSession: document.getElementById('btn-load-session') as HTMLButtonElement,
+  btnClearSession: document.getElementById('btn-clear-session') as HTMLButtonElement,
+
   // Theme toggle
   btnThemeToggle: document.getElementById('btn-theme-toggle') as HTMLButtonElement,
   iconSun: document.getElementById('icon-sun') as HTMLElement,
   iconMoon: document.getElementById('icon-moon') as HTMLElement,
+
+  // Fullscreen toggle
+  btnFullscreen: document.getElementById('btn-fullscreen') as HTMLButtonElement,
+  iconExpand: document.getElementById('icon-expand') as HTMLElement,
+  iconCompress: document.getElementById('icon-compress') as HTMLElement,
+  appContainer: document.querySelector('.app-container') as HTMLDivElement,
 };
 
 // =============================================================================
@@ -568,6 +579,266 @@ function handleThemeToggle(): void {
 }
 
 // =============================================================================
+// Session Persistence
+// =============================================================================
+
+const SESSION_KEY = 'neuroviz-session';
+
+interface SessionData {
+  version: number;
+  timestamp: number;
+  config: {
+    datasetType: string;
+    samples: number;
+    noise: number;
+    numClasses: number;
+    learningRate: number;
+    layers: string;
+    optimizer: string;
+    activation: string;
+    l2Regularization: number;
+    batchSize: number;
+    maxEpochs: number;
+    targetFps: number;
+    validationSplit: number;
+    colourScheme: string;
+    pointSize: string;
+    opacity: number;
+    zoomEnabled: boolean;
+    tooltipsEnabled: boolean;
+  };
+  data: Point[];
+  history: {
+    records: Array<{
+      epoch: number;
+      loss: number;
+      accuracy: number;
+      valLoss: number | null;
+      valAccuracy: number | null;
+      timestamp: number;
+    }>;
+  };
+}
+
+/**
+ * Collects current UI configuration values.
+ */
+function collectSessionConfig(): SessionData['config'] {
+  return {
+    datasetType: elements.datasetSelect.value,
+    samples: parseInt(elements.inputSamples.value, 10) || 200,
+    noise: parseInt(elements.inputNoise.value, 10) || 10,
+    numClasses: parseInt(elements.inputNumClasses.value, 10) || 2,
+    learningRate: parseFloat(elements.inputLr.value) || 0.03,
+    layers: elements.inputLayers.value,
+    optimizer: elements.inputOptimizer.value,
+    activation: elements.inputActivation.value,
+    l2Regularization: parseFloat(elements.inputL2.value) || 0,
+    batchSize: parseInt(elements.inputBatchSize.value, 10) || 32,
+    maxEpochs: parseInt(elements.inputMaxEpochs.value, 10) || 0,
+    targetFps: parseInt(elements.inputFps.value, 10) || 30,
+    validationSplit: parseFloat(elements.inputValSplit.value) || 0.2,
+    colourScheme: elements.inputColourScheme.value,
+    pointSize: elements.inputPointSize.value,
+    opacity: parseInt(elements.inputOpacity.value, 10) || 70,
+    zoomEnabled: elements.inputZoom.checked,
+    tooltipsEnabled: elements.inputTooltips.checked,
+  };
+}
+
+/**
+ * Applies saved configuration to UI elements.
+ */
+function applySessionConfig(config: SessionData['config']): void {
+  elements.datasetSelect.value = config.datasetType;
+  elements.inputSamples.value = String(config.samples);
+  elements.samplesValue.textContent = String(config.samples);
+  elements.inputNoise.value = String(config.noise);
+  elements.noiseValue.textContent = String(config.noise);
+  elements.inputNumClasses.value = String(config.numClasses);
+  elements.inputLr.value = String(config.learningRate);
+  elements.inputLayers.value = config.layers;
+  elements.inputOptimizer.value = config.optimizer;
+  elements.inputActivation.value = config.activation;
+  elements.inputL2.value = String(config.l2Regularization);
+  elements.inputBatchSize.value = String(config.batchSize);
+  elements.inputMaxEpochs.value = String(config.maxEpochs);
+  elements.inputFps.value = String(config.targetFps);
+  elements.fpsValue.textContent = String(config.targetFps);
+  elements.inputValSplit.value = String(config.validationSplit);
+  elements.inputColourScheme.value = config.colourScheme;
+  elements.inputPointSize.value = config.pointSize;
+  elements.inputOpacity.value = String(config.opacity);
+  elements.opacityValue.textContent = String(config.opacity);
+  elements.inputZoom.checked = config.zoomEnabled;
+  elements.inputTooltips.checked = config.tooltipsEnabled;
+
+  // Update class buttons for multi-class
+  updateDrawClassButtons();
+}
+
+/**
+ * Saves the current session to localStorage.
+ */
+function saveSession(): void {
+  const state = session.getState();
+  const data = session.getData();
+  
+  const sessionData: SessionData = {
+    version: 1,
+    timestamp: Date.now(),
+    config: collectSessionConfig(),
+    data,
+    history: {
+      records: state.history.records.map(r => ({
+        epoch: r.epoch,
+        loss: r.loss,
+        accuracy: r.accuracy,
+        valLoss: r.valLoss,
+        valAccuracy: r.valAccuracy,
+        timestamp: r.timestamp,
+      })),
+    },
+  };
+
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+    toast.success('Session saved');
+  } catch (error) {
+    console.error('Failed to save session:', error);
+    toast.error('Failed to save session (storage full?)');
+  }
+}
+
+/**
+ * Loads a saved session from localStorage.
+ */
+async function loadSession(): Promise<boolean> {
+  const stored = localStorage.getItem(SESSION_KEY);
+  if (!stored) {
+    return false;
+  }
+
+  try {
+    const sessionData: SessionData = JSON.parse(stored);
+    
+    // Version check for future compatibility
+    if (sessionData.version !== 1) {
+      console.warn('Session version mismatch, skipping restore');
+      return false;
+    }
+
+    // Apply UI configuration
+    applySessionConfig(sessionData.config);
+
+    // Restore dataset if available
+    if (sessionData.data && sessionData.data.length > 0) {
+      session.setCustomData(sessionData.data);
+      visualizerService.renderData(sessionData.data);
+      
+      // Apply visualization settings via UI handlers
+      handleColourSchemeChange();
+      handlePointSizeChange();
+      handleOpacityChange();
+      handleZoomToggle();
+      handleTooltipsToggle();
+    }
+
+    const age = Date.now() - sessionData.timestamp;
+    const ageMinutes = Math.floor(age / 60000);
+    const ageText = ageMinutes < 60 
+      ? `${ageMinutes} min ago` 
+      : `${Math.floor(ageMinutes / 60)} hours ago`;
+    
+    toast.info(`Session restored (saved ${ageText})`);
+    return true;
+  } catch (error) {
+    console.error('Failed to load session:', error);
+    return false;
+  }
+}
+
+/**
+ * Clears the saved session from localStorage.
+ */
+function clearSession(): void {
+  localStorage.removeItem(SESSION_KEY);
+  toast.info('Saved session cleared');
+}
+
+/**
+ * Auto-saves session periodically and on page unload.
+ */
+function setupAutoSave(): void {
+  // Save on page unload
+  window.addEventListener('beforeunload', () => {
+    const state = session.getState();
+    if (state.datasetLoaded) {
+      // Synchronous save for beforeunload
+      const data = session.getData();
+      const sessionData: SessionData = {
+        version: 1,
+        timestamp: Date.now(),
+        config: collectSessionConfig(),
+        data,
+        history: {
+          records: state.history.records.map(r => ({
+            epoch: r.epoch,
+            loss: r.loss,
+            accuracy: r.accuracy,
+            valLoss: r.valLoss,
+            valAccuracy: r.valAccuracy,
+            timestamp: r.timestamp,
+          })),
+        },
+      };
+      try {
+        localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+      } catch {
+        // Ignore errors on unload
+      }
+    }
+  });
+}
+
+// =============================================================================
+// Fullscreen Mode
+// =============================================================================
+
+/**
+ * Updates fullscreen button icons based on current state.
+ */
+function updateFullscreenIcons(): void {
+  const isFullscreen = document.fullscreenElement !== null;
+  if (isFullscreen) {
+    elements.iconExpand.classList.add('hidden');
+    elements.iconCompress.classList.remove('hidden');
+  } else {
+    elements.iconExpand.classList.remove('hidden');
+    elements.iconCompress.classList.add('hidden');
+  }
+}
+
+/**
+ * Toggles fullscreen mode for the application.
+ */
+async function handleFullscreenToggle(): Promise<void> {
+  try {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+      toast.info('Exited fullscreen');
+    } else {
+      await elements.appContainer.requestFullscreen();
+      toast.info('Entered fullscreen — press F or Escape to exit');
+    }
+    updateFullscreenIcons();
+  } catch (error) {
+    toast.error('Fullscreen not supported in this browser');
+    console.error('Fullscreen error:', error);
+  }
+}
+
+// =============================================================================
 // Keyboard Shortcuts
 // =============================================================================
 
@@ -577,6 +848,7 @@ function handleThemeToggle(): void {
  * - S: Single step
  * - R: Reset training
  * - Escape: Stop/Reset training
+ * - F: Toggle fullscreen
  */
 function handleKeyboardShortcut(event: KeyboardEvent): void {
   // Ignore if user is typing in an input field
@@ -588,6 +860,13 @@ function handleKeyboardShortcut(event: KeyboardEvent): void {
   const state = session.getState();
 
   switch (event.code) {
+    case 'KeyF':
+      if (!event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+        void handleFullscreenToggle();
+      }
+      break;
+
     case 'Space':
       event.preventDefault();
       // Check if actively running (not paused) - then pause
@@ -708,14 +987,29 @@ function init(): void {
   elements.btnExportJson.addEventListener('click', handleExportJson);
   elements.btnExportCsv.addEventListener('click', handleExportCsv);
 
+  // Bind event listeners - Session management
+  elements.btnSaveSession.addEventListener('click', saveSession);
+  elements.btnLoadSession.addEventListener('click', () => void loadSession());
+  elements.btnClearSession.addEventListener('click', clearSession);
+
   // Bind keyboard shortcuts
   document.addEventListener('keydown', handleKeyboardShortcut);
 
   // Bind theme toggle
   elements.btnThemeToggle.addEventListener('click', handleThemeToggle);
 
+  // Bind fullscreen toggle
+  elements.btnFullscreen.addEventListener('click', () => void handleFullscreenToggle());
+  document.addEventListener('fullscreenchange', updateFullscreenIcons);
+
   // Apply stored theme
   applyTheme(getStoredTheme());
+
+  // Setup auto-save on page unload
+  setupAutoSave();
+
+  // Try to restore previous session
+  void loadSession();
 
   // Initial UI state
   updateUI(session.getState());
