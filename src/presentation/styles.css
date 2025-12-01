@@ -89,10 +89,12 @@ body[data-theme="light"] {
    ============================================================================= */
 @layer components {
   /* ---------------------------------------------------------------------------
-     Layout Components
+     Layout Components - Mobile First
      --------------------------------------------------------------------------- */
   .app-container {
-    @apply flex flex-col min-h-screen max-w-7xl mx-auto px-4 py-4;
+    @apply flex flex-col min-h-screen max-w-7xl mx-auto;
+    @apply px-3 py-3;
+    @apply sm:px-4 sm:py-4;
     @apply lg:px-6;
   }
 
@@ -111,8 +113,10 @@ body[data-theme="light"] {
   }
 
   .main-grid {
-    @apply grid gap-6 flex-1;
-    @apply grid-cols-1 lg:grid-cols-[1fr_340px];
+    @apply grid gap-4 flex-1;
+    @apply grid-cols-1;
+    @apply md:gap-6 md:grid-cols-[1fr_320px];
+    @apply lg:grid-cols-[1fr_360px];
   }
 
   /* ---------------------------------------------------------------------------
@@ -271,23 +275,23 @@ body[data-theme="light"] {
      Status / Metrics Display
      --------------------------------------------------------------------------- */
   .metric-card {
-    @apply text-center p-3;
+    @apply text-center p-2 sm:p-3;
     @apply bg-navy-950/60 rounded-lg;
     @apply border border-navy-700/30;
   }
 
   .metric-label {
-    @apply block text-[10px] font-bold uppercase tracking-widest;
-    @apply text-slate-500 mb-1;
+    @apply block text-[9px] sm:text-[10px] font-bold uppercase tracking-widest;
+    @apply text-slate-500 mb-0.5 sm:mb-1;
   }
 
   .metric-value {
-    @apply block text-lg font-mono font-bold;
+    @apply block text-sm sm:text-lg font-mono font-bold;
     @apply tabular-nums tracking-tight;
   }
 
   .metric-value-accent {
-    @apply block text-lg font-mono font-bold;
+    @apply block text-sm sm:text-lg font-mono font-bold;
     @apply tabular-nums tracking-tight;
     @apply text-accent-400;
   }
@@ -299,7 +303,7 @@ body[data-theme="light"] {
     @apply bg-navy-800/80 backdrop-blur-sm;
     @apply border border-navy-700/50 rounded-xl;
     @apply shadow-lg shadow-black/20;
-    @apply p-4 space-y-3;
+    @apply p-3 sm:p-4 space-y-2 sm:space-y-3;
   }
 
   .control-legend {
@@ -358,7 +362,8 @@ body[data-theme="light"] {
    D3 Chart Overrides
    ============================================================================= */
 #viz-container {
-  @apply w-full aspect-square max-h-[600px];
+  @apply w-full aspect-square;
+  @apply max-h-[300px] sm:max-h-[400px] md:max-h-[500px] lg:max-h-[600px];
   @apply flex items-center justify-center;
 }
 

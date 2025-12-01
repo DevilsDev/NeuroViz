@@ -183,16 +183,16 @@ This document outlines planned features for NeuroViz, organized by priority and 
 |---------|------------|--------|-------|
 | Keyboard shortcuts | S | ✅ | Space, S, R, Escape |
 | Dark/light theme toggle | M | ✅ | CSS variables + Tailwind dark mode |
-| Responsive mobile layout | M | 🔲 | Tailwind breakpoints |
+| Responsive mobile layout | M | ✅ | Mobile-first breakpoints |
 | Fullscreen mode | S | ✅ | Fullscreen API + F key |
 
 ### 🟡 P2 — Session Management
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| Save session to localStorage | M | 🔲 | Data + config + model |
-| Load previous session | M | 🔲 | Restore state |
-| Preset configurations | S | 🔲 | Quick experiment templates |
+| Save session to localStorage | M | ✅ | Auto-save on close |
+| Load previous session | M | ✅ | Restore on load |
+| Preset configurations | S | ✅ | 5 quick start templates |
 | Bookmark configurations | S | 🔲 | Named presets |
 
 ### 🟡 P2 — Export & Sharing
@@ -309,14 +309,14 @@ This document outlines planned features for NeuroViz, organized by priority and 
 3. ✅ Multi-class support (2-5 classes)
 4. 🔲 Upload CSV (moved to Sprint 5)
 
-### 🟡 Sprint 5: UX & Persistence (In Progress)
+### ✅ Sprint 5: UX & Persistence (Complete)
 
 1. ✅ Keyboard shortcuts (Space, S, R, F)
 2. ✅ Dark/light theme toggle
 3. ✅ Fullscreen mode (F key)
-4. 🔲 Session save/load
-5. 🔲 Preset configurations
-6. 🔲 Responsive mobile layout
+4. ✅ Session save/load (auto-save on close)
+5. ✅ Preset configurations (5 quick start templates)
+6. ✅ Responsive mobile layout
 
 ---
 

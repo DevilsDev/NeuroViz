@@ -30,6 +30,10 @@ import { toast } from './presentation/toast';
 // =============================================================================
 
 const elements = {
+  // Preset controls
+  presetSelect: document.getElementById('preset-select') as HTMLSelectElement,
+  btnApplyPreset: document.getElementById('btn-apply-preset') as HTMLButtonElement,
+
   // Dataset controls
   datasetSelect: document.getElementById('dataset-select') as HTMLSelectElement,
   btnLoadData: document.getElementById('btn-load-data') as HTMLButtonElement,
@@ -802,6 +806,173 @@ function setupAutoSave(): void {
 }
 
 // =============================================================================
+// Preset Configurations
+// =============================================================================
+
+interface PresetConfig {
+  name: string;
+  description: string;
+  dataset: string;
+  samples: number;
+  noise: number;
+  numClasses: number;
+  layers: string;
+  learningRate: number;
+  optimizer: string;
+  activation: string;
+  l2Regularization: number;
+  batchSize: number;
+  maxEpochs: number;
+  targetFps: number;
+}
+
+const PRESETS: Record<string, PresetConfig> = {
+  'quick-demo': {
+    name: 'Quick Demo',
+    description: 'Simple circle dataset with a small network for fast training',
+    dataset: 'circle',
+    samples: 200,
+    noise: 10,
+    numClasses: 2,
+    layers: '4, 2',
+    learningRate: 0.03,
+    optimizer: 'adam',
+    activation: 'relu',
+    l2Regularization: 0,
+    batchSize: 32,
+    maxEpochs: 100,
+    targetFps: 30,
+  },
+  'xor-challenge': {
+    name: 'XOR Challenge',
+    description: 'Classic XOR problem - requires hidden layers to solve',
+    dataset: 'xor',
+    samples: 200,
+    noise: 5,
+    numClasses: 2,
+    layers: '8, 4',
+    learningRate: 0.05,
+    optimizer: 'adam',
+    activation: 'relu',
+    l2Regularization: 0,
+    batchSize: 32,
+    maxEpochs: 200,
+    targetFps: 30,
+  },
+  'spiral-deep': {
+    name: 'Deep Spiral',
+    description: 'Complex 3-arm spiral requiring a deeper network',
+    dataset: 'spiral',
+    samples: 300,
+    noise: 5,
+    numClasses: 3,
+    layers: '16, 8, 4',
+    learningRate: 0.01,
+    optimizer: 'adam',
+    activation: 'relu',
+    l2Regularization: 0.001,
+    batchSize: 32,
+    maxEpochs: 500,
+    targetFps: 60,
+  },
+  'multiclass': {
+    name: 'Multi-class Clusters',
+    description: '4 distinct clusters for multi-class classification',
+    dataset: 'clusters',
+    samples: 400,
+    noise: 15,
+    numClasses: 4,
+    layers: '8, 8, 4',
+    learningRate: 0.02,
+    optimizer: 'adam',
+    activation: 'relu',
+    l2Regularization: 0,
+    batchSize: 32,
+    maxEpochs: 200,
+    targetFps: 30,
+  },
+  'overfit-demo': {
+    name: 'Overfitting Demo',
+    description: 'Small dataset with large network to demonstrate overfitting',
+    dataset: 'circle',
+    samples: 50,
+    noise: 20,
+    numClasses: 2,
+    layers: '32, 16, 8, 4',
+    learningRate: 0.01,
+    optimizer: 'adam',
+    activation: 'relu',
+    l2Regularization: 0,
+    batchSize: 0,
+    maxEpochs: 500,
+    targetFps: 30,
+  },
+};
+
+/**
+ * Handles preset selection change.
+ */
+function handlePresetChange(): void {
+  const presetId = elements.presetSelect.value;
+  elements.btnApplyPreset.disabled = !presetId;
+}
+
+/**
+ * Applies a preset configuration and starts training.
+ */
+async function applyPreset(): Promise<void> {
+  const presetId = elements.presetSelect.value;
+  if (!presetId || !PRESETS[presetId]) {
+    toast.warning('Please select a preset first');
+    return;
+  }
+
+  const preset = PRESETS[presetId];
+  
+  // Apply configuration to UI
+  elements.datasetSelect.value = preset.dataset;
+  elements.inputSamples.value = String(preset.samples);
+  elements.samplesValue.textContent = String(preset.samples);
+  elements.inputNoise.value = String(preset.noise);
+  elements.noiseValue.textContent = String(preset.noise);
+  elements.inputNumClasses.value = String(preset.numClasses);
+  elements.inputLr.value = String(preset.learningRate);
+  elements.inputLayers.value = preset.layers;
+  elements.inputOptimizer.value = preset.optimizer;
+  elements.inputActivation.value = preset.activation;
+  elements.inputL2.value = String(preset.l2Regularization);
+  elements.inputBatchSize.value = String(preset.batchSize);
+  elements.inputMaxEpochs.value = String(preset.maxEpochs);
+  elements.inputFps.value = String(preset.targetFps);
+  elements.fpsValue.textContent = String(preset.targetFps);
+
+  // Update class buttons
+  updateDrawClassButtons();
+
+  toast.info(`Applying "${preset.name}" preset...`);
+
+  try {
+    // Load dataset
+    await handleLoadData();
+
+    // Initialise network
+    await handleInitialise();
+
+    // Start training
+    handleStart();
+
+    toast.success(`🚀 "${preset.name}" is now training!`);
+  } catch (error) {
+    console.error('Failed to apply preset:', error);
+    toast.error(`Failed to apply preset: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+
+  // Reset preset selector
+  elements.presetSelect.value = '';
+  elements.btnApplyPreset.disabled = true;
+}
+
+// =============================================================================
 // Fullscreen Mode
 // =============================================================================
 
@@ -949,6 +1120,10 @@ function downloadFile(content: string, filename: string, mimeType: string): void
 function init(): void {
   // Subscribe to state changes
   session.onStateChange(updateUI);
+
+  // Bind event listeners - Presets
+  elements.presetSelect.addEventListener('change', handlePresetChange);
+  elements.btnApplyPreset.addEventListener('click', () => void applyPreset());
 
   // Bind event listeners - Dataset
   elements.btnLoadData.addEventListener('click', () => void handleLoadData());
