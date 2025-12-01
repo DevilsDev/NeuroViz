@@ -782,3 +782,69 @@ html:not(.dark) [class*="bg-navy"] {
 html:not(.dark) [class*="border-navy"] {
   border-color: #cbd5e1 !important;
 }
+
+/* =============================================================================
+   Force Light Theme - Override OS Dark Mode Preference
+   When html does NOT have .dark class, force light colors regardless of OS
+   ============================================================================= */
+
+/* Force light background on html and body */
+html:not(.dark),
+html:not(.dark) body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  color-scheme: light !important;
+}
+
+/* Force all text to be dark in light mode */
+html:not(.dark) * {
+  --tw-text-opacity: 1;
+}
+
+html:not(.dark) h1,
+html:not(.dark) h2,
+html:not(.dark) h3,
+html:not(.dark) h4,
+html:not(.dark) h5,
+html:not(.dark) h6,
+html:not(.dark) p,
+html:not(.dark) span,
+html:not(.dark) label,
+html:not(.dark) div {
+  color: inherit;
+}
+
+/* Ensure inputs have dark text */
+html:not(.dark) input,
+html:not(.dark) select,
+html:not(.dark) textarea {
+  color: #0f172a !important;
+  background-color: #ffffff !important;
+}
+
+html:not(.dark) input::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Force SVG icons to be visible */
+html:not(.dark) svg {
+  color: #475569 !important;
+}
+
+html:not(.dark) .text-gradient {
+  color: #0d9488 !important;
+  -webkit-text-fill-color: #0d9488 !important;
+}
+
+/* Ensure buttons have correct colors */
+html:not(.dark) button {
+  color: inherit;
+}
+
+html:not(.dark) .btn-primary {
+  color: #ffffff !important;
+}
+
+html:not(.dark) .btn-primary svg {
+  color: #ffffff !important;
+}
