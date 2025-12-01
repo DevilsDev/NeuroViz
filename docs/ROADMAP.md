@@ -47,7 +47,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 | Momentum control | S | ✅ | SGD momentum slider (0-0.99) |
 | L1 regularization | S | ✅ | Sparsity inducing |
 | Gradient clipping | S | ✅ | Prevent exploding gradients |
-| Batch normalization | M | 🔲 | Between layers |
+| Batch normalization | M | ✅ | Between layers |
 | Learning rate warmup | S | ✅ | Gradual increase (0-50 epochs) |
 | Cyclic learning rate | M | 🔲 | Triangle/cosine cycles |
 
@@ -144,7 +144,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 |---------|------------|--------|-------|
 | Feature normalization toggle | S | ✅ | Min-max scaling |
 | Standardization toggle | S | ✅ | Z-score scaling |
-| Train/test split visualization | M | 🔲 | Different markers |
+| Train/test split visualization | M | ✅ | Different markers (yellow dashed) |
 
 ---
 
@@ -165,7 +165,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
 | Download trained model | M | ✅ | TensorFlow.js format |
-| Load saved model | M | 🔲 | File upload |
+| Load saved model | M | ✅ | File upload (JSON + weights) |
 | Share via URL parameters | M | 🔲 | Encode config in URL |
 
 ### 🟢 P3 — Advanced Models
@@ -205,7 +205,7 @@ This document outlines planned features for NeuroViz, organized by priority and 
 |---------|------------|--------|-------|
 | Download boundary as PNG | S | ✅ | Canvas to image |
 | Download as SVG | S | ✅ | D3 SVG export |
-| Screenshot with metadata | M | 🔲 | Overlay config info |
+| Screenshot with metadata | M | ✅ | Overlay config info |
 
 ### 🟢 P3 — Advanced UX
 
@@ -342,6 +342,23 @@ This document outlines planned features for NeuroViz, organized by priority and 
 3. ✅ Contour line count control
 4. ✅ Confidence circles
 
+### ✅ Sprint 9: Quick Wins (Complete)
+
+1. ✅ Momentum control (SGD)
+2. ✅ L1 regularization
+3. ✅ Learning rate warmup
+4. ✅ Feature normalization/standardization
+5. ✅ Gradient clipping
+6. ✅ Weight histogram
+7. ✅ Learning rate display
+
+### ✅ Sprint 10: High-Value Features (Complete)
+
+1. ✅ Batch normalization
+2. ✅ Train/test split visualization
+3. ✅ Load saved model
+4. ✅ Screenshot with metadata
+
 ---
 
 ## Contributing
@@ -363,13 +380,13 @@ Last updated: December 2025
 
 | Phase | Description | Completed | Total | Progress |
 |-------|-------------|-----------|-------|----------|
-| Phase 1 | Core Training | 14 | 16 | 88% |
+| Phase 1 | Core Training | 15 | 16 | 94% |
 | Phase 2 | Metrics & History | 10 | 12 | 83% |
-| Phase 3 | Visualization | 11 | 15 | 73% |
+| Phase 3 | Visualization | 10 | 16 | 63% |
 | Phase 4 | Data Management | 10 | 10 | 100% |
-| Phase 5 | Model Capabilities | 6 | 12 | 50% |
-| Phase 6 | UX & Polish | 13 | 15 | 87% |
+| Phase 5 | Model Capabilities | 7 | 12 | 58% |
+| Phase 6 | UX & Polish | 11 | 14 | 79% |
 | Phase 7 | Educational | 0 | 6 | 0% |
 | Phase 8 | Performance | 0 | 7 | 0% |
-| Phase 9 | Research | 0 | 7 | 0% |
-| **Total** | | **64** | **100** | **64%** |
+| Phase 9 | Research | 0 | 6 | 0% |
+| **Total** | | **63** | **99** | **64%** |

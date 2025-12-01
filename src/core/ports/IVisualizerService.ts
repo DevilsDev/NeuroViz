@@ -90,6 +90,13 @@ export interface IVisualizerService {
   clearConfidenceCircles(): void;
 
   /**
+   * Exports the chart as PNG with metadata overlay.
+   * @param filename - Name of the downloaded file (without extension)
+   * @param metadata - Key-value pairs to display on the image
+   */
+  exportAsPNGWithMetadata(filename: string, metadata: Record<string, string>): void;
+
+  /**
    * Cleans up resources and removes DOM elements.
    */
   dispose(): void;

@@ -262,6 +262,33 @@ export class TFNeuralNet implements INeuralNetworkService {
   }
 
   /**
+   * Loads a model from JSON and weights files.
+   * Disposes any existing model before loading.
+   */
+  async loadModel(modelJsonFile: File, weightsFile: File): Promise<void> {
+    this.dispose();
+
+    // Read the model JSON
+    const modelJsonText = await modelJsonFile.text();
+    const modelJson = JSON.parse(modelJsonText);
+
+    // Create a custom IOHandler that provides the model artifacts
+    const handler: tf.io.IOHandler = {
+      load: async () => {
+        const weightsBuffer = await weightsFile.arrayBuffer();
+        return {
+          modelTopology: modelJson.modelTopology,
+          weightSpecs: modelJson.weightsManifest?.[0]?.weights ?? [],
+          weightData: weightsBuffer,
+        };
+      },
+    };
+
+    // Load the model
+    this.model = (await tf.loadLayersModel(handler)) as tf.Sequential;
+  }
+
+  /**
    * Returns the current number of tensors in GPU memory.
    * Useful for debugging memory leaks.
    */
@@ -316,6 +343,7 @@ export class TFNeuralNet implements INeuralNetworkService {
     );
     const numClasses = config.numClasses ?? 2;
     const dropoutRate = config.dropoutRate ?? 0;
+    const useBatchNorm = config.batchNorm ?? false;
 
     // Helper to get activation for a specific layer index
     const getActivation = (layerIndex: number): 'relu' | 'sigmoid' | 'tanh' | 'elu' => {
@@ -324,15 +352,22 @@ export class TFNeuralNet implements INeuralNetworkService {
     };
 
     // Input layer (first hidden layer)
+    // When using batch norm, apply activation after batch norm
     model.add(
       tf.layers.dense({
         inputShape: [2],
         units: config.layers[0] ?? 4,
-        activation: getActivation(0),
+        activation: useBatchNorm ? 'linear' : getActivation(0),
         kernelInitializer: 'heNormal',
         kernelRegularizer: regularizer,
       })
     );
+
+    // Add batch normalization then activation if enabled
+    if (useBatchNorm) {
+      model.add(tf.layers.batchNormalization());
+      model.add(tf.layers.activation({ activation: getActivation(0) }));
+    }
 
     // Add dropout after first hidden layer if enabled
     if (dropoutRate > 0) {
@@ -344,11 +379,17 @@ export class TFNeuralNet implements INeuralNetworkService {
       model.add(
         tf.layers.dense({
           units: config.layers[i] ?? 4,
-          activation: getActivation(i),
+          activation: useBatchNorm ? 'linear' : getActivation(i),
           kernelInitializer: 'heNormal',
           kernelRegularizer: regularizer,
         })
       );
+
+      // Add batch normalization then activation if enabled
+      if (useBatchNorm) {
+        model.add(tf.layers.batchNormalization());
+        model.add(tf.layers.activation({ activation: getActivation(i) }));
+      }
 
       // Add dropout after each hidden layer if enabled
       if (dropoutRate > 0) {

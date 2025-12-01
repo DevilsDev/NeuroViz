@@ -79,6 +79,7 @@ const elements = {
   inputL2: document.getElementById('input-l2') as HTMLInputElement,
   inputDropout: document.getElementById('input-dropout') as HTMLSelectElement,
   inputClipNorm: document.getElementById('input-clip-norm') as HTMLSelectElement,
+  inputBatchNorm: document.getElementById('input-batch-norm') as HTMLInputElement,
   btnInit: document.getElementById('btn-init') as HTMLButtonElement,
   drawClassButtons: document.getElementById('draw-class-buttons') as HTMLDivElement,
 
@@ -119,7 +120,10 @@ const elements = {
   btnExportCsv: document.getElementById('btn-export-csv') as HTMLButtonElement,
   btnExportPng: document.getElementById('btn-export-png') as HTMLButtonElement,
   btnExportSvg: document.getElementById('btn-export-svg') as HTMLButtonElement,
+  btnScreenshot: document.getElementById('btn-screenshot') as HTMLButtonElement,
   btnExportModel: document.getElementById('btn-export-model') as HTMLButtonElement,
+  inputLoadModel: document.getElementById('input-load-model') as HTMLInputElement,
+  inputLoadWeights: document.getElementById('input-load-weights') as HTMLInputElement,
 
   // Dataset import/export
   inputCsvUpload: document.getElementById('input-csv-upload') as HTMLInputElement,
@@ -213,6 +217,7 @@ function updateUI(state: TrainingState): void {
   elements.btnExportCsv.disabled = !hasHistory;
   elements.btnExportPng.disabled = !state.datasetLoaded;
   elements.btnExportSvg.disabled = !state.datasetLoaded;
+  elements.btnScreenshot.disabled = !state.datasetLoaded;
   elements.btnExportModel.disabled = !state.isInitialised;
   elements.btnDownloadDataset.disabled = !state.datasetLoaded;
 
@@ -640,6 +645,7 @@ async function handleInitialise(): Promise<void> {
   const numClasses = parseInt(elements.inputNumClasses.value, 10) || 2;
   const dropoutRate = parseFloat(elements.inputDropout.value) || 0;
   const clipNorm = parseFloat(elements.inputClipNorm.value) || 0;
+  const batchNorm = elements.inputBatchNorm.checked;
 
   // Parse per-layer activations (optional)
   const layerActivations = parseLayerActivations(elements.inputLayerActivations.value);
@@ -656,6 +662,7 @@ async function handleInitialise(): Promise<void> {
     numClasses,
     dropoutRate,
     clipNorm,
+    batchNorm,
   };
 
   elements.btnInit.disabled = true;
@@ -797,6 +804,32 @@ function handleExportPng(): void {
   toast.success('Decision boundary exported as PNG');
 }
 
+/**
+ * Exports the chart as PNG with configuration metadata overlay.
+ */
+function handleScreenshot(): void {
+  const state = session.getState();
+  
+  // Build metadata from current config
+  const metadata: Record<string, string> = {
+    'Epoch': state.currentEpoch.toString(),
+    'Loss': state.currentLoss?.toFixed(4) ?? '—',
+    'Accuracy': state.currentAccuracy ? `${(state.currentAccuracy * 100).toFixed(1)}%` : '—',
+    'LR': elements.inputLr.value,
+    'Layers': elements.inputLayers.value,
+    'Optimizer': elements.inputOptimizer.value,
+    'Activation': elements.inputActivation.value,
+    'Batch': elements.inputBatchSize.value || 'all',
+    'Dropout': elements.inputDropout.value === '0' ? 'none' : elements.inputDropout.value,
+    'L1': elements.inputL1.value || '0',
+    'L2': elements.inputL2.value || '0',
+    'Val Split': `${elements.inputValSplit.value}%`,
+  };
+
+  visualizerService.exportAsPNGWithMetadata('neuroviz-screenshot', metadata);
+  toast.success('Screenshot with metadata exported');
+}
+
 function handleExportSvg(): void {
   visualizerService.exportAsSVG('neuroviz-boundary');
   toast.success('Decision boundary exported as SVG');
@@ -836,6 +869,55 @@ async function handleExportModel(): Promise<void> {
   } catch (error) {
     console.error('Failed to export model:', error);
     toast.error('Failed to export model');
+  }
+}
+
+// Store model JSON file temporarily while waiting for weights
+let pendingModelJson: File | null = null;
+
+/**
+ * Handles model JSON file selection.
+ * After selecting JSON, prompts for weights file.
+ */
+function handleLoadModelJson(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+
+  pendingModelJson = file;
+  // Trigger weights file selection
+  elements.inputLoadWeights.click();
+  
+  // Reset the input so the same file can be selected again
+  input.value = '';
+}
+
+/**
+ * Handles weights file selection and loads the model.
+ */
+async function handleLoadModelWeights(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement;
+  const weightsFile = input.files?.[0];
+  
+  if (!weightsFile || !pendingModelJson) {
+    pendingModelJson = null;
+    return;
+  }
+
+  try {
+    toast.info('Loading model...');
+    await neuralNetService.loadModel(pendingModelJson, weightsFile);
+    
+    // Mark as initialised in session state
+    // Note: The model is loaded but hyperparameters are unknown
+    toast.success('Model loaded successfully');
+    updateUI(session.getState());
+  } catch (error) {
+    console.error('Failed to load model:', error);
+    toast.error('Failed to load model. Ensure files are valid TF.js format.');
+  } finally {
+    pendingModelJson = null;
+    input.value = '';
   }
 }
 
@@ -1231,6 +1313,7 @@ function clearSession(): void {
   elements.inputL2.value = '0';
   elements.inputDropout.value = '0';
   elements.inputClipNorm.value = '0';
+  elements.inputBatchNorm.checked = false;
   elements.inputBatchSize.value = '32';
   elements.inputMaxEpochs.value = '500';
   elements.inputValSplit.value = '20';
@@ -1855,7 +1938,10 @@ function init(): void {
   elements.btnExportCsv.addEventListener('click', handleExportCsv);
   elements.btnExportPng.addEventListener('click', handleExportPng);
   elements.btnExportSvg.addEventListener('click', handleExportSvg);
+  elements.btnScreenshot.addEventListener('click', handleScreenshot);
   elements.btnExportModel.addEventListener('click', () => void handleExportModel());
+  elements.inputLoadModel.addEventListener('change', handleLoadModelJson);
+  elements.inputLoadWeights.addEventListener('change', (e) => void handleLoadModelWeights(e));
 
   // Bind event listeners - Dataset import/export
   elements.inputCsvUpload.addEventListener('change', handleCsvUpload);

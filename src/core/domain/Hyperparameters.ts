@@ -64,6 +64,9 @@ export interface Hyperparameters {
 
   /** Gradient clipping norm. 0 = disabled. Clips gradients to this max norm. */
   readonly clipNorm?: number;
+
+  /** Whether to use batch normalization between layers. */
+  readonly batchNorm?: boolean;
 }
 
 /**
@@ -107,6 +110,7 @@ export const DEFAULT_HYPERPARAMETERS: Required<Hyperparameters> = {
   numClasses: 2,
   dropoutRate: 0,
   clipNorm: 0,
+  batchNorm: false,
 };
 
 /**

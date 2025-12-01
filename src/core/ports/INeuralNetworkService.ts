@@ -72,4 +72,13 @@ export interface INeuralNetworkService {
    * @returns Array of all weight values, or empty array if not initialized
    */
   getWeights(): number[];
+
+  /**
+   * Loads a model from JSON and weights files.
+   *
+   * @param modelJson - The model topology JSON file
+   * @param weightsBlob - The model weights binary file
+   * @throws If loading fails
+   */
+  loadModel(modelJson: File, weightsBlob: File): Promise<void>;
 }

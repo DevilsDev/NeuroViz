@@ -138,13 +138,14 @@ export class D3Chart implements IVisualizerService {
       .data(points)
       .enter()
       .append('circle')
-      .attr('class', 'data-point')
+      .attr('class', (d) => `data-point ${d.isValidation ? 'validation-point' : 'training-point'}`)
       .attr('cx', (d) => this.xScale(d.x))
       .attr('cy', (d) => this.yScale(d.y))
       .attr('r', this.config.pointRadius)
       .attr('fill', (d) => getColour(d.label))
-      .attr('stroke', '#fff')
-      .attr('stroke-width', 1.5)
+      .attr('stroke', (d) => d.isValidation ? '#fbbf24' : '#fff')
+      .attr('stroke-width', (d) => d.isValidation ? 2.5 : 1.5)
+      .attr('stroke-dasharray', (d) => d.isValidation ? '3,2' : 'none')
       .attr('opacity', 0.9);
 
     // Add tooltip handlers if enabled
@@ -154,7 +155,7 @@ export class D3Chart implements IVisualizerService {
         .on('mouseenter', (event, d) => {
           tooltip
             .style('opacity', 1)
-            .html(`<strong>Point</strong><br/>x: ${d.x.toFixed(3)}<br/>y: ${d.y.toFixed(3)}<br/>class: ${d.label}`)
+            .html(`<strong>${d.isValidation ? 'Validation' : 'Training'} Point</strong><br/>x: ${d.x.toFixed(3)}<br/>y: ${d.y.toFixed(3)}<br/>class: ${d.label}`)
             .style('left', `${event.pageX + 10}px`)
             .style('top', `${event.pageY - 10}px`);
         })
@@ -322,11 +323,12 @@ export class D3Chart implements IVisualizerService {
       }
     }
 
-    // Update point styling
+    // Update point styling - preserve validation styling for non-misclassified
     this.chartGroup
       .selectAll<SVGCircleElement, Point>('.data-point')
-      .attr('stroke', (_, i) => misclassifiedIndices.has(i) ? '#ef4444' : '#fff')
-      .attr('stroke-width', (_, i) => misclassifiedIndices.has(i) ? 3 : 1.5);
+      .attr('stroke', (d, i) => misclassifiedIndices.has(i) ? '#ef4444' : (d.isValidation ? '#fbbf24' : '#fff'))
+      .attr('stroke-width', (d, i) => misclassifiedIndices.has(i) ? 3 : (d.isValidation ? 2.5 : 1.5))
+      .attr('stroke-dasharray', (d, i) => misclassifiedIndices.has(i) ? 'none' : (d.isValidation ? '3,2' : 'none'));
   }
 
   /**
@@ -335,8 +337,9 @@ export class D3Chart implements IVisualizerService {
   clearMisclassifiedHighlight(): void {
     this.chartGroup
       .selectAll<SVGCircleElement, Point>('.data-point')
-      .attr('stroke', '#fff')
-      .attr('stroke-width', 1.5);
+      .attr('stroke', (d) => d.isValidation ? '#fbbf24' : '#fff')
+      .attr('stroke-width', (d) => d.isValidation ? 2.5 : 1.5)
+      .attr('stroke-dasharray', (d) => d.isValidation ? '3,2' : 'none');
   }
 
   /**
@@ -554,6 +557,93 @@ export class D3Chart implements IVisualizerService {
       ctx.scale(scale, scale);
       ctx.drawImage(img, 0, 0);
       URL.revokeObjectURL(url);
+
+      // Download PNG
+      const pngUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `${filename}.png`;
+      link.href = pngUrl;
+      link.click();
+    };
+    img.src = url;
+  }
+
+  /**
+   * Exports the current chart as a PNG image with metadata overlay.
+   * @param filename - Name of the downloaded file (without extension)
+   * @param metadata - Configuration metadata to display on the image
+   */
+  exportAsPNGWithMetadata(filename = 'neuroviz-boundary', metadata: Record<string, string>): void {
+    const svgElement = this.svg.node();
+    if (!svgElement) return;
+
+    // Clone SVG and inline styles
+    const clonedSvg = svgElement.cloneNode(true) as SVGSVGElement;
+    this.inlineStyles(clonedSvg);
+
+    // Add dark background for PNG
+    const background = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    background.setAttribute('width', '100%');
+    background.setAttribute('height', '100%');
+    background.setAttribute('fill', '#0a0f1a');
+    clonedSvg.insertBefore(background, clonedSvg.firstChild);
+
+    // Serialize SVG to string
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(clonedSvg);
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+
+    // Create canvas with extra space for metadata
+    const canvas = document.createElement('canvas');
+    const scale = 2;
+    const metadataHeight = 80;
+    canvas.width = this.width * scale;
+    canvas.height = (this.height + metadataHeight) * scale;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const img = new Image();
+    img.onload = () => {
+      // Fill background
+      ctx.fillStyle = '#0a0f1a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw chart
+      ctx.scale(scale, scale);
+      ctx.drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+
+      // Draw metadata panel
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+      ctx.fillRect(0, this.height, this.width, metadataHeight);
+
+      // Draw metadata text
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '11px Inter, system-ui, sans-serif';
+      
+      const entries = Object.entries(metadata);
+      const cols = 3;
+      const colWidth = this.width / cols;
+      const startY = this.height + 18;
+      const lineHeight = 16;
+
+      entries.forEach(([key, value], i) => {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const x = col * colWidth + 10;
+        const y = startY + row * lineHeight;
+        
+        ctx.fillStyle = '#64748b';
+        ctx.fillText(`${key}:`, x, y);
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillText(value, x + ctx.measureText(`${key}: `).width, y);
+      });
+
+      // Add NeuroViz watermark
+      ctx.fillStyle = '#475569';
+      ctx.font = '10px Inter, system-ui, sans-serif';
+      ctx.fillText('NeuroViz', this.width - 55, this.height + metadataHeight - 8);
 
       // Download PNG
       const pngUrl = canvas.toDataURL('image/png');

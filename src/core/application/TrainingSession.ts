@@ -249,8 +249,11 @@ export class TrainingSession implements ITrainingSession {
 
     // Split
     const splitIndex = Math.floor(shuffled.length * (1 - validationSplit));
-    this.trainingData = shuffled.slice(0, splitIndex);
-    this.validationData = shuffled.slice(splitIndex);
+    this.trainingData = shuffled.slice(0, splitIndex).map(p => ({ ...p, isValidation: false }));
+    this.validationData = shuffled.slice(splitIndex).map(p => ({ ...p, isValidation: true }));
+    
+    // Update allData with validation markers for visualization
+    this.allData = [...this.trainingData, ...this.validationData];
   }
 
   /**

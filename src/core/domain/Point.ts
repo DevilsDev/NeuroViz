@@ -9,4 +9,6 @@ export interface Point {
   readonly y: number;
   /** Classification label (e.g., 0 or 1 for binary classification) */
   readonly label: number;
+  /** Whether this point is part of the validation set (optional) */
+  readonly isValidation?: boolean;
 }
