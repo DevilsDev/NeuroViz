@@ -165,6 +165,14 @@
                   step="5"
                 />
               </label>
+              <label class="block">
+                <span class="input-label">Preprocessing</span>
+                <select id="input-preprocessing" class="select-field">
+                  <option value="none" selected>None</option>
+                  <option value="normalize">Normalize (Min-Max)</option>
+                  <option value="standardize">Standardize (Z-Score)</option>
+                </select>
+              </label>
             </div>
 
             <div class="flex gap-2">
@@ -314,6 +322,20 @@
                   </select>
                 </label>
               </div>
+              <div id="momentum-control" class="hidden">
+                <label class="block">
+                  <span class="input-label">Momentum: <span id="momentum-value">0.9</span></span>
+                  <input
+                    type="range"
+                    id="input-momentum"
+                    class="w-full h-2 bg-navy-700 rounded-lg appearance-none cursor-pointer accent-accent-500"
+                    value="0.9"
+                    min="0"
+                    max="0.99"
+                    step="0.01"
+                  />
+                </label>
+              </div>
               <label class="block">
                 <span class="input-label">Hidden Layers</span>
                 <input
@@ -356,7 +378,19 @@
               </div>
               <div class="grid grid-cols-2 gap-2">
                 <label class="block">
-                  <span class="input-label">L2 Regularization</span>
+                  <span class="input-label">L1 Reg (Sparsity)</span>
+                  <input
+                    type="number"
+                    id="input-l1"
+                    class="input-field"
+                    value="0"
+                    min="0"
+                    max="0.1"
+                    step="0.001"
+                  />
+                </label>
+                <label class="block">
+                  <span class="input-label">L2 Reg (Decay)</span>
                   <input
                     type="number"
                     id="input-l2"
@@ -367,8 +401,9 @@
                     step="0.001"
                   />
                 </label>
-                <label class="block">
-                  <span class="input-label">Dropout Rate</span>
+              </div>
+              <label class="block">
+                <span class="input-label">Dropout Rate</span>
                   <select id="input-dropout" class="select-field">
                     <option value="0" selected>None (0%)</option>
                     <option value="0.1">10%</option>
@@ -454,6 +489,21 @@
                     <option value="cosine">Cosine Annealing</option>
                   </select>
                 </label>
+                <label class="block">
+                  <span class="input-label">Warmup Epochs</span>
+                  <input
+                    type="number"
+                    id="input-warmup"
+                    class="input-field"
+                    value="0"
+                    min="0"
+                    max="50"
+                    step="5"
+                    title="0 = disabled, gradual LR increase"
+                  />
+                </label>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
                 <label class="block">
                   <span class="input-label">Early Stop Patience</span>
                   <input

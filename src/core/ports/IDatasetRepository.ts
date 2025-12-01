@@ -1,6 +1,11 @@
 import type { Point } from '../domain';
 
 /**
+ * Preprocessing method for features.
+ */
+export type PreprocessingType = 'none' | 'normalize' | 'standardize';
+
+/**
  * Options for dataset generation.
  */
 export interface DatasetOptions {
@@ -12,6 +17,8 @@ export interface DatasetOptions {
   readonly numClasses?: number;
   /** Class balance ratio for class 0 (0.1-0.9). Default: 0.5 (balanced) */
   readonly classBalance?: number;
+  /** Preprocessing method for features. Default: 'none' */
+  readonly preprocessing?: PreprocessingType;
 }
 
 /**

@@ -23,6 +23,8 @@ export interface LRScheduleConfig {
   readonly decayRate?: number;
   /** Steps between decay for step schedule */
   readonly decaySteps?: number;
+  /** Number of warmup epochs (gradual increase from 0 to target LR). 0 = disabled. */
+  readonly warmupEpochs?: number;
 }
 
 /**
@@ -39,11 +41,17 @@ export interface Hyperparameters {
   /** Optimizer algorithm (default: 'adam') */
   readonly optimizer?: OptimizerType;
 
+  /** Momentum for SGD optimizer (0-1). Only used when optimizer is 'sgd'. Default: 0.9 */
+  readonly momentum?: number;
+
   /** Default activation function for hidden layers (default: 'relu') */
   readonly activation?: ActivationType;
 
   /** Per-layer activation functions. If provided, overrides `activation` for each layer. */
   readonly layerActivations?: readonly ActivationType[];
+
+  /** L1 regularization strength (sparsity). 0 = disabled. */
+  readonly l1Regularization?: number;
 
   /** L2 regularization strength (weight decay). 0 = disabled. */
   readonly l2Regularization?: number;
@@ -88,8 +96,10 @@ export const DEFAULT_HYPERPARAMETERS: Required<Hyperparameters> = {
   learningRate: 0.03,
   layers: [8, 4],
   optimizer: 'adam',
+  momentum: 0.9,
   activation: 'relu',
   layerActivations: [],
+  l1Regularization: 0,
   l2Regularization: 0,
   numClasses: 2,
   dropoutRate: 0,
@@ -102,6 +112,7 @@ export const DEFAULT_LR_SCHEDULE: LRScheduleConfig = {
   type: 'none',
   decayRate: 0.95,
   decaySteps: 10,
+  warmupEpochs: 0,
 };
 
 /**

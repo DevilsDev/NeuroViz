@@ -284,7 +284,10 @@ export class TFNeuralNet implements INeuralNetworkService {
     const model = tf.sequential();
     const defaultActivation = config.activation ?? DEFAULT_HYPERPARAMETERS.activation;
     const layerActivations = config.layerActivations ?? [];
-    const regularizer = this.createRegularizer(config.l2Regularization ?? 0);
+    const regularizer = this.createRegularizer(
+      config.l1Regularization ?? 0,
+      config.l2Regularization ?? 0
+    );
     const numClasses = config.numClasses ?? 2;
     const dropoutRate = config.dropoutRate ?? 0;
 
@@ -348,7 +351,8 @@ export class TFNeuralNet implements INeuralNetworkService {
 
     const optimizer = this.createOptimizer(
       config.optimizer ?? DEFAULT_HYPERPARAMETERS.optimizer,
-      config.learningRate
+      config.learningRate,
+      config.momentum ?? DEFAULT_HYPERPARAMETERS.momentum
     );
 
     // Loss function depends on number of classes
@@ -382,10 +386,10 @@ export class TFNeuralNet implements INeuralNetworkService {
   /**
    * Creates a TensorFlow.js optimizer based on the specified type.
    */
-  private createOptimizer(type: OptimizerType, learningRate: number): tf.Optimizer {
+  private createOptimizer(type: OptimizerType, learningRate: number, momentum: number): tf.Optimizer {
     switch (type) {
       case 'sgd':
-        return tf.train.sgd(learningRate);
+        return tf.train.momentum(learningRate, momentum);
       case 'adam':
         return tf.train.adam(learningRate);
       case 'rmsprop':
@@ -417,11 +421,11 @@ export class TFNeuralNet implements INeuralNetworkService {
   }
 
   /**
-   * Creates an L2 regularizer if strength > 0.
+   * Creates a regularizer combining L1 and L2 if either strength > 0.
    */
-  private createRegularizer(l2Strength: number): ReturnType<typeof tf.regularizers.l2> | undefined {
-    if (l2Strength > 0) {
-      return tf.regularizers.l2({ l2: l2Strength });
+  private createRegularizer(l1Strength: number, l2Strength: number): ReturnType<typeof tf.regularizers.l1l2> | undefined {
+    if (l1Strength > 0 || l2Strength > 0) {
+      return tf.regularizers.l1l2({ l1: l1Strength, l2: l2Strength });
     }
     return undefined;
   }

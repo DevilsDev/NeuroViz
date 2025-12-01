@@ -170,11 +170,58 @@ export class TrainingSession implements ITrainingSession {
   }
 
   async loadData(datasetType: string, options?: DatasetOptions): Promise<void> {
-    this.allData = await this.dataRepo.getDataset(datasetType, options);
+    const rawData = await this.dataRepo.getDataset(datasetType, options);
+    this.allData = this.applyPreprocessing(rawData, options?.preprocessing ?? 'none');
     this.splitData();
     this.datasetLoaded = true;
     this.visualizer.renderData(this.allData);
     this.notifyListeners();
+  }
+
+  /**
+   * Applies preprocessing to the dataset features.
+   */
+  private applyPreprocessing(data: Point[], method: 'none' | 'normalize' | 'standardize'): Point[] {
+    if (method === 'none' || data.length === 0) {
+      return data;
+    }
+
+    const xs = data.map(p => p.x);
+    const ys = data.map(p => p.y);
+
+    if (method === 'normalize') {
+      // Min-max normalization to [-1, 1]
+      const xMin = Math.min(...xs);
+      const xMax = Math.max(...xs);
+      const yMin = Math.min(...ys);
+      const yMax = Math.max(...ys);
+      
+      const xRange = xMax - xMin || 1;
+      const yRange = yMax - yMin || 1;
+      
+      return data.map(p => ({
+        x: ((p.x - xMin) / xRange) * 2 - 1,
+        y: ((p.y - yMin) / yRange) * 2 - 1,
+        label: p.label,
+      }));
+    }
+
+    if (method === 'standardize') {
+      // Z-score standardization
+      const xMean = xs.reduce((a, b) => a + b, 0) / xs.length;
+      const yMean = ys.reduce((a, b) => a + b, 0) / ys.length;
+      
+      const xStd = Math.sqrt(xs.reduce((sum, x) => sum + (x - xMean) ** 2, 0) / xs.length) || 1;
+      const yStd = Math.sqrt(ys.reduce((sum, y) => sum + (y - yMean) ** 2, 0) / ys.length) || 1;
+      
+      return data.map(p => ({
+        x: (p.x - xMean) / xStd,
+        y: (p.y - yMean) / yStd,
+        label: p.label,
+      }));
+    }
+
+    return data;
   }
 
   /**
@@ -622,30 +669,40 @@ export class TrainingSession implements ITrainingSession {
 
   /**
    * Calculates the learning rate based on the current epoch and schedule.
+   * Applies warmup first if configured, then applies the decay schedule.
    */
   private calculateScheduledLR(epoch: number): number {
     const schedule = this.trainingConfig.lrSchedule ?? DEFAULT_LR_SCHEDULE;
     const initialLR = this.initialLearningRate;
+    const warmupEpochs = schedule.warmupEpochs ?? 0;
+
+    // Apply warmup: linear increase from 0 to initialLR
+    if (warmupEpochs > 0 && epoch < warmupEpochs) {
+      return initialLR * (epoch + 1) / warmupEpochs;
+    }
+
+    // Adjust epoch for decay calculation (subtract warmup epochs)
+    const effectiveEpoch = warmupEpochs > 0 ? epoch - warmupEpochs : epoch;
 
     switch (schedule.type) {
       case 'exponential': {
         // LR = initial_lr * decay_rate^epoch
         const decayRate = schedule.decayRate ?? 0.95;
-        return initialLR * Math.pow(decayRate, epoch);
+        return initialLR * Math.pow(decayRate, effectiveEpoch);
       }
 
       case 'step': {
         // LR = initial_lr * decay_rate^(epoch / decay_steps)
         const decayRate = schedule.decayRate ?? 0.5;
         const decaySteps = schedule.decaySteps ?? 10;
-        const numDecays = Math.floor(epoch / decaySteps);
+        const numDecays = Math.floor(effectiveEpoch / decaySteps);
         return initialLR * Math.pow(decayRate, numDecays);
       }
 
       case 'cosine': {
         // Cosine annealing: LR = initial_lr * 0.5 * (1 + cos(pi * epoch / max_epochs))
-        const maxEpochs = this.trainingConfig.maxEpochs || 100;
-        const progress = Math.min(epoch / maxEpochs, 1);
+        const maxEpochs = Math.max((this.trainingConfig.maxEpochs || 100) - warmupEpochs, 1);
+        const progress = Math.min(effectiveEpoch / maxEpochs, 1);
         return initialLR * 0.5 * (1 + Math.cos(Math.PI * progress));
       }
 

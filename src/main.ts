@@ -10,6 +10,7 @@
 import './presentation/styles.css';
 
 import type { Hyperparameters, OptimizerType, ActivationType, ColourScheme, Point, LRScheduleType } from './core/domain';
+import type { PreprocessingType } from './core/ports';
 import { MULTI_CLASS_COLOURS } from './core/domain';
 import type { TrainingState } from './core/application';
 import { TrainingSession } from './core/application';
@@ -50,6 +51,7 @@ const elements = {
   noiseValue: document.getElementById('noise-value') as HTMLSpanElement,
   inputBalance: document.getElementById('input-balance') as HTMLInputElement,
   balanceValue: document.getElementById('balance-value') as HTMLSpanElement,
+  inputPreprocessing: document.getElementById('input-preprocessing') as HTMLSelectElement,
 
   // Visualization controls
   inputColourScheme: document.getElementById('input-colour-scheme') as HTMLSelectElement,
@@ -68,8 +70,12 @@ const elements = {
   inputLayers: document.getElementById('input-layers') as HTMLInputElement,
   inputLayerActivations: document.getElementById('input-layer-activations') as HTMLInputElement,
   inputOptimizer: document.getElementById('input-optimizer') as HTMLSelectElement,
+  momentumControl: document.getElementById('momentum-control') as HTMLDivElement,
+  inputMomentum: document.getElementById('input-momentum') as HTMLInputElement,
+  momentumValue: document.getElementById('momentum-value') as HTMLSpanElement,
   inputActivation: document.getElementById('input-activation') as HTMLSelectElement,
   inputNumClasses: document.getElementById('input-num-classes') as HTMLSelectElement,
+  inputL1: document.getElementById('input-l1') as HTMLInputElement,
   inputL2: document.getElementById('input-l2') as HTMLInputElement,
   inputDropout: document.getElementById('input-dropout') as HTMLSelectElement,
   btnInit: document.getElementById('btn-init') as HTMLButtonElement,
@@ -81,6 +87,7 @@ const elements = {
   inputFps: document.getElementById('input-fps') as HTMLInputElement,
   fpsValue: document.getElementById('fps-value') as HTMLSpanElement,
   inputLrSchedule: document.getElementById('input-lr-schedule') as HTMLSelectElement,
+  inputWarmup: document.getElementById('input-warmup') as HTMLInputElement,
   inputEarlyStop: document.getElementById('input-early-stop') as HTMLInputElement,
 
   // Training controls
@@ -468,6 +475,16 @@ function handleBalanceChange(): void {
   elements.balanceValue.textContent = `${balancePercent}%`;
 }
 
+function handleOptimizerChange(): void {
+  const optimizer = elements.inputOptimizer.value;
+  // Show momentum control only for SGD
+  elements.momentumControl.classList.toggle('hidden', optimizer !== 'sgd');
+}
+
+function handleMomentumChange(): void {
+  elements.momentumValue.textContent = elements.inputMomentum.value;
+}
+
 function handleDrawClassSelect(label: number): void {
   currentDrawLabel = label;
   
@@ -556,9 +573,10 @@ async function handleLoadData(): Promise<void> {
   const noise = (parseInt(elements.inputNoise.value, 10) || 10) / 100;
   const numClasses = parseInt(elements.inputNumClasses.value, 10) || 2;
   const classBalance = (parseInt(elements.inputBalance.value, 10) || 50) / 100;
+  const preprocessing = elements.inputPreprocessing.value as PreprocessingType;
 
   try {
-    await session.loadData(datasetType, { samples, noise, numClasses, classBalance });
+    await session.loadData(datasetType, { samples, noise, numClasses, classBalance, preprocessing });
     
     if (isRealWorld) {
       const datasetInfo = datasetType === 'iris' 
@@ -599,7 +617,9 @@ async function handleInitialise(): Promise<void> {
   }
 
   const optimizer = elements.inputOptimizer.value as OptimizerType;
+  const momentum = parseFloat(elements.inputMomentum.value) || 0.9;
   const activation = elements.inputActivation.value as ActivationType;
+  const l1Regularization = parseFloat(elements.inputL1.value) || 0;
   const l2Regularization = parseFloat(elements.inputL2.value) || 0;
   const numClasses = parseInt(elements.inputNumClasses.value, 10) || 2;
   const dropoutRate = parseFloat(elements.inputDropout.value) || 0;
@@ -611,8 +631,10 @@ async function handleInitialise(): Promise<void> {
     learningRate,
     layers,
     optimizer,
+    momentum,
     activation,
     layerActivations: layerActivations.length > 0 ? layerActivations : undefined,
+    l1Regularization,
     l2Regularization,
     numClasses,
     dropoutRate,
@@ -647,6 +669,7 @@ function applyTrainingConfig(): void {
   const maxEpochs = parseInt(elements.inputMaxEpochs.value, 10) || 0;
   const targetFps = parseInt(elements.inputFps.value, 10) || 60;
   const lrScheduleType = elements.inputLrSchedule.value as LRScheduleType;
+  const warmupEpochs = parseInt(elements.inputWarmup.value, 10) || 0;
   const earlyStoppingPatience = parseInt(elements.inputEarlyStop.value, 10) || 0;
 
   session.setTrainingConfig({
@@ -657,6 +680,7 @@ function applyTrainingConfig(): void {
       type: lrScheduleType,
       decayRate: 0.95,
       decaySteps: 10,
+      warmupEpochs,
     },
     earlyStoppingPatience,
   });
@@ -1174,12 +1198,17 @@ function clearSession(): void {
   elements.noiseValue.textContent = '10';
   elements.inputBalance.value = '50';
   elements.balanceValue.textContent = '50%';
+  elements.inputPreprocessing.value = 'none';
   elements.inputNumClasses.value = '2';
   elements.inputLr.value = '0.03';
   elements.inputLayers.value = '4,4';
   elements.inputLayerActivations.value = '';
   elements.inputOptimizer.value = 'adam';
+  elements.inputMomentum.value = '0.9';
+  elements.momentumValue.textContent = '0.9';
+  elements.momentumControl.classList.add('hidden');
   elements.inputActivation.value = 'relu';
+  elements.inputL1.value = '0';
   elements.inputL2.value = '0';
   elements.inputDropout.value = '0';
   elements.inputBatchSize.value = '32';
@@ -1187,6 +1216,7 @@ function clearSession(): void {
   elements.inputValSplit.value = '20';
   elements.inputFps.value = '30';
   elements.fpsValue.textContent = '30';
+  elements.inputWarmup.value = '0';
 
   // Reset metrics display
   elements.metricPrecision.textContent = '-';
@@ -1765,6 +1795,8 @@ function init(): void {
   elements.inputNoise.addEventListener('input', handleNoiseChange);
   elements.inputBalance.addEventListener('input', handleBalanceChange);
   elements.inputNumClasses.addEventListener('change', updateDrawClassButtons);
+  elements.inputOptimizer.addEventListener('change', handleOptimizerChange);
+  elements.inputMomentum.addEventListener('input', handleMomentumChange);
 
   // Initialize draw class buttons
   updateDrawClassButtons();

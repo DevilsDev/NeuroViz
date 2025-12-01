@@ -44,10 +44,10 @@ This document outlines planned features for NeuroViz, organized by priority and 
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| Momentum control | S | 🔲 | SGD momentum parameter |
-| L1 regularization | S | 🔲 | Sparsity inducing |
+| Momentum control | S | ✅ | SGD momentum slider (0-0.99) |
+| L1 regularization | S | ✅ | Sparsity inducing |
 | Batch normalization | M | 🔲 | Between layers |
-| Learning rate warmup | S | 🔲 | Gradual increase |
+| Learning rate warmup | S | ✅ | Gradual increase (0-50 epochs) |
 | Cyclic learning rate | M | 🔲 | Triangle/cosine cycles |
 
 ---
@@ -139,8 +139,8 @@ This document outlines planned features for NeuroViz, organized by priority and 
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| Feature normalization toggle | S | 🔲 | Min-max scaling |
-| Standardization toggle | S | 🔲 | Z-score scaling |
+| Feature normalization toggle | S | ✅ | Min-max scaling |
+| Standardization toggle | S | ✅ | Z-score scaling |
 | Train/test split visualization | M | 🔲 | Different markers |
 
 ---
@@ -361,13 +361,13 @@ Last updated: December 2025
 
 | Phase | Description | Completed | Total | Progress |
 |-------|-------------|-----------|-------|----------|
-| Phase 1 | Core Training | 10 | 15 | 67% |
+| Phase 1 | Core Training | 13 | 15 | 87% |
 | Phase 2 | Metrics & History | 9 | 11 | 82% |
 | Phase 3 | Visualization | 10 | 14 | 71% |
-| Phase 4 | Data Management | 8 | 10 | 80% |
+| Phase 4 | Data Management | 10 | 10 | 100% |
 | Phase 5 | Model Capabilities | 6 | 12 | 50% |
 | Phase 6 | UX & Polish | 13 | 15 | 87% |
 | Phase 7 | Educational | 0 | 6 | 0% |
 | Phase 8 | Performance | 0 | 7 | 0% |
 | Phase 9 | Research | 0 | 8 | 0% |
-| **Total** | | **56** | **98** | **57%** |
+| **Total** | | **61** | **98** | **62%** |
