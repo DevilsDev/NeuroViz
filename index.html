@@ -559,6 +559,19 @@
                   />
                 </label>
               </div>
+              <div class="grid grid-cols-2 gap-2">
+                <label class="block">
+                  <span class="input-label">Performance Mode</span>
+                  <select id="input-perf-mode" class="select-field">
+                    <option value="full" selected>Full (60 FPS)</option>
+                    <option value="balanced">Balanced (30 FPS)</option>
+                    <option value="battery">Battery Saver (15 FPS)</option>
+                  </select>
+                </label>
+                <div class="flex items-end">
+                  <span id="perf-stats" class="text-xs text-slate-500 pb-2">—</span>
+                </div>
+              </div>
               <!-- LR Schedule & Early Stopping -->
               <div class="grid grid-cols-2 gap-2">
                 <label class="block">

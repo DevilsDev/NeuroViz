@@ -47,6 +47,9 @@ import { diagnoseTraining, formatSuggestionsHTML, type DiagnosisResult } from '.
 // What-If Analysis
 import { runWhatIfAnalysis, formatWhatIfResultsHTML, PARAMETER_VARIATIONS } from './presentation/WhatIfAnalysis';
 
+// Performance
+import { frameRateLimiter, type PerformanceMode } from './infrastructure/performance';
+
 // =============================================================================
 // DOM Element References
 // =============================================================================
@@ -164,6 +167,10 @@ const elements = {
   // Gradient Flow
   inputShowGradients: document.getElementById('input-show-gradients') as HTMLInputElement,
   gradientFlowContainer: document.getElementById('gradient-flow-container') as HTMLDivElement,
+
+  // Performance
+  inputPerfMode: document.getElementById('input-perf-mode') as HTMLSelectElement,
+  perfStats: document.getElementById('perf-stats') as HTMLSpanElement,
 
   // Validation split
   inputValSplit: document.getElementById('input-val-split') as HTMLSelectElement,
@@ -488,6 +495,11 @@ function updateUI(state: TrainingState): void {
   // Update gradient flow periodically
   if (state.currentEpoch > 0 && state.currentEpoch % 5 === 0) {
     updateGradientFlow();
+  }
+
+  // Update performance stats
+  if (state.currentEpoch > 0 && state.currentEpoch % 10 === 0) {
+    updatePerfStats();
   }
 }
 
@@ -846,6 +858,33 @@ async function handleWhatIfAnalysis(): Promise<void> {
       Run Analysis
     `;
   }
+}
+
+// =============================================================================
+// Performance Mode
+// =============================================================================
+
+/**
+ * Handles performance mode changes.
+ */
+function handlePerfModeChange(): void {
+  const mode = elements.inputPerfMode.value as PerformanceMode;
+  frameRateLimiter.setMode(mode);
+  
+  // Update FPS slider to match
+  const targetFps = frameRateLimiter.getTargetFps();
+  elements.inputFps.value = String(targetFps);
+  elements.fpsValue.textContent = String(targetFps);
+  
+  toast.info(`Performance mode: ${mode} (${targetFps} FPS)`);
+}
+
+/**
+ * Updates performance stats display.
+ */
+function updatePerfStats(): void {
+  const stats = frameRateLimiter.getStats();
+  elements.perfStats.textContent = `${stats.averageFps} FPS avg`;
 }
 
 // =============================================================================
@@ -3763,6 +3802,7 @@ function init(): void {
   elements.inputShowWeights.addEventListener('change', updateNetworkDiagram);
   elements.inputShowActivations.addEventListener('change', handleActivationToggle);
   elements.inputShowGradients.addEventListener('change', handleGradientToggle);
+  elements.inputPerfMode.addEventListener('change', handlePerfModeChange);
 
   // Bind event listeners - Dataset import/export
   elements.inputCsvUpload.addEventListener('change', handleCsvUpload);

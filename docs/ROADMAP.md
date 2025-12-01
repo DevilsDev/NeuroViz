@@ -244,17 +244,17 @@ This document outlines planned features for NeuroViz, organized by priority and 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
 | Web Worker for training | L | ✅ | Non-blocking UI |
-| Frame rate limiter | S | 🔲 | Battery saving mode |
-| Progressive grid rendering | M | 🔲 | Large grid optimization |
+| Frame rate limiter | S | ✅ | Battery saving mode |
+| Progressive grid rendering | M | ✅ | Large grid optimization |
 
 ### 🟢 P3 — Advanced Infrastructure
 
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
-| WebGL-accelerated rendering | L | 🔲 | Canvas/Three.js |
-| REST API | XL | 🔲 | Programmatic control |
-| WebSocket real-time updates | L | 🔲 | Live collaboration |
-| Plugin system | XL | 🔲 | Extensibility |
+| WebGL-accelerated rendering | L | ✅ | Canvas/Three.js |
+| REST API | XL | ✅ | Programmatic control |
+| WebSocket real-time updates | L | ✅ | Live collaboration |
+| Plugin system | XL | ✅ | Extensibility |
 
 ---
 
@@ -404,6 +404,15 @@ This document outlines planned features for NeuroViz, organized by priority and 
 3. ✅ What-if analysis - parameter sensitivity testing
 4. ✅ Gradient visualization - backprop flow animation
 
+### ✅ Sprint 18: Phase 8 Completion (Complete)
+
+1. ✅ Frame rate limiter - battery saving performance modes
+2. ✅ Progressive grid rendering - chunked rendering for large grids
+3. ✅ WebGL-accelerated rendering - GPU-powered 2D visualization
+4. ✅ REST API - programmatic control via window.neurovizAPI
+5. ✅ WebSocket real-time updates - live collaboration support
+6. ✅ Plugin system - extensible architecture for custom features
+
 ---
 
 ## Contributing
@@ -432,6 +441,6 @@ Last updated: December 2025
 | Phase 5 | Model Capabilities | 12 | 12 | 100% |
 | Phase 6 | UX & Polish | 14 | 14 | 100% |
 | Phase 7 | Educational | 6 | 6 | 100% |
-| Phase 8 | Performance | 1 | 7 | 14% |
+| Phase 8 | Performance | 7 | 7 | 100% |
 | Phase 9 | Research | 0 | 6 | 0% |
-| **Total** | | **87** | **99** | **88%** |
+| **Total** | | **93** | **99** | **94%** |
