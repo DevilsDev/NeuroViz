@@ -121,6 +121,37 @@
               </button>
             </div>
           </div>
+
+          <!-- Explain This Moment Button & Panel -->
+          <button id="btn-explain-moment" class="btn-explain-moment" aria-label="Explain what's happening in training">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+            </svg>
+            💡 Explain This Moment
+          </button>
+
+          <!-- Explanation Panel (hidden by default) -->
+          <div id="explain-moment-panel" class="explain-moment-panel hidden">
+            <div class="explain-moment-header">
+              <span class="explain-moment-icon" id="explain-icon">💡</span>
+              <h3 class="explain-moment-title" id="explain-title">What's happening?</h3>
+              <button class="explain-moment-close" id="btn-close-explanation" aria-label="Close explanation">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+            <div class="explain-moment-message" id="explain-message">
+              Loading explanation...
+            </div>
+            <div class="explain-moment-tip" id="explain-tip-container">
+              <span class="explain-moment-tip-icon">📈</span>
+              <p class="explain-moment-tip-text" id="explain-tip">
+                Tip will appear here
+              </p>
+            </div>
+          </div>
+
           <div id="loading-overlay" class="loading-overlay hidden" role="status" aria-live="polite">
             <div class="spinner"></div>
             <span>Loading dataset...</span>
@@ -128,7 +159,9 @@
         </section>
 
         <!-- Control Panel Sidebar -->
-        <aside id="main-controls" class="flex flex-col gap-4" role="complementary" aria-label="Training controls">
+        <aside id="main-controls" class="sidebar-container" role="complementary" aria-label="Training controls">
+          <!-- Scrollable Content Area -->
+          <div class="sidebar-scroll-area">
           <!-- Workflow Stepper -->
           <div id="workflow-stepper" class="workflow-stepper">
             <div class="stepper-step" data-step="1" id="step-data">
@@ -751,44 +784,21 @@
 
           <!-- Tab Content: Train -->
           <div class="tab-content" data-tab-content="train" role="tabpanel" id="tab-train" aria-labelledby="tab-btn-train">
-          <!-- Training Controls (Sticky) -->
-          <fieldset class="control-fieldset" id="training-fieldset">
-            <div class="training-sticky">
-              <legend class="control-legend mb-3"><svg class="legend-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg> Training</legend>
-              <div class="grid grid-cols-2 gap-2">
-                <button id="btn-start" class="btn-primary" disabled aria-label="Start training">
-                  <svg aria-hidden="true" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                  Start
-                </button>
-                <button id="btn-pause" class="btn-secondary" disabled aria-label="Pause training">
-                  <svg aria-hidden="true" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                  </svg>
-                  Pause
-                </button>
-                <button id="btn-step" class="btn-secondary" disabled aria-label="Execute single training step">
-                  <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                  </svg>
-                  Step
-                </button>
-                <button id="btn-reset" class="btn-danger" disabled aria-label="Reset training">
-                  <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Reset
-                </button>
-              </div>
-              <div class="text-xs text-slate-500 mt-2 text-center">
-                <kbd class="kbd">Space</kbd> Start/Pause
-                <kbd class="kbd">S</kbd> Step
-                <kbd class="kbd">R</kbd> Reset
-                <kbd class="kbd">Esc</kbd> Stop
-              </div>
-            </div>
-          </fieldset>
+          <!-- Hidden Training Controls (kept for JS references, UI moved to sticky footer) -->
+          <div id="training-fieldset" class="hidden" aria-hidden="true">
+            <button id="btn-start" class="btn-primary" disabled aria-label="Start training"></button>
+            <button id="btn-pause" class="btn-secondary" disabled aria-label="Pause training"></button>
+            <button id="btn-step" class="btn-secondary" disabled aria-label="Execute single training step"></button>
+            <button id="btn-reset" class="btn-danger" disabled aria-label="Reset training"></button>
+          </div>
+          
+          <!-- Keyboard shortcuts hint -->
+          <div class="text-xs text-slate-500 mb-3 text-center p-2 bg-navy-900/30 rounded-lg">
+            <kbd class="kbd">Space</kbd> Start/Pause
+            <kbd class="kbd">S</kbd> Step
+            <kbd class="kbd">R</kbd> Reset
+            <kbd class="kbd">Esc</kbd> Stop
+          </div>
 
           <!-- Status Display -->
           <fieldset class="control-fieldset">
@@ -1231,6 +1241,53 @@
               Auto-saves on page close
             </p>
           </fieldset>
+          </div><!-- End Scrollable Content Area -->
+
+          <!-- Sticky Training Controls Footer -->
+          <div id="sidebar-sticky-footer" class="sidebar-sticky-footer">
+            <div class="sticky-controls-grid">
+              <button id="btn-start-sticky" class="btn-primary btn-sticky" disabled aria-label="Start training">
+                <svg aria-hidden="true" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+                Start
+              </button>
+              <button id="btn-pause-sticky" class="btn-secondary btn-sticky" disabled aria-label="Pause training">
+                <svg aria-hidden="true" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                </svg>
+                Pause
+              </button>
+              <button id="btn-step-sticky" class="btn-secondary btn-sticky" disabled aria-label="Single step">
+                <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                </svg>
+                Step
+              </button>
+              <button id="btn-reset-sticky" class="btn-danger btn-sticky" disabled aria-label="Reset">
+                <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Reset
+              </button>
+            </div>
+            <div class="sticky-metrics">
+              <div class="sticky-metric">
+                <span class="sticky-metric-label">Epoch</span>
+                <span id="sticky-epoch" class="sticky-metric-value text-accent-400">0</span>
+              </div>
+              <div class="sticky-metric-divider"></div>
+              <div class="sticky-metric">
+                <span class="sticky-metric-label">Loss</span>
+                <span id="sticky-loss" class="sticky-metric-value text-orange-400">—</span>
+              </div>
+              <div class="sticky-metric-divider"></div>
+              <div class="sticky-metric">
+                <span class="sticky-metric-label">Acc</span>
+                <span id="sticky-accuracy" class="sticky-metric-value text-emerald-400">—</span>
+              </div>
+            </div>
+          </div>
         </aside>
       </main>
 

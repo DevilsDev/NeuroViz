@@ -20,11 +20,11 @@
   --text-muted: #64748b;
   --border-color: #334155;
   --accent-color: #14b8a6;
-  
+
   /* Navy color overrides for light mode */
   --navy-950: #0a0e1a;
   --navy-900: #0f172a;
-  --navy-800: #1e293b;
+  --navy-800: #1a2332;  /* Lightened from #1e293b to #1a2332 for better contrast (DESIGN_AUDIT_360 #4) */
   --navy-700: #334155;
   --navy-600: #475569;
 }
@@ -195,11 +195,97 @@ body[data-theme="light"] {
     @apply sticky top-4;
   }
 
-  /* Sidebar - scrollable independently */
-  .main-grid > aside {
-    max-height: calc(100vh - 120px);
+  /* Sidebar container with sticky footer */
+  .sidebar-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 140px);  /* Adjusted for better spacing */
+    max-height: calc(100vh - 140px);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .sidebar-scroll-area {
+    flex: 1 1 auto;
     overflow-y: auto;
     scrollbar-width: thin;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-bottom: 0.5rem;
+    min-height: 0; /* Important for flex overflow */
+  }
+
+  /* Sticky Training Controls Footer - Always visible at bottom */
+  .sidebar-sticky-footer {
+    flex: 0 0 auto;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(10, 15, 26, 0.99) 100%);
+    border-top: 2px solid rgba(20, 184, 166, 0.4);  /* More visible teal border */
+    backdrop-filter: blur(12px);
+    border-radius: 0 0 0.75rem 0.75rem;
+    z-index: 10;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);  /* Shadow to stand out */
+  }
+
+  .sticky-controls-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.375rem;
+  }
+
+  .btn-sticky {
+    padding: 0.5rem 0.25rem !important;
+    font-size: 0.6875rem !important;
+    gap: 0.25rem !important;
+  }
+
+  .btn-sticky svg {
+    width: 0.875rem !important;
+    height: 0.875rem !important;
+  }
+
+  .sticky-metrics {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(51, 65, 85, 0.3);
+  }
+
+  .sticky-metric {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.125rem;
+  }
+
+  .sticky-metric-label {
+    font-size: 0.5625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+  }
+
+  .sticky-metric-value {
+    font-size: 0.875rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .sticky-metric-divider {
+    width: 1px;
+    height: 1.5rem;
+    background: rgba(51, 65, 85, 0.4);
+  }
+
+  /* Hide sticky footer on mobile (use FAB instead) */
+  @media (max-width: 767px) {
+    .sidebar-sticky-footer {
+      display: none;
+    }
   }
 
   /* ---------------------------------------------------------------------------
@@ -220,11 +306,12 @@ body[data-theme="light"] {
 
   .panel-glow {
     @apply backdrop-blur-md;
-    @apply border rounded-2xl;
+    @apply border-2 rounded-2xl;
     @apply shadow-xl;
     @apply transition-all duration-300;
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
-    border-color: rgba(71, 85, 105, 0.3);
+    border-color: rgba(71, 85, 105, 0.5);  /* Stronger border for better contrast (DESIGN_AUDIT_360 #4) */
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(71, 85, 105, 0.2);
   }
   
   html:not(.dark) .panel-glow {
@@ -1045,6 +1132,37 @@ header.training-active button {
 header.training-active svg {
   width: 1rem !important;
   height: 1rem !important;
+}
+
+/* =============================================================================
+   Training Pulse Indicator - Visual feedback during active training
+   ============================================================================= */
+#viz-container.training-active {
+  box-shadow: 
+    0 0 0 2px rgba(20, 184, 166, 0.4),
+    0 0 20px rgba(20, 184, 166, 0.15);
+  animation: training-pulse 2s ease-in-out infinite;
+}
+
+@keyframes training-pulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 0 2px rgba(20, 184, 166, 0.3),
+      0 0 15px rgba(20, 184, 166, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 0 0 3px rgba(20, 184, 166, 0.5),
+      0 0 25px rgba(20, 184, 166, 0.25);
+  }
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  #viz-container.training-active {
+    animation: none;
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.5);
+  }
 }
 
 /* =============================================================================
@@ -2005,4 +2123,396 @@ html:not(.dark) .stat-value {
     justify-content: space-around;
     min-width: auto;
   }
+}
+
+/* =============================================================================
+   Sidebar Sticky Footer - High Specificity Override
+   ============================================================================= */
+#main-controls.sidebar-container {
+  display: flex !important;
+  flex-direction: column !important;
+  height: calc(100vh - 140px) !important;
+  max-height: calc(100vh - 140px) !important;
+  overflow: hidden !important;
+}
+
+#main-controls .sidebar-scroll-area {
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  min-height: 0 !important;
+}
+
+#sidebar-sticky-footer {
+  flex: 0 0 auto !important;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(10, 15, 26, 0.99) 100%);
+  border-top: 2px solid rgba(20, 184, 166, 0.4) !important;
+  backdrop-filter: blur(12px);
+  border-radius: 0 0 0.75rem 0.75rem;
+  z-index: 10;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3) !important;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Light mode sticky footer */
+html:not(.dark) #sidebar-sticky-footer {
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.98) 0%, rgba(241, 245, 249, 0.99) 100%);
+  border-top: 2px solid rgba(13, 148, 136, 0.4) !important;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+#sidebar-sticky-footer .sticky-controls-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.375rem;
+}
+
+#sidebar-sticky-footer .btn-sticky {
+  padding: 0.5rem 0.25rem !important;
+  font-size: 0.6875rem !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+#sidebar-sticky-footer .btn-sticky svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+#sidebar-sticky-footer .sticky-metrics {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(51, 65, 85, 0.3);
+}
+
+#sidebar-sticky-footer .sticky-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+#sidebar-sticky-footer .sticky-metric-label {
+  font-size: 0.5625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+}
+
+#sidebar-sticky-footer .sticky-metric-value {
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+#sidebar-sticky-footer .sticky-metric-divider {
+  width: 1px;
+  height: 1.5rem;
+  background: rgba(51, 65, 85, 0.4);
+}
+
+/* Hide sticky footer on mobile (use FAB instead) */
+@media (max-width: 767px) {
+  #sidebar-sticky-footer {
+    display: none !important;
+  }
+}
+
+/* =============================================================================
+   Explain This Moment Feature - Educational UX (DESIGN_AUDIT_360 #3)
+   ============================================================================= */
+.explain-moment-panel {
+  position: relative;
+  background: linear-gradient(135deg, rgba(20, 184, 166, 0.08) 0%, rgba(14, 165, 233, 0.06) 100%);
+  border: 1px solid rgba(20, 184, 166, 0.25);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  animation: slideIn 0.3s ease-out;
+}
+
+html:not(.dark) .explain-moment-panel {
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.1) 0%, rgba(14, 165, 233, 0.08) 100%);
+  border-color: rgba(13, 148, 136, 0.3);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.explain-moment-panel.type-success {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(5, 150, 105, 0.06) 100%);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.explain-moment-panel.type-warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(217, 119, 6, 0.06) 100%);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.explain-moment-panel.type-plateau {
+  background: linear-gradient(135deg, rgba(148, 163, 184, 0.08) 0%, rgba(100, 116, 139, 0.06) 100%);
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.explain-moment-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.explain-moment-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.explain-moment-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #14b8a6;
+  flex: 1;
+}
+
+html:not(.dark) .explain-moment-title {
+  color: #0d9488;
+}
+
+.explain-moment-close {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.explain-moment-close:hover {
+  color: #94a3b8;
+}
+
+.explain-moment-message {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #cbd5e1;
+  white-space: pre-line;
+  margin-bottom: 0.75rem;
+}
+
+html:not(.dark) .explain-moment-message {
+  color: #475569;
+}
+
+.explain-moment-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.625rem;
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 0.5rem;
+  border-left: 3px solid #14b8a6;
+}
+
+html:not(.dark) .explain-moment-tip {
+  background: rgba(255, 255, 255, 0.6);
+  border-left-color: #0d9488;
+}
+
+.explain-moment-tip-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.explain-moment-tip-text {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+html:not(.dark) .explain-moment-tip-text {
+  color: #64748b;
+}
+
+.btn-explain-moment {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: white;
+  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 1rem;
+}
+
+.btn-explain-moment:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
+}
+
+.btn-explain-moment:active {
+  transform: translateY(0);
+}
+
+.btn-explain-moment svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+html:not(.dark) .btn-explain-moment {
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+}
+
+/* =============================================================================
+   Accessibility: Enhanced Touch Targets (DESIGN_AUDIT_360 #5)
+   ============================================================================= */
+
+/* Range sliders - Increase touch target to 44px minimum */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 44px;  /* Total touch target height */
+  padding: 18px 0;  /* Invisible padding for touch */
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 8px;
+  background: rgba(51, 65, 85, 0.5);
+  border-radius: 4px;
+}
+
+input[type="range"]::-moz-range-track {
+  height: 8px;
+  background: rgba(51, 65, 85, 0.5);
+  border-radius: 4px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+  border-radius: 50%;
+  cursor: pointer;
+  margin-top: -8px;  /* Center on track */
+  box-shadow: 0 2px 8px rgba(20, 184, 166, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 8px rgba(20, 184, 166, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(20, 184, 166, 0.6);
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(20, 184, 166, 0.6);
+}
+
+input[type="range"]:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid #14b8a6;
+  outline-offset: 2px;
+}
+
+input[type="range"]:focus-visible::-moz-range-thumb {
+  outline: 2px solid #14b8a6;
+  outline-offset: 2px;
+}
+
+/* Checkboxes - Increase size and touch target */
+input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #14b8a6;
+}
+
+/* Ensure checkbox labels have adequate touch target */
+label:has(input[type="checkbox"]) {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem 0;
+}
+
+/* Buttons - Ensure minimum 44px height */
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Small buttons - still meet 44px minimum */
+.btn-sm {
+  min-height: 44px;
+  padding: 0.625rem 1rem;
+}
+
+/* Icon buttons - ensure 44px touch target */
+.btn-icon {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.625rem;
+}
+
+/* Light mode range sliders */
+html:not(.dark) input[type="range"]::-webkit-slider-runnable-track {
+  background: rgba(203, 213, 225, 0.6);
+}
+
+html:not(.dark) input[type="range"]::-moz-range-track {
+  background: rgba(203, 213, 225, 0.6);
+}
+
+html:not(.dark) input[type="range"]::-webkit-slider-thumb {
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.4);
+}
+
+html:not(.dark) input[type="range"]::-moz-range-thumb {
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.4);
+}
+
+html:not(.dark) input[type="checkbox"] {
+  accent-color: #0d9488;
 }

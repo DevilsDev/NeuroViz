@@ -74,6 +74,9 @@ import { logger } from './infrastructure/logging/Logger';
 // Error Handling
 import { errorBoundary } from './infrastructure/errorHandling/ErrorBoundary';
 
+// Educational Services
+import { explainMomentService } from './infrastructure/education/ExplainMomentService';
+
 // =============================================================================
 // DOM Element References
 // =============================================================================
@@ -85,6 +88,9 @@ const elements = {
   btnSaveBookmark: document.getElementById('btn-save-bookmark') as HTMLButtonElement,
   btnDeleteBookmark: document.getElementById('btn-delete-bookmark') as HTMLButtonElement,
   bookmarkOptions: document.getElementById('bookmark-options') as HTMLOptGroupElement,
+  
+  // Visualisation container
+  vizContainer: document.getElementById('viz-container') as HTMLDivElement,
   
   // Empty state CTA
   vizEmptyState: document.getElementById('viz-empty-state') as HTMLDivElement,
@@ -98,6 +104,15 @@ const elements = {
   mobileEpoch: document.getElementById('mobile-epoch') as HTMLDivElement,
   mobileLoss: document.getElementById('mobile-loss') as HTMLDivElement,
   mobileAccuracy: document.getElementById('mobile-accuracy') as HTMLDivElement,
+
+  // Sidebar sticky footer controls
+  btnStartSticky: document.getElementById('btn-start-sticky') as HTMLButtonElement,
+  btnPauseSticky: document.getElementById('btn-pause-sticky') as HTMLButtonElement,
+  btnStepSticky: document.getElementById('btn-step-sticky') as HTMLButtonElement,
+  btnResetSticky: document.getElementById('btn-reset-sticky') as HTMLButtonElement,
+  stickyEpoch: document.getElementById('sticky-epoch') as HTMLSpanElement,
+  stickyLoss: document.getElementById('sticky-loss') as HTMLSpanElement,
+  stickyAccuracy: document.getElementById('sticky-accuracy') as HTMLSpanElement,
 
   // Mobile bottom sheet
   mobileBottomSheet: document.getElementById('mobile-bottom-sheet') as HTMLDivElement,
@@ -201,6 +216,16 @@ const elements = {
   btnPause: document.getElementById('btn-pause') as HTMLButtonElement,
   btnStep: document.getElementById('btn-step') as HTMLButtonElement,
   btnReset: document.getElementById('btn-reset') as HTMLButtonElement,
+
+  // Explain Moment Feature
+  btnExplainMoment: document.getElementById('btn-explain-moment') as HTMLButtonElement,
+  explainMomentPanel: document.getElementById('explain-moment-panel') as HTMLDivElement,
+  explainIcon: document.getElementById('explain-icon') as HTMLSpanElement,
+  explainTitle: document.getElementById('explain-title') as HTMLHeadingElement,
+  explainMessage: document.getElementById('explain-message') as HTMLDivElement,
+  explainTip: document.getElementById('explain-tip') as HTMLParagraphElement,
+  explainTipContainer: document.getElementById('explain-tip-container') as HTMLDivElement,
+  btnCloseExplanation: document.getElementById('btn-close-explanation') as HTMLButtonElement,
 
   // Status display
   statusEpoch: document.getElementById('status-epoch') as HTMLSpanElement,
@@ -538,6 +563,19 @@ function updateUI(state: TrainingState): void {
   elements.btnStep.disabled = !canTrain || state.isRunning;
   elements.btnReset.disabled = !canTrain;
 
+  // Update sticky footer buttons (mirror main button states)
+  elements.btnStartSticky.disabled = elements.btnStart.disabled;
+  elements.btnPauseSticky.disabled = elements.btnPause.disabled;
+  elements.btnStepSticky.disabled = elements.btnStep.disabled;
+  elements.btnResetSticky.disabled = elements.btnReset.disabled;
+
+  // Update sticky footer metrics
+  elements.stickyEpoch.textContent = state.currentEpoch.toString();
+  elements.stickyLoss.textContent = state.currentLoss !== null ? state.currentLoss.toFixed(4) : '—';
+  elements.stickyAccuracy.textContent = state.currentAccuracy !== null 
+    ? `${(state.currentAccuracy * 100).toFixed(0)}%` 
+    : '—';
+
   // Update mobile FAB
   if (state.datasetLoaded) {
     elements.mobileFab.classList.remove('hidden');
@@ -590,11 +628,13 @@ function updateUI(state: TrainingState): void {
   elements.btnUncertainty.disabled = !canResearch;
   elements.btnNas.disabled = !state.datasetLoaded || state.isRunning;
 
-  // Collapsible header during training
+  // Collapsible header during training + viz pulse indicator
   if (state.isRunning) {
     elements.header.classList.add('training-active');
+    elements.vizContainer.classList.add('training-active');
   } else {
     elements.header.classList.remove('training-active');
+    elements.vizContainer.classList.remove('training-active');
   }
 
   // Update comparison display if baseline is set
@@ -961,6 +1001,77 @@ function updateSuggestions(state: TrainingState): void {
   elements.suggestionsContent.querySelectorAll('[data-suggestion-action]').forEach(btn => {
     btn.addEventListener('click', handleSuggestionAction);
   });
+}
+
+/**
+ * Handles "Explain This Moment" button click.
+ * Generates contextual explanation of current training state.
+ */
+function handleExplainMoment(): void {
+  try {
+    // Get current training state
+    const state = session.getState();
+    const records = state.history.records;
+    const lossHistory = records.map(r => r.loss);
+
+    // Get current training context
+    const context = {
+      datasetType: elements.datasetSelect.value as any,
+      currentEpoch: state.currentEpoch,
+      totalEpochs: parseInt(elements.inputMaxEpochs.value) || 100,
+      currentLoss: state.currentLoss ?? 0,
+      initialLoss: (lossHistory.length > 0 ? lossHistory[0] : (state.currentLoss ?? 0)) ?? 0,
+      lossHistory: lossHistory,
+      accuracy: state.currentAccuracy ?? 0,
+      architecture: {
+        layers: elements.inputLayers.value.split(',').map(s => parseInt(s.trim(), 10))
+          .filter(n => !isNaN(n))
+          .map(units => ({ units, activation: elements.inputActivation.value as any }))
+      },
+      isTraining: state.isRunning
+    };
+
+    // Generate explanation
+    const explanation = explainMomentService.explainMoment(context);
+
+    // Update UI
+    const typeIcons: Record<string, string> = {
+      progress: '📊',
+      success: '✅',
+      plateau: '⏸️',
+      warning: '⚠️',
+      info: '💡'
+    };
+
+    elements.explainIcon.textContent = typeIcons[explanation.type] || '💡';
+    elements.explainTitle.textContent = explanation.title;
+    elements.explainMessage.textContent = explanation.message;
+
+    if (explanation.tip) {
+      elements.explainTip.textContent = explanation.tip;
+      elements.explainTipContainer.classList.remove('hidden');
+    } else {
+      elements.explainTipContainer.classList.add('hidden');
+    }
+
+    // Update panel styling based on type
+    elements.explainMomentPanel.className = `explain-moment-panel type-${explanation.type}`;
+
+    // Show panel
+    elements.explainMomentPanel.classList.remove('hidden');
+
+    logger.info('Generated training explanation', {
+      component: 'ExplainMoment',
+      type: explanation.type,
+      epoch: context.currentEpoch
+    });
+
+  } catch (error) {
+    logger.error('Failed to generate explanation', error as Error, {
+      component: 'ExplainMoment'
+    });
+    toast.error('Failed to generate explanation');
+  }
 }
 
 /**
@@ -4171,6 +4282,12 @@ function init(): void {
     void applyPreset();
   });
 
+  // Bind Explain Moment feature
+  elements.btnExplainMoment.addEventListener('click', handleExplainMoment);
+  elements.btnCloseExplanation.addEventListener('click', () => {
+    elements.explainMomentPanel.classList.add('hidden');
+  });
+
   // Initialize bookmarks dropdown
   renderBookmarkOptions();
 
@@ -4250,6 +4367,12 @@ function init(): void {
   // Bind event listeners - Mobile FAB
   elements.fabStart.addEventListener('click', handleStart);
   elements.fabPause.addEventListener('click', handlePause);
+
+  // Bind event listeners - Sticky footer controls
+  elements.btnStartSticky.addEventListener('click', handleStart);
+  elements.btnPauseSticky.addEventListener('click', handlePause);
+  elements.btnStepSticky.addEventListener('click', () => void handleStep());
+  elements.btnResetSticky.addEventListener('click', handleReset);
 
   // Bind event listeners - Mobile Bottom Sheet
   setupBottomSheet();
