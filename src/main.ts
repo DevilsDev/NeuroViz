@@ -99,6 +99,29 @@ const elements = {
   mobileLoss: document.getElementById('mobile-loss') as HTMLDivElement,
   mobileAccuracy: document.getElementById('mobile-accuracy') as HTMLDivElement,
 
+  // Mobile bottom sheet
+  mobileBottomSheet: document.getElementById('mobile-bottom-sheet') as HTMLDivElement,
+  bottomSheetHandle: document.getElementById('bottom-sheet-handle') as HTMLDivElement,
+  btnSheetExpand: document.getElementById('btn-sheet-expand') as HTMLButtonElement,
+  sheetDataset: document.getElementById('sheet-dataset') as HTMLSelectElement,
+  sheetLayers: document.getElementById('sheet-layers') as HTMLInputElement,
+  btnSheetInit: document.getElementById('btn-sheet-init') as HTMLButtonElement,
+
+  // Header reference for collapsible
+  header: document.querySelector('header') as HTMLElement,
+
+  // Screen reader announcements
+  srAnnouncements: document.getElementById('sr-announcements') as HTMLDivElement,
+
+  // Onboarding wizard
+  onboardingModal: document.getElementById('onboarding-modal') as HTMLDivElement,
+  wizardNext: document.getElementById('wizard-next') as HTMLButtonElement,
+  wizardPrev: document.getElementById('wizard-prev') as HTMLButtonElement,
+  wizardSkip: document.getElementById('wizard-skip') as HTMLButtonElement,
+  wizardDontShow: document.getElementById('wizard-dont-show') as HTMLInputElement,
+  wizardSummaryDataset: document.getElementById('wizard-summary-dataset') as HTMLSpanElement,
+  wizardSummaryLayers: document.getElementById('wizard-summary-layers') as HTMLSpanElement,
+
   // Dataset controls
   datasetSelect: document.getElementById('dataset-select') as HTMLSelectElement,
   btnLoadData: document.getElementById('btn-load-data') as HTMLButtonElement,
@@ -567,6 +590,13 @@ function updateUI(state: TrainingState): void {
   elements.btnUncertainty.disabled = !canResearch;
   elements.btnNas.disabled = !state.datasetLoaded || state.isRunning;
 
+  // Collapsible header during training
+  if (state.isRunning) {
+    elements.header.classList.add('training-active');
+  } else {
+    elements.header.classList.remove('training-active');
+  }
+
   // Update comparison display if baseline is set
   if (baseline) {
     updateComparisonDisplay();
@@ -611,6 +641,46 @@ function updateUI(state: TrainingState): void {
   // Update performance stats
   if (state.currentEpoch > 0 && state.currentEpoch % 10 === 0) {
     updatePerfStats();
+  }
+
+  // Screen reader announcements for training milestones
+  announceTrainingStatus(state);
+}
+
+/**
+ * Announces training status changes to screen readers.
+ */
+let lastAnnouncedEpoch = 0;
+let lastAnnouncedState = '';
+
+function announceTrainingStatus(state: TrainingState): void {
+  const currentState = getStateText(state);
+  
+  // Announce state changes
+  if (currentState !== lastAnnouncedState) {
+    lastAnnouncedState = currentState;
+    announceToScreenReader(`Training status: ${currentState}`);
+  }
+  
+  // Announce every 50 epochs during training
+  if (state.isRunning && state.currentEpoch > 0 && state.currentEpoch % 50 === 0 && state.currentEpoch !== lastAnnouncedEpoch) {
+    lastAnnouncedEpoch = state.currentEpoch;
+    const accuracy = state.currentAccuracy !== null ? `${(state.currentAccuracy * 100).toFixed(1)}%` : 'unknown';
+    const loss = state.currentLoss !== null ? state.currentLoss.toFixed(4) : 'unknown';
+    announceToScreenReader(`Epoch ${state.currentEpoch}: Accuracy ${accuracy}, Loss ${loss}`);
+  }
+}
+
+/**
+ * Sends an announcement to screen readers via the live region.
+ */
+function announceToScreenReader(message: string): void {
+  if (elements.srAnnouncements) {
+    elements.srAnnouncements.textContent = message;
+    // Clear after a delay to allow re-announcement of same message
+    setTimeout(() => {
+      elements.srAnnouncements.textContent = '';
+    }, 1000);
   }
 }
 
@@ -4181,6 +4251,9 @@ function init(): void {
   elements.fabStart.addEventListener('click', handleStart);
   elements.fabPause.addEventListener('click', handlePause);
 
+  // Bind event listeners - Mobile Bottom Sheet
+  setupBottomSheet();
+
   // Bind event listeners - Suggestions
   elements.btnDismissSuggestions.addEventListener('click', dismissSuggestions);
 
@@ -4258,6 +4331,12 @@ function init(): void {
   // Bind sidebar tabs
   setupSidebarTabs();
 
+  // Setup onboarding wizard
+  setupOnboardingWizard();
+
+  // Setup touch gestures for mobile
+  setupTouchGestures();
+
   // Initialize global error boundary (catch all uncaught exceptions)
   errorBoundary.init();
 
@@ -4277,8 +4356,18 @@ function init(): void {
     }
   });
 
-  // Try to restore previous session
-  void loadSession();
+  // Try to restore previous session, or show wizard on first visit
+  void loadSession().then(restored => {
+    if (!restored) {
+      // First visit - show onboarding wizard
+      const hasVisited = localStorage.getItem('neuroviz-has-visited');
+      if (!hasVisited) {
+        localStorage.setItem('neuroviz-has-visited', 'true');
+        // Show onboarding wizard for first-time visitors
+        showOnboardingWizard();
+      }
+    }
+  });
 
   // Initial UI state
   updateUI(session.getState());
@@ -4321,6 +4410,77 @@ function setupSidebarTabs(): void {
         }
       });
     });
+
+    // Keyboard navigation for tabs (arrow keys)
+    tab.addEventListener('keydown', (e: Event) => {
+      const keyEvent = e as KeyboardEvent;
+      const tabArray = Array.from(tabs) as HTMLElement[];
+      const currentIndex = tabArray.indexOf(tab as HTMLElement);
+      let newIndex = currentIndex;
+
+      if (keyEvent.key === 'ArrowRight' || keyEvent.key === 'ArrowDown') {
+        newIndex = (currentIndex + 1) % tabArray.length;
+        keyEvent.preventDefault();
+      } else if (keyEvent.key === 'ArrowLeft' || keyEvent.key === 'ArrowUp') {
+        newIndex = (currentIndex - 1 + tabArray.length) % tabArray.length;
+        keyEvent.preventDefault();
+      } else if (keyEvent.key === 'Home') {
+        newIndex = 0;
+        keyEvent.preventDefault();
+      } else if (keyEvent.key === 'End') {
+        newIndex = tabArray.length - 1;
+        keyEvent.preventDefault();
+      }
+
+      if (newIndex !== currentIndex) {
+        const targetTab = tabArray[newIndex];
+        if (targetTab) {
+          targetTab.focus();
+          targetTab.click();
+        }
+      }
+    });
+  });
+}
+
+/**
+ * Sets up the mobile bottom sheet functionality.
+ */
+function setupBottomSheet(): void {
+  const sheet = elements.mobileBottomSheet;
+  const handle = elements.bottomSheetHandle;
+  const expandBtn = elements.btnSheetExpand;
+
+  // Toggle on handle click
+  handle.addEventListener('click', () => {
+    sheet.classList.toggle('expanded');
+  });
+
+  // Toggle on expand button click
+  expandBtn.addEventListener('click', () => {
+    sheet.classList.toggle('expanded');
+  });
+
+  // Init & Train button
+  elements.btnSheetInit.addEventListener('click', async () => {
+    // Set dataset from sheet
+    const dataset = elements.sheetDataset.value;
+    elements.datasetSelect.value = dataset;
+    handleDatasetSelectChange();
+    
+    // Load data
+    await handleLoadData();
+    
+    // Set layers from sheet
+    const layers = elements.sheetLayers.value;
+    (document.getElementById('input-layers') as HTMLInputElement).value = layers;
+    
+    // Initialise and start
+    await handleInitialise();
+    handleStart();
+    
+    // Collapse sheet
+    sheet.classList.remove('expanded');
   });
 }
 
@@ -4359,6 +4519,288 @@ function updateWorkflowStepper(step: 'data' | 'network' | 'train'): void {
 
 // Expose updateWorkflowStepper globally for use in state changes
 (window as unknown as { updateWorkflowStepper: typeof updateWorkflowStepper }).updateWorkflowStepper = updateWorkflowStepper;
+
+// =============================================================================
+// Onboarding Wizard
+// =============================================================================
+
+let wizardCurrentStep = 1;
+let wizardSelectedDataset = 'circle';
+let wizardSelectedLayers = '8, 4';
+
+/**
+ * Sets up the onboarding wizard functionality.
+ */
+function setupOnboardingWizard(): void {
+  const modal = elements.onboardingModal;
+  const steps = document.querySelectorAll('.wizard-step');
+  const progressDots = document.querySelectorAll('.wizard-progress-dot');
+  const datasetBtns = document.querySelectorAll('.wizard-dataset-btn');
+  const archBtns = document.querySelectorAll('.wizard-arch-btn');
+
+  // Dataset selection
+  datasetBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      datasetBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      wizardSelectedDataset = btn.getAttribute('data-dataset') || 'circle';
+      updateWizardSummary();
+    });
+  });
+
+  // Architecture selection
+  archBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      archBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      wizardSelectedLayers = btn.getAttribute('data-layers') || '8, 4';
+      updateWizardSummary();
+    });
+  });
+
+  // Navigation
+  elements.wizardNext.addEventListener('click', () => {
+    if (wizardCurrentStep < 4) {
+      wizardCurrentStep++;
+      updateWizardStep();
+    } else {
+      // Final step - apply and close
+      applyWizardConfig();
+    }
+  });
+
+  elements.wizardPrev.addEventListener('click', () => {
+    if (wizardCurrentStep > 1) {
+      wizardCurrentStep--;
+      updateWizardStep();
+    }
+  });
+
+  elements.wizardSkip.addEventListener('click', () => {
+    closeWizard();
+  });
+
+  function updateWizardStep(): void {
+    // Update steps
+    steps.forEach(step => {
+      const stepNum = parseInt(step.getAttribute('data-wizard-step') || '1');
+      step.classList.toggle('active', stepNum === wizardCurrentStep);
+    });
+
+    // Update progress dots
+    progressDots.forEach(dot => {
+      const dotStep = parseInt(dot.getAttribute('data-step') || '1');
+      dot.classList.toggle('active', dotStep <= wizardCurrentStep);
+      dot.classList.toggle('completed', dotStep < wizardCurrentStep);
+    });
+
+    // Update navigation buttons
+    elements.wizardPrev.classList.toggle('hidden', wizardCurrentStep === 1);
+    
+    if (wizardCurrentStep === 4) {
+      elements.wizardNext.innerHTML = `
+        Start Training
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M8 5v14l11-7z" />
+        </svg>
+      `;
+    } else if (wizardCurrentStep === 1) {
+      elements.wizardNext.innerHTML = `
+        Get Started
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      `;
+    } else {
+      elements.wizardNext.innerHTML = `
+        Next
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      `;
+    }
+  }
+
+  function updateWizardSummary(): void {
+    const datasetNames: Record<string, string> = {
+      'circle': 'Circle',
+      'xor': 'XOR',
+      'spiral': 'Spiral',
+      'gaussian': 'Clusters'
+    };
+    elements.wizardSummaryDataset.textContent = datasetNames[wizardSelectedDataset] || wizardSelectedDataset;
+    elements.wizardSummaryLayers.textContent = wizardSelectedLayers;
+  }
+
+  async function applyWizardConfig(): Promise<void> {
+    // Save preference if checked
+    if (elements.wizardDontShow.checked) {
+      localStorage.setItem('neuroviz-skip-wizard', 'true');
+    }
+
+    // Close wizard
+    closeWizard();
+
+    // Apply configuration
+    elements.datasetSelect.value = wizardSelectedDataset;
+    handleDatasetSelectChange();
+    await handleLoadData();
+
+    (document.getElementById('input-layers') as HTMLInputElement).value = wizardSelectedLayers;
+    await handleInitialise();
+    handleStart();
+
+    toast.success('Training started! Watch the decision boundary evolve.');
+  }
+
+  function closeWizard(): void {
+    modal.classList.add('hidden');
+    wizardCurrentStep = 1;
+    updateWizardStep();
+  }
+}
+
+/**
+ * Shows the onboarding wizard for first-time users.
+ */
+function showOnboardingWizard(): void {
+  const skipWizard = localStorage.getItem('neuroviz-skip-wizard');
+  if (skipWizard) return;
+
+  elements.onboardingModal.classList.remove('hidden');
+}
+
+// =============================================================================
+// Touch Gesture Support
+// =============================================================================
+
+/**
+ * Sets up touch gesture support for the visualisation.
+ */
+function setupTouchGestures(): void {
+  const vizContainer = document.getElementById('viz-container');
+  if (!vizContainer) return;
+
+  let initialDistance = 0;
+  let currentZoom = 1;
+  let isPinching = false;
+  let lastPanX = 0;
+  let lastPanY = 0;
+  let isPanning = false;
+
+  // Create zoom level indicator
+  const zoomIndicator = document.createElement('div');
+  zoomIndicator.className = 'zoom-level';
+  zoomIndicator.textContent = '100%';
+  zoomIndicator.style.display = 'none';
+  vizContainer.style.position = 'relative';
+  vizContainer.appendChild(zoomIndicator);
+
+  vizContainer.addEventListener('touchstart', (e: TouchEvent) => {
+    const touch0 = e.touches[0];
+    const touch1 = e.touches[1];
+    
+    if (e.touches.length === 2 && touch0 && touch1) {
+      // Pinch start
+      isPinching = true;
+      initialDistance = getDistance(touch0, touch1);
+      e.preventDefault();
+    } else if (e.touches.length === 1 && touch0) {
+      // Pan start
+      isPanning = true;
+      lastPanX = touch0.clientX;
+      lastPanY = touch0.clientY;
+    }
+  }, { passive: false });
+
+  vizContainer.addEventListener('touchmove', (e: TouchEvent) => {
+    const touch0 = e.touches[0];
+    const touch1 = e.touches[1];
+    
+    if (isPinching && e.touches.length === 2 && touch0 && touch1) {
+      const newDistance = getDistance(touch0, touch1);
+      const scale = newDistance / initialDistance;
+      currentZoom = Math.min(Math.max(currentZoom * scale, 0.5), 3);
+      initialDistance = newDistance;
+
+      // Apply zoom to SVG
+      const svg = vizContainer.querySelector('svg');
+      if (svg) {
+        svg.style.transform = `scale(${currentZoom})`;
+        svg.style.transformOrigin = 'center center';
+      }
+
+      // Show zoom indicator
+      zoomIndicator.textContent = `${Math.round(currentZoom * 100)}%`;
+      zoomIndicator.style.display = 'block';
+
+      e.preventDefault();
+    } else if (isPanning && e.touches.length === 1 && currentZoom > 1 && touch0) {
+      // Pan when zoomed in
+      const deltaX = touch0.clientX - lastPanX;
+      const deltaY = touch0.clientY - lastPanY;
+      lastPanX = touch0.clientX;
+      lastPanY = touch0.clientY;
+
+      const svg = vizContainer.querySelector('svg');
+      if (svg) {
+        const currentTransform = svg.style.transform || '';
+        const translateMatch = currentTransform.match(/translate\(([^,]+),\s*([^)]+)\)/);
+        let currentX = translateMatch && translateMatch[1] ? parseFloat(translateMatch[1]) : 0;
+        let currentY = translateMatch && translateMatch[2] ? parseFloat(translateMatch[2]) : 0;
+        
+        currentX += deltaX;
+        currentY += deltaY;
+        
+        // Limit pan range
+        const maxPan = (currentZoom - 1) * 100;
+        currentX = Math.min(Math.max(currentX, -maxPan), maxPan);
+        currentY = Math.min(Math.max(currentY, -maxPan), maxPan);
+        
+        svg.style.transform = `scale(${currentZoom}) translate(${currentX}px, ${currentY}px)`;
+      }
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  vizContainer.addEventListener('touchend', () => {
+    isPinching = false;
+    isPanning = false;
+
+    // Hide zoom indicator after delay
+    setTimeout(() => {
+      zoomIndicator.style.display = 'none';
+    }, 1500);
+  });
+
+  // Double-tap to reset zoom
+  let lastTap = 0;
+  vizContainer.addEventListener('touchend', (e: TouchEvent) => {
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTap;
+    
+    if (tapLength < 300 && tapLength > 0 && e.touches.length === 0) {
+      // Double tap detected - reset zoom
+      currentZoom = 1;
+      const svg = vizContainer.querySelector('svg');
+      if (svg) {
+        svg.style.transform = 'scale(1)';
+      }
+      zoomIndicator.textContent = '100%';
+      zoomIndicator.style.display = 'block';
+      setTimeout(() => {
+        zoomIndicator.style.display = 'none';
+      }, 1000);
+    }
+    lastTap = currentTime;
+  });
+
+  function getDistance(touch1: Touch, touch2: Touch): number {
+    const dx = touch1.clientX - touch2.clientX;
+    const dy = touch1.clientY - touch2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+}
 
 // =============================================================================
 // Collapsible Sections

@@ -29,9 +29,16 @@
     </style>
   </head>
   <body>
-    <div class="app-container">
+    <!-- Skip Links for Keyboard Navigation -->
+    <a href="#viz-container" class="skip-link">Skip to visualisation</a>
+    <a href="#main-controls" class="skip-link">Skip to controls</a>
+
+    <!-- Live Region for Screen Reader Announcements -->
+    <div id="sr-announcements" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+    <div class="app-container" role="application" aria-label="NeuroViz Neural Network Trainer">
       <!-- Header - Compact 48px -->
-      <header class="flex items-center justify-between py-2 border-b border-navy-700/50 mb-3 sm:mb-4">
+      <header class="flex items-center justify-between py-2 border-b border-navy-700/50 mb-3 sm:mb-4" role="banner">
         <div class="flex items-center gap-2">
           <h1 class="text-lg sm:text-xl font-bold text-gradient glow-accent">NeuroViz</h1>
           <span class="text-slate-500 text-xs hidden md:inline">Neural Network Visualiser</span>
@@ -86,13 +93,26 @@
         <section class="panel-glow relative p-4" aria-label="Neural network visualization">
           <div id="viz-container" role="img" aria-label="Neural network decision boundary visualization">
             <!-- D3 chart renders here -->
-            <!-- Empty State CTA -->
+            <!-- Empty State CTA with Animated Preview -->
             <div id="viz-empty-state" class="empty-state-cta">
-              <svg class="empty-state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              <div class="empty-state-title">No data loaded</div>
-              <div class="empty-state-description">Load a dataset to visualise neural network training</div>
+              <!-- Animated Preview -->
+              <div class="empty-state-preview">
+                <div class="preview-boundary"></div>
+                <!-- Class A points (orange) -->
+                <div class="preview-point class-a" style="top: 15%; left: 25%; animation-delay: 0s;"></div>
+                <div class="preview-point class-a" style="top: 25%; left: 15%; animation-delay: 0.3s;"></div>
+                <div class="preview-point class-a" style="top: 20%; left: 40%; animation-delay: 0.6s;"></div>
+                <div class="preview-point class-a" style="top: 35%; left: 20%; animation-delay: 0.9s;"></div>
+                <div class="preview-point class-a" style="top: 10%; left: 35%; animation-delay: 1.2s;"></div>
+                <!-- Class B points (blue) -->
+                <div class="preview-point class-b" style="top: 65%; left: 60%; animation-delay: 0.15s;"></div>
+                <div class="preview-point class-b" style="top: 75%; left: 70%; animation-delay: 0.45s;"></div>
+                <div class="preview-point class-b" style="top: 70%; left: 80%; animation-delay: 0.75s;"></div>
+                <div class="preview-point class-b" style="top: 80%; left: 65%; animation-delay: 1.05s;"></div>
+                <div class="preview-point class-b" style="top: 60%; left: 75%; animation-delay: 1.35s;"></div>
+              </div>
+              <div class="empty-state-title">Train a Neural Network</div>
+              <div class="empty-state-description">Watch the decision boundary evolve as the network learns to classify data</div>
               <button id="btn-quick-start" class="btn-cta">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -108,7 +128,7 @@
         </section>
 
         <!-- Control Panel Sidebar -->
-        <aside class="flex flex-col gap-4">
+        <aside id="main-controls" class="flex flex-col gap-4" role="complementary" aria-label="Training controls">
           <!-- Workflow Stepper -->
           <div id="workflow-stepper" class="workflow-stepper">
             <div class="stepper-step" data-step="1" id="step-data">
@@ -141,21 +161,21 @@
           </div>
 
           <!-- Sidebar Tabs -->
-          <div class="sidebar-tabs">
-            <button class="sidebar-tab active" data-tab="setup" aria-selected="true">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="sidebar-tabs" role="tablist" aria-label="Control panel sections">
+            <button class="sidebar-tab active" data-tab="setup" role="tab" aria-selected="true" aria-controls="tab-setup" id="tab-btn-setup">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
               </svg>
               Setup
             </button>
-            <button class="sidebar-tab" data-tab="train" aria-selected="false">
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <button class="sidebar-tab" data-tab="train" role="tab" aria-selected="false" aria-controls="tab-train" id="tab-btn-train">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M8 5v14l11-7z" />
               </svg>
               Train
             </button>
-            <button class="sidebar-tab" data-tab="analyse" aria-selected="false">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button class="sidebar-tab" data-tab="analyse" role="tab" aria-selected="false" aria-controls="tab-analyse" id="tab-btn-analyse">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
               Analyse
@@ -163,7 +183,7 @@
           </div>
 
           <!-- Tab Content: Setup -->
-          <div class="tab-content active" data-tab-content="setup">
+          <div class="tab-content active" data-tab-content="setup" role="tabpanel" id="tab-setup" aria-labelledby="tab-btn-setup">
           <!-- Quick Presets -->
           <fieldset class="control-fieldset">
             <legend class="control-legend"><svg class="legend-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> Quick Start</legend>
@@ -730,7 +750,7 @@
           </div><!-- End Tab Content: Setup -->
 
           <!-- Tab Content: Train -->
-          <div class="tab-content" data-tab-content="train">
+          <div class="tab-content" data-tab-content="train" role="tabpanel" id="tab-train" aria-labelledby="tab-btn-train">
           <!-- Training Controls (Sticky) -->
           <fieldset class="control-fieldset" id="training-fieldset">
             <div class="training-sticky">
@@ -913,7 +933,7 @@
           </div><!-- End Tab Content: Train -->
 
           <!-- Tab Content: Analyse -->
-          <div class="tab-content" data-tab-content="analyse">
+          <div class="tab-content" data-tab-content="analyse" role="tabpanel" id="tab-analyse" aria-labelledby="tab-btn-analyse">
           <!-- What-If Analysis (moved from Training) -->
           <fieldset class="control-fieldset">
             <legend class="control-legend">
@@ -1246,8 +1266,46 @@
         </div>
       </div>
 
+      <!-- Mobile Bottom Sheet for Quick Controls -->
+      <div id="mobile-bottom-sheet" class="bottom-sheet md:hidden">
+        <div class="bottom-sheet-handle" id="bottom-sheet-handle">
+          <div class="handle-bar"></div>
+        </div>
+        <div class="bottom-sheet-content">
+          <div class="bottom-sheet-header">
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Quick Controls</span>
+            <button id="btn-sheet-expand" class="text-slate-400 hover:text-white p-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+              </svg>
+            </button>
+          </div>
+          <div class="bottom-sheet-controls">
+            <div class="sheet-control-group">
+              <label class="sheet-label">Dataset</label>
+              <select id="sheet-dataset" class="sheet-select">
+                <option value="circle">Circle</option>
+                <option value="xor">XOR</option>
+                <option value="spiral">Spiral</option>
+                <option value="gaussian">Gaussian</option>
+              </select>
+            </div>
+            <div class="sheet-control-group">
+              <label class="sheet-label">Layers</label>
+              <input type="text" id="sheet-layers" class="sheet-input" value="8, 4" placeholder="8, 4" />
+            </div>
+            <button id="btn-sheet-init" class="sheet-btn-primary">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Init & Train
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Footer -->
-      <footer class="text-center py-4 mt-6 border-t border-navy-700/50">
+      <footer class="text-center py-4 mt-6 border-t border-navy-700/50 hidden md:block">
         <p class="text-slate-500 text-xs">
           Hexagonal Architecture Demo • Modular Monolith
         </p>
@@ -1307,6 +1365,145 @@
             <li>• If the boundary is too complex, try reducing layers or adding dropout</li>
             <li>• Enable validation split to detect overfitting early</li>
           </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onboarding Wizard Modal -->
+    <div id="onboarding-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
+      <div class="bg-navy-800 rounded-2xl border border-navy-600 shadow-2xl max-w-lg w-full overflow-hidden">
+        <!-- Progress indicator -->
+        <div class="flex gap-1 p-4 pb-0">
+          <div class="wizard-progress-dot active" data-step="1"></div>
+          <div class="wizard-progress-dot" data-step="2"></div>
+          <div class="wizard-progress-dot" data-step="3"></div>
+          <div class="wizard-progress-dot" data-step="4"></div>
+        </div>
+        
+        <!-- Step 1: Welcome -->
+        <div class="wizard-step active" data-wizard-step="1">
+          <div class="p-6 text-center">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-accent-400 to-accent-600 flex items-center justify-center">
+              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-white mb-2">Welcome to NeuroViz</h2>
+            <p class="text-slate-400 mb-6">Learn how neural networks classify data through interactive visualisation. Let's get you started in 30 seconds.</p>
+          </div>
+        </div>
+
+        <!-- Step 2: Choose Dataset -->
+        <div class="wizard-step" data-wizard-step="2">
+          <div class="p-6">
+            <h2 class="text-xl font-bold text-white mb-2">Choose a Dataset</h2>
+            <p class="text-slate-400 text-sm mb-4">Select a pattern for the network to learn. Start simple!</p>
+            <div class="grid grid-cols-2 gap-3">
+              <button class="wizard-dataset-btn active" data-dataset="circle">
+                <div class="wizard-dataset-icon">◎</div>
+                <div class="wizard-dataset-label">Circle</div>
+                <div class="wizard-dataset-desc">Easy • Concentric rings</div>
+              </button>
+              <button class="wizard-dataset-btn" data-dataset="xor">
+                <div class="wizard-dataset-icon">⊞</div>
+                <div class="wizard-dataset-label">XOR</div>
+                <div class="wizard-dataset-desc">Medium • Quadrants</div>
+              </button>
+              <button class="wizard-dataset-btn" data-dataset="spiral">
+                <div class="wizard-dataset-icon">🌀</div>
+                <div class="wizard-dataset-label">Spiral</div>
+                <div class="wizard-dataset-desc">Hard • Intertwined</div>
+              </button>
+              <button class="wizard-dataset-btn" data-dataset="gaussian">
+                <div class="wizard-dataset-icon">☁</div>
+                <div class="wizard-dataset-label">Clusters</div>
+                <div class="wizard-dataset-desc">Easy • Gaussian blobs</div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Network Architecture -->
+        <div class="wizard-step" data-wizard-step="3">
+          <div class="p-6">
+            <h2 class="text-xl font-bold text-white mb-2">Network Architecture</h2>
+            <p class="text-slate-400 text-sm mb-4">How many hidden layers? More layers = more complex patterns.</p>
+            <div class="space-y-3">
+              <button class="wizard-arch-btn active" data-layers="4">
+                <div class="wizard-arch-visual">
+                  <span class="arch-node"></span><span class="arch-line"></span><span class="arch-node small"></span><span class="arch-line"></span><span class="arch-node"></span>
+                </div>
+                <div class="wizard-arch-info">
+                  <div class="wizard-arch-label">Simple (4 neurons)</div>
+                  <div class="wizard-arch-desc">Fast training, good for easy patterns</div>
+                </div>
+              </button>
+              <button class="wizard-arch-btn" data-layers="8, 4">
+                <div class="wizard-arch-visual">
+                  <span class="arch-node"></span><span class="arch-line"></span><span class="arch-node"></span><span class="arch-line"></span><span class="arch-node small"></span><span class="arch-line"></span><span class="arch-node"></span>
+                </div>
+                <div class="wizard-arch-info">
+                  <div class="wizard-arch-label">Medium (8 → 4 neurons)</div>
+                  <div class="wizard-arch-desc">Balanced, recommended for most</div>
+                </div>
+              </button>
+              <button class="wizard-arch-btn" data-layers="16, 8, 4">
+                <div class="wizard-arch-visual">
+                  <span class="arch-node"></span><span class="arch-line"></span><span class="arch-node"></span><span class="arch-line"></span><span class="arch-node"></span><span class="arch-line"></span><span class="arch-node small"></span><span class="arch-line"></span><span class="arch-node"></span>
+                </div>
+                <div class="wizard-arch-info">
+                  <div class="wizard-arch-label">Deep (16 → 8 → 4 neurons)</div>
+                  <div class="wizard-arch-desc">Complex patterns, slower training</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: Ready to Train -->
+        <div class="wizard-step" data-wizard-step="4">
+          <div class="p-6 text-center">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
+              <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-white mb-2">Ready to Train!</h2>
+            <p class="text-slate-400 mb-4">Watch the decision boundary evolve as the network learns.</p>
+            <div class="bg-navy-900/50 rounded-lg p-4 text-left mb-4">
+              <div class="text-xs text-slate-500 uppercase tracking-wider mb-2">Your Configuration</div>
+              <div class="flex justify-between text-sm mb-1">
+                <span class="text-slate-400">Dataset:</span>
+                <span id="wizard-summary-dataset" class="text-white font-medium">Circle</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-slate-400">Architecture:</span>
+                <span id="wizard-summary-layers" class="text-white font-medium">8, 4</span>
+              </div>
+            </div>
+            <label class="flex items-center justify-center gap-2 text-sm text-slate-400 cursor-pointer">
+              <input type="checkbox" id="wizard-dont-show" class="checkbox-field" />
+              Don't show this again
+            </label>
+          </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="flex items-center justify-between p-4 border-t border-navy-700">
+          <button id="wizard-skip" class="text-slate-400 hover:text-white text-sm">
+            Skip tutorial
+          </button>
+          <div class="flex gap-2">
+            <button id="wizard-prev" class="btn-secondary text-sm hidden">
+              Back
+            </button>
+            <button id="wizard-next" class="btn-primary text-sm">
+              Get Started
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
