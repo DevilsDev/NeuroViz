@@ -4532,6 +4532,25 @@ function setupSidebarTabs(): void {
           content.classList.remove('active');
         }
       });
+
+      // Update workflow stepper based on active tab
+      const state = session.getState();
+      if (targetTab === 'train') {
+        // User clicked Training tab - show train step
+        updateWorkflowStepper('train');
+      } else if (targetTab === 'analyse') {
+        // User clicked Analysis tab - show train step (post-training)
+        updateWorkflowStepper('train');
+      } else if (targetTab === 'setup') {
+        // User clicked Setup tab - determine step based on state
+        if (state.isRunning || state.currentEpoch > 0) {
+          updateWorkflowStepper('train');
+        } else if (state.isInitialised) {
+          updateWorkflowStepper('network');
+        } else {
+          updateWorkflowStepper('data');
+        }
+      }
     });
 
     // Keyboard navigation for tabs (arrow keys)

@@ -166,6 +166,39 @@ body[data-theme="light"] {
     @apply px-3 py-3;
     @apply sm:px-4 sm:py-4;
     @apply lg:px-6;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Responsive app container padding */
+  @media (max-width: 480px) {
+    .app-container {
+      padding: 0.5rem;
+    }
+  }
+
+  @media (min-width: 481px) and (max-width: 767px) {
+    .app-container {
+      padding: 0.75rem;
+    }
+  }
+
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .app-container {
+      padding: 1rem;
+    }
+  }
+
+  @media (min-width: 1024px) and (max-width: 1439px) {
+    .app-container {
+      padding: 1.25rem;
+    }
+  }
+
+  @media (min-width: 1440px) {
+    .app-container {
+      padding: 1.5rem;
+    }
   }
 
   /* Fullscreen mode styles */
@@ -187,7 +220,43 @@ body[data-theme="light"] {
     @apply grid-cols-1;
     @apply md:gap-5 md:grid-cols-[1fr_340px];
     @apply lg:grid-cols-[1fr_380px];
+    @apply xl:grid-cols-[1fr_420px];
     align-items: start; /* Prevent stretching */
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Mobile: Stack vertically, full width */
+  @media (max-width: 767px) {
+    .main-grid {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+      padding: 0 0.5rem;
+    }
+  }
+
+  /* Tablet: Show sidebar, smaller canvas */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .main-grid {
+      grid-template-columns: 1fr 300px;
+      gap: 1rem;
+    }
+  }
+
+  /* Desktop: Balanced layout */
+  @media (min-width: 1024px) and (max-width: 1439px) {
+    .main-grid {
+      grid-template-columns: 1fr 360px;
+      gap: 1.25rem;
+    }
+  }
+
+  /* Large Desktop: More sidebar space */
+  @media (min-width: 1440px) {
+    .main-grid {
+      grid-template-columns: 1fr 420px;
+      gap: 1.5rem;
+    }
   }
 
   /* Visualization panel - compact, no extra space */
@@ -199,26 +268,69 @@ body[data-theme="light"] {
   .sidebar-container {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 140px);  /* Adjusted for better spacing */
-    max-height: calc(100vh - 140px);
+    height: calc(100vh - 200px);  /* More conservative spacing for proper fit */
+    max-height: calc(100vh - 200px);
     overflow: hidden;
     position: relative;
+    width: 100%;
+  }
+
+  /* Responsive sidebar heights */
+  @media (max-width: 767px) {
+    .sidebar-container {
+      height: auto;
+      max-height: none;
+      overflow: visible;
+      margin-bottom: 80px; /* Space for FAB */
+    }
+  }
+
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .sidebar-container {
+      height: calc(100vh - 220px);
+      max-height: calc(100vh - 220px);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .sidebar-container {
+      height: calc(100vh - 200px);
+      max-height: calc(100vh - 200px);
+    }
   }
 
   .sidebar-scroll-area {
     flex: 1 1 auto;
     overflow-y: auto;
+    overflow-x: hidden; /* Prevent horizontal overflow */
     scrollbar-width: thin;
     display: flex;
     flex-direction: column;
     gap: 1rem;
     padding-bottom: 0.5rem;
+    padding-right: 0.25rem; /* Small padding for scrollbar */
     min-height: 0; /* Important for flex overflow */
+  }
+
+  /* Responsive sidebar scroll area */
+  @media (max-width: 767px) {
+    .sidebar-scroll-area {
+      overflow-y: visible;
+      gap: 0.75rem;
+      padding-bottom: 1rem;
+    }
+  }
+
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .sidebar-scroll-area {
+      gap: 0.875rem;
+    }
   }
 
   /* Sticky Training Controls Footer - Always visible at bottom */
   .sidebar-sticky-footer {
     flex: 0 0 auto;
+    flex-shrink: 0; /* Never shrink */
     padding: 0.75rem;
     background: linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(10, 15, 26, 0.99) 100%);
     border-top: 2px solid rgba(20, 184, 166, 0.4);  /* More visible teal border */
@@ -226,6 +338,7 @@ body[data-theme="light"] {
     border-radius: 0 0 0.75rem 0.75rem;
     z-index: 10;
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);  /* Shadow to stand out */
+    min-height: 80px; /* Ensure minimum height */
   }
 
   .sticky-controls-grid {
@@ -312,6 +425,22 @@ body[data-theme="light"] {
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
     border-color: rgba(71, 85, 105, 0.5);  /* Stronger border for better contrast (DESIGN_AUDIT_360 #4) */
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(71, 85, 105, 0.2);
+    max-width: 100%;
+    width: 100%;
+  }
+
+  /* Responsive panel padding */
+  @media (max-width: 767px) {
+    .panel-glow {
+      padding: 0.75rem !important;
+      border-radius: 1rem;
+    }
+  }
+
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .panel-glow {
+      padding: 0.875rem !important;
+    }
   }
   
   html:not(.dark) .panel-glow {
@@ -500,6 +629,9 @@ body[data-theme="light"] {
     @apply text-center p-2;
     @apply rounded-lg;
     background: rgba(15, 23, 42, 0.4);
+    min-width: 0; /* Allow flex/grid children to shrink below content size */
+    overflow: hidden; /* Prevent text overflow */
+    word-break: break-word; /* Break long words if needed */
   }
   
   html:not(.dark) .metric-card {
@@ -532,6 +664,16 @@ body[data-theme="light"] {
     @apply p-3 space-y-2;
     background: rgba(15, 23, 42, 0.5);
     border-color: rgba(51, 65, 85, 0.3);
+    max-width: 100%;
+    width: 100%; /* Ensure full width */
+    box-sizing: border-box;
+    overflow: hidden; /* Prevent child elements from overflowing */
+  }
+
+  /* Ensure all children respect container width */
+  .control-fieldset > * {
+    max-width: 100%;
+    min-width: 0; /* Allow flex/grid children to shrink */
   }
   
   html:not(.dark) .control-fieldset {
@@ -837,6 +979,8 @@ body[data-theme="light"] {
   display: none;
   flex-direction: column;
   gap: 1rem;
+  max-width: 100%;
+  min-width: 0; /* Allow flex children to shrink */
 }
 
 .tab-content.active {
@@ -1392,10 +1536,25 @@ header.training-active svg {
 #viz-container {
   @apply w-full;
   /* Constrained, balanced chart size */
-  height: 320px;
+  height: 280px;
   @apply flex items-center justify-center;
   @apply rounded-lg;
   background-color: rgba(15, 23, 42, 0.3);
+  max-width: 100%;
+  position: relative;
+}
+
+/* Responsive canvas heights */
+@media (min-width: 480px) {
+  #viz-container {
+    height: 320px;
+  }
+}
+
+@media (min-width: 640px) {
+  #viz-container {
+    height: 360px;
+  }
 }
 
 @media (min-width: 768px) {
@@ -1407,6 +1566,24 @@ header.training-active svg {
 @media (min-width: 1024px) {
   #viz-container {
     height: 420px;
+  }
+}
+
+@media (min-width: 1280px) {
+  #viz-container {
+    height: 480px;
+  }
+}
+
+@media (min-width: 1440px) {
+  #viz-container {
+    height: 520px;
+  }
+}
+
+@media (min-width: 1920px) {
+  #viz-container {
+    height: 600px;
   }
 }
 
@@ -2131,8 +2308,8 @@ html:not(.dark) .stat-value {
 #main-controls.sidebar-container {
   display: flex !important;
   flex-direction: column !important;
-  height: calc(100vh - 140px) !important;
-  max-height: calc(100vh - 140px) !important;
+  height: calc(100vh - 200px) !important;
+  max-height: calc(100vh - 200px) !important;
   overflow: hidden !important;
 }
 
@@ -2144,6 +2321,7 @@ html:not(.dark) .stat-value {
 
 #sidebar-sticky-footer {
   flex: 0 0 auto !important;
+  flex-shrink: 0 !important; /* Never shrink */
   padding: 0.75rem;
   background: linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(10, 15, 26, 0.99) 100%);
   border-top: 2px solid rgba(20, 184, 166, 0.4) !important;
@@ -2154,6 +2332,7 @@ html:not(.dark) .stat-value {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  min-height: 80px !important; /* Ensure minimum height */
 }
 
 /* Light mode sticky footer */
@@ -2515,4 +2694,587 @@ html:not(.dark) input[type="range"]::-moz-range-thumb {
 
 html:not(.dark) input[type="checkbox"] {
   accent-color: #0d9488;
+}
+/* =============================================================================
+   Comprehensive Responsive Design System
+   ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+   Typography Responsive Scaling
+   ----------------------------------------------------------------------------- */
+@media (max-width: 480px) {
+  h1, .text-xl, .text-2xl {
+    font-size: 1.25rem !important;
+  }
+
+  h2, .text-lg {
+    font-size: 1.125rem !important;
+  }
+
+  body, p, .text-base {
+    font-size: 0.875rem !important;
+  }
+
+  .text-sm {
+    font-size: 0.75rem !important;
+  }
+
+  .text-xs {
+    font-size: 0.6875rem !important;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 767px) {
+  h1, .text-2xl {
+    font-size: 1.375rem !important;
+  }
+
+  h2, .text-xl {
+    font-size: 1.25rem !important;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Button Responsive Sizing
+   ----------------------------------------------------------------------------- */
+@media (max-width: 480px) {
+  .btn, .btn-primary, .btn-secondary {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.8125rem;
+    min-height: 44px; /* WCAG touch target */
+  }
+}
+
+@media (min-width: 481px) and (max-width: 767px) {
+  .btn, .btn-primary, .btn-secondary {
+    padding: 0.6875rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Grid Layouts Responsive
+   ----------------------------------------------------------------------------- */
+@media (max-width: 480px) {
+  .grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .grid-cols-3,
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 767px) {
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Header Responsive
+   ----------------------------------------------------------------------------- */
+@media (max-width: 480px) {
+  header {
+    padding: 0.5rem !important;
+  }
+
+  header h1 {
+    font-size: 1.125rem !important;
+  }
+
+  header .header-actions {
+    gap: 0.25rem !important;
+  }
+
+  header button {
+    padding: 0.5rem !important;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 767px) {
+  header {
+    padding: 0.75rem !important;
+  }
+
+  header h1 {
+    font-size: 1.25rem !important;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Workflow Stepper Responsive
+   ----------------------------------------------------------------------------- */
+@media (max-width: 480px) {
+  .workflow-stepper {
+    padding: 0.375rem 0.5rem;
+    gap: 0.5rem;
+    height: 36px;
+  }
+
+  .step-label {
+    display: none; /* Hide labels on very small screens */
+  }
+
+  .step-connector {
+    width: 1rem;
+  }
+
+  .step-indicator {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .step-icon {
+    width: 0.625rem;
+    height: 0.625rem;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 767px) {
+  .workflow-stepper {
+    padding: 0.4rem 0.75rem;
+    gap: 0.625rem;
+    height: 38px;
+  }
+
+  .step-label {
+    font-size: 0.5625rem;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Sidebar Tabs Responsive
+   ----------------------------------------------------------------------------- */
+@media (max-width: 480px) {
+  .sidebar-tabs {
+    gap: 0.125rem;
+  }
+
+  .sidebar-tab {
+    padding: 0.5rem 0.375rem;
+    font-size: 0.6875rem;
+  }
+
+  .sidebar-tab svg {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 767px) {
+  .sidebar-tabs {
+    gap: 0.1875rem;
+  }
+
+  .sidebar-tab {
+    padding: 0.5625rem 0.5rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Control Fieldsets Responsive
+   ----------------------------------------------------------------------------- */
+@media (max-width: 480px) {
+  .control-fieldset {
+    padding: 0.625rem !important;
+    gap: 0.5rem;
+  }
+
+  .control-legend {
+    font-size: 0.625rem;
+  }
+
+  .legend-icon {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 767px) {
+  .control-fieldset {
+    padding: 0.75rem !important;
+  }
+
+  .control-legend {
+    font-size: 0.6875rem;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Form Inputs Responsive
+   ----------------------------------------------------------------------------- */
+@media (max-width: 480px) {
+  .input-field, .select-field {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    min-height: 44px;
+  }
+
+  .input-label {
+    font-size: 0.6875rem;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 767px) {
+  .input-field, .select-field {
+    padding: 0.5625rem 0.875rem;
+    font-size: 0.9375rem;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Metrics Display Responsive
+   ----------------------------------------------------------------------------- */
+@media (max-width: 480px) {
+  .metric-card {
+    padding: 0.5rem;
+  }
+
+  .metric-label {
+    font-size: 0.5rem;
+  }
+
+  .metric-value {
+    font-size: 0.875rem;
+  }
+
+  /* Hero metrics adjustments */
+  #status-epoch,
+  #status-loss,
+  #status-accuracy {
+    font-size: 1.25rem !important;
+  }
+
+  .grid-cols-4.gap-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.375rem !important;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 767px) {
+  .metric-card {
+    padding: 0.625rem;
+  }
+
+  .metric-label {
+    font-size: 0.5625rem;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Training History Chart Responsive
+   ----------------------------------------------------------------------------- */
+@media (max-width: 767px) {
+  .training-history-layout {
+    flex-direction: column !important;
+  }
+
+  .training-stats-panel {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-around;
+  }
+
+  .stat-item {
+    flex: 1;
+    text-align: center;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Modals and Overlays Responsive
+   ----------------------------------------------------------------------------- */
+@media (max-width: 480px) {
+  .modal-content {
+    width: calc(100vw - 2rem) !important;
+    max-width: none !important;
+    margin: 1rem;
+    padding: 1rem !important;
+  }
+
+  .modal-header {
+    padding: 0.75rem !important;
+  }
+
+  .modal-body {
+    padding: 0.75rem !important;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 767px) {
+  .modal-content {
+    width: calc(100vw - 3rem) !important;
+    padding: 1.25rem !important;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Explain Moment Panel Responsive
+   ----------------------------------------------------------------------------- */
+@media (max-width: 480px) {
+  .explain-moment-panel {
+    padding: 0.75rem;
+  }
+
+  .explain-moment-title {
+    font-size: 1rem;
+  }
+
+  .explain-moment-message {
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  .explain-moment-tip-text {
+    font-size: 0.75rem;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Sticky Footer Responsive (Already handled, but ensuring consistency)
+   ----------------------------------------------------------------------------- */
+@media (max-width: 767px) {
+  #sidebar-sticky-footer {
+    position: fixed !important;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    border-radius: 0;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Landscape Mobile Orientation
+   ----------------------------------------------------------------------------- */
+@media (max-width: 767px) and (orientation: landscape) {
+  .main-grid {
+    grid-template-columns: 1fr 280px;
+  }
+
+  .sidebar-container {
+    height: calc(100vh - 100px);
+    max-height: calc(100vh - 100px);
+  }
+
+  #viz-container {
+    height: calc(100vh - 120px);
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Very Large Screens (4K+)
+   ----------------------------------------------------------------------------- */
+@media (min-width: 2560px) {
+  .app-container {
+    max-width: 2400px;
+  }
+
+  .main-grid {
+    grid-template-columns: 1fr 480px;
+    gap: 2rem;
+  }
+
+  #viz-container {
+    height: 720px;
+  }
+
+  h1, .text-2xl {
+    font-size: 2rem;
+  }
+
+  .btn, .btn-primary, .btn-secondary {
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Print Styles
+   ----------------------------------------------------------------------------- */
+@media print {
+  .sidebar-container,
+  .sidebar-tabs,
+  .workflow-stepper,
+  .btn,
+  header {
+    display: none !important;
+  }
+
+  .main-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  #viz-container {
+    height: auto !important;
+    page-break-inside: avoid;
+  }
+
+  .panel-glow {
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Accessibility: Reduced Motion
+   ----------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Accessibility: High Contrast Mode
+   ----------------------------------------------------------------------------- */
+@media (prefers-contrast: high) {
+  .panel-glow,
+  .control-fieldset,
+  .btn,
+  .input-field {
+    border-width: 2px !important;
+  }
+
+  .btn-primary {
+    background: #0d9488 !important;
+    border: 2px solid #ffffff !important;
+  }
+
+  .text-slate-400,
+  .text-slate-500 {
+    color: #e5e7eb !important;
+  }
+}
+
+/* =============================================================================
+   100% Browser Zoom Fix - Ensure Everything is Visible
+   ============================================================================= */
+
+/* Ensure app never overflows viewport at 100% zoom */
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+.app-container {
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Ensure main grid never causes horizontal scroll */
+.main-grid {
+  overflow-x: hidden;
+}
+
+/* Visualization panel - always fit within viewport */
+.main-grid > section:first-child {
+  position: relative; /* Changed from sticky to avoid layout issues */
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Canvas container - constrained to available space */
+#viz-container {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Sidebar - ensure it fits within viewport height */
+.sidebar-container,
+#main-controls.sidebar-container {
+  box-sizing: border-box;
+}
+
+/* Scroll area - proper overflow handling */
+.sidebar-scroll-area,
+#main-controls .sidebar-scroll-area {
+  scrollbar-gutter: stable; /* Reserve space for scrollbar */
+  box-sizing: border-box;
+}
+
+/* Control fieldsets - never overflow */
+.control-fieldset {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* Inputs and selects - fit within container */
+.input-field,
+.select-field {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Grid layouts - prevent overflow */
+.grid {
+  min-width: 0;
+}
+
+/* Buttons - never cause overflow */
+.btn,
+.btn-primary,
+.btn-secondary {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Sticky footer - always visible */
+#sidebar-sticky-footer,
+.sidebar-sticky-footer {
+  position: relative !important;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Metrics - prevent text overflow */
+.metric-value,
+.metric-label,
+.status-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Panel content - proper containment */
+.panel,
+.panel-glow {
+  contain: layout style;
+}
+
+/* Header - constrained width */
+header {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Additional zoom level support */
+@media (min-resolution: 125dpi) {
+  /* 125% zoom */
+  .sidebar-container {
+    height: calc(100vh - 220px) !important;
+    max-height: calc(100vh - 220px) !important;
+  }
+}
+
+@media (min-resolution: 150dpi) {
+  /* 150% zoom */
+  .sidebar-container {
+    height: calc(100vh - 240px) !important;
+    max-height: calc(100vh - 240px) !important;
+  }
+}
+
+@media (min-resolution: 200dpi) {
+  /* 200% zoom */
+  .sidebar-container {
+    height: calc(100vh - 280px) !important;
+    max-height: calc(100vh - 280px) !important;
+  }
 }
