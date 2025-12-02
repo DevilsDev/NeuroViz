@@ -85,6 +85,10 @@ const elements = {
   btnSaveBookmark: document.getElementById('btn-save-bookmark') as HTMLButtonElement,
   btnDeleteBookmark: document.getElementById('btn-delete-bookmark') as HTMLButtonElement,
   bookmarkOptions: document.getElementById('bookmark-options') as HTMLOptGroupElement,
+  
+  // Empty state CTA
+  vizEmptyState: document.getElementById('viz-empty-state') as HTMLDivElement,
+  btnQuickStart: document.getElementById('btn-quick-start') as HTMLButtonElement,
 
   // Dataset controls
   datasetSelect: document.getElementById('dataset-select') as HTMLSelectElement,
@@ -457,6 +461,22 @@ session.onComplete((reason) => {
 // =============================================================================
 
 function updateUI(state: TrainingState): void {
+  // Update empty state visibility
+  if (state.datasetLoaded) {
+    elements.vizEmptyState.classList.add('hidden');
+  } else {
+    elements.vizEmptyState.classList.remove('hidden');
+  }
+
+  // Update workflow stepper
+  if (state.isRunning || state.currentEpoch > 0) {
+    updateWorkflowStepper('train');
+  } else if (state.isInitialised) {
+    updateWorkflowStepper('network');
+  } else {
+    updateWorkflowStepper('data');
+  }
+
   // Update status display
   elements.statusEpoch.textContent = state.currentEpoch.toString();
   elements.statusLoss.textContent =
@@ -4035,6 +4055,13 @@ function init(): void {
   elements.btnApplyPreset.addEventListener('click', () => void applyPreset());
   elements.btnSaveBookmark.addEventListener('click', handleSaveBookmark);
   elements.btnDeleteBookmark.addEventListener('click', handleDeleteBookmark);
+  
+  // Bind empty state Quick Start button
+  elements.btnQuickStart.addEventListener('click', () => {
+    elements.presetSelect.value = 'quick-demo';
+    handlePresetChange();
+    void applyPreset();
+  });
 
   // Initialize bookmarks dropdown
   renderBookmarkOptions();
@@ -4186,6 +4213,9 @@ function init(): void {
   elements.btnFullscreen.addEventListener('click', () => void handleFullscreenToggle());
   document.addEventListener('fullscreenchange', updateFullscreenIcons);
 
+  // Bind sidebar tabs
+  setupSidebarTabs();
+
   // Initialize global error boundary (catch all uncaught exceptions)
   errorBoundary.init();
 
@@ -4214,6 +4244,79 @@ function init(): void {
 
 // Start the application
 init();
+
+// =============================================================================
+// Sidebar Tabs & Workflow Stepper
+// =============================================================================
+
+/**
+ * Sets up the sidebar tab switching functionality.
+ */
+function setupSidebarTabs(): void {
+  const tabs = document.querySelectorAll('.sidebar-tab');
+  const tabContents = document.querySelectorAll('.tab-content');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const targetTab = tab.getAttribute('data-tab');
+      if (!targetTab) return;
+
+      // Update tab states
+      tabs.forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      tab.classList.add('active');
+      tab.setAttribute('aria-selected', 'true');
+
+      // Update content visibility
+      tabContents.forEach(content => {
+        const contentTab = content.getAttribute('data-tab-content');
+        if (contentTab === targetTab) {
+          content.classList.add('active');
+        } else {
+          content.classList.remove('active');
+        }
+      });
+    });
+  });
+}
+
+/**
+ * Updates the workflow stepper based on current state.
+ */
+function updateWorkflowStepper(step: 'data' | 'network' | 'train'): void {
+  const stepData = document.querySelector('#step-data .step-indicator');
+  const stepNetwork = document.querySelector('#step-network .step-indicator');
+  const stepTrain = document.querySelector('#step-train .step-indicator');
+  const connectors = document.querySelectorAll('.step-connector');
+
+  // Reset all
+  [stepData, stepNetwork, stepTrain].forEach(s => {
+    s?.classList.remove('active', 'completed');
+  });
+  connectors.forEach(c => c.classList.remove('completed'));
+
+  switch (step) {
+    case 'data':
+      stepData?.classList.add('active');
+      break;
+    case 'network':
+      stepData?.classList.add('completed');
+      stepNetwork?.classList.add('active');
+      connectors[0]?.classList.add('completed');
+      break;
+    case 'train':
+      stepData?.classList.add('completed');
+      stepNetwork?.classList.add('completed');
+      stepTrain?.classList.add('active');
+      connectors.forEach(c => c.classList.add('completed'));
+      break;
+  }
+}
+
+// Expose updateWorkflowStepper globally for use in state changes
+(window as unknown as { updateWorkflowStepper: typeof updateWorkflowStepper }).updateWorkflowStepper = updateWorkflowStepper;
 
 // =============================================================================
 // Collapsible Sections
