@@ -1895,8 +1895,8 @@ html:not(.dark) #activations-container text {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100px;
-  max-height: 120px;
+  min-height: 140px;
+  max-height: 200px;
   overflow: hidden;
 }
 
@@ -1907,8 +1907,8 @@ html:not(.dark) #activations-container text {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 80px;
-  max-height: 150px;
+  min-height: 120px;
+  max-height: 220px;
   overflow: hidden;
 }
 
@@ -1928,14 +1928,14 @@ html:not(.dark) #activations-container text {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100px;
-  max-height: 180px;
+  min-height: 140px;
+  max-height: 240px;
   overflow: hidden;
 }
 
 #confusion-matrix-container svg {
-  max-width: 200px;
-  max-height: 160px;
+  max-width: 280px;
+  max-height: 220px;
   width: auto;
   height: auto;
 }
