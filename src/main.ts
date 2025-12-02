@@ -90,6 +90,15 @@ const elements = {
   vizEmptyState: document.getElementById('viz-empty-state') as HTMLDivElement,
   btnQuickStart: document.getElementById('btn-quick-start') as HTMLButtonElement,
 
+  // Mobile FAB and sticky metrics
+  mobileFab: document.getElementById('mobile-fab') as HTMLDivElement,
+  fabStart: document.getElementById('fab-start') as HTMLButtonElement,
+  fabPause: document.getElementById('fab-pause') as HTMLButtonElement,
+  mobileMetrics: document.getElementById('mobile-metrics') as HTMLDivElement,
+  mobileEpoch: document.getElementById('mobile-epoch') as HTMLDivElement,
+  mobileLoss: document.getElementById('mobile-loss') as HTMLDivElement,
+  mobileAccuracy: document.getElementById('mobile-accuracy') as HTMLDivElement,
+
   // Dataset controls
   datasetSelect: document.getElementById('dataset-select') as HTMLSelectElement,
   btnLoadData: document.getElementById('btn-load-data') as HTMLButtonElement,
@@ -505,6 +514,35 @@ function updateUI(state: TrainingState): void {
   elements.btnPause.disabled = !state.isRunning || state.isPaused;
   elements.btnStep.disabled = !canTrain || state.isRunning;
   elements.btnReset.disabled = !canTrain;
+
+  // Update mobile FAB
+  if (state.datasetLoaded) {
+    elements.mobileFab.classList.remove('hidden');
+    elements.fabStart.disabled = !canTrain || (state.isRunning && !state.isPaused);
+    
+    // Show pause button when running, start button otherwise
+    if (state.isRunning && !state.isPaused) {
+      elements.fabStart.classList.add('hidden');
+      elements.fabPause.classList.remove('hidden');
+    } else {
+      elements.fabStart.classList.remove('hidden');
+      elements.fabPause.classList.add('hidden');
+    }
+  } else {
+    elements.mobileFab.classList.add('hidden');
+  }
+
+  // Update mobile sticky metrics
+  if (state.isRunning || state.currentEpoch > 0) {
+    elements.mobileMetrics.classList.remove('hidden');
+    elements.mobileEpoch.textContent = state.currentEpoch.toString();
+    elements.mobileLoss.textContent = state.currentLoss !== null ? state.currentLoss.toFixed(4) : '—';
+    elements.mobileAccuracy.textContent = state.currentAccuracy !== null 
+      ? `${(state.currentAccuracy * 100).toFixed(0)}%` 
+      : '—';
+  } else {
+    elements.mobileMetrics.classList.add('hidden');
+  }
 
   // Update export buttons
   elements.btnExportJson.disabled = !hasHistory;
@@ -4138,6 +4176,10 @@ function init(): void {
   elements.btnPause.addEventListener('click', handlePause);
   elements.btnStep.addEventListener('click', () => void handleStep());
   elements.btnReset.addEventListener('click', handleReset);
+
+  // Bind event listeners - Mobile FAB
+  elements.fabStart.addEventListener('click', handleStart);
+  elements.fabPause.addEventListener('click', handlePause);
 
   // Bind event listeners - Suggestions
   elements.btnDismissSuggestions.addEventListener('click', dismissSuggestions);

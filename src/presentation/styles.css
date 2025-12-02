@@ -770,6 +770,109 @@ body[data-theme="light"] {
 }
 
 /* =============================================================================
+   Mobile Floating Action Button (FAB)
+   ============================================================================= */
+.mobile-fab {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.fab-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.fab-btn:hover {
+  transform: scale(1.05);
+}
+
+.fab-btn:active {
+  transform: scale(0.95);
+}
+
+.fab-primary {
+  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+  color: white;
+}
+
+.fab-secondary {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+}
+
+.fab-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Hide FAB when not needed */
+.mobile-fab.hidden {
+  display: none;
+}
+
+/* =============================================================================
+   Sticky Metrics Bar (Mobile)
+   ============================================================================= */
+@media (max-width: 767px) {
+  .metrics-sticky {
+    position: fixed;
+    bottom: 80px; /* Above FAB */
+    left: 0.75rem;
+    right: 0.75rem;
+    z-index: 35;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(8px);
+    border-radius: 0.75rem;
+    border: 1px solid rgba(51, 65, 85, 0.5);
+    padding: 0.5rem;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  .metrics-sticky .metric-row {
+    display: flex;
+    justify-content: space-around;
+    gap: 0.5rem;
+  }
+
+  .metrics-sticky .metric-item {
+    text-align: center;
+    flex: 1;
+  }
+
+  .metrics-sticky .metric-value {
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .metrics-sticky .metric-label {
+    font-size: 0.5625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+  }
+
+  /* Hide sticky metrics when not training */
+  .metrics-sticky.hidden {
+    display: none;
+  }
+}
+
+/* =============================================================================
    D3 Chart Overrides
    ============================================================================= */
 #viz-container {
