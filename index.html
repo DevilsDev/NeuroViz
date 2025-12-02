@@ -3,6 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="darkreader-lock" />
+    <meta name="color-scheme" content="light dark" />
     <title>NeuroViz - Neural Network Visualiser</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -10,7 +12,21 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap"
       rel="stylesheet"
     />
-    <!-- CSS is imported via main.ts for Vite/PostCSS processing -->
+    <!-- Critical CSS inline to prevent FOUC -->
+    <style>
+      /* Base theme colours applied immediately */
+      html.dark body { 
+        background: #0a0f1a; 
+        color: #f1f5f9; 
+      }
+      html:not(.dark) body { 
+        background: #f8fafc; 
+        color: #0f172a; 
+      }
+      /* Hide content until styles load */
+      .app-container { opacity: 0; transition: opacity 0.15s ease-in; }
+      .app-container.loaded { opacity: 1; }
+    </style>
   </head>
   <body>
     <div class="app-container">
@@ -748,14 +764,49 @@
           <!-- Training History Chart -->
           <fieldset class="control-fieldset">
             <legend class="control-legend">📉 Training History</legend>
-            <div id="loss-chart-container" class="w-full h-48 bg-navy-900/50 rounded-lg">
-              <!-- D3 loss chart renders here -->
-              <div id="loss-chart-empty" class="empty-state h-full">
-                <svg class="empty-state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                <div class="empty-state-title">No training data yet</div>
-                <div class="empty-state-description">Start training to see loss curves</div>
+            <div class="training-history-layout">
+              <!-- Left Stats Panel -->
+              <div class="training-stats-panel">
+                <div class="stat-group">
+                  <div class="stat-label">Best Loss</div>
+                  <div id="stat-best-loss" class="stat-value text-orange-400">—</div>
+                </div>
+                <div class="stat-group">
+                  <div class="stat-label">Best Epoch</div>
+                  <div id="stat-best-epoch" class="stat-value text-accent-400">—</div>
+                </div>
+                <div class="stat-group">
+                  <div class="stat-label">Improvement</div>
+                  <div id="stat-improvement" class="stat-value text-emerald-400">—</div>
+                </div>
+              </div>
+              
+              <!-- Chart Container -->
+              <div id="loss-chart-container" class="flex-1 h-48 bg-navy-900/50 rounded-lg">
+                <!-- D3 loss chart renders here -->
+                <div id="loss-chart-empty" class="empty-state h-full">
+                  <svg class="empty-state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  <div class="empty-state-title">No training data yet</div>
+                  <div class="empty-state-description">Start training to see loss curves</div>
+                </div>
+              </div>
+              
+              <!-- Right Stats Panel -->
+              <div class="training-stats-panel">
+                <div class="stat-group">
+                  <div class="stat-label">Best Acc</div>
+                  <div id="stat-best-accuracy" class="stat-value text-emerald-400">—</div>
+                </div>
+                <div class="stat-group">
+                  <div class="stat-label">Convergence</div>
+                  <div id="stat-convergence" class="stat-value text-blue-400">—</div>
+                </div>
+                <div class="stat-group">
+                  <div class="stat-label">Trend</div>
+                  <div id="stat-trend" class="stat-value">—</div>
+                </div>
               </div>
             </div>
             <!-- Fit Analysis Warning -->

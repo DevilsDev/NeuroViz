@@ -50,11 +50,13 @@ export class D3LossChart {
     // Clear any existing content
     this.container.selectAll('*').remove();
 
-    // Create SVG
+    // Create responsive SVG using viewBox
     const svgElement = this.container
       .append('svg')
-      .attr('width', width)
-      .attr('height', height)
+      .attr('viewBox', `0 0 ${width} ${height}`)
+      .attr('preserveAspectRatio', 'xMidYMid meet')
+      .style('width', '100%')
+      .style('height', '100%')
       .attr('class', 'loss-chart');
 
     this.svg = svgElement

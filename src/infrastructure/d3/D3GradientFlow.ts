@@ -35,8 +35,10 @@ export class D3GradientFlow {
 
     this.svg = d3.select(container)
       .append('svg')
-      .attr('width', this.width)
-      .attr('height', this.height)
+      .attr('width', '100%')
+      .attr('height', '100%')
+      .attr('viewBox', `0 0 ${this.width} ${this.height}`)
+      .attr('preserveAspectRatio', 'xMidYMid meet')
       .attr('class', 'gradient-flow-chart');
   }
 

@@ -434,12 +434,15 @@ body[data-theme="light"] {
   }
 
   .section-content {
-    @apply overflow-hidden transition-all duration-200;
-    max-height: 2000px; /* Large enough for any content */
+    overflow: hidden;
+    transition: max-height 0.3s ease-out, opacity 0.2s ease-out;
+    max-height: none; /* Allow natural height when expanded */
   }
 
   .section-content.collapsed {
-    @apply max-h-0 opacity-0 pointer-events-none;
+    max-height: 0 !important;
+    opacity: 0;
+    pointer-events: none;
     margin-top: 0 !important;
   }
 
@@ -978,6 +981,18 @@ html:not(.dark) .border-navy-700\/50 {
   border-color: #e2e8f0 !important;
 }
 
+/* Loss chart container */
+#loss-chart-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#loss-chart-container svg {
+  max-width: 100%;
+  height: auto;
+}
+
 /* Loss chart container in light mode */
 html:not(.dark) #loss-chart-container {
   background-color: #f1f5f9 !important;
@@ -1075,4 +1090,227 @@ html:not(.dark) .btn-primary {
 
 html:not(.dark) .btn-primary svg {
   color: #ffffff !important;
+}
+
+/* Additional comprehensive light mode overrides */
+html:not(.dark) .bg-navy-800\/50,
+html:not(.dark) .bg-navy-800\/80,
+html:not(.dark) .bg-navy-900\/50 {
+  background-color: rgba(241, 245, 249, 0.8) !important;
+}
+
+html:not(.dark) .border-navy-700\/50,
+html:not(.dark) .border-navy-600 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Dropdown menu light mode */
+html:not(.dark) #export-dropdown {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+html:not(.dark) .dropdown-item {
+  color: #334155 !important;
+}
+
+html:not(.dark) .dropdown-item:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* Header buttons light mode */
+html:not(.dark) header button {
+  background-color: #e2e8f0 !important;
+}
+
+html:not(.dark) header button:hover {
+  background-color: #cbd5e1 !important;
+}
+
+/* Chart containers light mode */
+html:not(.dark) [id$="-container"] {
+  background-color: rgba(241, 245, 249, 0.5) !important;
+}
+
+html:not(.dark) .border-navy-700\/50 {
+  border-color: #cbd5e1 !important;
+}
+
+/* Dividers light mode */
+html:not(.dark) .bg-navy-700\/50 {
+  background-color: #cbd5e1 !important;
+}
+
+/* =============================================================================
+   D3 Charts Light Mode - Fix text visibility
+   ============================================================================= */
+
+/* All D3 chart text should be dark in light mode */
+html:not(.dark) .loss-chart text,
+html:not(.dark) .weight-histogram text,
+html:not(.dark) .gradient-flow text,
+html:not(.dark) .network-diagram text,
+html:not(.dark) .roc-curve text,
+html:not(.dark) .lr-finder text,
+html:not(.dark) svg text {
+  fill: #334155 !important;
+}
+
+/* Axis lines and ticks */
+html:not(.dark) .loss-chart .domain,
+html:not(.dark) .loss-chart .tick line,
+html:not(.dark) .weight-histogram .domain,
+html:not(.dark) .weight-histogram .tick line,
+html:not(.dark) svg .domain,
+html:not(.dark) svg .tick line {
+  stroke: #94a3b8 !important;
+}
+
+/* Grid lines */
+html:not(.dark) svg .grid line {
+  stroke: #e2e8f0 !important;
+}
+
+/* Legend text */
+html:not(.dark) .chart-legend text,
+html:not(.dark) svg .legend text {
+  fill: #475569 !important;
+}
+
+/* Gradient flow layer labels */
+html:not(.dark) #gradient-flow-container text {
+  fill: #334155 !important;
+  font-weight: 500;
+}
+
+/* Weight histogram bars - keep visible */
+html:not(.dark) .weight-histogram rect {
+  fill: #64748b !important;
+}
+
+/* Activation heatmap text */
+html:not(.dark) #activations-container text {
+  fill: #334155 !important;
+}
+
+/* =============================================================================
+   Chart Container Sizing - Ensure charts fill their containers
+   ============================================================================= */
+
+#weight-histogram-container,
+#gradient-flow-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+  max-height: 120px;
+  overflow: hidden;
+}
+
+#roc-curve-container,
+#lr-finder-container,
+#network-diagram-container,
+#activations-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  max-height: 150px;
+  overflow: hidden;
+}
+
+#weight-histogram-container svg,
+#gradient-flow-container svg,
+#roc-curve-container svg,
+#lr-finder-container svg,
+#network-diagram-container svg,
+#activations-container svg {
+  max-width: 100%;
+  max-height: 100%;
+  height: auto;
+}
+
+/* Ensure confusion matrix container is properly sized */
+#confusion-matrix-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+  max-height: 180px;
+  overflow: hidden;
+}
+
+#confusion-matrix-container svg {
+  max-width: 200px;
+  max-height: 160px;
+  width: auto;
+  height: auto;
+}
+
+/* =============================================================================
+   Training History Layout - Stats panels on sides
+   ============================================================================= */
+
+.training-history-layout {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.training-stats-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  min-width: 70px;
+  padding: 0.5rem;
+  background-color: rgba(15, 23, 42, 0.3);
+  border-radius: 0.5rem;
+  border: 1px solid rgba(51, 65, 85, 0.3);
+}
+
+.stat-group {
+  text-align: center;
+  padding: 0.25rem 0;
+}
+
+.stat-label {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  margin-bottom: 0.125rem;
+}
+
+.stat-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Light mode stats panel */
+html:not(.dark) .training-stats-panel {
+  background-color: rgba(241, 245, 249, 0.5);
+  border-color: rgba(203, 213, 225, 0.5);
+}
+
+html:not(.dark) .stat-label {
+  color: #64748b;
+}
+
+html:not(.dark) .stat-value {
+  color: #334155;
+}
+
+/* Responsive: stack on small screens */
+@media (max-width: 480px) {
+  .training-history-layout {
+    flex-direction: column;
+  }
+  
+  .training-stats-panel {
+    flex-direction: row;
+    justify-content: space-around;
+    min-width: auto;
+  }
 }

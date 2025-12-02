@@ -9,6 +9,11 @@
 // Import styles for Vite to process through PostCSS/Tailwind
 import './presentation/styles.css';
 
+// Mark app as loaded to trigger fade-in (prevents FOUC)
+requestAnimationFrame(() => {
+  document.querySelector('.app-container')?.classList.add('loaded');
+});
+
 import type { Hyperparameters, OptimizerType, ActivationType, ColourScheme, Point, LRScheduleType } from './core/domain';
 import type { PreprocessingType } from './core/ports';
 import { MULTI_CLASS_COLOURS } from './core/domain';
@@ -169,6 +174,14 @@ const elements = {
   statusValAccuracy: document.getElementById('status-val-accuracy') as HTMLSpanElement,
   statusLr: document.getElementById('status-lr') as HTMLSpanElement,
   statusState: document.getElementById('status-state') as HTMLSpanElement,
+
+  // Training history stats
+  statBestLoss: document.getElementById('stat-best-loss') as HTMLDivElement,
+  statBestEpoch: document.getElementById('stat-best-epoch') as HTMLDivElement,
+  statImprovement: document.getElementById('stat-improvement') as HTMLDivElement,
+  statBestAccuracy: document.getElementById('stat-best-accuracy') as HTMLDivElement,
+  statConvergence: document.getElementById('stat-convergence') as HTMLDivElement,
+  statTrend: document.getElementById('stat-trend') as HTMLDivElement,
 
   // Fit warning
   fitWarning: document.getElementById('fit-warning') as HTMLDivElement,
@@ -504,6 +517,9 @@ function updateUI(state: TrainingState): void {
   // Update loss chart
   lossChart.update(state.history);
 
+  // Update training history stats
+  updateTrainingHistoryStats(state);
+
   // Update confusion matrix and metrics periodically
   if (state.currentEpoch > 0 && state.currentEpoch % 10 === 0) {
     void updateClassificationMetrics();
@@ -552,6 +568,87 @@ function getStateClass(state: TrainingState): string {
   if (state.isRunning && !state.isPaused) return 'status-running';
   if (state.isPaused) return 'status-paused';
   return 'status-idle';
+}
+
+/**
+ * Updates the training history stats panels.
+ */
+function updateTrainingHistoryStats(state: TrainingState): void {
+  const records = state.history.records;
+  
+  if (records.length === 0) {
+    elements.statBestLoss.textContent = '—';
+    elements.statBestEpoch.textContent = '—';
+    elements.statImprovement.textContent = '—';
+    elements.statBestAccuracy.textContent = '—';
+    elements.statConvergence.textContent = '—';
+    elements.statTrend.textContent = '—';
+    return;
+  }
+
+  // Find best loss and its epoch
+  let bestLoss = Infinity;
+  let bestLossEpoch = 0;
+  let bestAccuracy = 0;
+
+  for (const record of records) {
+    if (record.loss < bestLoss) {
+      bestLoss = record.loss;
+      bestLossEpoch = record.epoch;
+    }
+    if (record.accuracy !== undefined && record.accuracy > bestAccuracy) {
+      bestAccuracy = record.accuracy;
+    }
+  }
+
+  // Calculate improvement from first to best
+  const firstRecord = records[0];
+  const firstLoss = firstRecord?.loss ?? 0;
+  const improvement = firstLoss > 0 ? ((firstLoss - bestLoss) / firstLoss) * 100 : 0;
+
+  // Determine convergence status
+  let convergenceStatus = 'Learning';
+  if (records.length >= 20) {
+    const recentRecords = records.slice(-10);
+    const avgRecentLoss = recentRecords.reduce((sum, r) => sum + r.loss, 0) / recentRecords.length;
+    const lossVariance = recentRecords.reduce((sum, r) => sum + Math.pow(r.loss - avgRecentLoss, 2), 0) / recentRecords.length;
+    
+    if (lossVariance < 0.001) {
+      convergenceStatus = 'Converged';
+    } else if (lossVariance < 0.01) {
+      convergenceStatus = 'Stabilising';
+    }
+  }
+
+  // Determine trend (last 5 epochs)
+  let trendText = '—';
+  let trendClass = '';
+  if (records.length >= 5) {
+    const last5 = records.slice(-5);
+    const firstOfLast5 = last5[0]?.loss ?? 0;
+    const lastOfLast5 = last5[last5.length - 1]?.loss ?? 0;
+    const change = firstOfLast5 > 0 ? ((lastOfLast5 - firstOfLast5) / firstOfLast5) * 100 : 0;
+    
+    if (change < -5) {
+      trendText = '↓ Improving';
+      trendClass = 'text-emerald-400';
+    } else if (change > 5) {
+      trendText = '↑ Rising';
+      trendClass = 'text-red-400';
+    } else {
+      trendText = '→ Stable';
+      trendClass = 'text-blue-400';
+    }
+  }
+
+  // Update DOM
+  elements.statBestLoss.textContent = bestLoss.toFixed(4);
+  elements.statBestEpoch.textContent = bestLossEpoch.toString();
+  elements.statImprovement.textContent = improvement > 0 ? `${improvement.toFixed(1)}%` : '—';
+  elements.statBestAccuracy.textContent = bestAccuracy > 0 ? `${(bestAccuracy * 100).toFixed(1)}%` : '—';
+  elements.statConvergence.textContent = convergenceStatus;
+  elements.statTrend.textContent = trendText;
+  elements.statTrend.className = `stat-value ${trendClass}`;
 }
 
 // =============================================================================
@@ -4131,21 +4228,22 @@ function toggleSection(legendElement: HTMLElement): void {
   const fieldset = legendElement.closest('fieldset');
   if (!fieldset) return;
 
-  const sectionContent = fieldset.querySelector('.section-content');
+  const sectionContent = fieldset.querySelector('.section-content') as HTMLElement | null;
   if (!sectionContent) return;
 
+  const chevron = legendElement.querySelector('.collapse-icon');
   const isCollapsed = legendElement.classList.contains('collapsed');
 
   if (isCollapsed) {
-    // Expand
+    // Expand - remove collapsed class, CSS handles the rest
     legendElement.classList.remove('collapsed');
     sectionContent.classList.remove('collapsed');
-    (sectionContent as HTMLElement).style.maxHeight = sectionContent.scrollHeight + 'px';
+    chevron?.classList.add('rotated');
   } else {
-    // Collapse
+    // Collapse - add collapsed class, CSS handles the rest
     legendElement.classList.add('collapsed');
     sectionContent.classList.add('collapsed');
-    (sectionContent as HTMLElement).style.maxHeight = '0';
+    chevron?.classList.remove('rotated');
   }
 
   // Save state
@@ -4179,11 +4277,21 @@ function restoreCollapsedSections(): void {
 
     const legend = fieldset.querySelector('.control-legend');
     const sectionContent = fieldset.querySelector('.section-content');
+    const chevron = legend?.querySelector('.collapse-icon');
 
     if (legend && sectionContent) {
       legend.classList.add('collapsed');
       sectionContent.classList.add('collapsed');
-      (sectionContent as HTMLElement).style.maxHeight = '0';
+      chevron?.classList.remove('rotated');
+    }
+  });
+
+  // Set rotated class on expanded sections (not in collapsed list)
+  document.querySelectorAll('[data-collapsible]').forEach(fieldset => {
+    const sectionId = fieldset.getAttribute('data-collapsible');
+    if (!collapsed.includes(sectionId ?? '')) {
+      const chevron = fieldset.querySelector('.collapse-icon');
+      chevron?.classList.add('rotated');
     }
   });
 }

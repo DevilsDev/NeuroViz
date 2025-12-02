@@ -42,11 +42,16 @@ export class D3ConfusionMatrix {
     this.width = cellSize * numClasses;
     this.height = cellSize * numClasses;
 
-    // Create SVG
+    // Create responsive SVG
+    const totalWidth = this.width + this.margin.left + this.margin.right;
+    const totalHeight = this.height + this.margin.top + this.margin.bottom;
+    
     this.svg = this.container
       .append('svg')
-      .attr('width', this.width + this.margin.left + this.margin.right)
-      .attr('height', this.height + this.margin.top + this.margin.bottom)
+      .attr('width', '100%')
+      .attr('height', '100%')
+      .attr('viewBox', `0 0 ${totalWidth} ${totalHeight}`)
+      .attr('preserveAspectRatio', 'xMidYMid meet')
       .append('g')
       .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
 
