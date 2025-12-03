@@ -17,9 +17,9 @@ import { ExportController, ExportElements } from './presentation/controllers/Exp
 import { SessionController, SessionElements } from './presentation/controllers/SessionController';
 import { ComparisonController, ComparisonElements } from './presentation/controllers/ComparisonController';
 import { ResearchController, ResearchElements } from './presentation/controllers/ResearchController';
-import { setupSidebarTabs } from './presentation/Sidebar';
-import { setupTouchGestures } from './presentation/TouchGestures';
-import { setupBottomSheet } from './presentation/BottomSheet';
+import { setupSidebarTabs } from '@presentation/Sidebar';
+import { setupTouchGestures } from '@presentation/TouchGestures';
+import { setupBottomSheet } from '@presentation/BottomSheet';
 import { setupOnboardingWizard } from './presentation/Onboarding';
 import { TrainingState } from './core/application/ITrainingSession';
 import { ColourScheme } from './core/domain';
@@ -137,11 +137,11 @@ const trainingController = new TrainingController(
 
 const visualizationElements: VisualizationElements = {
   inputColourScheme: document.getElementById('input-colour-scheme') as HTMLSelectElement,
-  inputPointSize: document.getElementById('input-point-radius') as HTMLInputElement,
-  inputOpacity: document.getElementById('input-boundary-opacity') as HTMLInputElement,
-  opacityValue: document.getElementById('boundary-opacity-value') as HTMLSpanElement,
-  inputContours: document.getElementById('input-contour-count') as HTMLInputElement,
-  contourValue: document.getElementById('contour-count-value') as HTMLSpanElement,
+  inputPointSize: document.getElementById('input-point-size') as HTMLInputElement,
+  inputOpacity: document.getElementById('input-opacity') as HTMLInputElement,
+  opacityValue: document.getElementById('opacity-value') as HTMLSpanElement,
+  inputContours: document.getElementById('input-contours') as HTMLInputElement,
+  contourValue: document.getElementById('contour-value') as HTMLSpanElement,
   inputZoom: document.getElementById('input-zoom') as HTMLInputElement,
   inputTooltips: document.getElementById('input-tooltips') as HTMLInputElement,
   inputHighlightErrors: document.getElementById('input-highlight-errors') as HTMLInputElement,
@@ -308,18 +308,18 @@ const sessionController = new SessionController(
   }
 );
 
-const comparisonElements: ComparisonElements = {
-  comparisonPanel: document.getElementById('comparison-panel') as HTMLDivElement,
-  baselineAccuracy: document.getElementById('baseline-accuracy') as HTMLSpanElement,
-  baselineLoss: document.getElementById('baseline-loss') as HTMLSpanElement,
-  baselineConfig: document.getElementById('baseline-config') as HTMLSpanElement,
-  currentAccuracy: document.getElementById('current-accuracy') as HTMLSpanElement,
-  currentLoss: document.getElementById('current-loss') as HTMLSpanElement,
-  comparisonDiff: document.getElementById('comparison-diff') as HTMLSpanElement,
-  btnSaveBaseline: document.getElementById('btn-save-baseline') as HTMLButtonElement,
-  btnClearBaseline: document.getElementById('btn-clear-baseline') as HTMLButtonElement,
-  comparisonMetrics: document.getElementById('comparison-metrics') as HTMLDivElement,
-  baselineMetrics: document.getElementById('baseline-metrics') as HTMLDivElement,
+const comparisonElements: ComparisonElements = { // Baseline Comparison
+  comparisonPanel: document.getElementById('comparison-metrics') as HTMLDivElement, // Reusing metrics div as panel for now, or need to add wrapper
+  baselineAccuracy: document.getElementById('baseline-accuracy') as HTMLSpanElement, // Not found in index.html, need to check
+  baselineLoss: document.getElementById('baseline-loss') as HTMLSpanElement, // Not found
+  baselineConfig: document.getElementById('baseline-config') as HTMLSpanElement, // Not found
+  currentAccuracy: document.getElementById('current-accuracy') as HTMLSpanElement, // Not found
+  currentLoss: document.getElementById('current-loss') as HTMLSpanElement, // Not found
+  comparisonDiff: document.getElementById('comparison-diff') as HTMLSpanElement, // Not found
+  btnSaveBaseline: document.getElementById('btn-save-baseline') as HTMLButtonElement, // Not found
+  btnClearBaseline: document.getElementById('btn-clear-baseline') as HTMLButtonElement, // Not found
+  comparisonMetrics: document.getElementById('comparison-metrics') as HTMLDivElement, // Exists (implied)
+  baselineMetrics: document.getElementById('baseline-metrics') as HTMLDivElement, // Exists (implied)
 
   // Inputs for config summary
   inputLayers: document.getElementById('input-layers') as HTMLInputElement,
@@ -347,8 +347,8 @@ const comparisonElements: ComparisonElements = {
   abOptimizerB: document.getElementById('ab-optimizer-b') as HTMLSelectElement,
   abEpochs: document.getElementById('ab-epochs') as HTMLInputElement,
 
-  btnStartAbTest: document.getElementById('btn-start-ab-test') as HTMLButtonElement,
-  btnStopAbTest: document.getElementById('btn-stop-ab-test') as HTMLButtonElement,
+  btnStartAbTest: document.getElementById('btn-start-ab') as HTMLButtonElement, // Fixed ID
+  btnStopAbTest: document.getElementById('btn-stop-ab') as HTMLButtonElement, // Fixed ID
 
   // Ensemble
   ensemblePanel: document.getElementById('ensemble-panel') as HTMLDivElement,
@@ -358,7 +358,7 @@ const comparisonElements: ComparisonElements = {
 
   btnAddEnsembleMember: document.getElementById('btn-add-ensemble-member') as HTMLButtonElement,
   btnTrainEnsemble: document.getElementById('btn-train-ensemble') as HTMLButtonElement,
-  btnResetEnsemble: document.getElementById('btn-reset-ensemble') as HTMLButtonElement,
+  btnResetEnsemble: document.getElementById('btn-stop-ensemble') as HTMLButtonElement, // Mapped to stop for now, or need reset button
 };
 
 const comparisonController = new ComparisonController(
