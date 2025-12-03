@@ -2,7 +2,7 @@ import { TrainingSession } from '../../core/application/TrainingSession';
 import { D3Chart } from '../../infrastructure/d3/D3Chart';
 import { LocalStorageService } from '../../infrastructure/storage/LocalStorageService';
 import { toast } from '../toast';
-import { Point, ColourScheme } from '../../core/domain';
+import { Point, TrainingHistory } from '../../core/domain';
 
 export interface SessionElements {
     btnSaveSession: HTMLButtonElement;
@@ -113,7 +113,7 @@ export interface SessionData {
         tooltipsEnabled: boolean;
     };
     data: Point[];
-    history: any; // Using any to avoid readonly mismatch with TrainingHistory
+    history: TrainingHistory;
 }
 
 export class SessionController {

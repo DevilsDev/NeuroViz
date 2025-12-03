@@ -29,7 +29,7 @@ const errorBoundary = new ErrorBoundary();
 errorBoundary.init();
 
 // Initialize Worker Manager
-const workerManager = new WorkerManager();
+const _workerManager = new WorkerManager();
 
 // Initialize Services
 const dataRepo = new MockDataRepository();
@@ -215,7 +215,7 @@ const exportElements: ExportElements = {
   inputValSplit: document.getElementById('input-val-split') as HTMLSelectElement,
 };
 
-const exportController = new ExportController(
+const _exportController = new ExportController(
   session,
   neuralNet,
   visualizer,
@@ -289,7 +289,7 @@ const sessionElements: SessionElements = {
   momentumControl: document.getElementById('momentum-control') as HTMLDivElement,
 };
 
-const sessionController = new SessionController(
+const _sessionController = new SessionController(
   session,
   visualizer,
   storage,
@@ -299,7 +299,9 @@ const sessionController = new SessionController(
       // Refresh UI
       // Most inputs are updated directly by SessionController
       // But we might need to trigger some change events or update visualizations
-      datasetController.handleLoadData();
+      void datasetController.handleLoadData().catch((error) => {
+        console.error('Failed to load data after config loaded:', error);
+      });
     },
     onThemeChanged: (theme) => {
       visualizer.setTheme(theme as ColourScheme);
@@ -375,7 +377,7 @@ const researchElements: ResearchElements = {
   inputLr: document.getElementById('input-lr') as HTMLInputElement,
 };
 
-const researchController = new ResearchController(
+const _researchController = new ResearchController(
   session,
   researchElements
 );
@@ -406,7 +408,9 @@ initELI5Tooltips();
 // Load initial data
 window.addEventListener('load', () => {
   // Trigger initial dataset load
-  datasetController.handleLoadData();
+  void datasetController.handleLoadData().catch((error) => {
+    console.error('Failed to load initial dataset:', error);
+  });
 
   // Show app
   const appContainer = document.querySelector('.app-container');

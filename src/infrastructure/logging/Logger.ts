@@ -203,6 +203,7 @@ export class Logger {
     const component = entry.context?.component ? `[${entry.context.component}]` : '';
     const message = `${component} ${entry.message}`;
 
+    /* eslint-disable no-console */
     switch (entry.level) {
       case LogLevel.DEBUG:
         if (entry.context && Object.keys(entry.context).length > 0) {
@@ -241,6 +242,7 @@ export class Logger {
         }
         break;
     }
+    /* eslint-enable no-console */
   }
 
   /**

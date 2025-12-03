@@ -147,7 +147,7 @@ export class FrameRateLimiter {
     let lastTime = 0;
     let running = false;
 
-    const loop = (timestamp: number) => {
+    const loop = (timestamp: number): void => {
       if (!running) return;
 
       if (this.shouldRender(timestamp)) {

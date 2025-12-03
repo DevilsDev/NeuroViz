@@ -269,7 +269,7 @@ export class VisualizationController {
 
         // Visualize activations (simplified - using random data for demo if real not available)
         // In real app, we'd hook into the forward pass
-        const activations = structure.layers.map((size, i) => {
+        const activations = structure.layers.map((size, _i) => {
             return Array(size).fill(0).map(() => Math.random());
         });
 

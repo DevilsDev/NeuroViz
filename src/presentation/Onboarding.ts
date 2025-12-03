@@ -1,4 +1,5 @@
 import { tutorialManager } from './Tutorial';
+import { logger } from '../infrastructure/logging/Logger';
 
 export function setupOnboardingWizard(): void {
     // Check if user has visited before
@@ -17,6 +18,6 @@ export function setupOnboardingWizard(): void {
 
 export function showOnboardingWizard(): void {
     tutorialManager.start('getting-started', () => {
-        console.log('Onboarding completed');
+        logger.info('Onboarding completed', { component: 'Onboarding' });
     });
 }

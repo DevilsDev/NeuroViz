@@ -187,9 +187,9 @@ export class D3LossChart {
     // Re-render lines if data exists
     const currentData = this.lossPath.datum() as TrainingRecord[];
     if (currentData) {
-      this.lossPath.attr('d', this.lossLine as any);
-      this.valLossPath.attr('d', this.valLossLine as any);
-      this.accuracyPath.attr('d', this.accuracyLine as any);
+      this.lossPath.attr('d', this.lossLine as unknown as string);
+      this.valLossPath.attr('d', this.valLossLine as unknown as string);
+      this.accuracyPath.attr('d', this.accuracyLine as unknown as string);
     }
   }
 

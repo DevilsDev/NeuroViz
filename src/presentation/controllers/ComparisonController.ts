@@ -1,5 +1,5 @@
 import { TrainingSession } from '../../core/application/TrainingSession';
-import { ModelComparison } from '../../core/application/ModelComparison';
+import { ModelComparison, ModelState } from '../../core/application/ModelComparison';
 import { ModelEnsemble } from '../../core/application/ModelEnsemble';
 import { TFNeuralNet } from '../../infrastructure/tensorflow/TFNeuralNet';
 import { toast } from '../toast';
@@ -224,19 +224,25 @@ export class ComparisonController {
 
             // Start training loop
             let epoch = 0;
-            this.abTrainingInterval = setInterval(async () => {
-                if (epoch >= this.abTargetEpochs) {
+            this.abTrainingInterval = setInterval(() => {
+                void (async () => {
+                    if (epoch >= this.abTargetEpochs) {
+                        this.stopAbTest();
+                        this.determineAbWinner();
+                        return;
+                    }
+
+                    epoch++;
+                    const result = await this.abComparison?.trainStep();
+
+                    if (result) {
+                        this.updateAbDisplay(result, epoch);
+                    }
+                })().catch((error) => {
+                    console.error('A/B test training step failed:', error);
+                    toast.error('A/B test training failed');
                     this.stopAbTest();
-                    this.determineAbWinner();
-                    return;
-                }
-
-                epoch++;
-                const result = await this.abComparison?.trainStep();
-
-                if (result) {
-                    this.updateAbDisplay(result, epoch);
-                }
+                });
             }, 100); // 100ms per epoch
 
         } catch (error) {
@@ -253,15 +259,15 @@ export class ComparisonController {
         this.elements.abComparisonPanel.classList.add('hidden');
     }
 
-    private updateAbDisplay(result: { modelA: any; modelB: any }, epoch: number): void {
+    private updateAbDisplay(result: { modelA: ModelState; modelB: ModelState }, epoch: number): void {
         this.elements.abEpochA.textContent = epoch.toString();
         this.elements.abEpochB.textContent = epoch.toString();
 
-        this.elements.abAccuracyA.textContent = `${(result.modelA.valAccuracy * 100).toFixed(1)}%`;
-        this.elements.abLossA.textContent = result.modelA.valLoss.toFixed(4);
+        this.elements.abAccuracyA.textContent = `${((result.modelA.valAccuracy ?? 0) * 100).toFixed(1)}%`;
+        this.elements.abLossA.textContent = (result.modelA.valLoss ?? 0).toFixed(4);
 
-        this.elements.abAccuracyB.textContent = `${(result.modelB.valAccuracy * 100).toFixed(1)}%`;
-        this.elements.abLossB.textContent = result.modelB.valLoss.toFixed(4);
+        this.elements.abAccuracyB.textContent = `${((result.modelB.valAccuracy ?? 0) * 100).toFixed(1)}%`;
+        this.elements.abLossB.textContent = (result.modelB.valLoss ?? 0).toFixed(4);
     }
 
     private determineAbWinner(): void {
@@ -348,16 +354,24 @@ export class ComparisonController {
         this.elements.btnTrainEnsemble.textContent = 'Stop Training';
         let epoch = 0;
 
-        this.ensembleTrainingInterval = setInterval(async () => {
-            epoch++;
-            this.elements.ensembleEpoch.textContent = epoch.toString();
+        this.ensembleTrainingInterval = setInterval(() => {
+            void (async () => {
+                epoch++;
+                this.elements.ensembleEpoch.textContent = epoch.toString();
 
-            const results = await this.ensemble?.trainStep();
+                await this.ensemble?.trainStep();
 
-            // Update UI for each member could go here
-            if (epoch % 10 === 0) {
-                toast.info(`Ensemble Epoch ${epoch} complete`);
-            }
+                // Update UI for each member could go here
+                if (epoch % 10 === 0) {
+                    toast.info(`Ensemble Epoch ${epoch} complete`);
+                }
+            })().catch((error) => {
+                console.error('Ensemble training step failed:', error);
+                toast.error('Ensemble training failed');
+                clearInterval(this.ensembleTrainingInterval!);
+                this.ensembleTrainingInterval = null;
+                this.elements.btnTrainEnsemble.textContent = 'Train Ensemble';
+            });
         }, 100);
     }
 
