@@ -1,9 +1,11 @@
 /**
  * Suggested Fixes System
- * 
+ *
  * Provides actionable recommendations based on training metrics and patterns.
  * Integrates with the existing fit analysis system.
  */
+
+import { safeHTML, escapeAttribute } from '../infrastructure/security/htmlSanitizer';
 
 export interface TrainingMetrics {
   epoch: number;
@@ -279,18 +281,20 @@ export function formatSuggestionsHTML(suggestions: Suggestion[]): string {
       error: '❌',
     };
 
-    let html = `
+    let html = safeHTML`
       <div class="p-2 rounded border ${typeColors[s.type]} mb-2">
         <div class="font-medium text-sm">${icons[s.type]} ${s.title}</div>
         <div class="text-xs mt-1 opacity-80">${s.message}</div>
     `;
 
     if (s.action) {
-      html += `
-        <button 
+      const handler = escapeAttribute(s.action.handler);
+      const params = escapeAttribute(JSON.stringify(s.action.params ?? {}));
+      html += safeHTML`
+        <button
           class="mt-2 px-2 py-1 text-xs rounded bg-white/10 hover:bg-white/20 transition-colors"
-          data-suggestion-action="${s.action.handler}"
-          data-suggestion-params='${JSON.stringify(s.action.params ?? {})}'
+          data-suggestion-action="${handler}"
+          data-suggestion-params='${params}'
         >
           ${s.action.label}
         </button>

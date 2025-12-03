@@ -1,6 +1,7 @@
 import { TrainingSession } from '../../core/application/TrainingSession';
 import { D3LRFinder, findOptimalLR } from '../../infrastructure/d3/D3LRFinder';
 import { toast } from '../toast';
+import { safeHTML } from '../../infrastructure/security/htmlSanitizer';
 
 export interface ResearchElements {
     btnLrFinder: HTMLButtonElement;
@@ -61,7 +62,7 @@ export class ResearchController {
 
             if (optimalLR) {
                 this.elements.lrFinderResult.classList.remove('hidden');
-                this.elements.lrFinderResult.innerHTML = `
+                this.elements.lrFinderResult.innerHTML = safeHTML`
           <div class="flex items-center justify-between">
             <span>Optimal LR found: <strong>${optimalLR.toExponential(2)}</strong></span>
             <button id="btn-apply-lr" class="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-500 rounded text-white">

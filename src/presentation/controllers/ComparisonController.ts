@@ -4,6 +4,7 @@ import { ModelEnsemble } from '../../core/application/ModelEnsemble';
 import { TFNeuralNet } from '../../infrastructure/tensorflow/TFNeuralNet';
 import { toast } from '../toast';
 import { ActivationType, OptimizerType } from '../../core/domain';
+import { safeHTML } from '../../infrastructure/security/htmlSanitizer';
 
 export interface ComparisonElements {
     // Baseline Comparison
@@ -152,8 +153,8 @@ export class ComparisonController {
             const accSign = accDiff >= 0 ? '+' : '';
             const lossSign = lossDiff >= 0 ? '+' : '';
 
-            this.elements.comparisonDiff.innerHTML = `
-        <span class="${accClass}">${accSign}${accDiff.toFixed(1)}% acc</span> | 
+            this.elements.comparisonDiff.innerHTML = safeHTML`
+        <span class="${accClass}">${accSign}${accDiff.toFixed(1)}% acc</span> |
         <span class="${lossClass}">${lossSign}${lossDiff.toFixed(4)} loss</span>
       `;
         }

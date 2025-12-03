@@ -1,9 +1,11 @@
 /**
  * ELI5 (Explain Like I'm 5) Tooltip System
- * 
+ *
  * Provides beginner-friendly explanations for machine learning concepts.
  * Tooltips appear on hover and use simple analogies.
  */
+
+import { safeHTML } from '../infrastructure/security/htmlSanitizer';
 
 export interface TooltipContent {
   title: string;
@@ -267,18 +269,18 @@ export class ELI5TooltipManager {
       this.hideTimeout = null;
     }
 
-    // Build tooltip content
-    let html = `
+    // Build tooltip content with XSS protection
+    let html = safeHTML`
       <div class="font-semibold text-white mb-1">${content.title}</div>
       <div class="text-slate-300 mb-2">${content.simple}</div>
     `;
 
     if (content.analogy) {
-      html += `<div class="text-slate-400 text-xs mb-2">${content.analogy}</div>`;
+      html += safeHTML`<div class="text-slate-400 text-xs mb-2">${content.analogy}</div>`;
     }
 
     if (content.tip) {
-      html += `<div class="text-emerald-400 text-xs">💡 ${content.tip}</div>`;
+      html += safeHTML`<div class="text-emerald-400 text-xs">💡 ${content.tip}</div>`;
     }
 
     this.tooltipElement.innerHTML = html;
