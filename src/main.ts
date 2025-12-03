@@ -84,11 +84,11 @@ const trainingElements: TrainingElements = {
   inputBatchSize: document.getElementById('input-batch-size') as HTMLInputElement,
   inputMaxEpochs: document.getElementById('input-max-epochs') as HTMLInputElement,
   // inputValSplit, inputTargetFps removed from here
-  epochValue: document.getElementById('epoch-value') as HTMLSpanElement,
-  lossValue: document.getElementById('loss-value') as HTMLSpanElement,
-  accuracyValue: document.getElementById('accuracy-value') as HTMLSpanElement,
-  valLossValue: document.getElementById('val-loss-value') as HTMLSpanElement,
-  valAccuracyValue: document.getElementById('val-accuracy-value') as HTMLSpanElement,
+  epochValue: document.getElementById('status-epoch') as HTMLElement,
+  lossValue: document.getElementById('status-loss') as HTMLElement,
+  accuracyValue: document.getElementById('status-accuracy') as HTMLElement,
+  valLossValue: document.getElementById('status-val-loss') as HTMLElement,
+  valAccuracyValue: document.getElementById('status-val-accuracy') as HTMLElement,
   suggestionsPanel: document.getElementById('suggestions-panel') as HTMLDivElement,
   suggestionsList: document.getElementById('suggestions-list') as HTMLDivElement,
 

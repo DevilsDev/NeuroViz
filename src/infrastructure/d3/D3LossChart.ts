@@ -13,8 +13,8 @@ import type { TrainingHistory, TrainingRecord } from '../../core/domain';
 export class D3LossChart {
   private readonly container: d3.Selection<HTMLElement, unknown, null, undefined>;
   private readonly svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
-  private readonly width: number;
-  private readonly height: number;
+  private width: number;
+  private height: number;
   private readonly margin = { top: 20, right: 50, bottom: 30, left: 50 };
 
   private xScale: d3.ScaleLinear<number, number>;
@@ -62,11 +62,11 @@ export class D3LossChart {
     this.svg = svgElement
       .append('g')
       .attr('transform', `translate(${this.margin.left},${this.margin.top})`) as unknown as d3.Selection<
-      SVGSVGElement,
-      unknown,
-      null,
-      undefined
-    >;
+        SVGSVGElement,
+        unknown,
+        null,
+        undefined
+      >;
 
     // Initialize scales
     this.xScale = d3.scaleLinear().range([0, this.width]);
@@ -96,14 +96,14 @@ export class D3LossChart {
     // Create axis groups
     this.xAxisGroup = this.svg
       .append('g')
-      .attr('class', 'x-axis')
+      .attr('class', 'x-axis axis')
       .attr('transform', `translate(0,${this.height})`);
 
-    this.yAxisLossGroup = this.svg.append('g').attr('class', 'y-axis-loss');
+    this.yAxisLossGroup = this.svg.append('g').attr('class', 'y-axis-loss axis');
 
     this.yAxisAccuracyGroup = this.svg
       .append('g')
-      .attr('class', 'y-axis-accuracy')
+      .attr('class', 'y-axis-accuracy axis')
       .attr('transform', `translate(${this.width},0)`);
 
     // Create path elements
@@ -111,7 +111,7 @@ export class D3LossChart {
       .append('path')
       .attr('class', 'loss-line')
       .attr('fill', 'none')
-      .attr('stroke', '#f97316') // Orange - training loss
+      .attr('stroke', '#14b8a6') // Accent Teal - training loss
       .attr('stroke-width', 2);
 
     this.valLossPath = this.svg
@@ -134,6 +134,63 @@ export class D3LossChart {
 
     // Add axis labels
     this.addAxisLabels();
+
+    // Setup resize observer
+    this.resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect) {
+          this.resize(entry.contentRect.width, entry.contentRect.height);
+        }
+      }
+    });
+    this.resizeObserver.observe(element);
+  }
+
+  /**
+   * Resizes the chart to fit the new container dimensions.
+   */
+  resize(width: number, height: number): void {
+    if (width === 0 || height === 0) return;
+
+    // Update dimensions
+    this.width = width - this.margin.left - this.margin.right;
+    this.height = height - this.margin.top - this.margin.bottom;
+
+    // Update SVG viewBox
+    this.svg.attr('viewBox', `0 0 ${width} ${height}`);
+
+    // Update scales
+    this.xScale.range([0, this.width]);
+    this.yScaleLoss.range([this.height, 0]);
+    this.yScaleAccuracy.range([this.height, 0]);
+
+    // Update axes
+    this.svg.select<SVGGElement>('.x-axis')
+      .attr('transform', `translate(0,${this.height})`)
+      .call(d3.axisBottom(this.xScale).ticks(5).tickFormat(d3.format('d')));
+
+    this.svg.select<SVGGElement>('.y-axis-loss')
+      .call(d3.axisLeft(this.yScaleLoss).ticks(5).tickFormat(d3.format('.3f')));
+
+    this.svg.select<SVGGElement>('.y-axis-accuracy')
+      .attr('transform', `translate(${this.width},0)`)
+      .call(d3.axisRight(this.yScaleAccuracy).ticks(5).tickFormat(d3.format('.0%')));
+
+    // Update legend position
+    this.svg.select('.legend')
+      .attr('transform', `translate(${this.width - 80}, -5)`);
+
+    // Update axis labels positions
+    this.svg.selectAll('.axis-label').remove();
+    this.addAxisLabels();
+
+    // Re-render lines if data exists
+    const currentData = this.lossPath.datum() as TrainingRecord[];
+    if (currentData) {
+      this.lossPath.attr('d', this.lossLine as any);
+      this.valLossPath.attr('d', this.valLossLine as any);
+      this.accuracyPath.attr('d', this.accuracyLine as any);
+    }
   }
 
   /**
@@ -187,10 +244,16 @@ export class D3LossChart {
     this.yAxisAccuracyGroup.call(d3.axisRight(this.yScaleAccuracy).ticks(5));
   }
 
+  // Resize observer
+  private resizeObserver: ResizeObserver | null = null;
+
   /**
    * Disposes of all SVG elements.
    */
   dispose(): void {
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+    }
     this.container.selectAll('*').remove();
   }
 
@@ -207,7 +270,7 @@ export class D3LossChart {
       .attr('x2', 20)
       .attr('y1', 0)
       .attr('y2', 0)
-      .attr('stroke', '#f97316')
+      .attr('stroke', '#14b8a6')
       .attr('stroke-width', 2);
 
     legend
@@ -215,8 +278,6 @@ export class D3LossChart {
       .attr('x', 25)
       .attr('y', 4)
       .attr('class', 'legend-text')
-      .attr('fill', '#94a3b8')
-      .attr('font-size', '9px')
       .text('Train');
 
     // Validation Loss legend
@@ -235,8 +296,6 @@ export class D3LossChart {
       .attr('x', 25)
       .attr('y', 16)
       .attr('class', 'legend-text')
-      .attr('fill', '#94a3b8')
-      .attr('font-size', '9px')
       .text('Val');
 
     // Accuracy legend
@@ -254,8 +313,6 @@ export class D3LossChart {
       .attr('x', 25)
       .attr('y', 28)
       .attr('class', 'legend-text')
-      .attr('fill', '#94a3b8')
-      .attr('font-size', '9px')
       .text('Acc');
   }
 
@@ -267,8 +324,6 @@ export class D3LossChart {
       .attr('x', this.width / 2)
       .attr('y', this.height + 25)
       .attr('text-anchor', 'middle')
-      .attr('fill', '#64748b')
-      .attr('font-size', '10px')
       .text('Epoch');
 
     // Y-axis label (Loss)
@@ -279,8 +334,7 @@ export class D3LossChart {
       .attr('x', -this.height / 2)
       .attr('y', -35)
       .attr('text-anchor', 'middle')
-      .attr('fill', '#f97316')
-      .attr('font-size', '10px')
+      .attr('fill', '#14b8a6')
       .text('Loss');
 
     // Y-axis label (Accuracy)
@@ -292,7 +346,6 @@ export class D3LossChart {
       .attr('y', -this.width - 35)
       .attr('text-anchor', 'middle')
       .attr('fill', '#22c55e')
-      .attr('font-size', '10px')
       .text('Accuracy');
   }
 }

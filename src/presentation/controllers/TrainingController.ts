@@ -50,11 +50,11 @@ export interface TrainingElements {
     fabPause: HTMLButtonElement;
 
     // UI Updates
-    epochValue: HTMLSpanElement;
-    lossValue: HTMLSpanElement;
-    accuracyValue: HTMLSpanElement;
-    valLossValue: HTMLSpanElement;
-    valAccuracyValue: HTMLSpanElement;
+    epochValue: HTMLElement;
+    lossValue: HTMLElement;
+    accuracyValue: HTMLElement;
+    valLossValue: HTMLElement;
+    valAccuracyValue: HTMLElement;
     suggestionsPanel: HTMLDivElement;
     suggestionsList: HTMLDivElement;
 }

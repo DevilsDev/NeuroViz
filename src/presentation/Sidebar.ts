@@ -8,8 +8,8 @@ export function setupSidebarTabs(): void {
             if (!targetId) return;
 
             // Update active tab
-            tabs.forEach(t => t.classList.remove('active', 'bg-navy-700', 'text-white'));
-            tab.classList.add('active', 'bg-navy-700', 'text-white');
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
 
             // Show target panel
             panels.forEach(panel => {

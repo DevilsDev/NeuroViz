@@ -111,8 +111,8 @@ export class D3VoronoiOverlay {
     const voronoi = delaunay.voronoi([0, 0, this.width, this.height]);
 
     // Create gradients for each cell
-    const defs = this.svg.select('defs').empty() 
-      ? this.svg.append('defs') 
+    const defs = this.svg.select('defs').empty()
+      ? this.svg.append('defs')
       : this.svg.select('defs');
 
     points.forEach((point, i) => {
@@ -171,6 +171,21 @@ export class D3VoronoiOverlay {
     xScale: d3.ScaleLinear<number, number>,
     yScale: d3.ScaleLinear<number, number>
   ): void {
+    this.xScale = xScale;
+    this.yScale = yScale;
+  }
+
+  /**
+   * Resizes the overlay to fit new dimensions.
+   */
+  resize(
+    width: number,
+    height: number,
+    xScale: d3.ScaleLinear<number, number>,
+    yScale: d3.ScaleLinear<number, number>
+  ): void {
+    this.width = width;
+    this.height = height;
     this.xScale = xScale;
     this.yScale = yScale;
   }

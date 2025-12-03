@@ -18,8 +18,8 @@ export class D3Chart implements IVisualizerService {
   private readonly container: d3.Selection<HTMLElement, unknown, null, undefined>;
   private readonly svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
   private readonly chartGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
-  private readonly width: number;
-  private readonly height: number;
+  private width: number;
+  private height: number;
   private readonly margin = { top: 8, right: 8, bottom: 28, left: 32 };
 
   private xScale: d3.ScaleLinear<number, number>;
@@ -91,6 +91,59 @@ export class D3Chart implements IVisualizerService {
     this.renderAxes();
     this.setupZoom();
     this.setupTooltip();
+
+    // Setup resize observer
+    this.resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect) {
+          this.resize(entry.contentRect.width, entry.contentRect.height);
+        }
+      }
+    });
+    this.resizeObserver.observe(element);
+  }
+
+  /**
+   * Resizes the chart to fit the new container dimensions.
+   */
+  resize(width: number, height: number): void {
+    if (width === 0 || height === 0) return;
+
+    // Update dimensions
+    this.width = width - this.margin.left - this.margin.right;
+    this.height = height - this.margin.top - this.margin.bottom;
+
+    // Update SVG viewBox
+    this.svg.attr('viewBox', `0 0 ${width} ${height}`);
+
+    // Update clip path
+    this.svg.select('#chart-clip rect')
+      .attr('width', this.width)
+      .attr('height', this.height);
+
+    // Update scales
+    this.xScale.range([0, this.width]);
+    this.yScale.range([this.height, 0]);
+
+    // Update axes
+    this.svg.select<SVGGElement>('.x-axis')
+      .attr('transform', `translate(0,${this.height})`)
+      .call(d3.axisBottom(this.xScale).ticks(5));
+
+    this.svg.select<SVGGElement>('.y-axis')
+      .call(d3.axisLeft(this.yScale).ticks(5));
+
+    // Re-render content
+    if (this.cachedPoints.length > 0) {
+      this.renderData(this.cachedPoints);
+    }
+    if (this.cachedPredictions.length > 0) {
+      this.renderBoundary(this.cachedPredictions, this.cachedGridSize);
+    }
+    if (this.voronoiEnabled && this.voronoiOverlay) {
+      this.voronoiOverlay.resize(this.width, this.height, this.xScale, this.yScale);
+      this.voronoiOverlay.render(this.cachedPoints, this.cachedPredictions, this.config.boundaryOpacity);
+    }
   }
 
   /**
@@ -405,6 +458,9 @@ export class D3Chart implements IVisualizerService {
     this.chartGroup.selectAll('.confidence-circle').remove();
   }
 
+  // Resize observer
+  private resizeObserver: ResizeObserver | null = null;
+
   /**
    * Disposes of all SVG elements and cleans up resources.
    * Call this when the chart is no longer needed to prevent memory leaks.
@@ -413,6 +469,9 @@ export class D3Chart implements IVisualizerService {
     this.disableDrawMode();
     if (this.tooltip) {
       this.tooltip.remove();
+    }
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
     }
     this.container.selectAll('*').remove();
   }
@@ -474,12 +533,12 @@ export class D3Chart implements IVisualizerService {
     // X axis
     axesGroup
       .append('g')
-      .attr('class', 'x-axis')
+      .attr('class', 'x-axis axis')
       .attr('transform', `translate(0,${this.height})`)
       .call(d3.axisBottom(this.xScale).ticks(5));
 
     // Y axis
-    axesGroup.append('g').attr('class', 'y-axis').call(d3.axisLeft(this.yScale).ticks(5));
+    axesGroup.append('g').attr('class', 'y-axis axis').call(d3.axisLeft(this.yScale).ticks(5));
   }
 
   private setupZoom(): void {
@@ -513,16 +572,7 @@ export class D3Chart implements IVisualizerService {
       .select('body')
       .append('div')
       .attr('class', 'chart-tooltip')
-      .style('position', 'absolute')
-      .style('background', 'rgba(15, 23, 42, 0.9)')
-      .style('color', '#e2e8f0')
-      .style('padding', '8px 12px')
-      .style('border-radius', '6px')
-      .style('font-size', '12px')
-      .style('pointer-events', 'none')
-      .style('opacity', 0)
-      .style('z-index', '1000')
-      .style('box-shadow', '0 4px 6px rgba(0, 0, 0, 0.3)');
+      .style('opacity', 0);
   }
 
   // ===========================================================================

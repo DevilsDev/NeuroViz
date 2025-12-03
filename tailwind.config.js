@@ -13,11 +13,11 @@ export default {
         },
         // Theme-aware navy colors (use CSS variables)
         navy: {
-          950: 'var(--navy-950)',
-          900: 'var(--navy-900)',
-          800: 'var(--navy-800)',
-          700: 'var(--navy-700)',
-          600: 'var(--navy-600)',
+          950: '#020617', // slate-950
+          900: '#0f172a', // slate-900
+          800: '#1e293b', // slate-800
+          700: '#334155', // slate-700
+          600: '#475569', // slate-600
         },
         // Electric teal accent
         accent: {
