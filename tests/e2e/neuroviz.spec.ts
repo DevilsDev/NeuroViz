@@ -309,10 +309,11 @@ test.describe('NeuroViz Application', () => {
     test('should have proper button labels', async () => {
       await neuroPage.goto();
 
-      await expect(neuroPage.startButton).toHaveText('Start');
-      await expect(neuroPage.pauseButton).toHaveText('Pause');
-      await expect(neuroPage.resetButton).toHaveText('Reset');
-      await expect(neuroPage.stepButton).toHaveText('Step');
+      // Buttons use aria-label for accessibility (icon-only buttons)
+      await expect(neuroPage.startButton).toHaveAttribute('aria-label', 'Start training');
+      await expect(neuroPage.pauseButton).toHaveAttribute('aria-label', 'Pause training');
+      await expect(neuroPage.resetButton).toHaveAttribute('aria-label', 'Reset training');
+      await expect(neuroPage.stepButton).toHaveAttribute('aria-label', 'Execute single training step');
     });
 
     test('should have visible status indicators', async () => {

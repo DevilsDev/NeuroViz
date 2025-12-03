@@ -84,9 +84,22 @@ export class NeuroPage {
   // =========================================================================
 
   /**
+   * Disable the onboarding tutorial for E2E tests.
+   * Sets localStorage flag to skip tutorial on page load.
+   */
+  async disableOnboarding(): Promise<void> {
+    await this.page.addInitScript(() => {
+      localStorage.setItem('neuroviz-has-visited', 'true');
+    });
+  }
+
+  /**
    * Navigate to the application root.
+   * Automatically disables onboarding to prevent tutorial overlay from blocking tests.
    */
   async goto(): Promise<void> {
+    // Disable onboarding before navigation
+    await this.disableOnboarding();
     await this.page.goto('/');
     await expect(this.vizContainer).toBeVisible();
   }
@@ -134,8 +147,8 @@ export class NeuroPage {
     await this.learningRateInput.fill(learningRate.toString());
     await this.layersInput.fill(layers);
     await this.initButton.click();
-    // Wait for initialisation to complete
-    await expect(this.startButton).toBeEnabled({ timeout: 5000 });
+    // Wait for initialisation to complete (TensorFlow.js initialization can take time)
+    await expect(this.startButton).toBeEnabled({ timeout: 15000 });
   }
 
   // =========================================================================
