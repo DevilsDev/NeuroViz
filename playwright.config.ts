@@ -29,7 +29,7 @@ export default defineConfig({
   /* Shared settings for all the projects below */
   use: {
     /* Base URL to use in actions like `await page.goto('/')` */
-    baseURL: process.env.CI ? 'http://localhost:5173/NeuroViz' : 'http://localhost:5173',
+    baseURL: process.env.CI ? 'http://localhost:3000/NeuroViz' : 'http://localhost:3000',
 
     /* Collect trace when retrying the failed test */
     trace: 'on-first-retry',
@@ -70,7 +70,7 @@ export default defineConfig({
     ? undefined  // CI workflow starts server separately
     : {
         command: 'npm run dev',
-        url: 'http://localhost:5173',
+        url: 'http://localhost:3000',
         reuseExistingServer: true,
         timeout: 120 * 1000,
       },
