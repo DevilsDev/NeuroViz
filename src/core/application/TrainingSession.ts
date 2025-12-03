@@ -158,16 +158,16 @@ export class TrainingSession implements ITrainingSession {
     this.currentLoss = null;
     this.currentAccuracy = null;
     this.history = createEmptyHistory();
-    
+
     // Store for LR scheduling
     this.currentHyperparameters = config;
     this.initialLearningRate = config.learningRate;
     this.currentLearningRate = config.learningRate;
-    
+
     // Reset early stopping
     this.bestValLoss = null;
     this.epochsWithoutImprovement = 0;
-    
+
     this.notifyListeners();
   }
 
@@ -204,10 +204,10 @@ export class TrainingSession implements ITrainingSession {
       const xMax = Math.max(...xs);
       const yMin = Math.min(...ys);
       const yMax = Math.max(...ys);
-      
+
       const xRange = xMax - xMin || 1;
       const yRange = yMax - yMin || 1;
-      
+
       return data.map(p => ({
         x: ((p.x - xMin) / xRange) * 2 - 1,
         y: ((p.y - yMin) / yRange) * 2 - 1,
@@ -219,10 +219,10 @@ export class TrainingSession implements ITrainingSession {
       // Z-score standardization
       const xMean = xs.reduce((a, b) => a + b, 0) / xs.length;
       const yMean = ys.reduce((a, b) => a + b, 0) / ys.length;
-      
+
       const xStd = Math.sqrt(xs.reduce((sum, x) => sum + (x - xMean) ** 2, 0) / xs.length) || 1;
       const yStd = Math.sqrt(ys.reduce((sum, y) => sum + (y - yMean) ** 2, 0) / ys.length) || 1;
-      
+
       return data.map(p => ({
         x: (p.x - xMean) / xStd,
         y: (p.y - yMean) / yStd,
@@ -260,7 +260,7 @@ export class TrainingSession implements ITrainingSession {
     const splitIndex = Math.floor(shuffled.length * (1 - validationSplit));
     this.trainingData = shuffled.slice(0, splitIndex).map(p => ({ ...p, isValidation: false }));
     this.validationData = shuffled.slice(splitIndex).map(p => ({ ...p, isValidation: true }));
-    
+
     // Update allData with validation markers for visualization
     this.allData = [...this.trainingData, ...this.validationData];
   }
@@ -334,7 +334,7 @@ export class TrainingSession implements ITrainingSession {
     this.isTraining = false;
     this.isPaused = false;
     this.isProcessingStep = false;
-    
+
     // Clear training progress
     this.currentEpoch = 0;
     this.currentLoss = null;
@@ -342,17 +342,17 @@ export class TrainingSession implements ITrainingSession {
     this.currentValLoss = null;
     this.currentValAccuracy = null;
     this.history = createEmptyHistory();
-    
+
     // Clear all data
     this.allData = [];
     this.trainingData = [];
     this.validationData = [];
     this.datasetLoaded = false;
     this.isInitialised = false;
-    
+
     // Clear visualisation
     this.visualizer.clear();
-    
+
     this.notifyListeners();
   }
 
@@ -605,7 +605,7 @@ export class TrainingSession implements ITrainingSession {
     if (!this.datasetLoaded) {
       return;
     }
-    
+
     // Get predictions (predictionGrid is reused, reducing input allocations)
     this.cachedPredictions = await this.neuralNet.predict(this.predictionGrid);
 
@@ -691,6 +691,13 @@ export class TrainingSession implements ITrainingSession {
   }
 
   /**
+   * Returns the current training history.
+   */
+  getHistory(): TrainingHistory {
+    return this.history;
+  }
+
+  /**
    * Returns the current learning rate (after warmup/decay adjustments).
    */
   getCurrentLearningRate(): number {
@@ -746,12 +753,12 @@ export class TrainingSession implements ITrainingSession {
         const minLR = schedule.minLR ?? initialLR / 10;
         const cyclePosition = effectiveEpoch % cycleLength;
         const halfCycle = cycleLength / 2;
-        
+
         // Triangle: rise for first half, fall for second half
         const triangleValue = cyclePosition < halfCycle
           ? cyclePosition / halfCycle
           : 1 - (cyclePosition - halfCycle) / halfCycle;
-        
+
         return minLR + (initialLR - minLR) * triangleValue;
       }
 
@@ -760,10 +767,10 @@ export class TrainingSession implements ITrainingSession {
         const cycleLength = schedule.cycleLength ?? 20;
         const minLR = schedule.minLR ?? initialLR / 10;
         const cyclePosition = effectiveEpoch % cycleLength;
-        
+
         // Cosine: smooth oscillation
         const cosineValue = 0.5 * (1 + Math.cos(Math.PI * cyclePosition / cycleLength));
-        
+
         return minLR + (initialLR - minLR) * cosineValue;
       }
 
@@ -779,12 +786,12 @@ export class TrainingSession implements ITrainingSession {
    */
   private async updateLearningRateIfNeeded(): Promise<void> {
     const newLR = this.calculateScheduledLR(this.currentEpoch);
-    
+
     // Only update if LR changed by more than 1%
     const lrChangeRatio = Math.abs(newLR - this.currentLearningRate) / this.currentLearningRate;
     if (lrChangeRatio > 0.01 && this.currentHyperparameters) {
       this.currentLearningRate = newLR;
-      
+
       // Reinitialize with new learning rate (keeps weights via TF.js optimizer update)
       // Note: This is a simplified approach - ideally we'd just update the optimizer
       await this.neuralNet.initialize({
@@ -804,7 +811,7 @@ export class TrainingSession implements ITrainingSession {
    */
   private checkEarlyStopping(valLoss: number | null): boolean {
     const patience = this.trainingConfig.earlyStoppingPatience ?? 0;
-    
+
     // Early stopping disabled
     if (patience <= 0 || valLoss === null) {
       return false;
@@ -826,7 +833,7 @@ export class TrainingSession implements ITrainingSession {
 
     // No improvement
     this.epochsWithoutImprovement++;
-    
+
     // Trigger early stopping if patience exceeded
     return this.epochsWithoutImprovement >= patience;
   }

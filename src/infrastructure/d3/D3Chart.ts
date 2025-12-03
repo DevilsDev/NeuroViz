@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import type { IVisualizerService, PointAddedCallback } from '../../core/ports';
-import type { Point, Prediction, VisualizationConfig } from '../../core/domain';
+import type { Point, Prediction, VisualizationConfig, ColourScheme } from '../../core/domain';
 import { DEFAULT_VISUALIZATION_CONFIG, COLOUR_PALETTES, MULTI_CLASS_COLOURS } from '../../core/domain';
 import { D3VoronoiOverlay } from './D3VoronoiOverlay';
 
@@ -111,6 +111,13 @@ export class D3Chart implements IVisualizerService {
     if (config.zoomEnabled !== undefined) {
       this.setupZoom();
     }
+  }
+
+  /**
+   * Sets the colour scheme for the visualization.
+   */
+  setTheme(theme: ColourScheme): void {
+    this.setConfig({ colourScheme: theme });
   }
 
   /**
@@ -304,7 +311,7 @@ export class D3Chart implements IVisualizerService {
     this.cachedPoints = [];
     this.cachedPredictions = [];
     this.cachedGridSize = 0;
-    
+
     // Remove ALL children of chartGroup (axes are in a separate group on svg)
     this.chartGroup.selectAll('*').remove();
   }
@@ -624,7 +631,7 @@ export class D3Chart implements IVisualizerService {
       // Draw metadata text
       ctx.fillStyle = '#94a3b8';
       ctx.font = '11px Inter, system-ui, sans-serif';
-      
+
       const entries = Object.entries(metadata);
       const cols = 3;
       const colWidth = this.width / cols;
@@ -636,7 +643,7 @@ export class D3Chart implements IVisualizerService {
         const row = Math.floor(i / cols);
         const x = col * colWidth + 10;
         const y = startY + row * lineHeight;
-        
+
         ctx.fillStyle = '#64748b';
         ctx.fillText(`${key}:`, x, y);
         ctx.fillStyle = '#e2e8f0';
@@ -699,13 +706,13 @@ export class D3Chart implements IVisualizerService {
     elements.forEach((el) => {
       const computed = window.getComputedStyle(el);
       const style = el.getAttribute('style') || '';
-      
+
       // Copy key styles
       const stylesToCopy = ['fill', 'stroke', 'stroke-width', 'opacity', 'font-family', 'font-size'];
       const inlined = stylesToCopy
         .map((prop) => `${prop}: ${computed.getPropertyValue(prop)}`)
         .join('; ');
-      
+
       el.setAttribute('style', `${style}; ${inlined}`);
     });
   }

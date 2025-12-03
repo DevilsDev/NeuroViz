@@ -6,7 +6,7 @@ export type OptimizerType = 'sgd' | 'adam' | 'rmsprop' | 'adagrad';
 /**
  * Supported activation functions.
  */
-export type ActivationType = 'relu' | 'sigmoid' | 'tanh' | 'elu';
+export type ActivationType = 'linear' | 'relu' | 'sigmoid' | 'tanh' | 'elu' | 'leaky_relu' | 'selu' | 'softmax';
 
 /**
  * Learning rate schedule types.

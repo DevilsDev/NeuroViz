@@ -301,3 +301,24 @@ export function formatSuggestionsHTML(suggestions: Suggestion[]): string {
     return html;
   }).join('');
 }
+
+/**
+ * Dismisses the suggestions panel.
+ */
+export function dismissSuggestions(containerId: string): void {
+  const container = document.getElementById(containerId);
+  if (container) {
+    container.innerHTML = '';
+    container.classList.add('hidden');
+  }
+}
+
+/**
+ * Resets the dismissal state of suggestions (if any).
+ */
+export function resetSuggestionsDismissal(containerId: string): void {
+  const container = document.getElementById(containerId);
+  if (container) {
+    container.classList.remove('hidden');
+  }
+}

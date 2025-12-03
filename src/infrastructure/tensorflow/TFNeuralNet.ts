@@ -218,7 +218,7 @@ export class TFNeuralNet implements INeuralNetworkService {
    */
   async exportModel(): Promise<{ modelJson: Blob; weightsBlob: Blob }> {
     const model = this.assertInitialised();
-    
+
     // Use custom IOHandler to capture the model data
     const modelArtifacts = await new Promise<tf.io.ModelArtifacts>((resolve, reject) => {
       const saveHandler: tf.io.IOHandler = {
@@ -236,7 +236,7 @@ export class TFNeuralNet implements INeuralNetworkService {
       paths: ['weights.bin'],
       weights: modelArtifacts.weightSpecs ?? [],
     }];
-    
+
     const modelJson = JSON.stringify({
       modelTopology,
       weightsManifest,
@@ -244,9 +244,9 @@ export class TFNeuralNet implements INeuralNetworkService {
       generatedBy: 'NeuroViz',
       convertedBy: null,
     });
-    
+
     const modelJsonBlob = new Blob([modelJson], { type: 'application/json' });
-    
+
     // Create weights.bin blob
     const weightsData = modelArtifacts.weightData;
     let weightsBlob: Blob;
@@ -257,7 +257,7 @@ export class TFNeuralNet implements INeuralNetworkService {
     } else {
       weightsBlob = new Blob([], { type: 'application/octet-stream' });
     }
-    
+
     return { modelJson: modelJsonBlob, weightsBlob };
   }
 
@@ -311,7 +311,7 @@ export class TFNeuralNet implements INeuralNetworkService {
 
     const allWeights: number[] = [];
     const weights = this.model.getWeights();
-    
+
     for (const tensor of weights) {
       const data = tensor.dataSync();
       for (let i = 0; i < data.length; i++) {
@@ -321,7 +321,7 @@ export class TFNeuralNet implements INeuralNetworkService {
         }
       }
     }
-    
+
     return allWeights;
   }
 
@@ -337,19 +337,19 @@ export class TFNeuralNet implements INeuralNetworkService {
 
     const matrices: number[][][] = [];
     const weights = this.model.getWeights();
-    
+
     // Weights come in pairs: [kernel, bias, kernel, bias, ...]
     // We only want the kernels (even indices)
     for (let i = 0; i < weights.length; i += 2) {
       const kernel = weights[i];
       if (!kernel) continue;
-      
+
       const shape = kernel.shape;
       const data = kernel.dataSync();
       const [inputSize, outputSize] = shape;
-      
+
       if (inputSize === undefined || outputSize === undefined) continue;
-      
+
       const matrix: number[][] = [];
       for (let from = 0; from < inputSize; from++) {
         const row: number[] = [];
@@ -361,7 +361,7 @@ export class TFNeuralNet implements INeuralNetworkService {
       }
       matrices.push(matrix);
     }
-    
+
     return matrices;
   }
 
@@ -377,26 +377,26 @@ export class TFNeuralNet implements INeuralNetworkService {
     }
 
     const activations: number[][] = [];
-    
+
     // Create input tensor
     const input = tf.tensor2d([[point.x, point.y]]);
-    
+
     try {
       // Get activations from each layer
       let currentInput: tf.Tensor = input;
-      
+
       for (const layer of this.model.layers) {
         const output = layer.apply(currentInput) as tf.Tensor;
         const data = output.dataSync();
         activations.push(Array.from(data));
-        
+
         // Use this layer's output as next layer's input
         if (currentInput !== input) {
           currentInput.dispose();
         }
         currentInput = output;
       }
-      
+
       // Dispose final output
       if (currentInput !== input) {
         currentInput.dispose();
@@ -404,8 +404,30 @@ export class TFNeuralNet implements INeuralNetworkService {
     } finally {
       input.dispose();
     }
-    
+
     return activations;
+  }
+
+  /**
+   * Returns the current network structure (layers and activations).
+   */
+  getStructure(): { layers: number[]; activations: string[] } | null {
+    if (!this.config) return null;
+
+    // Reconstruct full layer sizes including input and output
+    const layers = [2, ...this.config.layers, this.numClasses];
+
+    // Reconstruct activations
+    const defaultActivation = this.config.activation ?? DEFAULT_HYPERPARAMETERS.activation;
+    const layerActivations = this.config.layerActivations ?? [];
+
+    const activations = ['linear']; // Input layer
+    for (let i = 0; i < this.config.layers.length; i++) {
+      activations.push(layerActivations[i] ?? defaultActivation);
+    }
+    activations.push(this.numClasses === 2 ? 'sigmoid' : 'softmax'); // Output layer
+
+    return { layers, activations };
   }
 
   /**
