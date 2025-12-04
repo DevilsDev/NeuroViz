@@ -1,4 +1,5 @@
 import './style.css';
+import * as tf from '@tensorflow/tfjs';
 import { TrainingSession } from './core/application/TrainingSession';
 import { TFNeuralNet } from './infrastructure/tensorflow/TFNeuralNet';
 import { D3Chart } from './infrastructure/d3/D3Chart';
@@ -35,6 +36,10 @@ import { setupBottomSheet } from '@presentation/BottomSheet';
 import { setupOnboardingWizard } from './presentation/Onboarding';
 import { TrainingState } from './core/application/ITrainingSession';
 import { ColourScheme } from './core/domain';
+
+// Expose TensorFlow.js globally for E2E tests
+// Tests check for window.tf to verify TensorFlow is loaded
+(window as any).tf = tf;
 
 // Initialize Error Boundary
 const errorBoundary = new ErrorBoundary();

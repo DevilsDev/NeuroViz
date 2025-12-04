@@ -46,25 +46,34 @@ export default defineConfig({
   },
 
   /* Configure projects for major browsers */
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: {
-        ...devices['Desktop Safari'],
-        // WebKit + TensorFlow.js is slower, increase timeouts
-        actionTimeout: 30000,
-        navigationTimeout: 30000,
-      },
-    },
-  ],
+  projects: process.env.CI
+    ? [
+        // Only run chromium in CI for speed and compatibility
+        {
+          name: 'chromium',
+          use: { ...devices['Desktop Chrome'] },
+        },
+      ]
+    : [
+        // Run all browsers locally for comprehensive testing
+        {
+          name: 'chromium',
+          use: { ...devices['Desktop Chrome'] },
+        },
+        {
+          name: 'firefox',
+          use: { ...devices['Desktop Firefox'] },
+        },
+        {
+          name: 'webkit',
+          use: {
+            ...devices['Desktop Safari'],
+            // WebKit + TensorFlow.js is slower, increase timeouts
+            actionTimeout: 30000,
+            navigationTimeout: 30000,
+          },
+        },
+      ],
 
   /* Global timeout for each test - increased for TensorFlow.js initialization */
   timeout: process.env.CI ? 90000 : 60000,
