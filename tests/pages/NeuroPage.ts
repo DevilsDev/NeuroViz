@@ -61,11 +61,11 @@ export class NeuroPage {
     this.layersInput = page.locator('#input-layers');
     this.initButton = page.locator('#btn-init');
 
-    // Training controls
-    this.startButton = page.locator('#btn-start');
-    this.pauseButton = page.locator('#btn-pause');
-    this.stepButton = page.locator('#btn-step');
-    this.resetButton = page.locator('#btn-reset');
+    // Training controls (using sticky footer buttons which are visible)
+    this.startButton = page.locator('#btn-start-sticky');
+    this.pauseButton = page.locator('#btn-pause-sticky');
+    this.stepButton = page.locator('#btn-step-sticky');
+    this.resetButton = page.locator('#btn-reset-sticky');
 
     // Status display
     this.epochCounter = page.locator('#status-epoch');
