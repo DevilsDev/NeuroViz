@@ -111,14 +111,14 @@ export class D3LossChart {
       .append('path')
       .attr('class', 'loss-line')
       .attr('fill', 'none')
-      .attr('stroke', '#14b8a6') // Accent Teal - training loss
+      .attr('stroke', '#00D9FF') // Cyan - training loss (wireframe)
       .attr('stroke-width', 2);
 
     this.valLossPath = this.svg
       .append('path')
       .attr('class', 'val-loss-line')
       .attr('fill', 'none')
-      .attr('stroke', '#ef4444') // Red - validation loss
+      .attr('stroke', '#FF00AA') // Magenta - validation loss (wireframe)
       .attr('stroke-width', 2)
       .attr('stroke-dasharray', '4,2'); // Dashed line
 
@@ -126,7 +126,7 @@ export class D3LossChart {
       .append('path')
       .attr('class', 'accuracy-line')
       .attr('fill', 'none')
-      .attr('stroke', '#22c55e') // Green
+      .attr('stroke', '#10B981') // Green - accuracy (wireframe)
       .attr('stroke-width', 2);
 
     // Add legend

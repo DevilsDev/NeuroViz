@@ -13,6 +13,7 @@ import { dismissSuggestions } from './presentation/SuggestedFixes';
 import { DatasetController, DatasetElements } from './presentation/controllers/DatasetController';
 import { TrainingController, TrainingElements } from './presentation/controllers/TrainingController';
 import { VisualizationController, VisualizationElements } from './presentation/controllers/VisualizationController';
+import { safeGetElement, getRequiredElement } from './utils/dom';
 import { ExportController, ExportElements } from './presentation/controllers/ExportController';
 import { SessionController, SessionElements } from './presentation/controllers/SessionController';
 import { ComparisonController, ComparisonElements } from './presentation/controllers/ComparisonController';
@@ -36,29 +37,29 @@ const dataRepo = new MockDataRepository();
 const neuralNet = new TFNeuralNet();
 const visualizer = new D3Chart('viz-container');
 const lossChart = new D3LossChart('loss-chart-container');
-const networkDiagram = new D3NetworkDiagram(document.getElementById('network-diagram') as HTMLElement);
+const networkDiagram = new D3NetworkDiagram(safeGetElement<HTMLElement>('network-diagram') || document.createElement('div'));
 const storage = new LocalStorageService();
 const session = new TrainingSession(neuralNet, visualizer, dataRepo);
 
-// Initialize Controllers
+// Initialize Controllers with safe element access
 const datasetElements: DatasetElements = {
-  datasetSelect: document.getElementById('dataset-select') as HTMLSelectElement,
-  btnLoadData: document.getElementById('btn-load-data') as HTMLButtonElement,
-  loadingOverlay: document.getElementById('loading-overlay') as HTMLDivElement,
-  drawControls: document.getElementById('draw-controls') as HTMLDivElement,
-  btnClearCustom: document.getElementById('btn-clear-custom') as HTMLButtonElement,
-  datasetOptions: document.getElementById('dataset-options') as HTMLDivElement,
-  inputSamples: document.getElementById('input-samples') as HTMLInputElement,
-  samplesValue: document.getElementById('samples-value') as HTMLSpanElement,
-  inputNoise: document.getElementById('input-noise') as HTMLInputElement,
-  noiseValue: document.getElementById('noise-value') as HTMLSpanElement,
-  inputBalance: document.getElementById('input-balance') as HTMLInputElement,
-  balanceValue: document.getElementById('balance-value') as HTMLSpanElement,
-  inputPreprocessing: document.getElementById('input-preprocessing') as HTMLSelectElement,
-  inputNumClasses: document.getElementById('input-num-classes') as HTMLSelectElement,
-  drawClassButtons: document.getElementById('draw-class-buttons') as HTMLDivElement,
-  inputCsvUpload: document.getElementById('input-csv-upload') as HTMLInputElement,
-  btnDownloadDataset: document.getElementById('btn-download-dataset') as HTMLButtonElement,
+  datasetSelect: getRequiredElement<HTMLSelectElement>('dataset-select', 'HTMLSelectElement'),
+  btnLoadData: getRequiredElement<HTMLButtonElement>('btn-load-data', 'HTMLButtonElement'),
+  loadingOverlay: safeGetElement<HTMLDivElement>('loading-overlay') || document.createElement('div'),
+  drawControls: safeGetElement<HTMLDivElement>('draw-controls') || document.createElement('div'),
+  btnClearCustom: safeGetElement<HTMLButtonElement>('btn-clear-custom') || document.createElement('button'),
+  datasetOptions: safeGetElement<HTMLDivElement>('dataset-options') || document.createElement('div'),
+  inputSamples: getRequiredElement<HTMLInputElement>('input-samples', 'HTMLInputElement'),
+  samplesValue: getRequiredElement<HTMLSpanElement>('samples-value', 'HTMLSpanElement'),
+  inputNoise: getRequiredElement<HTMLInputElement>('input-noise', 'HTMLInputElement'),
+  noiseValue: getRequiredElement<HTMLSpanElement>('noise-value', 'HTMLSpanElement'),
+  inputBalance: safeGetElement<HTMLInputElement>('input-balance') || document.createElement('input'),
+  balanceValue: safeGetElement<HTMLSpanElement>('balance-value') || document.createElement('span'),
+  inputPreprocessing: safeGetElement<HTMLSelectElement>('input-preprocessing') || document.createElement('select'),
+  inputNumClasses: getRequiredElement<HTMLSelectElement>('input-num-classes', 'HTMLSelectElement'),
+  drawClassButtons: safeGetElement<HTMLDivElement>('draw-class-buttons') || document.createElement('div'),
+  inputCsvUpload: safeGetElement<HTMLInputElement>('input-csv-upload') || document.createElement('input'),
+  btnDownloadDataset: safeGetElement<HTMLButtonElement>('btn-download-dataset') || document.createElement('button'),
 };
 
 const datasetController = new DatasetController(session, visualizer, datasetElements);

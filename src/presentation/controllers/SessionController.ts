@@ -335,6 +335,11 @@ export class SessionController {
     }
 
     private handleSaveBookmark(): void {
+        if (!this.elements.inputBookmarkName) {
+            toast.warning('Bookmark feature not available');
+            return;
+        }
+
         const name = this.elements.inputBookmarkName.value.trim();
         if (!name) {
             toast.warning('Please enter a name for the bookmark');

@@ -41,28 +41,29 @@ export const DEFAULT_VISUALIZATION_CONFIG: VisualizationConfig = {
 /**
  * Colour palette definitions for each scheme.
  * Each palette maps confidence [0, 1] to a colour.
+ * Updated to match wireframe design (Cyan/Magenta)
  */
 export const COLOUR_PALETTES: Record<ColourScheme, { low: string; high: string }> = {
-  default: { low: '#3b82f6', high: '#f97316' }, // Blue to Orange
+  default: { low: '#00D9FF', high: '#f97316' }, // Cyan to Orange (wireframe)
   viridis: { low: '#440154', high: '#fde725' }, // Purple to Yellow
   plasma: { low: '#0d0887', high: '#f0f921' }, // Dark Blue to Yellow
-  cool: { low: '#6366f1', high: '#06b6d4' }, // Indigo to Cyan
-  warm: { low: '#dc2626', high: '#facc15' }, // Red to Yellow
+  cool: { low: '#00D9FF', high: '#06b6d4' }, // Cyan gradient
+  warm: { low: '#FF00AA', high: '#facc15' }, // Magenta to Yellow
 };
 
 /**
  * Multi-class colour palette (up to 10 classes).
- * Distinct, colourblind-friendly colours.
+ * Distinct, colourblind-friendly colours updated for wireframe theme.
  */
 export const MULTI_CLASS_COLOURS: readonly string[] = [
-  '#3b82f6', // Blue (class 0)
-  '#f97316', // Orange (class 1)
-  '#22c55e', // Green (class 2)
-  '#a855f7', // Purple (class 3)
-  '#ef4444', // Red (class 4)
-  '#06b6d4', // Cyan (class 5)
-  '#eab308', // Yellow (class 6)
+  '#00D9FF', // Cyan (class 0) - Primary accent
+  '#f97316', // Orange (class 1) - High contrast
+  '#10B981', // Green (class 2) - Success
+  '#FF00AA', // Magenta (class 3) - Secondary accent
+  '#EF4444', // Red (class 4) - Danger
+  '#06b6d4', // Teal (class 5)
+  '#F59E0B', // Amber (class 6) - Warning
   '#ec4899', // Pink (class 7)
   '#64748b', // Slate (class 8)
-  '#14b8a6', // Teal (class 9)
+  '#8B5CF6', // Purple (class 9)
 ];
