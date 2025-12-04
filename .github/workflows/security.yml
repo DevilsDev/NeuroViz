@@ -1,0 +1,168 @@
+# =============================================================================
+# NeuroViz Security Scanning Pipeline
+# =============================================================================
+# Triggered on:
+#   - Push to main branch
+#   - Pull requests to main branch
+#   - Weekly schedule (Mondays at 9 AM UTC)
+#
+# Pipeline stages:
+#   1. Dependency Vulnerability Scan (npm audit + Snyk)
+#   2. Secret Scanning (Gitleaks)
+#   3. SAST Analysis (CodeQL + ESLint Security)
+# =============================================================================
+
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run weekly on Mondays at 9 AM UTC
+    - cron: '0 9 * * 1'
+
+# Minimal permissions by default
+permissions:
+  contents: read
+
+jobs:
+  # ===========================================================================
+  # Job 1: Dependency Vulnerability Scanning
+  # ===========================================================================
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write  # For uploading to GitHub Security tab
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # -----------------------------------------------------------------------
+      # Run npm audit for vulnerability scanning
+      # -----------------------------------------------------------------------
+      - name: Run npm audit
+        run: |
+          echo "## NPM Audit Report" >> $GITHUB_STEP_SUMMARY
+          npm audit --audit-level=moderate || {
+            echo "::warning::Vulnerabilities found in dependencies"
+            npm audit >> $GITHUB_STEP_SUMMARY
+            exit 0
+          }
+          echo "✅ No vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+        continue-on-error: true
+
+      # -----------------------------------------------------------------------
+      # Verify package-lock.json integrity
+      # -----------------------------------------------------------------------
+      - name: Verify lockfile integrity
+        run: npm ci --ignore-scripts
+
+      # -----------------------------------------------------------------------
+      # Optional: Snyk scanning (requires SNYK_TOKEN secret)
+      # Uncomment when SNYK_TOKEN is added to repository secrets
+      # -----------------------------------------------------------------------
+      # - name: Run Snyk security scan
+      #   uses: snyk/actions/node@master
+      #   continue-on-error: true
+      #   env:
+      #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      #   with:
+      #     args: --severity-threshold=high --json-file-output=snyk-report.json
+      #
+      # - name: Upload Snyk report
+      #   uses: actions/upload-artifact@v4
+      #   if: always()
+      #   with:
+      #     name: snyk-report
+      #     path: snyk-report.json
+      #     retention-days: 30
+
+  # ===========================================================================
+  # Job 2: Secret Scanning
+  # ===========================================================================
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for comprehensive scanning
+
+      # -----------------------------------------------------------------------
+      # Gitleaks - Scan for secrets in code
+      # -----------------------------------------------------------------------
+      - name: Run Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ===========================================================================
+  # Job 3: SAST (Static Application Security Testing)
+  # ===========================================================================
+  sast-scan:
+    name: Static Application Security Testing
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write  # For CodeQL uploads
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # CodeQL Analysis for JavaScript/TypeScript
+      # -----------------------------------------------------------------------
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+      # -----------------------------------------------------------------------
+      # ESLint Security Scanning
+      # -----------------------------------------------------------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint security checks
+        run: |
+          echo "## ESLint Security Report" >> $GITHUB_STEP_SUMMARY
+          npm run lint -- --format json --output-file eslint-report.json || true
+          echo "✅ ESLint security scan completed" >> $GITHUB_STEP_SUMMARY
+        continue-on-error: true
+
+      - name: Upload ESLint report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eslint-security-report
+          path: eslint-report.json
+          retention-days: 30

@@ -27,6 +27,7 @@ export interface DatasetElements {
 export class DatasetController {
   private customDataPoints: Point[] = [];
   private currentDrawLabel: number = 0;
+  private boundHandlers = new Map<string, EventListener>();
 
   constructor(
     private session: TrainingSession,
@@ -37,15 +38,43 @@ export class DatasetController {
   }
 
   private bindEvents(): void {
-    this.elements.btnLoadData.addEventListener('click', () => void this.handleLoadData());
-    this.elements.datasetSelect.addEventListener('change', () => this.handleDatasetSelectChange());
-    this.elements.btnClearCustom.addEventListener('click', () => this.handleClearCustomData());
-    this.elements.inputSamples.addEventListener('input', () => this.handleSamplesChange());
-    this.elements.inputNoise.addEventListener('input', () => this.handleNoiseChange());
+    const loadDataHandler = () => void this.handleLoadData();
+    const datasetChangeHandler = () => this.handleDatasetSelectChange();
+    const clearCustomHandler = () => this.handleClearCustomData();
+    const samplesChangeHandler = () => this.handleSamplesChange();
+    const noiseChangeHandler = () => this.handleNoiseChange();
+    const csvUploadHandler = (e: Event) => this.handleCsvUpload(e);
+    const downloadHandler = () => this.handleDownloadDataset();
 
-    // CSV Upload
-    this.elements.inputCsvUpload.addEventListener('change', (e) => this.handleCsvUpload(e));
-    this.elements.btnDownloadDataset.addEventListener('click', () => this.handleDownloadDataset());
+    this.elements.btnLoadData.addEventListener('click', loadDataHandler);
+    this.elements.datasetSelect.addEventListener('change', datasetChangeHandler);
+    this.elements.btnClearCustom.addEventListener('click', clearCustomHandler);
+    this.elements.inputSamples.addEventListener('input', samplesChangeHandler);
+    this.elements.inputNoise.addEventListener('input', noiseChangeHandler);
+    this.elements.inputCsvUpload.addEventListener('change', csvUploadHandler);
+    this.elements.btnDownloadDataset.addEventListener('click', downloadHandler);
+
+    this.boundHandlers.set('loadData', loadDataHandler);
+    this.boundHandlers.set('datasetChange', datasetChangeHandler);
+    this.boundHandlers.set('clearCustom', clearCustomHandler);
+    this.boundHandlers.set('samplesChange', samplesChangeHandler);
+    this.boundHandlers.set('noiseChange', noiseChangeHandler);
+    this.boundHandlers.set('csvUpload', csvUploadHandler);
+    this.boundHandlers.set('download', downloadHandler);
+  }
+
+  /**
+   * Clean up event listeners to prevent memory leaks
+   */
+  public dispose(): void {
+    this.elements.btnLoadData.removeEventListener('click', this.boundHandlers.get('loadData')!);
+    this.elements.datasetSelect.removeEventListener('change', this.boundHandlers.get('datasetChange')!);
+    this.elements.btnClearCustom.removeEventListener('click', this.boundHandlers.get('clearCustom')!);
+    this.elements.inputSamples.removeEventListener('input', this.boundHandlers.get('samplesChange')!);
+    this.elements.inputNoise.removeEventListener('input', this.boundHandlers.get('noiseChange')!);
+    this.elements.inputCsvUpload.removeEventListener('change', this.boundHandlers.get('csvUpload')!);
+    this.elements.btnDownloadDataset.removeEventListener('click', this.boundHandlers.get('download')!);
+    this.boundHandlers.clear();
   }
 
   public async handleLoadData(): Promise<void> {

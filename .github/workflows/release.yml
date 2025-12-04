@@ -1,0 +1,63 @@
+# =============================================================================
+# NeuroViz Semantic Release Automation
+# =============================================================================
+# Triggered on:
+#   - Push to main branch
+#
+# Purpose:
+#   - Automatically determine version bump based on commit messages
+#   - Generate CHANGELOG.md
+#   - Create GitHub releases with release notes
+#   - Tag releases in git
+#
+# Commit Message Format (Conventional Commits):
+#   - feat: new feature (minor version bump)
+#   - fix: bug fix (patch version bump)
+#   - perf: performance improvement (patch version bump)
+#   - docs: documentation changes (no version bump)
+#   - chore: maintenance tasks (no version bump)
+#   - BREAKING CHANGE: in footer (major version bump)
+# =============================================================================
+
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  release:
+    name: Semantic Release
+    runs-on: ubuntu-latest
+    # Skip if commit message contains [skip ci] or [skip release]
+    if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[skip release]')"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for semantic versioning
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # -----------------------------------------------------------------------
+      # Semantic Release
+      # -----------------------------------------------------------------------
+      - name: Run semantic release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release

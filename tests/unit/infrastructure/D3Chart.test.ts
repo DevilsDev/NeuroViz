@@ -38,8 +38,9 @@ describe('D3Chart', () => {
 
     it('should set correct SVG dimensions', () => {
       const svg = container.querySelector('svg');
-      expect(svg?.getAttribute('width')).toBe('500');
-      expect(svg?.getAttribute('height')).toBe('500');
+      expect(svg?.getAttribute('viewBox')).toBe('0 0 500 500');
+      expect(svg?.style.width).toBe('100%');
+      expect(svg?.style.height).toBe('100%');
     });
 
     it('should create axes', () => {
@@ -62,8 +63,9 @@ describe('D3Chart', () => {
       const customChart = new D3Chart('custom-container', 800, 600);
       const svg = customContainer.querySelector('svg');
 
-      expect(svg?.getAttribute('width')).toBe('800');
-      expect(svg?.getAttribute('height')).toBe('600');
+      expect(svg?.getAttribute('viewBox')).toBe('0 0 800 600');
+      expect(svg?.style.width).toBe('100%');
+      expect(svg?.style.height).toBe('100%');
 
       customChart.dispose();
       customContainer.remove();

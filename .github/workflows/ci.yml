@@ -26,16 +26,69 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Minimal permissions by default (least-privilege principle)
+permissions:
+  contents: read
+
 env:
   NODE_VERSION: '20'  # Latest LTS
 
 jobs:
+  # ===========================================================================
+  # Job 0: Setup Dependencies (Shared across all jobs)
+  # ===========================================================================
+  setup:
+    name: Setup Dependencies
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      # -----------------------------------------------------------------------
+      # Cache node_modules for faster subsequent jobs
+      # -----------------------------------------------------------------------
+      - name: Cache node_modules
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            node-modules-${{ runner.os }}-
+
+      - name: Install dependencies
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: npm ci --prefer-offline
+
+      # -----------------------------------------------------------------------
+      # Upload node_modules as artifact for jobs that need it
+      # -----------------------------------------------------------------------
+      - name: Upload node_modules
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-modules
+          path: node_modules/
+          retention-days: 1
+
   # ===========================================================================
   # Job 1: Lint, Type Check, and Unit Tests
   # ===========================================================================
   test:
     name: Lint & Unit Tests
     runs-on: ubuntu-latest
+    needs: setup  # Depend on setup job for cached dependencies
+    permissions:
+      contents: read
+      checks: write  # For publishing test results
 
     steps:
       # -----------------------------------------------------------------------
@@ -48,10 +101,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      # -----------------------------------------------------------------------
+      # Restore cached node_modules
+      # -----------------------------------------------------------------------
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            node-modules-${{ runner.os }}-
 
       # -----------------------------------------------------------------------
       # Quality Checks
@@ -88,6 +148,8 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     needs: test  # Only build if tests pass
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout code
@@ -97,15 +159,42 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      # -----------------------------------------------------------------------
+      # Restore cached node_modules
+      # -----------------------------------------------------------------------
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            node-modules-${{ runner.os }}-
 
       - name: Build application
         run: npm run build
         env:
           GITHUB_ACTIONS: true
+
+      # -----------------------------------------------------------------------
+      # Bundle Size Analysis
+      # -----------------------------------------------------------------------
+      - name: Analyze bundle size
+        run: |
+          echo "## Bundle Size Report" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          du -sh dist/* 2>/dev/null | sort -hr >> $GITHUB_STEP_SUMMARY || echo "No dist files found" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+          # Check total bundle size (fail if exceeds 25MB)
+          if [ -d "dist" ]; then
+            size=$(du -sm dist/ | cut -f1)
+            echo "Total bundle size: ${size}MB" >> $GITHUB_STEP_SUMMARY
+            if [ $size -gt 25 ]; then
+              echo "::error::Bundle size (${size}MB) exceeds limit (25MB)"
+              exit 1
+            fi
+          fi
 
       # -----------------------------------------------------------------------
       # Upload build artifact for subsequent jobs
@@ -115,7 +204,7 @@ jobs:
         with:
           name: dist
           path: dist/
-          retention-days: 1
+          retention-days: 7  # Increased for better debugging
 
   # ===========================================================================
   # Job 3: E2E Tests (Playwright)
@@ -124,6 +213,9 @@ jobs:
     name: E2E Tests
     runs-on: ubuntu-latest
     needs: build  # Requires build artifact
+    permissions:
+      contents: read
+      checks: write  # For publishing test results
 
     steps:
       - name: Checkout code
@@ -133,10 +225,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      # -----------------------------------------------------------------------
+      # Restore cached node_modules
+      # -----------------------------------------------------------------------
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            node-modules-${{ runner.os }}-
 
       # -----------------------------------------------------------------------
       # Download build artifact
@@ -148,22 +247,22 @@ jobs:
           path: dist/
 
       # -----------------------------------------------------------------------
-      # Playwright Setup
+      # Playwright Setup (Optimized - only chromium for CI)
       # -----------------------------------------------------------------------
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Install Playwright chromium browser
+        run: npx playwright install --with-deps chromium
 
       # -----------------------------------------------------------------------
       # Run E2E Tests against preview server
       # -----------------------------------------------------------------------
       - name: Run E2E tests
         run: |
-          # Start preview server in background
+          # Start preview server in background on port 5173
           npm run preview -- --port 5173 &
-          
+
           # Wait for server to be ready (with base path)
           npx wait-on http://localhost:5173/NeuroViz/ --timeout 30000
-          
+
           # Run Playwright tests
           npm run test:e2e
         env:
@@ -199,11 +298,10 @@ jobs:
     # Only deploy on push to main (not on PRs)
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
-    # Required permissions for GitHub Pages deployment
+    # Required permissions for GitHub Pages deployment (least-privilege)
     permissions:
-      contents: write
-      pages: write
-      id-token: write
+      contents: write  # For gh-pages branch push
+      id-token: write  # For GitHub Pages attestation
 
     steps:
       - name: Checkout code

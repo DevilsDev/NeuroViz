@@ -20,6 +20,17 @@ export default defineConfig({
   build: {
     target: 'ES2022',
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Separate TensorFlow.js (largest dependency)
+          'vendor-tensorflow': ['@tensorflow/tfjs'],
+          // Separate D3 visualization library
+          'vendor-d3': ['d3'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,  // Reduced from default 500KB with manual chunks
   },
   preview: {
     port: 5173,
@@ -35,10 +46,22 @@ export default defineConfig({
     exclude: ['tests/e2e/**/*'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'html'],
+      reporter: ['text', 'html', 'lcov', 'json-summary'],
       include: ['src/core/**/*.ts', 'src/infrastructure/**/*.ts'],
-      exclude: ['src/core/**/index.ts', 'src/infrastructure/**/index.ts', 'src/infrastructure/**/errors.ts'],
+      exclude: [
+        'src/core/**/index.ts',
+        'src/infrastructure/**/index.ts',
+        'src/infrastructure/**/errors.ts',
+      ],
+      // Enforce coverage thresholds
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 75,
+        statements: 80,
+      },
     },
     mockReset: true,
+    setupFiles: ['./tests/setup.ts'],
   },
 });

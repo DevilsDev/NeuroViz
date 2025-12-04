@@ -245,6 +245,15 @@ function calculateWeightedR2(yTrue: number[], yPred: number[], weights: number[]
 }
 
 /**
+ * Escapes HTML special characters to prevent XSS attacks.
+ */
+function escapeHTML(str: string): string {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/**
  * Formats LIME explanation as HTML.
  */
 export function formatLIMEExplanationHTML(explanation: LIMEExplanation): string {
@@ -260,7 +269,7 @@ export function formatLIMEExplanationHTML(explanation: LIMEExplanation): string 
     return `
       <div class="mb-2">
         <div class="flex justify-between text-xs mb-1">
-          <span class="font-medium">${c.featureName} = ${c.featureValue.toFixed(2)}</span>
+          <span class="font-medium">${escapeHTML(c.featureName)} = ${c.featureValue.toFixed(2)}</span>
           <span class="text-slate-400">${sign}${c.contribution.toFixed(3)}</span>
         </div>
         <div class="h-2 bg-navy-700 rounded overflow-hidden">

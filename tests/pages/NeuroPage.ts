@@ -102,6 +102,22 @@ export class NeuroPage {
     await this.disableOnboarding();
     await this.page.goto('/');
     await expect(this.vizContainer).toBeVisible();
+    // Wait for TensorFlow.js to be ready (check for tf global)
+    await this.waitForTensorFlowReady();
+  }
+
+  /**
+   * Wait for TensorFlow.js to be loaded and ready.
+   * This is critical for Firefox and WebKit compatibility.
+   */
+  async waitForTensorFlowReady(): Promise<void> {
+    await this.page.waitForFunction(
+      () => {
+        // Check if TensorFlow.js is loaded
+        return typeof (window as unknown as { tf?: unknown }).tf !== 'undefined';
+      },
+      { timeout: 30000 }
+    );
   }
 
   // =========================================================================

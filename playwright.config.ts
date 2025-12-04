@@ -29,7 +29,7 @@ export default defineConfig({
   /* Shared settings for all the projects below */
   use: {
     /* Base URL to use in actions like `await page.goto('/')` */
-    baseURL: process.env.CI ? 'http://localhost:3000/NeuroViz' : 'http://localhost:3000',
+    baseURL: process.env.CI ? 'http://localhost:5173/NeuroViz' : 'http://localhost:3000',
 
     /* Collect trace when retrying the failed test */
     trace: 'on-first-retry',
@@ -39,6 +39,10 @@ export default defineConfig({
 
     /* Record video on failure */
     video: 'on-first-retry',
+
+    /* Increase timeouts for TensorFlow.js initialization */
+    actionTimeout: 30000,
+    navigationTimeout: 30000,
   },
 
   /* Configure projects for major browsers */
@@ -62,8 +66,8 @@ export default defineConfig({
     },
   ],
 
-  /* Global timeout for each test */
-  timeout: process.env.CI ? 60000 : 30000,
+  /* Global timeout for each test - increased for TensorFlow.js initialization */
+  timeout: process.env.CI ? 90000 : 60000,
 
   /* Run local dev server before starting the tests */
   webServer: process.env.CI

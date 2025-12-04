@@ -1,0 +1,90 @@
+# =============================================================================
+# NeuroViz Lighthouse CI - Performance Monitoring
+# =============================================================================
+# Triggered on:
+#   - Pull requests to main branch
+#   - Push to main branch
+#
+# Purpose:
+#   - Monitor web performance metrics
+#   - Enforce performance budgets
+#   - Track accessibility, SEO, and best practices
+#   - Detect performance regressions before merge
+# =============================================================================
+
+name: Lighthouse CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write  # For PR comments
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  lighthouse:
+    name: Lighthouse Performance Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      # -----------------------------------------------------------------------
+      # Cache node_modules for faster build
+      # -----------------------------------------------------------------------
+      - name: Cache node_modules
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            node-modules-${{ runner.os }}-
+
+      - name: Install dependencies
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: npm ci --prefer-offline
+
+      # -----------------------------------------------------------------------
+      # Build the application
+      # -----------------------------------------------------------------------
+      - name: Build application
+        run: npm run build
+        env:
+          GITHUB_ACTIONS: true
+
+      # -----------------------------------------------------------------------
+      # Run Lighthouse CI
+      # -----------------------------------------------------------------------
+      - name: Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v11
+        with:
+          urls: |
+            http://localhost:5173/NeuroViz/
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+          configPath: '.lighthouserc.json'
+
+      # -----------------------------------------------------------------------
+      # Upload Lighthouse results as artifacts
+      # -----------------------------------------------------------------------
+      - name: Upload Lighthouse results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-reports
+          path: '.lighthouseci/'
+          retention-days: 30

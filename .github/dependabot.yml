@@ -1,0 +1,74 @@
+# =============================================================================
+# Dependabot Configuration for NeuroViz
+# =============================================================================
+# Purpose:
+#   - Automatically check for dependency updates
+#   - Create pull requests for security patches
+#   - Keep GitHub Actions up to date
+#   - Group minor/patch updates to reduce PR noise
+# =============================================================================
+
+version: 2
+updates:
+  # ===========================================================================
+  # NPM Dependencies
+  # ===========================================================================
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+
+    # Limit number of open PRs
+    open-pull-requests-limit: 5
+
+    # Commit message configuration
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+    # Labels for categorization
+    labels:
+      - "dependencies"
+      - "automated"
+
+    # Group minor and patch updates to reduce PR volume
+    groups:
+      # Development dependencies (test, build, lint tools)
+      development-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+
+      # Production dependencies (runtime code)
+      production-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+
+    # Security updates always get individual PRs
+    # Major version updates always get individual PRs
+
+    # Ignore specific packages (if needed)
+    # ignore:
+    #   - dependency-name: "package-name"
+    #     versions: ["1.x", "2.x"]
+
+  # ===========================================================================
+  # GitHub Actions
+  # ===========================================================================
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+
+    commit-message:
+      prefix: "chore(ci)"
+
+    labels:
+      - "ci"
+      - "automated"

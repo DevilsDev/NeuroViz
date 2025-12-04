@@ -8,7 +8,9 @@
       "Bash(npm run build:*)",
       "Bash(npx playwright install:*)",
       "Bash(npm run test:e2e:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npm run type-check:*)",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": [],
     "ask": []
