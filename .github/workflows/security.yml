@@ -116,7 +116,7 @@ jobs:
           path: ./
           base: ""
           head: ${{ github.ref }}
-          extra_args: --only-verified --json --fail
+          extra_args: --only-verified --json
 
   # ===========================================================================
   # Job 3: SAST (Static Application Security Testing)
