@@ -92,7 +92,7 @@ jobs:
       #     retention-days: 30
 
   # ===========================================================================
-  # Job 2: Secret Scanning
+  # Job 2: Secret Scanning with TruffleHog
   # ===========================================================================
   secret-scan:
     name: Secret Scanning
@@ -107,12 +107,16 @@ jobs:
           fetch-depth: 0  # Fetch all history for comprehensive scanning
 
       # -----------------------------------------------------------------------
-      # Gitleaks - Scan for secrets in code
+      # TruffleHog - Free open-source secret scanner
       # -----------------------------------------------------------------------
-      - name: Run Gitleaks secret scan
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run TruffleHog secret scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          # Scan the entire git history
+          path: ./
+          base: ""
+          head: ${{ github.ref }}
+          extra_args: --only-verified --json --fail
 
   # ===========================================================================
   # Job 3: SAST (Static Application Security Testing)

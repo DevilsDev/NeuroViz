@@ -10,7 +10,9 @@
       "Bash(npm run test:e2e:*)",
       "Bash(git commit:*)",
       "Bash(npm run type-check:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)"
     ],
     "deny": [],
     "ask": []
