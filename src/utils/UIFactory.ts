@@ -69,6 +69,7 @@ export function getTrainingElements(): TrainingElements {
     accuracyValue: document.getElementById('status-accuracy') as HTMLElement,
     valLossValue: document.getElementById('status-val-loss') as HTMLElement,
     valAccuracyValue: document.getElementById('status-val-accuracy') as HTMLElement,
+    stateDisplay: document.getElementById('status-state') as HTMLElement,
     suggestionsPanel: document.getElementById('suggestions-panel') as HTMLDivElement,
     suggestionsList: document.getElementById('suggestions-list') as HTMLDivElement,
     momentumValue: document.getElementById('momentum-value') as HTMLSpanElement,

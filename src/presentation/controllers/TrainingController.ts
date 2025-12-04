@@ -55,6 +55,7 @@ export interface TrainingElements {
     accuracyValue: HTMLElement;
     valLossValue: HTMLElement;
     valAccuracyValue: HTMLElement;
+    stateDisplay: HTMLElement;
     suggestionsPanel: HTMLDivElement;
     suggestionsList: HTMLDivElement;
 }
@@ -289,6 +290,15 @@ export class TrainingController {
         this.elements.accuracyValue.textContent = state.currentAccuracy ? `${(state.currentAccuracy * 100).toFixed(1)}%` : '—';
         this.elements.valLossValue.textContent = state.currentValLoss?.toFixed(4) ?? '—';
         this.elements.valAccuracyValue.textContent = state.currentValAccuracy ? `${(state.currentValAccuracy * 100).toFixed(1)}%` : '—';
+
+        // Update status display text
+        let statusText = 'Idle';
+        if (state.isRunning && !state.isPaused) {
+            statusText = 'Training';
+        } else if (state.isPaused) {
+            statusText = 'Paused';
+        }
+        this.elements.stateDisplay.textContent = statusText;
 
         // Determine if training can be started
         const canStart = state.isInitialised && state.datasetLoaded && !state.isRunning;
