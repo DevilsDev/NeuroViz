@@ -496,6 +496,10 @@
     @apply absolute inset-0 flex flex-col items-center justify-center bg-navy-950/80 backdrop-blur-sm z-30 rounded-xl;
 }
 
+.loading-overlay.hidden {
+    display: none !important;
+}
+
 .spinner {
     @apply w-12 h-12 border-4 border-navy-700 border-t-cyan rounded-full animate-spin mb-3;
 }
