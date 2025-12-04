@@ -1,3 +1,9 @@
+## [1.1.1](https://github.com/DevilsDev/NeuroViz/compare/v1.1.0...v1.1.1) (2025-12-04)
+
+### Bug Fixes
+
+* **e2e:** update training status display and button aria-labels ([0da3cb0](https://github.com/DevilsDev/NeuroViz/commit/0da3cb0baf150892942165b42d24bcae89533269))
+
 ## [1.1.0](https://github.com/DevilsDev/NeuroViz/compare/v1.0.6...v1.1.0) (2025-12-04)
 
 ### Features
