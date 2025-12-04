@@ -1,3 +1,9 @@
+## [1.1.0](https://github.com/DevilsDev/NeuroViz/compare/v1.0.6...v1.1.0) (2025-12-04)
+
+### Features
+
+* Add local Claude settings to configure allowed shell commands and IDE diagnostics. ([dcb4e39](https://github.com/DevilsDev/NeuroViz/commit/dcb4e3954f4555c7a2ae8170efb3e02024e95544))
+
 ## [1.0.6](https://github.com/DevilsDev/NeuroViz/compare/v1.0.5...v1.0.6) (2025-12-04)
 
 ### Bug Fixes
