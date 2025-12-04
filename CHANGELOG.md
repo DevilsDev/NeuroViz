@@ -1,0 +1,16 @@
+## 1.0.0 (2025-12-04)
+
+### Features
+
+* Add main application entry point, initializing all core services, controllers, and UI components. ([853ae8f](https://github.com/DevilsDev/NeuroViz/commit/853ae8fcf0f6b7ad0f17c7248cbe52e6f7fd28ad))
+* Implement comprehensive testing infrastructure, CI/CD workflows, and new research components like LIME Explainer. ([416a928](https://github.com/DevilsDev/NeuroViz/commit/416a9289112c8e8306508e1fbd1e7b543e7d57e4))
+* implement hexagonal architecture for neural network visualiser ([19943a3](https://github.com/DevilsDev/NeuroViz/commit/19943a351af4f4fa7704dd18aed89c3a751244f1))
+* Implement initial application structure with model comparison, A/B testing, and ensemble training features. ([86e87f3](https://github.com/DevilsDev/NeuroViz/commit/86e87f360a41f73e718454da7a6787b47c9b4758))
+* Implement initial training control UI, sidebar navigation, and D3 visualization infrastructure. ([377f62b](https://github.com/DevilsDev/NeuroViz/commit/377f62b6375dea7ac915eca6da7da907d5c75328))
+* Initialize core application architecture with session management, D3 visualization, DOM utilities, and comprehensive E2E testing. ([25e433a](https://github.com/DevilsDev/NeuroViz/commit/25e433a9ff8a5daddc2826bf6ee082cfd21b64b0))
+
+### Bug Fixes
+
+* **ci:** resolve workflow failures - update Node to 22 for semantic-release, fix TruffleHog duplicate flag, simplify Lighthouse assertions ([db0cd3c](https://github.com/DevilsDev/NeuroViz/commit/db0cd3c46132e357f88bb03a15ccf74e350683d2))
+* replace Gitleaks with TruffleHog and adjust CI thresholds ([6e67c46](https://github.com/DevilsDev/NeuroViz/commit/6e67c46b610fdebbc903fed56354e34935c337ba))
+* resolve all ESLint errors and warnings for production readiness ([6c874d8](https://github.com/DevilsDev/NeuroViz/commit/6c874d8ac20aae8092a7c976efdcfb7dbf660280))
