@@ -1,3 +1,9 @@
+## [1.0.5](https://github.com/DevilsDev/NeuroViz/compare/v1.0.4...v1.0.5) (2025-12-04)
+
+### Bug Fixes
+
+* **e2e:** use visible sticky footer buttons instead of hidden controls ([ec258bc](https://github.com/DevilsDev/NeuroViz/commit/ec258bc01230e1de6bcb800834007cee9113ebd9)), closes [#btn-start](https://github.com/DevilsDev/NeuroViz/issues/btn-start) [#btn-pause](https://github.com/DevilsDev/NeuroViz/issues/btn-pause) [#training-fieldset](https://github.com/DevilsDev/NeuroViz/issues/training-fieldset) [#btn-start-sticky](https://github.com/DevilsDev/NeuroViz/issues/btn-start-sticky) [#btn-pause-sticky](https://github.com/DevilsDev/NeuroViz/issues/btn-pause-sticky) [#btn-step-sticky](https://github.com/DevilsDev/NeuroViz/issues/btn-step-sticky) [#btn-reset-sticky](https://github.com/DevilsDev/NeuroViz/issues/btn-reset-sticky)
+
 ## [1.0.4](https://github.com/DevilsDev/NeuroViz/compare/v1.0.3...v1.0.4) (2025-12-04)
 
 ### Bug Fixes
