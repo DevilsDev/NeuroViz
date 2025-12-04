@@ -290,6 +290,9 @@ export class TrainingController {
         this.elements.valLossValue.textContent = state.currentValLoss?.toFixed(4) ?? '—';
         this.elements.valAccuracyValue.textContent = state.currentValAccuracy ? `${(state.currentValAccuracy * 100).toFixed(1)}%` : '—';
 
+        // Determine if training can be started
+        const canStart = state.isInitialised && state.datasetLoaded && !state.isRunning;
+
         // Update button states
         if (state.isRunning && !state.isPaused) {
             this.elements.btnStart.classList.add('hidden');
@@ -305,15 +308,21 @@ export class TrainingController {
         } else {
             this.elements.btnStart.classList.remove('hidden');
             this.elements.btnPause.classList.add('hidden');
-            this.elements.btnStep.disabled = false;
+            this.elements.btnStep.disabled = !canStart;
 
             this.elements.btnStartSticky.classList.remove('hidden');
             this.elements.btnPauseSticky.classList.add('hidden');
-            this.elements.btnStepSticky.disabled = false;
+            this.elements.btnStepSticky.disabled = !canStart;
 
             this.elements.fabStart.classList.remove('hidden');
             this.elements.fabPause.classList.add('hidden');
         }
+
+        // Enable/disable Start buttons based on readiness
+        this.elements.btnStart.disabled = !canStart;
+        this.elements.btnStartSticky.disabled = !canStart;
+        this.elements.fabStart.classList.toggle('opacity-50', !canStart);
+        this.elements.fabStart.classList.toggle('pointer-events-none', !canStart);
     }
 
     private parseLayersInput(input: string): number[] {
