@@ -14,16 +14,18 @@ describe('NeuralArchitectureSearch', () => {
   let createModel: () => INeuralNetworkService;
 
   beforeEach(() => {
-    // Create mock neural network
+    // Create mock neural network with small delays to simulate async behavior
     mockNeuralNet = {
-      initialize: vi.fn().mockResolvedValue(undefined),
-      train: vi.fn().mockResolvedValue({
-        loss: 0.5,
-        accuracy: 0.75,
+      initialize: vi.fn().mockImplementation(async () => {
+        await new Promise(resolve => setTimeout(resolve, 1));
       }),
-      evaluate: vi.fn().mockResolvedValue({
-        loss: 0.6,
-        accuracy: 0.72,
+      train: vi.fn().mockImplementation(async () => {
+        await new Promise(resolve => setTimeout(resolve, 1));
+        return { loss: 0.5, accuracy: 0.75 };
+      }),
+      evaluate: vi.fn().mockImplementation(async () => {
+        await new Promise(resolve => setTimeout(resolve, 1));
+        return { loss: 0.6, accuracy: 0.72 };
       }),
       predict: vi.fn(),
       getWeights: vi.fn(),
