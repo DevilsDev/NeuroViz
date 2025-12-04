@@ -1,3 +1,9 @@
+## [1.0.4](https://github.com/DevilsDev/NeuroViz/compare/v1.0.3...v1.0.4) (2025-12-04)
+
+### Bug Fixes
+
+* **e2e:** enable/disable Start button based on initialization state ([16ce519](https://github.com/DevilsDev/NeuroViz/commit/16ce51926ce312896f39e18c239d3c37893fc5f2))
+
 ## [1.0.3](https://github.com/DevilsDev/NeuroViz/compare/v1.0.2...v1.0.3) (2025-12-04)
 
 ### Bug Fixes
