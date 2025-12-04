@@ -12,7 +12,8 @@
       "Bash(npm run type-check:*)",
       "mcp__ide__getDiagnostics",
       "Bash(gh run list:*)",
-      "Bash(gh run view:*)"
+      "Bash(gh run view:*)",
+      "Bash(git pull:*)"
     ],
     "deny": [],
     "ask": []
