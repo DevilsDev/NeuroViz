@@ -1,3 +1,9 @@
+## [1.0.3](https://github.com/DevilsDev/NeuroViz/compare/v1.0.2...v1.0.3) (2025-12-04)
+
+### Bug Fixes
+
+* **tests:** add async delays to NAS test mocks to ensure totalTime > 0 ([52f360d](https://github.com/DevilsDev/NeuroViz/commit/52f360d169d56ba270f8b77f13db78d5c94ded76))
+
 ## [1.0.2](https://github.com/DevilsDev/NeuroViz/compare/v1.0.1...v1.0.2) (2025-12-04)
 
 ### Bug Fixes
