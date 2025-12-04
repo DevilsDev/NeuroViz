@@ -1,3 +1,9 @@
+## [1.0.2](https://github.com/DevilsDev/NeuroViz/compare/v1.0.1...v1.0.2) (2025-12-04)
+
+### Bug Fixes
+
+* **e2e:** resolve loading overlay CSS specificity issue ([fdcb2bf](https://github.com/DevilsDev/NeuroViz/commit/fdcb2bf1da0769c832d84a21dd10bad65b3515f8))
+
 ## [1.0.1](https://github.com/DevilsDev/NeuroViz/compare/v1.0.0...v1.0.1) (2025-12-04)
 
 ### Bug Fixes
