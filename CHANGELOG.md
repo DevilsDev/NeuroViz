@@ -1,3 +1,9 @@
+## [1.0.1](https://github.com/DevilsDev/NeuroViz/compare/v1.0.0...v1.0.1) (2025-12-04)
+
+### Bug Fixes
+
+* **e2e:** expose TensorFlow.js globally and run chromium only in CI ([29c9873](https://github.com/DevilsDev/NeuroViz/commit/29c9873c246a8978b5057ad91789825cdf5e69f0))
+
 ## 1.0.0 (2025-12-04)
 
 ### Features
