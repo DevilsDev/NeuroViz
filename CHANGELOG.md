@@ -1,3 +1,9 @@
+## [1.0.6](https://github.com/DevilsDev/NeuroViz/compare/v1.0.5...v1.0.6) (2025-12-04)
+
+### Bug Fixes
+
+* **html:** remove duplicate sticky-controls div causing ID conflicts ([5ab3ecc](https://github.com/DevilsDev/NeuroViz/commit/5ab3ecc7013413527c3b2be1383d8625ff846eb8)), closes [#sidebar-sticky-footer](https://github.com/DevilsDev/NeuroViz/issues/sidebar-sticky-footer) [#sticky-controls](https://github.com/DevilsDev/NeuroViz/issues/sticky-controls) [#sticky-controls](https://github.com/DevilsDev/NeuroViz/issues/sticky-controls) [#sidebar-sticky-footer](https://github.com/DevilsDev/NeuroViz/issues/sidebar-sticky-footer)
+
 ## [1.0.5](https://github.com/DevilsDev/NeuroViz/compare/v1.0.4...v1.0.5) (2025-12-04)
 
 ### Bug Fixes
