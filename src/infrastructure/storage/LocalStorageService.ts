@@ -122,11 +122,20 @@ export class LocalStorageService {
       const parsed = JSON.parse(item) as T;
       return { success: true, data: parsed };
     } catch (error) {
+      // Handle legacy/corrupted data: if parse fails, clean up and use default
       console.warn(`Failed to parse localStorage item "${key}":`, error);
+
+      // Remove corrupted item to prevent future issues
+      try {
+        localStorage.removeItem(key);
+      } catch {
+        // Ignore removal errors
+      }
+
+      // Return default value so app can continue
       return {
-        success: false,
+        success: true,
         data: defaultValue,
-        error: StorageError.PARSE_ERROR,
       };
     }
   }

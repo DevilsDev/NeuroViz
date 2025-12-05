@@ -1,4 +1,4 @@
-/// <reference types="vite/client" />
+Can /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
   readonly DEV: boolean;
