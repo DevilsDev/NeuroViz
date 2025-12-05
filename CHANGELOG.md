@@ -1,3 +1,9 @@
+## [2.5.0](https://github.com/DevilsDev/NeuroViz/compare/v2.4.0...v2.5.0) (2025-12-05)
+
+### Features
+
+* introduce `TrainingController` to manage UI interactions and orchestrate training sessions. ([4449ad5](https://github.com/DevilsDev/NeuroViz/commit/4449ad5d7f29eacd3831eafe55b92c4a1dac62fd))
+
 ## [2.4.0](https://github.com/DevilsDev/NeuroViz/compare/v2.3.0...v2.4.0) (2025-12-05)
 
 ### Features
