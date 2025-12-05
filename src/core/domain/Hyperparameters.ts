@@ -109,7 +109,7 @@ export interface TrainingConfig {
  * Default hyperparameters for new networks.
  */
 export const DEFAULT_HYPERPARAMETERS: Required<Hyperparameters> = {
-  learningRate: 0.03,
+  learningRate: 0.003,
   layers: [8, 4],
   optimizer: 'adam',
   momentum: 0.9,

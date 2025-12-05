@@ -22,7 +22,7 @@ test.describe('NeuroViz Application', () => {
   test.describe('Happy Path', () => {
     test('should complete a full training cycle', async () => {
       // Arrange: Set up the application
-      await neuroPage.setupForTraining('circle', 0.03, '8, 4');
+      await neuroPage.setupForTraining('circle', 0.003, '8, 4');
 
       // Act: Start training
       await neuroPage.startTraining();
