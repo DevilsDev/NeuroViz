@@ -1,3 +1,9 @@
+## [2.6.0](https://github.com/DevilsDev/NeuroViz/compare/v2.5.0...v2.6.0) (2025-12-05)
+
+### Features
+
+* Generate Playwright test reports and results, and add a local storage service and Vite environment type definition. ([fbc13b2](https://github.com/DevilsDev/NeuroViz/commit/fbc13b2c14175eba57930d88c9b1523d5760481a))
+
 ## [2.5.0](https://github.com/DevilsDev/NeuroViz/compare/v2.4.0...v2.5.0) (2025-12-05)
 
 ### Features
