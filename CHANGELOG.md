@@ -1,3 +1,9 @@
+## [2.7.0](https://github.com/DevilsDev/NeuroViz/compare/v2.6.0...v2.7.0) (2025-12-05)
+
+### Features
+
+* Implement D3-based neural network and confusion matrix visualizations, training control, and core application structure. ([365d5f0](https://github.com/DevilsDev/NeuroViz/commit/365d5f0c666f71671bcce90f7d3d439aec8079e0))
+
 ## [2.6.0](https://github.com/DevilsDev/NeuroViz/compare/v2.5.0...v2.6.0) (2025-12-05)
 
 ### Features
