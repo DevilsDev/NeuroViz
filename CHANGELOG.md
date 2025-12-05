@@ -1,3 +1,9 @@
+## [2.9.0](https://github.com/DevilsDev/NeuroViz/compare/v2.8.0...v2.9.0) (2025-12-05)
+
+### Features
+
+* Add `TrainingSession` for managing neural network training and `TFNeuralNet` for TensorFlow-based models. ([f95b99b](https://github.com/DevilsDev/NeuroViz/commit/f95b99bd77f6a948f40d667d499d9f0d12d1c053))
+
 ## [2.8.0](https://github.com/DevilsDev/NeuroViz/compare/v2.7.0...v2.8.0) (2025-12-05)
 
 ### Features
