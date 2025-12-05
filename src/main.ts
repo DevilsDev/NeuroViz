@@ -35,6 +35,8 @@ import { setupTouchGestures } from '@presentation/TouchGestures';
 import { setupBottomSheet } from '@presentation/BottomSheet';
 import { setupOnboardingWizard } from './presentation/Onboarding';
 import { TrainingState } from './core/application/ITrainingSession';
+import { KeyboardShortcuts } from './utils/KeyboardShortcuts';
+import { DatasetGallery } from './utils/DatasetGallery';
 
 // Expose TensorFlow.js globally for E2E tests
 // Tests check for window.tf to verify TensorFlow is loaded
@@ -145,6 +147,47 @@ setupTouchGestures();
 setupBottomSheet();
 setupOnboardingWizard();
 initELI5Tooltips();
+
+// Initialize Dataset Gallery
+const _datasetGallery = new DatasetGallery();
+
+// Initialize Keyboard Shortcuts
+const _keyboardShortcuts = new KeyboardShortcuts({
+  onStartPause: () => {
+    const state = session.getState();
+    if (state.isRunning && !state.isPaused) {
+      trainingController.handlePause();
+    } else {
+      trainingController.handleStart();
+    }
+  },
+  onStep: () => {
+    void trainingController.handleStep();
+  },
+  onReset: () => {
+    trainingController.handleReset();
+  },
+  onPause: () => {
+    trainingController.handlePause();
+  },
+  onToggleFullscreen: () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.error('Failed to enter fullscreen:', err);
+      });
+    } else {
+      document.exitFullscreen().catch((err) => {
+        console.error('Failed to exit fullscreen:', err);
+      });
+    }
+  },
+  onToggleHelp: () => {
+    const helpModal = document.getElementById('help-modal');
+    if (helpModal) {
+      helpModal.classList.toggle('hidden');
+    }
+  },
+});
 
 // Load initial data
 window.addEventListener('load', () => {

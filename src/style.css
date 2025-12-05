@@ -39,6 +39,21 @@
         @apply bg-navy-900/30 rounded-xl border border-white/5 shadow-xl backdrop-blur-sm transition-all duration-300 hover:border-white/10 overflow-hidden relative;
     }
 
+    .panel-glow.training {
+        animation: viz-glow-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes viz-glow-pulse {
+        0%, 100% {
+            border-color: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.1);
+        }
+        50% {
+            border-color: rgba(0, 217, 255, 0.3);
+            box-shadow: 0 0 40px rgba(0, 217, 255, 0.2);
+        }
+    }
+
     #viz-container {
         @apply w-full flex items-center justify-center;
         height: 60vh;
@@ -491,6 +506,161 @@
     @apply text-xs text-slate-300 flex-1;
 }
 
+/* Floating Metrics Bar */
+.floating-metrics-bar {
+    @apply absolute bottom-4 left-1/2 -translate-x-1/2;
+    @apply flex items-center gap-3 px-6 py-3;
+    @apply bg-navy-900/95 backdrop-blur-md rounded-full;
+    @apply border border-cyan/30 shadow-xl;
+    @apply z-20 transition-all duration-300;
+    box-shadow: 0 0 20px rgba(0, 217, 255, 0.2), 0 4px 6px -1px rgb(0 0 0 / 0.3);
+}
+
+.floating-metrics-bar.hidden {
+    @apply opacity-0 pointer-events-none translate-y-4;
+}
+
+.floating-metric {
+    @apply flex flex-col items-center gap-0.5;
+}
+
+.floating-metric-label {
+    @apply text-[10px] uppercase tracking-wider text-slate-500 font-medium;
+}
+
+.floating-metric-value {
+    @apply text-base font-mono font-bold text-white tabular-nums;
+}
+
+.floating-metric-total {
+    @apply text-xs text-slate-500 font-mono;
+}
+
+.floating-metric-trend {
+    @apply text-xs ml-1 font-bold;
+}
+
+.floating-metric-trend.trending-up {
+    @apply text-emerald-400;
+}
+
+.floating-metric-trend.trending-down {
+    @apply text-red-400;
+}
+
+.floating-metric-divider {
+    @apply w-px h-8 bg-navy-700/50;
+}
+
+/* Pulse animation for training state */
+.floating-metrics-bar.training {
+    animation: metrics-pulse 2s ease-in-out infinite;
+}
+
+@keyframes metrics-pulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(0, 217, 255, 0.2), 0 4px 6px -1px rgb(0 0 0 / 0.3);
+        border-color: rgba(0, 217, 255, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(0, 217, 255, 0.4), 0 4px 6px -1px rgb(0 0 0 / 0.3);
+        border-color: rgba(0, 217, 255, 0.6);
+    }
+}
+
+/* Interactive Data Point Tooltip */
+.data-point-tooltip {
+    @apply absolute pointer-events-none z-30;
+    @apply bg-navy-900/95 backdrop-blur-md;
+    @apply border border-cyan/40 rounded-lg shadow-xl;
+    @apply p-3 min-w-[200px];
+    @apply transition-opacity duration-200;
+    box-shadow: 0 0 20px rgba(0, 217, 255, 0.3), 0 4px 6px -1px rgb(0 0 0 / 0.5);
+}
+
+.data-point-tooltip.hidden {
+    @apply opacity-0;
+}
+
+.tooltip-header {
+    @apply flex items-center justify-between mb-2 pb-2;
+    @apply border-b border-navy-700/50;
+}
+
+.tooltip-class {
+    @apply text-sm font-bold text-cyan;
+}
+
+.tooltip-confidence {
+    @apply text-xs font-mono text-emerald-400;
+}
+
+.tooltip-body {
+    @apply space-y-1;
+}
+
+.tooltip-row {
+    @apply flex items-center justify-between text-xs;
+}
+
+.tooltip-label {
+    @apply text-slate-400;
+}
+
+.tooltip-value {
+    @apply font-mono text-slate-200;
+}
+
+/* Visual Dataset Gallery */
+.dataset-gallery {
+    @apply w-full;
+}
+
+.dataset-gallery-grid {
+    @apply grid grid-cols-3 gap-2;
+}
+
+.dataset-preview-card {
+    @apply relative flex flex-col items-center p-2;
+    @apply bg-navy-800/50 rounded-lg border border-navy-700/50;
+    @apply cursor-pointer transition-all duration-200;
+    @apply hover:bg-navy-800 hover:border-cyan/40 hover:-translate-y-0.5;
+}
+
+.dataset-preview-card.selected {
+    @apply bg-navy-800 border-cyan ring-2 ring-cyan/20;
+    box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
+}
+
+.dataset-preview-icon {
+    @apply w-16 h-16 mb-2;
+}
+
+.dataset-preview-label {
+    @apply text-xs font-medium text-slate-200 mb-0.5;
+}
+
+.dataset-preview-desc {
+    @apply text-[10px] text-slate-500;
+}
+
+.dataset-preview-badge {
+    @apply absolute top-1 right-1 text-[9px] font-bold px-1.5 py-0.5 rounded;
+    @apply bg-emerald-500/20 text-emerald-400 border border-emerald-500/30;
+}
+
+.dataset-preview-badge.badge-medium {
+    @apply bg-amber-500/20 text-amber-400 border border-amber-500/30;
+}
+
+.dataset-preview-badge.badge-hard {
+    @apply bg-red-500/20 text-red-400 border border-red-500/30;
+}
+
+.dataset-preview-badge.badge-custom {
+    @apply bg-cyan-500/20 text-cyan-400 border border-cyan-500/30;
+}
+
 /* Loading Overlay */
 .loading-overlay {
     @apply absolute inset-0 flex flex-col items-center justify-center bg-navy-950/80 backdrop-blur-sm z-30 rounded-xl;
@@ -617,11 +787,6 @@
     50% { box-shadow: 0 0 40px rgba(0, 217, 255, 0.6); }
 }
 
-
-
-
-
-
 /* ===== WIREFRAME PRECISION ADJUSTMENTS ===== */
 
 /* Button scales - exact wireframe values */
@@ -656,5 +821,3 @@
 .sidebar-tab {
     transition-duration: 250ms !important;
 }
-
-

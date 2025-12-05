@@ -58,9 +58,24 @@ export interface TrainingElements {
     stateDisplay: HTMLElement;
     suggestionsPanel: HTMLDivElement;
     suggestionsList: HTMLDivElement;
+
+    // Floating Metrics Bar
+    floatingMetricsBar: HTMLDivElement;
+    floatEpoch: HTMLElement;
+    floatLoss: HTMLElement;
+    floatAccuracy: HTMLElement;
+    floatLr: HTMLElement;
+    floatLossTrend: HTMLElement;
+    floatAccuracyTrend: HTMLElement;
+
+    // Visualization Panel (for training animation)
+    vizPanel: HTMLElement;
 }
 
 export class TrainingController {
+    private previousLoss: number | null = null;
+    private previousAccuracy: number | null = null;
+
     constructor(
         private session: TrainingSession,
         private elements: TrainingElements,
@@ -346,6 +361,94 @@ export class TrainingController {
         this.elements.btnStartSticky.disabled = !canStart;
         this.elements.fabStart.classList.toggle('opacity-50', !canStart);
         this.elements.fabStart.classList.toggle('pointer-events-none', !canStart);
+
+        // Update Floating Metrics Bar
+        this.updateFloatingMetrics(state);
+    }
+
+    private updateFloatingMetrics(state: TrainingState): void {
+        // Show/hide floating metrics bar based on dataset and training state
+        const showMetrics = state.datasetLoaded && state.currentEpoch > 0;
+
+        if (showMetrics) {
+            this.elements.floatingMetricsBar.classList.remove('hidden');
+
+            // Add pulsing animation during training
+            if (state.isRunning && !state.isPaused) {
+                this.elements.floatingMetricsBar.classList.add('training');
+                this.elements.vizPanel.classList.add('training');
+            } else {
+                this.elements.floatingMetricsBar.classList.remove('training');
+                this.elements.vizPanel.classList.remove('training');
+            }
+
+            // Update epoch
+            this.elements.floatEpoch.textContent = state.currentEpoch.toString();
+
+            // Update loss with trend
+            if (state.currentLoss !== null && state.currentLoss !== undefined) {
+                this.elements.floatLoss.textContent = state.currentLoss.toFixed(4);
+
+                // Calculate and display trend
+                if (this.previousLoss !== null) {
+                    const lossChange = state.currentLoss - this.previousLoss;
+                    if (Math.abs(lossChange) > 0.0001) {
+                        if (lossChange < 0) {
+                            this.elements.floatLossTrend.textContent = '▼';
+                            this.elements.floatLossTrend.className = 'floating-metric-trend trending-down';
+                        } else {
+                            this.elements.floatLossTrend.textContent = '▲';
+                            this.elements.floatLossTrend.className = 'floating-metric-trend trending-up';
+                        }
+                    } else {
+                        this.elements.floatLossTrend.textContent = '';
+                    }
+                }
+                this.previousLoss = state.currentLoss;
+            } else {
+                this.elements.floatLoss.textContent = '—';
+                this.elements.floatLossTrend.textContent = '';
+            }
+
+            // Update accuracy with trend
+            if (state.currentAccuracy !== null && state.currentAccuracy !== undefined) {
+                this.elements.floatAccuracy.textContent = `${(state.currentAccuracy * 100).toFixed(1)}%`;
+
+                // Calculate and display trend
+                if (this.previousAccuracy !== null) {
+                    const accChange = state.currentAccuracy - this.previousAccuracy;
+                    if (Math.abs(accChange) > 0.001) {
+                        if (accChange > 0) {
+                            this.elements.floatAccuracyTrend.textContent = '▲';
+                            this.elements.floatAccuracyTrend.className = 'floating-metric-trend trending-up';
+                        } else {
+                            this.elements.floatAccuracyTrend.textContent = '▼';
+                            this.elements.floatAccuracyTrend.className = 'floating-metric-trend trending-down';
+                        }
+                    } else {
+                        this.elements.floatAccuracyTrend.textContent = '';
+                    }
+                }
+                this.previousAccuracy = state.currentAccuracy;
+            } else {
+                this.elements.floatAccuracy.textContent = '—';
+                this.elements.floatAccuracyTrend.textContent = '';
+            }
+
+            // Update learning rate
+            const lr = parseFloat(this.elements.inputLr.value);
+            if (!isNaN(lr)) {
+                this.elements.floatLr.textContent = lr.toFixed(4);
+            } else {
+                this.elements.floatLr.textContent = '—';
+            }
+        } else {
+            this.elements.floatingMetricsBar.classList.add('hidden');
+            this.elements.floatingMetricsBar.classList.remove('training');
+            // Reset trend tracking
+            this.previousLoss = null;
+            this.previousAccuracy = null;
+        }
     }
 
     private parseLayersInput(input: string): number[] {

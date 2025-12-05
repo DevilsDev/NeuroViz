@@ -8,12 +8,14 @@ interface NetworkNode {
   y: number;
   type: 'input' | 'hidden' | 'output';
   activation?: string;
+  activationValue?: number; // For showing node activation during training
 }
 
 interface NetworkLink {
   source: string;
   target: string;
   weight?: number;
+  strength?: number; // Normalized weight strength for visualization
 }
 
 /**
@@ -104,10 +106,13 @@ export class D3NetworkDiagram {
       }
     });
 
+    // Calculate max weight for normalization
+    const maxWeight = Math.max(...links.map(l => Math.abs(l.weight ?? 0)));
+
     // Draw links
     const linkGroup = g.append('g').attr('class', 'links');
-    
-    linkGroup.selectAll('line')
+
+    const linkElements = linkGroup.selectAll('line')
       .data(links)
       .enter()
       .append('line')
@@ -128,14 +133,82 @@ export class D3NetworkDiagram {
         return targetNode?.y ?? 0;
       })
       .attr('stroke', d => {
-        if (d.weight === undefined) return 'var(--border-color)';
-        return d.weight >= 0 ? '#22c55e' : '#ef4444';
+        if (d.weight === undefined) return '#334155';
+        // Gradient color based on weight strength
+        const absWeight = Math.abs(d.weight);
+        const strength = maxWeight > 0 ? absWeight / maxWeight : 0;
+        if (d.weight >= 0) {
+          // Positive weights: green gradient
+          return d3.interpolateRgb('#10b981', '#22c55e')(strength);
+        } else {
+          // Negative weights: red gradient
+          return d3.interpolateRgb('#f87171', '#ef4444')(strength);
+        }
       })
       .attr('stroke-width', d => {
         if (d.weight === undefined) return 0.5;
-        return Math.min(3, Math.abs(d.weight) * 2);
+        const absWeight = Math.abs(d.weight);
+        const strength = maxWeight > 0 ? absWeight / maxWeight : 0;
+        return 0.5 + strength * 2.5; // Range: 0.5 to 3
       })
-      .attr('stroke-opacity', 0.3);
+      .attr('stroke-opacity', d => {
+        if (d.weight === undefined) return 0.2;
+        const absWeight = Math.abs(d.weight);
+        const strength = maxWeight > 0 ? absWeight / maxWeight : 0;
+        return 0.2 + strength * 0.6; // Range: 0.2 to 0.8
+      })
+      .attr('class', 'network-link')
+      .style('transition', 'all 0.3s ease');
+
+    // Add interactive tooltips to links
+    linkElements
+      .on('mouseenter', function(event, d) {
+        if (d.weight !== undefined) {
+          d3.select(this)
+            .attr('stroke-opacity', 0.9)
+            .attr('stroke-width', 4);
+
+          // Show tooltip
+          const tooltip = d3.select('body').append('div')
+            .attr('class', 'network-tooltip')
+            .style('position', 'absolute')
+            .style('background', 'rgba(15, 23, 42, 0.95)')
+            .style('color', '#f1f5f9')
+            .style('padding', '8px 12px')
+            .style('border-radius', '6px')
+            .style('font-size', '12px')
+            .style('pointer-events', 'none')
+            .style('z-index', '1000')
+            .style('border', '1px solid rgba(0, 217, 255, 0.3)')
+            .html(`Weight: <strong>${d.weight.toFixed(4)}</strong>`);
+
+          tooltip
+            .style('left', `${event.pageX + 10}px`)
+            .style('top', `${event.pageY - 10}px`);
+        }
+      })
+      .on('mousemove', function(event) {
+        d3.select('.network-tooltip')
+          .style('left', `${event.pageX + 10}px`)
+          .style('top', `${event.pageY - 10}px`);
+      })
+      .on('mouseleave', function(event, d) {
+        d3.select(this)
+          .attr('stroke-opacity', () => {
+            if (d.weight === undefined) return 0.2;
+            const absWeight = Math.abs(d.weight);
+            const strength = maxWeight > 0 ? absWeight / maxWeight : 0;
+            return 0.2 + strength * 0.6;
+          })
+          .attr('stroke-width', () => {
+            if (d.weight === undefined) return 0.5;
+            const absWeight = Math.abs(d.weight);
+            const strength = maxWeight > 0 ? absWeight / maxWeight : 0;
+            return 0.5 + strength * 2.5;
+          });
+
+        d3.selectAll('.network-tooltip').remove();
+      });
 
     // Draw nodes
     const nodeGroup = g.append('g').attr('class', 'nodes');

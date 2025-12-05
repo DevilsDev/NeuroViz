@@ -94,7 +94,7 @@
     <!-- Main Content Grid -->
     <main class="main-grid">
       <!-- Visualisation Panel -->
-      <section class="panel-glow relative p-4" aria-label="Neural network visualization">
+      <section id="viz-panel" class="panel-glow relative p-4" aria-label="Neural network visualization">
         <div id="viz-container" role="img" aria-label="Neural network decision boundary visualization">
           <!-- D3 chart renders here -->
           <!-- Empty State CTA with Animated Preview -->
@@ -124,6 +124,28 @@
               </svg>
               Quick Demo
             </button>
+          </div>
+        </div>
+
+        <!-- Interactive Data Point Tooltip -->
+        <div id="data-point-tooltip" class="data-point-tooltip hidden" role="tooltip">
+          <div class="tooltip-header">
+            <span class="tooltip-class" id="tooltip-class">Class 1</span>
+            <span class="tooltip-confidence" id="tooltip-confidence">95%</span>
+          </div>
+          <div class="tooltip-body">
+            <div class="tooltip-row">
+              <span class="tooltip-label">Position:</span>
+              <span class="tooltip-value" id="tooltip-position">(0.5, 0.5)</span>
+            </div>
+            <div class="tooltip-row">
+              <span class="tooltip-label">True Label:</span>
+              <span class="tooltip-value" id="tooltip-true-label">Class 1</span>
+            </div>
+            <div class="tooltip-row">
+              <span class="tooltip-label">Prediction:</span>
+              <span class="tooltip-value" id="tooltip-prediction">Class 1</span>
+            </div>
           </div>
         </div>
 
@@ -162,6 +184,32 @@
         <div id="loading-overlay" class="loading-overlay hidden" role="status" aria-live="polite">
           <div class="spinner"></div>
           <span>Loading dataset...</span>
+        </div>
+
+        <!-- Floating Metrics Bar -->
+        <div id="floating-metrics-bar" class="floating-metrics-bar hidden" role="status" aria-live="polite">
+          <div class="floating-metric">
+            <span class="floating-metric-label">Epoch</span>
+            <span class="floating-metric-value" id="float-epoch">0</span>
+            <span class="floating-metric-total">/100</span>
+          </div>
+          <div class="floating-metric-divider"></div>
+          <div class="floating-metric">
+            <span class="floating-metric-label">Loss</span>
+            <span class="floating-metric-value" id="float-loss">—</span>
+            <span class="floating-metric-trend" id="float-loss-trend"></span>
+          </div>
+          <div class="floating-metric-divider"></div>
+          <div class="floating-metric">
+            <span class="floating-metric-label">Accuracy</span>
+            <span class="floating-metric-value" id="float-accuracy">—</span>
+            <span class="floating-metric-trend" id="float-accuracy-trend"></span>
+          </div>
+          <div class="floating-metric-divider"></div>
+          <div class="floating-metric">
+            <span class="floating-metric-label">Learning Rate</span>
+            <span class="floating-metric-value" id="float-lr">—</span>
+          </div>
         </div>
       </section>
 
@@ -288,7 +336,118 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6M9 16h6M9 8h6" />
                 </svg> Dataset
               </h3>
-              <select id="dataset-select" aria-label="Select dataset type" class="select-field mb-3">
+              <!-- Visual Dataset Gallery -->
+              <div class="dataset-gallery mb-3">
+                <div class="dataset-gallery-grid">
+                  <!-- Circle Dataset -->
+                  <div class="dataset-preview-card" data-dataset="circle">
+                    <div class="dataset-preview-icon">
+                      <svg viewBox="0 0 100 100" class="w-full h-full">
+                        <circle cx="50" cy="50" r="25" fill="none" stroke="#fb923c" stroke-width="2" opacity="0.6"/>
+                        <circle cx="50" cy="50" r="15" fill="none" stroke="#00d9ff" stroke-width="2" opacity="0.6"/>
+                        <circle cx="30" cy="30" r="2" fill="#fb923c"/>
+                        <circle cx="70" cy="70" r="2" fill="#fb923c"/>
+                        <circle cx="45" cy="50" r="2" fill="#00d9ff"/>
+                        <circle cx="55" cy="50" r="2" fill="#00d9ff"/>
+                      </svg>
+                    </div>
+                    <div class="dataset-preview-label">Circle</div>
+                    <div class="dataset-preview-desc">Concentric rings</div>
+                    <div class="dataset-preview-badge">Easy</div>
+                  </div>
+
+                  <!-- XOR Dataset -->
+                  <div class="dataset-preview-card" data-dataset="xor">
+                    <div class="dataset-preview-icon">
+                      <svg viewBox="0 0 100 100" class="w-full h-full">
+                        <line x1="50" y1="10" x2="50" y2="90" stroke="#475569" stroke-width="1" opacity="0.3"/>
+                        <line x1="10" y1="50" x2="90" y2="50" stroke="#475569" stroke-width="1" opacity="0.3"/>
+                        <circle cx="30" cy="30" r="2" fill="#fb923c"/>
+                        <circle cx="70" cy="70" r="2" fill="#fb923c"/>
+                        <circle cx="70" cy="30" r="2" fill="#00d9ff"/>
+                        <circle cx="30" cy="70" r="2" fill="#00d9ff"/>
+                      </svg>
+                    </div>
+                    <div class="dataset-preview-label">XOR</div>
+                    <div class="dataset-preview-desc">Quadrant pattern</div>
+                    <div class="dataset-preview-badge">Medium</div>
+                  </div>
+
+                  <!-- Spiral Dataset -->
+                  <div class="dataset-preview-card" data-dataset="spiral">
+                    <div class="dataset-preview-icon">
+                      <svg viewBox="0 0 100 100" class="w-full h-full">
+                        <path d="M50,50 Q60,40 70,50 T80,70" fill="none" stroke="#fb923c" stroke-width="2" opacity="0.6"/>
+                        <path d="M50,50 Q40,60 30,50 T20,30" fill="none" stroke="#00d9ff" stroke-width="2" opacity="0.6"/>
+                        <circle cx="60" cy="45" r="2" fill="#fb923c"/>
+                        <circle cx="75" cy="60" r="2" fill="#fb923c"/>
+                        <circle cx="40" cy="55" r="2" fill="#00d9ff"/>
+                        <circle cx="25" cy="40" r="2" fill="#00d9ff"/>
+                      </svg>
+                    </div>
+                    <div class="dataset-preview-label">Spiral</div>
+                    <div class="dataset-preview-desc">Intertwined arms</div>
+                    <div class="dataset-preview-badge badge-hard">Hard</div>
+                  </div>
+
+                  <!-- Gaussian Dataset -->
+                  <div class="dataset-preview-card" data-dataset="gaussian">
+                    <div class="dataset-preview-icon">
+                      <svg viewBox="0 0 100 100" class="w-full h-full">
+                        <ellipse cx="35" cy="40" rx="15" ry="12" fill="none" stroke="#fb923c" stroke-width="2" opacity="0.4"/>
+                        <ellipse cx="65" cy="60" rx="15" ry="12" fill="none" stroke="#00d9ff" stroke-width="2" opacity="0.4"/>
+                        <circle cx="30" cy="38" r="2" fill="#fb923c"/>
+                        <circle cx="40" cy="42" r="2" fill="#fb923c"/>
+                        <circle cx="60" cy="58" r="2" fill="#00d9ff"/>
+                        <circle cx="70" cy="62" r="2" fill="#00d9ff"/>
+                      </svg>
+                    </div>
+                    <div class="dataset-preview-label">Gaussian</div>
+                    <div class="dataset-preview-desc">Blob clusters</div>
+                    <div class="dataset-preview-badge">Easy</div>
+                  </div>
+
+                  <!-- Clusters Dataset -->
+                  <div class="dataset-preview-card" data-dataset="clusters">
+                    <div class="dataset-preview-icon">
+                      <svg viewBox="0 0 100 100" class="w-full h-full">
+                        <circle cx="30" cy="30" r="2" fill="#fb923c"/>
+                        <circle cx="35" cy="28" r="2" fill="#fb923c"/>
+                        <circle cx="70" cy="70" r="2" fill="#00d9ff"/>
+                        <circle cx="65" cy="72" r="2" fill="#00d9ff"/>
+                        <circle cx="50" cy="20" r="2" fill="#a855f7"/>
+                        <circle cx="48" cy="25" r="2" fill="#a855f7"/>
+                      </svg>
+                    </div>
+                    <div class="dataset-preview-label">Clusters</div>
+                    <div class="dataset-preview-desc">Multi-class</div>
+                    <div class="dataset-preview-badge badge-medium">Medium</div>
+                  </div>
+
+                  <!-- Custom Dataset -->
+                  <div class="dataset-preview-card" data-dataset="custom">
+                    <div class="dataset-preview-icon">
+                      <svg viewBox="0 0 100 100" class="w-full h-full">
+                        <path d="M30,50 L50,30 L70,50 L50,70 Z" fill="none" stroke="#00d9ff" stroke-width="2" opacity="0.4"/>
+                        <circle cx="50" cy="50" r="3" fill="#00d9ff"/>
+                        <text x="50" y="55" text-anchor="middle" fill="#94a3b8" font-size="24">✎</text>
+                      </svg>
+                    </div>
+                    <div class="dataset-preview-label">Custom</div>
+                    <div class="dataset-preview-desc">Draw your own</div>
+                    <div class="dataset-preview-badge badge-custom">Pro</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Classic Dropdown (Hidden by default, toggle with button) -->
+              <button id="toggle-dataset-view" class="text-xs text-slate-400 hover:text-cyan mb-2 flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+                Show all datasets
+              </button>
+              <select id="dataset-select" aria-label="Select dataset type" class="select-field mb-3 hidden">
                 <optgroup label="Generated Datasets">
                   <option value="circle">Circle (Concentric Rings)</option>
                   <option value="xor">XOR (Quadrants)</option>

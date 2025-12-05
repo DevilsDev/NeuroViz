@@ -91,6 +91,18 @@ export function getTrainingElements(): TrainingElements {
     fabStart: document.getElementById('fab-start') as HTMLButtonElement,
     fabPause: document.getElementById('fab-pause') as HTMLButtonElement,
     btnPause: document.getElementById('btn-pause') as HTMLButtonElement,
+
+    // Floating Metrics Bar
+    floatingMetricsBar: document.getElementById('floating-metrics-bar') as HTMLDivElement,
+    floatEpoch: document.getElementById('float-epoch') as HTMLElement,
+    floatLoss: document.getElementById('float-loss') as HTMLElement,
+    floatAccuracy: document.getElementById('float-accuracy') as HTMLElement,
+    floatLr: document.getElementById('float-lr') as HTMLElement,
+    floatLossTrend: document.getElementById('float-loss-trend') as HTMLElement,
+    floatAccuracyTrend: document.getElementById('float-accuracy-trend') as HTMLElement,
+
+    // Visualization panel for training animations
+    vizPanel: document.getElementById('viz-panel') as HTMLElement,
   };
 }
 
