@@ -544,6 +544,15 @@ export class TrainingSession implements ITrainingSession {
       this.isTraining = false;
       this.notifyListeners();
       console.error('Training loop error:', error);
+      logger.error(
+        'Training loop crashed',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'TrainingSession',
+          action: 'loop',
+          epoch: this.currentEpoch,
+        }
+      );
     } finally {
       // Unlock: allow next step
       this.isProcessingStep = false;
@@ -896,11 +905,17 @@ export class TrainingSession implements ITrainingSession {
 
     // Run training steps with increasing LR
     for (let i = 0; i < steps; i++) {
-      // Reinitialize with new LR (keeps architecture, resets weights each time would be too slow)
-      await this.neuralNet.initialize({
-        ...originalHyperparams,
-        learningRate: currentLR,
-      });
+      // Use dedicated method to update LR without destroying weights
+      if ('setLearningRate' in this.neuralNet) {
+        // @ts-ignore - We know it exists on our implementation
+        this.neuralNet.setLearningRate(currentLR);
+      } else {
+        // Fallback for implementations that don't support dynamic LR
+        await this.neuralNet.initialize({
+          ...originalHyperparams,
+          learningRate: currentLR,
+        });
+      }
 
       // Train one batch
       const batch = this.getTrainingBatch();

@@ -64,24 +64,6 @@ export interface INeuralNetworkService {
    * @throws If called before initialize() or if evaluation fails
    */
   evaluate(data: Point[]): Promise<TrainResult>;
-
-  /**
-   * Exports the trained model as downloadable files.
-   * Returns a Blob containing the model in TensorFlow.js format.
-   *
-   * @returns Object containing model topology and weights as Blobs
-   * @throws If called before initialize() or if export fails
-   */
-  exportModel(): Promise<{ modelJson: Blob; weightsBlob: Blob }>;
-
-  /**
-   * Gets all weights from the model as a flat array.
-   * Used for weight histogram visualization.
-   *
-   * @returns Array of all weight values, or empty array if not initialized
-   */
-  getWeights(): number[];
-
   /**
    * Gets weight matrices for each layer connection.
    * Used for network diagram weight visualization.

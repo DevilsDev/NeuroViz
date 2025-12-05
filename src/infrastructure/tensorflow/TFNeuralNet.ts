@@ -661,6 +661,42 @@ export class TFNeuralNet implements INeuralNetworkService {
   }
 
   /**
+   * Updates the learning rate of the current optimizer.
+   * Does NOT dispose or rebuild the model, preserving weights.
+   *
+   * @param learningRate - The new learning rate to apply
+   * @throws {ModelNotInitialisedError} If called before initialize()
+   */
+  setLearningRate(learningRate: number): void {
+    const model = this.assertInitialised();
+
+    if (this.model && this.model.optimizer) {
+      // TF.js optimizers have a protected `learningRate` property
+      // We can update it directly if we cast to any, or use the public API if available.
+      // Most TF.js optimizers expose `learningRate` as a property.
+      // @ts-ignore - TF.js types might not expose the setter publicly but it exists at runtime
+      this.model.optimizer.learningRate = learningRate;
+    } else {
+      // Fallback: Re-compile with new optimizer (preserves weights)
+      // This is safer if we can't mutate the optimizer in-place
+      if (this.config) {
+        const newOptimizer = this.createOptimizer(
+          this.config.optimizer ?? DEFAULT_HYPERPARAMETERS.optimizer,
+          learningRate,
+          this.config.momentum ?? DEFAULT_HYPERPARAMETERS.momentum,
+          this.config.clipNorm ?? 0
+        );
+
+        model.compile({
+          optimizer: newOptimizer,
+          loss: this.numClasses === 2 ? 'binaryCrossentropy' : 'categoricalCrossentropy',
+          metrics: ['accuracy'],
+        });
+      }
+    }
+  }
+
+  /**
    * Asserts the model has been initialised and returns it.
    * @throws {ModelNotInitialisedError} If model is null
    */
