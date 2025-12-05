@@ -28,6 +28,7 @@ export class TFNeuralNet implements INeuralNetworkService {
   private config: Hyperparameters | null = null;
   private numClasses = 2;
   private clipNorm = 0;
+  private isDisposed = false;
 
   /**
    * Initialises a new sequential model with the given hyperparameters.
@@ -40,6 +41,7 @@ export class TFNeuralNet implements INeuralNetworkService {
     this.config = config;
     this.numClasses = config.numClasses ?? 2;
     this.model = this.buildModel(config);
+    this.isDisposed = false;
   }
 
   /**
@@ -256,6 +258,7 @@ export class TFNeuralNet implements INeuralNetworkService {
       this.model = null;
     }
     this.config = null;
+    this.isDisposed = true;
   }
 
   /**
@@ -332,6 +335,7 @@ export class TFNeuralNet implements INeuralNetworkService {
 
     // Load the model
     this.model = (await tf.loadLayersModel(handler)) as tf.Sequential;
+    this.isDisposed = false;
   }
 
   /**
@@ -351,24 +355,30 @@ export class TFNeuralNet implements INeuralNetworkService {
    * Used for weight histogram visualization.
    */
   getWeights(): number[] {
-    if (!this.model) {
+    if (!this.model || this.isDisposed) {
       return [];
     }
 
-    const allWeights: number[] = [];
-    const weights = this.model.getWeights();
+    try {
+      const allWeights: number[] = [];
+      const weights = this.model.getWeights();
 
-    for (const tensor of weights) {
-      const data = tensor.dataSync();
-      for (let i = 0; i < data.length; i++) {
-        const value = data[i];
-        if (value !== undefined) {
-          allWeights.push(value);
+      for (const tensor of weights) {
+        const data = tensor.dataSync();
+        for (let i = 0; i < data.length; i++) {
+          const value = data[i];
+          if (value !== undefined) {
+            allWeights.push(value);
+          }
         }
       }
-    }
 
-    return allWeights;
+      return allWeights;
+    } catch (error) {
+      // Model was disposed during execution, return empty array
+      console.warn('Failed to get weights - model may have been disposed:', error);
+      return [];
+    }
   }
 
   /**
@@ -377,38 +387,44 @@ export class TFNeuralNet implements INeuralNetworkService {
    * @returns Array of weight matrices [layer][fromNode][toNode]
    */
   getWeightMatrices(): number[][][] {
-    if (!this.model) {
+    if (!this.model || this.isDisposed) {
       return [];
     }
 
-    const matrices: number[][][] = [];
-    const weights = this.model.getWeights();
+    try {
+      const matrices: number[][][] = [];
+      const weights = this.model.getWeights();
 
-    // Weights come in pairs: [kernel, bias, kernel, bias, ...]
-    // We only want the kernels (even indices)
-    for (let i = 0; i < weights.length; i += 2) {
-      const kernel = weights[i];
-      if (!kernel) continue;
+      // Weights come in pairs: [kernel, bias, kernel, bias, ...]
+      // We only want the kernels (even indices)
+      for (let i = 0; i < weights.length; i += 2) {
+        const kernel = weights[i];
+        if (!kernel) continue;
 
-      const shape = kernel.shape;
-      const data = kernel.dataSync();
-      const [inputSize, outputSize] = shape;
+        const shape = kernel.shape;
+        const data = kernel.dataSync();
+        const [inputSize, outputSize] = shape;
 
-      if (inputSize === undefined || outputSize === undefined) continue;
+        if (inputSize === undefined || outputSize === undefined) continue;
 
-      const matrix: number[][] = [];
-      for (let from = 0; from < inputSize; from++) {
-        const row: number[] = [];
-        for (let to = 0; to < outputSize; to++) {
-          const idx = from * outputSize + to;
-          row.push(data[idx] ?? 0);
+        const matrix: number[][] = [];
+        for (let from = 0; from < inputSize; from++) {
+          const row: number[] = [];
+          for (let to = 0; to < outputSize; to++) {
+            const idx = from * outputSize + to;
+            row.push(data[idx] ?? 0);
+          }
+          matrix.push(row);
         }
-        matrix.push(row);
+        matrices.push(matrix);
       }
-      matrices.push(matrix);
-    }
 
-    return matrices;
+      return matrices;
+    } catch (error) {
+      // Model was disposed during execution, return empty array
+      console.warn('Failed to get weight matrices - model may have been disposed:', error);
+      return [];
+    }
   }
 
   /**
@@ -418,7 +434,7 @@ export class TFNeuralNet implements INeuralNetworkService {
    * @returns Array of activation arrays per layer
    */
   getLayerActivations(point: Point): number[][] {
-    if (!this.model) {
+    if (!this.model || this.isDisposed) {
       return [];
     }
 
@@ -447,6 +463,10 @@ export class TFNeuralNet implements INeuralNetworkService {
       if (currentInput !== input) {
         currentInput.dispose();
       }
+    } catch (error) {
+      // Model was disposed during execution, return empty array
+      console.warn('Failed to get layer activations - model may have been disposed:', error);
+      return [];
     } finally {
       input.dispose();
     }

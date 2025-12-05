@@ -152,6 +152,14 @@ export class TrainingSession implements ITrainingSession {
   }
 
   async setHyperparameters(config: Hyperparameters): Promise<void> {
+    // Stop training before re-initializing to prevent accessing disposed model
+    const wasTraining = this.isTraining && !this.isPaused;
+    if (wasTraining) {
+      this.pause();
+      // Wait for current step to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
     await this.neuralNet.initialize(config);
     this.isInitialised = true;
     this.currentEpoch = 0;
@@ -892,6 +900,14 @@ export class TrainingSession implements ITrainingSession {
     steps = 100
   ): Promise<Array<{ lr: number; loss: number }>> {
     this.assertReadyToTrain();
+
+    // Pause training before running LR finder to prevent accessing disposed model
+    const wasTraining = this.isTraining && !this.isPaused;
+    if (wasTraining) {
+      this.pause();
+      // Wait for current step to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
 
     const results: Array<{ lr: number; loss: number }> = [];
     const lrMultiplier = Math.pow(maxLR / minLR, 1 / steps);
