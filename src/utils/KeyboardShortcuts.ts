@@ -82,7 +82,7 @@ export class KeyboardShortcuts {
      * Check if the user is currently typing in an input field
      */
     private isTyping(target: Element | null): boolean {
-        if (!target) return false;
+        if (!target || !target.tagName) return false;
 
         const tagName = target.tagName.toLowerCase();
         const isInput = tagName === 'input' || tagName === 'textarea' || tagName === 'select';
