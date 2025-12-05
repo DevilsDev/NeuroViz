@@ -1,156 +1,1709 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NeuroViz - Neural Network Visualiser</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap"
-      rel="stylesheet"
-    />
-    <!-- CSS is imported via main.ts for Vite/PostCSS processing -->
-    <script type="module" crossorigin src="/NeuroViz/assets/index-CyvPH5ys.js"></script>
-    <link rel="stylesheet" crossorigin href="/NeuroViz/assets/index-DhWvVIX5.css">
-  </head>
-  <body>
-    <div class="app-container">
-      <!-- Header -->
-      <header class="text-center py-6 border-b border-navy-700/50 mb-6">
-        <h1 class="text-3xl font-bold text-gradient glow-accent">NeuroViz</h1>
-        <p class="text-slate-400 text-sm mt-1">
-          Interactive Neural Network Decision Boundary Visualiser
-        </p>
-      </header>
 
-      <!-- Main Content Grid -->
-      <main class="main-grid">
-        <!-- Visualisation Panel -->
-        <section class="panel-glow relative p-4">
-          <div id="viz-container">
-            <!-- D3 chart renders here -->
-          </div>
-          <div id="loading-overlay" class="loading-overlay hidden">
-            <div class="spinner"></div>
-            <span>Loading dataset...</span>
-          </div>
-        </section>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="darkreader-lock" />
+  <meta name="color-scheme" content="light dark" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; child-src 'self' blob:;">
+  <title>NeuroViz - Neural Network Visualiser</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap"
+    rel="stylesheet" />
+  <!-- Critical CSS inline to prevent FOUC -->
+  <style>
+    /* Base theme colours applied immediately */
+    html.dark body {
+      background: #0a0f1a;
+      color: #f1f5f9;
+    }
 
-        <!-- Control Panel Sidebar -->
-        <aside class="flex flex-col gap-4">
-          <!-- Dataset Selection -->
-          <fieldset class="control-fieldset">
-            <legend class="control-legend">Dataset</legend>
-            <select id="dataset-select" class="select-field mb-3">
-              <option value="circle">Circle (Concentric Rings)</option>
-              <option value="xor">XOR (Quadrants)</option>
-              <option value="spiral">Spiral (Two Arms)</option>
-              <option value="gaussian">Gaussian (Clusters)</option>
-            </select>
-            <button id="btn-load-data" class="btn-secondary w-full">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-              Fetch Data
-            </button>
-          </fieldset>
+    html:not(.dark) body {
+      background: #f8fafc;
+      color: #0f172a;
+    }
 
-          <!-- Hyperparameters -->
-          <fieldset class="control-fieldset">
-            <legend class="control-legend">Hyperparameters</legend>
-            <div class="space-y-3">
-              <label class="block">
-                <span class="input-label">Learning Rate</span>
-                <input
-                  type="number"
-                  id="input-lr"
-                  class="input-field"
-                  value="0.03"
-                  min="0.001"
-                  max="1"
-                  step="0.001"
-                />
-              </label>
-              <label class="block">
-                <span class="input-label">Hidden Layers</span>
-                <input
-                  type="text"
-                  id="input-layers"
-                  class="input-field"
-                  value="8, 4"
-                  placeholder="e.g., 8, 4, 2"
-                />
-              </label>
-              <button id="btn-init" class="btn-secondary w-full">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Initialise Network
-              </button>
+    /* Hide content until styles load */
+    .app-container {
+      opacity: 0;
+      transition: opacity 0.15s ease-in;
+    }
+
+    .app-container.loaded {
+      opacity: 1;
+    }
+  </style>
+  <script type="module" crossorigin src="/NeuroViz/assets/index-B_w9MzxF.js"></script>
+  <link rel="modulepreload" crossorigin href="/NeuroViz/assets/vendor-tensorflow-BQ4mUeqF.js">
+  <link rel="modulepreload" crossorigin href="/NeuroViz/assets/vendor-d3-CBiZgAeM.js">
+  <link rel="stylesheet" crossorigin href="/NeuroViz/assets/index-CwuiiMw8.css">
+</head>
+
+<body>
+  <!-- Live Region for Screen Reader Announcements -->
+  <div id="sr-announcements" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+  <div class="app-container" role="application" aria-label="NeuroViz Neural Network Trainer">
+    <!-- Header - Compact 48px -->
+    <header
+      class="flex items-center justify-between py-3 px-4 bg-navy-900/80 backdrop-blur-md sticky top-0 z-50 border-b border-white/5 mb-4"
+      role="banner">
+      <div class="flex items-center gap-2">
+        <h1 class="text-lg sm:text-xl font-bold text-gradient glow-accent">NeuroViz</h1>
+        <span class="text-slate-500 text-xs hidden md:inline">Neural Network Visualiser</span>
+      </div>
+      <div class="flex items-center gap-1 sm:gap-2">
+        <button id="btn-help" class="p-2 rounded-lg bg-navy-800 hover:bg-navy-700 transition-colors"
+          aria-label="Help & Tutorials" title="Help & Tutorials">
+          <svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </button>
+        <button id="btn-fullscreen" class="p-2 rounded-lg bg-navy-800 hover:bg-navy-700 transition-colors"
+          aria-label="Toggle fullscreen" title="Toggle fullscreen (F)">
+          <!-- Expand icon (shown when not fullscreen) -->
+          <svg id="icon-expand" class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+          </svg>
+          <!-- Compress icon (shown when fullscreen, hidden by default) -->
+          <svg id="icon-compress" class="w-5 h-5 text-slate-300 hidden" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
+          </svg>
+        </button>
+        <button id="btn-theme-toggle" class="p-2 rounded-lg bg-navy-800 hover:bg-navy-700 transition-colors"
+          aria-label="Toggle theme" title="Toggle light/dark theme">
+          <!-- Sun icon (shown in dark mode) -->
+          <svg id="icon-sun" class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <!-- Moon icon (shown in light mode, hidden by default) -->
+          <svg id="icon-moon" class="w-5 h-5 text-slate-600 hidden" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="main-grid">
+      <!-- Visualisation Panel -->
+      <section class="panel-glow relative p-4" aria-label="Neural network visualization">
+        <div id="viz-container" role="img" aria-label="Neural network decision boundary visualization">
+          <!-- D3 chart renders here -->
+          <!-- Empty State CTA with Animated Preview -->
+          <div id="viz-empty-state" class="empty-state-cta">
+            <!-- Animated Preview -->
+            <div class="empty-state-preview">
+              <div class="preview-boundary"></div>
+              <!-- Class A points (orange) -->
+              <div class="preview-point class-a" style="top: 15%; left: 25%; animation-delay: 0s;"></div>
+              <div class="preview-point class-a" style="top: 25%; left: 15%; animation-delay: 0.3s;"></div>
+              <div class="preview-point class-a" style="top: 20%; left: 40%; animation-delay: 0.6s;"></div>
+              <div class="preview-point class-a" style="top: 35%; left: 20%; animation-delay: 0.9s;"></div>
+              <div class="preview-point class-a" style="top: 10%; left: 35%; animation-delay: 1.2s;"></div>
+              <!-- Class B points (blue) -->
+              <div class="preview-point class-b" style="top: 65%; left: 60%; animation-delay: 0.15s;"></div>
+              <div class="preview-point class-b" style="top: 75%; left: 70%; animation-delay: 0.45s;"></div>
+              <div class="preview-point class-b" style="top: 70%; left: 80%; animation-delay: 0.75s;"></div>
+              <div class="preview-point class-b" style="top: 80%; left: 65%; animation-delay: 1.05s;"></div>
+              <div class="preview-point class-b" style="top: 60%; left: 75%; animation-delay: 1.35s;"></div>
             </div>
-          </fieldset>
+            <div class="empty-state-title">Train a Neural Network</div>
+            <div class="empty-state-description">Watch the decision boundary evolve as the network learns to classify
+              data</div>
+            <button id="btn-quick-start" class="btn-cta">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Quick Demo
+            </button>
+          </div>
+        </div>
 
-          <!-- Training Controls -->
-          <fieldset class="control-fieldset">
-            <legend class="control-legend">Training</legend>
-            <div class="grid grid-cols-2 gap-2">
-              <button id="btn-start" class="btn-primary" disabled>
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+        <!-- Explain This Moment Button & Panel -->
+        <button id="btn-explain-moment" class="btn-explain-moment" aria-label="Explain what's happening in training">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z">
+            </path>
+          </svg>
+          💡 Explain This Moment
+        </button>
+
+        <!-- Explanation Panel (hidden by default) -->
+        <div id="explain-moment-panel" class="explain-moment-panel hidden">
+          <div class="explain-moment-header">
+            <span class="explain-moment-icon" id="explain-icon">💡</span>
+            <h3 class="explain-moment-title" id="explain-title">What's happening?</h3>
+            <button class="explain-moment-close" id="btn-close-explanation" aria-label="Close explanation">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+          <div class="explain-moment-message" id="explain-message">
+            Loading explanation...
+          </div>
+          <div class="explain-moment-tip" id="explain-tip-container">
+            <span class="explain-moment-tip-icon">📈</span>
+            <p class="explain-moment-tip-text" id="explain-tip">
+              Tip will appear here
+            </p>
+          </div>
+        </div>
+
+        <div id="loading-overlay" class="loading-overlay hidden" role="status" aria-live="polite">
+          <div class="spinner"></div>
+          <span>Loading dataset...</span>
+        </div>
+      </section>
+
+      <!-- Control Panel Sidebar -->
+      <aside id="main-controls" class="sidebar-container" role="complementary" aria-label="Training controls">
+        <!-- Scrollable Content Area -->
+        <div class="sidebar-scroll-area">
+          <!-- Workflow Stepper -->
+          <div id="workflow-stepper" class="workflow-stepper">
+            <div class="stepper-step" data-step="1" id="step-data">
+              <div class="step-indicator active">
+                <svg class="step-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7c-2 0-3 1-3 3z" />
+                </svg>
+              </div>
+              <span class="step-label">Data</span>
+            </div>
+            <div class="step-connector"></div>
+            <div class="stepper-step" data-step="2" id="step-network">
+              <div class="step-indicator">
+                <svg class="step-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <span class="step-label">Network</span>
+            </div>
+            <div class="step-connector"></div>
+            <div class="stepper-step" data-step="3" id="step-train">
+              <div class="step-indicator">
+                <svg class="step-icon" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+              <span class="step-label">Train</span>
+            </div>
+          </div>
+
+          <!-- Sidebar Tabs -->
+          <div class="sidebar-tabs" role="tablist" aria-label="Control panel sections">
+            <button class="sidebar-tab active" data-tab="setup" role="tab" aria-selected="true"
+              aria-controls="tab-setup" id="tab-btn-setup">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              </svg>
+              Setup
+            </button>
+            <button class="sidebar-tab" data-tab="train" role="tab" aria-selected="false" aria-controls="tab-train"
+              id="tab-btn-train">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+              Train
+            </button>
+            <button class="sidebar-tab" data-tab="analyse" role="tab" aria-selected="false" aria-controls="tab-analyse"
+              id="tab-btn-analyse">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              Analyse
+            </button>
+          </div>
+
+          <!-- Tab Content: Setup -->
+          <div class="tab-content active" data-tab-content="setup" role="tabpanel" id="tab-setup"
+            aria-labelledby="tab-btn-setup">
+            <!-- Quick Presets -->
+            <div class="p-4 bg-navy-800/50 rounded-xl border border-navy-700/50 mb-4">
+              <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg> Quick Start
+              </h3>
+              <select id="preset-select" aria-label="Select preset configuration" class="select-field mb-2">
+                <option value="">— Select a preset —</option>
+                <optgroup label="Built-in Presets">
+                  <option value="quick-demo">🚀 Quick Demo (Simple Circle)</option>
+                  <option value="xor-challenge">🎯 XOR Challenge (Classic Problem)</option>
+                  <option value="spiral-deep">🌀 Deep Spiral (Complex Pattern)</option>
+                  <option value="multiclass">🎨 Multi-class Clusters (4 Classes)</option>
+                  <option value="overfit-demo">📈 Overfitting Demo (High Capacity)</option>
+                </optgroup>
+                <optgroup id="bookmark-options" label="My Bookmarks">
+                  <!-- Bookmarks populated dynamically -->
+                </optgroup>
+              </select>
+              <button id="btn-apply-preset" class="btn-primary w-full text-sm" disabled>
+                <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Apply & Start Training
+              </button>
+              <div class="flex gap-2 mt-2">
+                <button id="btn-save-bookmark" class="btn-secondary flex-1 text-xs">
+                  <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                  </svg>
+                  Save
+                </button>
+                <button id="btn-delete-bookmark" class="btn-secondary flex-1 text-xs" disabled>
+                  <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete
+                </button>
+              </div>
+            </div>
+
+            <!-- Dataset Selection -->
+            <div class="p-4 bg-navy-800/50 rounded-xl border border-navy-700/50 mb-4">
+              <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7c-2 0-3 1-3 3z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6M9 16h6M9 8h6" />
+                </svg> Dataset
+              </h3>
+              <select id="dataset-select" aria-label="Select dataset type" class="select-field mb-3">
+                <optgroup label="Generated Datasets">
+                  <option value="circle">Circle (Concentric Rings)</option>
+                  <option value="xor">XOR (Quadrants)</option>
+                  <option value="spiral">Spiral (Multi-arm)</option>
+                  <option value="gaussian">Gaussian (2 Clusters)</option>
+                  <option value="clusters">Clusters (Multi-class)</option>
+                </optgroup>
+                <optgroup label="Real-world Datasets">
+                  <option value="iris">Iris (3 Classes, 150 samples)</option>
+                  <option value="wine">Wine (3 Classes, 178 samples)</option>
+                </optgroup>
+                <option value="custom">Custom (Draw Your Own)</option>
+              </select>
+              <!-- Dataset generation options -->
+              <div id="dataset-options" class="space-y-2 mb-3">
+                <label class="block">
+                  <span class="input-label">Samples: <span id="samples-value">200</span></span>
+                  <input type="range" id="input-samples"
+                    class="w-full h-2 bg-navy-700 rounded-lg appearance-none cursor-pointer accent-accent-500"
+                    value="200" min="50" max="500" step="50" />
+                </label>
+                <label class="block">
+                  <span class="input-label">Noise: <span id="noise-value">0.1</span></span>
+                  <input type="range" id="input-noise"
+                    class="w-full h-2 bg-navy-700 rounded-lg appearance-none cursor-pointer accent-accent-500"
+                    value="10" min="0" max="50" step="5" />
+                </label>
+                <label class="block">
+                  <span class="input-label">Class Balance: <span id="balance-value">50%</span></span>
+                  <input type="range" id="input-balance"
+                    class="w-full h-2 bg-navy-700 rounded-lg appearance-none cursor-pointer accent-accent-500"
+                    value="50" min="10" max="90" step="5" />
+                </label>
+                <label class="block">
+                  <span class="input-label">Preprocessing</span>
+                  <select id="input-preprocessing" class="select-field">
+                    <option value="none" selected>None</option>
+                    <option value="normalize">Normalize (Min-Max)</option>
+                    <option value="standardize">Standardize (Z-Score)</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="flex gap-2">
+                <button id="btn-load-data" class="btn-secondary flex-1" aria-label="Load dataset">
+                  <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  Fetch
+                </button>
+                <label class="btn-secondary flex-1 cursor-pointer text-center">
+                  <svg aria-hidden="true" class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  CSV
+                  <input type="file" id="input-csv-upload" accept=".csv" class="hidden" />
+                </label>
+              </div>
+              <button id="btn-download-dataset" class="btn-secondary w-full text-xs mt-2" disabled>
+                <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download Dataset
+              </button>
+
+              <!-- Draw Mode Controls (shown when custom dataset selected) -->
+              <div id="draw-controls" class="mt-3 hidden">
+                <div class="text-xs text-slate-400 mb-2">Click on chart to add points</div>
+                <div id="draw-class-buttons" class="flex flex-wrap gap-2">
+                  <!-- Class buttons generated dynamically based on numClasses -->
+                </div>
+                <button id="btn-clear-custom" class="btn-secondary w-full mt-2 text-xs">
+                  Clear All Points
+                </button>
+              </div>
+            </div>
+
+            <!-- Visualization Settings -->
+            <div class="p-4 bg-navy-800/50 rounded-xl border border-navy-700/50 mb-4">
+              <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                </svg> Visualisation
+              </h3>
+              <div class="space-y-3">
+                <div class="grid grid-cols-2 gap-2">
+                  <label class="block">
+                    <span class="input-label">Colour Scheme</span>
+                    <select id="input-colour-scheme" class="select-field">
+                      <option value="default" selected>Default</option>
+                      <option value="viridis">Viridis</option>
+                      <option value="plasma">Plasma</option>
+                      <option value="cool">Cool</option>
+                      <option value="warm">Warm</option>
+                    </select>
+                  </label>
+                  <label class="block">
+                    <span class="input-label">Point Size</span>
+                    <select id="input-point-size" class="select-field">
+                      <option value="3">Small</option>
+                      <option value="5" selected>Medium</option>
+                      <option value="8">Large</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <label class="block">
+                    <span class="input-label">Opacity: <span id="opacity-value">70</span>%</span>
+                    <input type="range" id="input-opacity"
+                      class="w-full h-2 bg-navy-700 rounded-lg appearance-none cursor-pointer accent-accent-500"
+                      value="70" min="10" max="100" step="10" />
+                  </label>
+                  <label class="block">
+                    <span class="input-label">Contours: <span id="contour-value">10</span></span>
+                    <input type="range" id="input-contours"
+                      class="w-full h-2 bg-navy-700 rounded-lg appearance-none cursor-pointer accent-accent-500"
+                      value="10" min="3" max="20" step="1" />
+                  </label>
+                </div>
+                <div class="flex flex-wrap gap-x-4 gap-y-2">
+                  <label class="flex items-center gap-2 text-xs text-slate-400">
+                    <input type="checkbox" id="input-zoom" class="accent-accent-500" checked />
+                    Zoom/Pan
+                  </label>
+                  <label class="flex items-center gap-2 text-xs text-slate-400">
+                    <input type="checkbox" id="input-tooltips" class="accent-accent-500" checked />
+                    Tooltips
+                  </label>
+                  <label class="flex items-center gap-2 text-xs text-slate-400">
+                    <input type="checkbox" id="input-highlight-errors" class="accent-accent-500" />
+                    Show Errors
+                  </label>
+                  <label class="flex items-center gap-2 text-xs text-slate-400">
+                    <input type="checkbox" id="input-confidence-circles" class="accent-accent-500" />
+                    Confidence
+                  </label>
+                  <label class="flex items-center gap-2 text-xs text-slate-400"
+                    title="Browser notification when training completes">
+                    <input type="checkbox" id="input-notifications" class="accent-accent-500" />
+                    Notify
+                  </label>
+                  <label class="flex items-center gap-2 text-xs text-slate-400"
+                    title="Record boundary evolution for replay">
+                    <input type="checkbox" id="input-record-evolution" class="accent-accent-500" />
+                    Record
+                  </label>
+                  <label class="flex items-center gap-2 text-xs text-slate-400" title="Toggle 3D visualization">
+                    <input type="checkbox" id="input-3d-view" class="accent-accent-500" />
+                    3D View
+                  </label>
+                  <label class="flex items-center gap-2 text-xs text-slate-400" title="Show Voronoi diagram overlay">
+                    <input type="checkbox" id="input-voronoi" class="accent-accent-500" />
+                    Voronoi
+                  </label>
+                </div>
+                <!-- 3D View Container -->
+                <div id="three-container"
+                  class="hidden mt-2 h-64 bg-navy-900 rounded-lg border border-navy-600 relative">
+                  <div class="absolute top-2 right-2 flex gap-1 z-10">
+                    <button id="btn-3d-reset" class="btn-secondary text-xs px-2 py-1">Reset</button>
+                    <button id="btn-3d-top" class="btn-secondary text-xs px-2 py-1">Top</button>
+                    <button id="btn-3d-side" class="btn-secondary text-xs px-2 py-1">Side</button>
+                  </div>
+                </div>
+                <!-- Evolution Replay Controls -->
+                <div id="evolution-controls" class="hidden pt-2 border-t border-navy-700/30 mt-2">
+                  <div class="flex items-center gap-2">
+                    <button id="btn-play-evolution" class="btn-secondary text-xs px-2 py-1" disabled>
+                      ▶ Play
+                    </button>
+                    <input type="range" id="evolution-slider" class="flex-1 h-1 accent-accent-500" min="0" max="100"
+                      value="0" disabled />
+                    <span id="evolution-epoch" class="text-xs text-slate-400 w-16 text-right">Epoch: 0</span>
+                  </div>
+                  <button id="btn-export-gif" class="btn-secondary w-full text-xs mt-2" disabled>
+                    <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+                    </svg>
+                    Export as GIF
+                  </button>
+                </div>
+                <!-- Export Buttons -->
+                <div class="flex gap-2 pt-2 border-t border-navy-700/30">
+                  <button id="btn-export-png" class="btn-secondary flex-1 text-xs" disabled>
+                    <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    PNG
+                  </button>
+                  <button id="btn-export-svg" class="btn-secondary flex-1 text-xs" disabled>
+                    <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                    </svg>
+                    SVG
+                  </button>
+                  <button id="btn-screenshot" class="btn-secondary flex-1 text-xs" disabled
+                    title="Screenshot with config info">
+                    <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    📋
+                  </button>
+                </div>
+              </div>
+              </fieldset>
+
+              <!-- Hyperparameters -->
+              <div class="p-4 bg-navy-800/50 rounded-xl border border-navy-700/50 mb-4">
+                <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                  <svg class="w-4 h-4 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg> Hyperparameters
+                </h3>
+                <div class="space-y-3">
+                  <div class="grid grid-cols-2 gap-2">
+                    <label class="block">
+                      <span class="input-label" data-eli5="learning-rate">Learning Rate <span
+                          class="text-slate-500 cursor-help">ⓘ</span></span>
+                      <input type="number" id="input-lr" class="input-field" value="0.03" min="0.001" max="1"
+                        step="0.001" />
+                    </label>
+                    <label class="block">
+                      <span class="input-label" data-eli5="optimizer-adam">Optimizer <span
+                          class="text-slate-500 cursor-help">ⓘ</span></span>
+                      <select id="input-optimizer" class="select-field">
+                        <option value="adam" selected>Adam</option>
+                        <option value="sgd">SGD</option>
+                        <option value="rmsprop">RMSprop</option>
+                        <option value="adagrad">Adagrad</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div id="momentum-control" class="hidden">
+                    <label class="block">
+                      <span class="input-label">Momentum: <span id="momentum-value">0.9</span></span>
+                      <input type="range" id="input-momentum"
+                        class="w-full h-2 bg-navy-700 rounded-lg appearance-none cursor-pointer accent-accent-500"
+                        value="0.9" min="0" max="0.99" step="0.01" />
+                    </label>
+                  </div>
+                  <label class="block">
+                    <span class="input-label" data-eli5="layers">Hidden Layers <span
+                        class="text-slate-500 cursor-help">ⓘ</span></span>
+                    <input type="text" id="input-layers" class="input-field" value="8, 4" placeholder="e.g., 8, 4, 2" />
+                  </label>
+                  <label class="block">
+                    <span class="input-label">Layer Activations <span class="text-slate-500">(optional)</span></span>
+                    <input type="text" id="input-layer-activations" class="input-field" value=""
+                      placeholder="e.g., relu, tanh, sigmoid" />
+                  </label>
+                  <!-- Initialise Network button - positioned near layer config -->
+                  <button id="btn-init" class="btn-primary w-full" aria-label="Initialize neural network">
+                    <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Initialise Network
+                  </button>
+                  <div class="grid grid-cols-2 gap-2">
+                    <label class="block">
+                      <span class="input-label" data-eli5="activation-relu">Default Activation <span
+                          class="text-slate-500 cursor-help">ⓘ</span></span>
+                      <select id="input-activation" class="select-field">
+                        <option value="relu" selected>ReLU</option>
+                        <option value="tanh">Tanh</option>
+                        <option value="sigmoid">Sigmoid</option>
+                        <option value="elu">ELU</option>
+                      </select>
+                    </label>
+                    <label class="block">
+                      <span class="input-label">Classes</span>
+                      <select id="input-num-classes" class="select-field">
+                        <option value="2" selected>2 (Binary)</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <label class="block">
+                      <span class="input-label" data-eli5="l1-regularization">L1 Reg <span
+                          class="text-slate-500 cursor-help">ⓘ</span></span>
+                      <input type="number" id="input-l1" class="input-field" value="0" min="0" max="0.1" step="0.001" />
+                    </label>
+                    <label class="block">
+                      <span class="input-label" data-eli5="l2-regularization">L2 Reg <span
+                          class="text-slate-500 cursor-help">ⓘ</span></span>
+                      <input type="number" id="input-l2" class="input-field" value="0" min="0" max="0.1" step="0.001" />
+                    </label>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <label class="block">
+                      <span class="input-label" data-eli5="dropout">Dropout <span
+                          class="text-slate-500 cursor-help">ⓘ</span></span>
+                      <select id="input-dropout" class="select-field">
+                        <option value="0" selected>None (0%)</option>
+                        <option value="0.1">10%</option>
+                        <option value="0.2">20%</option>
+                        <option value="0.3">30%</option>
+                        <option value="0.5">50%</option>
+                      </select>
+                    </label>
+                    <label class="block">
+                      <span class="input-label">Gradient Clip</span>
+                      <select id="input-clip-norm" class="select-field">
+                        <option value="0" selected>None</option>
+                        <option value="0.5">0.5</option>
+                        <option value="1">1.0</option>
+                        <option value="2">2.0</option>
+                        <option value="5">5.0</option>
+                      </select>
+                    </label>
+                  </div>
+                  <label class="flex items-center gap-2 mt-2">
+                    <input type="checkbox" id="input-batch-norm" class="checkbox-field" />
+                    <span class="input-label mb-0">Batch Normalization</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Training Configuration -->
+            <div class="p-4 bg-navy-800/50 rounded-xl border border-navy-700/50 mb-4">
+              <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                </svg> Training Config
+              </h3>
+              <div class="space-y-3">
+                <div class="grid grid-cols-2 gap-2">
+                  <label class="block">
+                    <span class="input-label" data-eli5="batch-size">Batch Size <span
+                        class="text-slate-500 cursor-help">ⓘ</span></span>
+                    <input type="number" id="input-batch-size" class="input-field" value="0" min="0" max="1000"
+                      step="10" title="0 = use all samples" />
+                  </label>
+                  <label class="block">
+                    <span class="input-label" data-eli5="epochs">Max Epochs <span
+                        class="text-slate-500 cursor-help">ⓘ</span></span>
+                    <input type="number" id="input-max-epochs" class="input-field" value="0" min="0" max="100000"
+                      step="100" title="0 = unlimited" />
+                  </label>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <label class="block">
+                    <span class="input-label" data-eli5="validation-split">Validation Split <span
+                        class="text-slate-500 cursor-help">ⓘ</span></span>
+                    <select id="input-val-split" class="select-field">
+                      <option value="0">None</option>
+                      <option value="0.1">10%</option>
+                      <option value="0.2" selected>20%</option>
+                      <option value="0.3">30%</option>
+                    </select>
+                  </label>
+                  <label class="block">
+                    <span class="input-label">Speed: <span id="fps-value">60</span> FPS</span>
+                    <input type="range" id="input-fps"
+                      class="w-full h-2 bg-navy-700 rounded-lg appearance-none cursor-pointer accent-accent-500 mt-2"
+                      value="60" min="1" max="60" step="1" />
+                  </label>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <label class="block">
+                    <span class="input-label">Performance Mode</span>
+                    <select id="input-perf-mode" class="select-field">
+                      <option value="full" selected>Full (60 FPS)</option>
+                      <option value="balanced">Balanced (30 FPS)</option>
+                      <option value="battery">Battery Saver (15 FPS)</option>
+                    </select>
+                  </label>
+                  <div class="flex items-end">
+                    <span id="perf-stats" class="text-xs text-slate-500 pb-2">—</span>
+                  </div>
+                </div>
+                <!-- LR Schedule & Early Stopping -->
+                <div class="grid grid-cols-2 gap-2">
+                  <label class="block">
+                    <span class="input-label">LR Schedule</span>
+                    <select id="input-lr-schedule" class="select-field">
+                      <option value="none" selected>None (constant)</option>
+                      <option value="exponential">Exponential Decay</option>
+                      <option value="step">Step Decay</option>
+                      <option value="cosine">Cosine Annealing</option>
+                      <option value="cyclic_triangular">Cyclic Triangle</option>
+                      <option value="cyclic_cosine">Cyclic Cosine</option>
+                    </select>
+                  </label>
+                  <label class="block">
+                    <span class="input-label">Warmup Epochs</span>
+                    <input type="number" id="input-warmup" class="input-field" value="0" min="0" max="50" step="5"
+                      title="0 = disabled, gradual LR increase" />
+                  </label>
+                </div>
+                <div id="cyclic-lr-controls" class="grid grid-cols-2 gap-2 hidden">
+                  <label class="block">
+                    <span class="input-label">Cycle Length</span>
+                    <input type="number" id="input-cycle-length" class="input-field" value="20" min="5" max="100"
+                      step="5" title="Epochs per cycle" />
+                  </label>
+                  <label class="block">
+                    <span class="input-label">Min LR</span>
+                    <input type="number" id="input-min-lr" class="input-field" value="0.001" min="0.0001" max="0.1"
+                      step="0.001" title="Minimum learning rate" />
+                  </label>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <label class="block">
+                    <span class="input-label">Early Stop Patience</span>
+                    <input type="number" id="input-early-stop" class="input-field" value="0" min="0" max="100" step="5"
+                      title="0 = disabled, epochs without improvement" />
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div><!-- End Tab Content: Setup -->
+
+          <!-- Tab Content: Train -->
+          <div class="tab-content" data-tab-content="train" role="tabpanel" id="tab-train"
+            aria-labelledby="tab-btn-train">
+            <!-- Hidden Training Controls (kept for JS references, UI moved to sticky footer) -->
+            <div id="training-fieldset" class="hidden" aria-hidden="true">
+              <button id="btn-start" class="btn-primary" disabled aria-label="Start training"></button>
+              <button id="btn-pause" class="btn-secondary" disabled aria-label="Pause training"></button>
+              <button id="btn-step" class="btn-secondary" disabled aria-label="Execute single training step"></button>
+              <button id="btn-reset" class="btn-danger" disabled aria-label="Reset training"></button>
+            </div>
+
+            <!-- Keyboard shortcuts hint -->
+            <div class="text-xs text-slate-500 mb-3 text-center p-2 bg-navy-900/30 rounded-lg">
+              <kbd class="kbd">Space</kbd> Start/Pause
+              <kbd class="kbd">S</kbd> Step
+              <kbd class="kbd">R</kbd> Reset
+              <kbd class="kbd">Esc</kbd> Stop
+            </div>
+
+            <!-- Status Display -->
+            <div class="p-4 bg-navy-800/50 rounded-xl border border-navy-700/50 mb-4">
+              <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg> Metrics
+              </h3>
+              <!-- Hero metrics row -->
+              <div
+                class="flex items-center justify-between p-3 bg-gradient-to-r from-navy-900/80 to-navy-800/60 rounded-xl mb-3 border border-navy-700/30">
+                <div class="text-center flex-1">
+                  <div id="status-epoch" class="text-2xl font-bold text-accent-400 tabular-nums">0</div>
+                  <div class="text-[10px] text-slate-500 uppercase tracking-wider" data-eli5="epochs">Epoch</div>
+                </div>
+                <div class="h-10 w-px bg-navy-700/50"></div>
+                <div class="text-center flex-1">
+                  <div id="status-loss" class="text-xl font-mono font-bold text-orange-400 tabular-nums">—</div>
+                  <div class="text-[10px] text-slate-500 uppercase tracking-wider" data-eli5="loss">Loss</div>
+                </div>
+                <div class="h-10 w-px bg-navy-700/50"></div>
+                <div class="text-center flex-1">
+                  <div id="status-accuracy" class="text-xl font-mono font-bold text-emerald-400 tabular-nums">—</div>
+                  <div class="text-[10px] text-slate-500 uppercase tracking-wider" data-eli5="accuracy">Accuracy</div>
+                </div>
+              </div>
+              <!-- Secondary metrics -->
+              <div class="grid grid-cols-4 gap-2">
+                <div class="metric-card">
+                  <span class="metric-label">State</span>
+                  <span id="status-state" class="metric-value status-idle" aria-live="polite">Idle</span>
+                </div>
+                <div class="metric-card">
+                  <span class="metric-label">LR</span>
+                  <span id="status-lr" class="metric-value text-cyan-400">—</span>
+                </div>
+                <div class="metric-card">
+                  <span class="metric-label">Val Loss</span>
+                  <span id="status-val-loss" class="metric-value text-red-400">—</span>
+                </div>
+                <div class="metric-card">
+                  <span class="metric-label">Val Acc</span>
+                  <span id="status-val-accuracy" class="metric-value text-emerald-300">—</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Training History Chart -->
+            <div class="p-4 bg-navy-800/50 rounded-xl border border-navy-700/50 mb-4">
+              <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                </svg> Training History
+              </h3>
+              <div class="training-history-layout">
+                <!-- Left Stats Panel -->
+                <div class="training-stats-panel">
+                  <div class="stat-group">
+                    <div class="stat-label">Best Loss</div>
+                    <div id="stat-best-loss" class="stat-value text-orange-400">—</div>
+                  </div>
+                  <div class="stat-group">
+                    <div class="stat-label">Best Epoch</div>
+                    <div id="stat-best-epoch" class="stat-value text-accent-400">—</div>
+                  </div>
+                  <div class="stat-group">
+                    <div class="stat-label">Improvement</div>
+                    <div id="stat-improvement" class="stat-value text-emerald-400">—</div>
+                  </div>
+                </div>
+
+                <!-- Chart Container -->
+                <div id="loss-chart-container" class="flex-1 h-48 bg-navy-900/50 rounded-lg">
+                  <!-- D3 loss chart renders here -->
+                  <div id="loss-chart-empty" class="empty-state h-full">
+                    <svg class="empty-state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    <div class="empty-state-title">No training data yet</div>
+                    <div class="empty-state-description">Start training to see loss curves</div>
+                  </div>
+                </div>
+
+                <!-- Right Stats Panel -->
+                <div class="training-stats-panel">
+                  <div class="stat-group">
+                    <div class="stat-label">Best Acc</div>
+                    <div id="stat-best-accuracy" class="stat-value text-emerald-400">—</div>
+                  </div>
+                  <div class="stat-group">
+                    <div class="stat-label">Convergence</div>
+                    <div id="stat-convergence" class="stat-value text-blue-400">—</div>
+                  </div>
+                  <div class="stat-group">
+                    <div class="stat-label">Trend</div>
+                    <div id="stat-trend" class="stat-value">—</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Fit Analysis Warning -->
+              <div id="fit-warning" class="hidden mt-2 p-2 rounded text-xs">
+                <div id="fit-warning-message" class="font-medium"></div>
+                <div id="fit-warning-suggestion" class="text-slate-400 mt-1"></div>
+              </div>
+              <!-- Suggested Fixes Panel -->
+              <div id="suggestions-panel" class="hidden mt-2">
+                <div class="text-xs text-slate-400 mb-1 flex items-center gap-1">
+                  <span>💡 Suggestions</span>
+                  <button id="btn-dismiss-suggestions" class="ml-auto text-slate-500 hover:text-slate-300">✕</button>
+                </div>
+                <div id="suggestions-content" class="max-h-40 overflow-y-auto">
+                  <!-- Suggestions rendered here -->
+                </div>
+              </div>
+              <!-- Export dropdown menu -->
+              <div class="relative mt-2">
+                <button id="btn-export-menu" class="btn-secondary w-full text-xs" disabled>
+                  <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Export / Import
+                  <svg class="w-3 h-3 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div id="export-dropdown"
+                  class="hidden absolute left-0 right-0 mt-1 bg-navy-800 border border-navy-600 rounded-lg shadow-xl z-10 py-1">
+                  <button id="btn-export-json"
+                    class="dropdown-item w-full text-left px-3 py-1.5 text-xs hover:bg-navy-700 flex items-center gap-2">
+                    <span class="text-slate-400">📄</span> Export JSON
+                  </button>
+                  <button id="btn-export-csv"
+                    class="dropdown-item w-full text-left px-3 py-1.5 text-xs hover:bg-navy-700 flex items-center gap-2">
+                    <span class="text-slate-400">📊</span> Export CSV
+                  </button>
+                  <button id="btn-export-model"
+                    class="dropdown-item w-full text-left px-3 py-1.5 text-xs hover:bg-navy-700 flex items-center gap-2">
+                    <span class="text-slate-400">💾</span> Download Model
+                  </button>
+                  <button id="btn-export-python"
+                    class="dropdown-item w-full text-left px-3 py-1.5 text-xs hover:bg-navy-700 flex items-center gap-2">
+                    <span class="text-slate-400">🐍</span> Export Python
+                  </button>
+                  <button id="btn-export-onnx"
+                    class="dropdown-item w-full text-left px-3 py-1.5 text-xs hover:bg-navy-700 flex items-center gap-2">
+                    <span class="text-slate-400">⚙️</span> Export ONNX
+                  </button>
+                  <div class="border-t border-navy-600 my-1"></div>
+                  <label
+                    class="dropdown-item w-full text-left px-3 py-1.5 text-xs hover:bg-navy-700 flex items-center gap-2 cursor-pointer">
+                    <span class="text-slate-400">📥</span> Load Model
+                    <input type="file" id="input-load-model" class="hidden" accept=".json" />
+                  </label>
+                </div>
+              </div>
+              <input type="file" id="input-load-weights" class="hidden" accept=".bin" />
+              </fieldset>
+            </div><!-- End Tab Content: Train -->
+
+            <!-- Tab Content: Analyse -->
+            <div class="tab-content" data-tab-content="analyse" role="tabpanel" id="tab-analyse"
+              aria-labelledby="tab-btn-analyse">
+              <!-- What-If Analysis (moved from Training) -->
+              <div class="p-4 bg-navy-800/50 rounded-xl border border-navy-700/50 mb-4">
+                <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                  <svg class="w-4 h-4 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                  What-If Analysis
+                </h3>
+                <div class="space-y-2">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-400">Parameter:</span>
+                    <select id="whatif-parameter" class="select-field text-xs py-1 flex-1">
+                      <option value="learningRate">Learning Rate</option>
+                      <option value="layers">Network Depth</option>
+                      <option value="dropout">Dropout</option>
+                    </select>
+                  </div>
+                  <button id="btn-whatif" class="btn-secondary w-full text-xs" disabled>
+                    <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    Run Analysis
+                  </button>
+                  <div id="whatif-results"
+                    class="hidden mt-2 p-2 bg-navy-900/50 rounded text-xs max-h-48 overflow-y-auto">
+                    <!-- Results rendered here -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- Classification Metrics (compact) -->
+              <div class="p-4 bg-navy-800/50 rounded-xl border border-navy-700/50 mb-4"
+                data-collapsible="classification-metrics">
+                <h3
+                  class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2 cursor-pointer collapsible collapsed"
+                  onclick="toggleSection(this)">
+                  <svg class="w-4 h-4 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" stroke-width="2" />
+                    <circle cx="12" cy="12" r="6" stroke-width="2" />
+                    <circle cx="12" cy="12" r="2" stroke-width="2" />
+                  </svg><span>Classification</span>
+                  <svg class="w-4 h-4 ml-auto transition-transform duration-200 collapse-icon" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </h3>
+                <div class="section-content collapsed">
+                  <!-- Confusion Matrix -->
+                  <div id="confusion-matrix-container" class="flex justify-center min-h-[100px]">
+                    <div id="confusion-matrix-empty" class="empty-state">
+                      <div class="empty-state-title text-xs">No predictions yet</div>
+                    </div>
+                  </div>
+                  <!-- Metrics row -->
+                  <div class="grid grid-cols-3 gap-1 mt-2">
+                    <div class="metric-card">
+                      <span class="metric-label">Prec</span>
+                      <span id="metric-precision" class="metric-value text-blue-400">—</span>
+                    </div>
+                    <div class="metric-card">
+                      <span class="metric-label">Recall</span>
+                      <span id="metric-recall" class="metric-value text-purple-400">—</span>
+                    </div>
+                    <div class="metric-card">
+                      <span class="metric-label">F1</span>
+                      <span id="metric-f1" class="metric-value text-pink-400">—</span>
+                    </div>
+                  </div>
+                  <!-- ROC Curve (binary only) -->
+                  <div id="roc-curve-section" class="mt-2">
+                    <div id="roc-curve-container" class="h-28 bg-navy-800/50 rounded border border-navy-700/50">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Model Internals (separate section) -->
+              <div class="p-4 bg-navy-800/50 rounded-xl border border-navy-700/50 mb-4"
+                data-collapsible="model-internals">
+                <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2 cursor-pointer collapsible"
+                  onclick="toggleSection(this)">
+                  <svg class="w-4 h-4 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg><span>Model Internals</span>
+                  <svg class="w-4 h-4 ml-auto transition-transform duration-200 collapse-icon" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </h3>
+                <div class="section-content collapsed">
+                  <!-- Network Architecture -->
+                  <div class="mb-2">
+                    <div class="flex items-center justify-between mb-1">
+                      <span class="input-label mb-0">Architecture</span>
+                      <label class="flex items-center gap-1 text-[10px] text-slate-500">
+                        <input type="checkbox" id="input-show-weights" class="accent-accent-500 w-3 h-3" />
+                        Weights
+                      </label>
+                    </div>
+                    <div id="network-diagram" class="h-24 bg-navy-800/50 rounded border border-navy-700/50">
+                    </div>
+                  </div>
+                  <!-- Weight Distribution -->
+                  <div class="mb-2">
+                    <span class="input-label">Weight Distribution</span>
+                    <div id="weight-histogram" class="h-16 bg-navy-800/50 rounded border border-navy-700/50">
+                    </div>
+                  </div>
+                  <!-- Gradient Flow -->
+                  <div class="mb-2">
+                    <div class="flex items-center justify-between mb-1">
+                      <span class="input-label mb-0" data-eli5="gradient-flow">Gradients</span>
+                      <label class="flex items-center gap-1 text-[10px] text-slate-500">
+                        <input type="checkbox" id="input-show-gradients" class="accent-accent-500 w-3 h-3" />
+                        Show
+                      </label>
+                    </div>
+                    <div id="gradient-flow-container"
+                      class="h-20 bg-navy-800/50 rounded border border-navy-700/50 hidden">
+                    </div>
+                  </div>
+                  <!-- Activations -->
+                  <div>
+                    <div class="flex items-center justify-between mb-1">
+                      <span class="input-label mb-0">Activations</span>
+                      <label class="flex items-center gap-1 text-[10px] text-slate-500">
+                        <input type="checkbox" id="input-show-activations" class="accent-accent-500 w-3 h-3" />
+                        Live
+                      </label>
+                    </div>
+                    <div id="activation-heatmap" class="h-16 bg-navy-800/50 rounded border border-navy-700/50 hidden">
+                    </div>
+                    <p id="activation-hint" class="text-[10px] text-slate-500 mt-1">Hover points to see activations</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- LR Finder (separate compact section) -->
+              <div class="p-4 bg-navy-800/50 rounded-xl border border-navy-700/50 mb-4" data-collapsible="lr-finder">
+                <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2 cursor-pointer collapsible"
+                  onclick="toggleSection(this)">
+                  <svg class="w-4 h-4 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg><span>LR Finder</span>
+                  <svg class="w-4 h-4 ml-auto transition-transform duration-200 collapse-icon" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </h3>
+                <div class="section-content collapsed">
+                  <button id="btn-lr-finder" class="btn-secondary w-full text-xs mb-2" disabled>
+                    Run LR Range Test
+                  </button>
+                  <div id="lr-finder-container" class="h-24 bg-navy-800/50 rounded border border-navy-700/50 hidden">
+                  </div>
+                  <p id="lr-finder-result" class="text-xs text-slate-400 mt-1 hidden"></p>
+                </div>
+              </div>
+
+              <!-- Research Tools -->
+              <div class="p-4 bg-navy-800/50 rounded-xl border border-navy-700/50 mb-4"
+                data-collapsible="research-tools">
+                <h3
+                  class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2 cursor-pointer collapsible collapsed"
+                  onclick="toggleSection(this)">
+                  <svg class="w-4 h-4 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                  </svg><span>Research Tools</span>
+                  <svg class="w-4 h-4 ml-auto transition-transform duration-200 collapse-icon" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </h3>
+                <div class="section-content collapsed">
+                  <div class="space-y-2">
+                    <div class="grid grid-cols-2 gap-2">
+                      <button id="btn-feature-importance" class="btn-secondary text-xs py-1" disabled
+                        title="Permutation importance">
+                        Feature Importance
+                      </button>
+                      <button id="btn-lime-explain" class="btn-secondary text-xs py-1" disabled
+                        title="LIME explanation">
+                        LIME Explain
+                      </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                      <button id="btn-saliency-map" class="btn-secondary text-xs py-1" disabled
+                        title="Gradient saliency">
+                        Saliency Map
+                      </button>
+                      <button id="btn-adversarial" class="btn-secondary text-xs py-1" disabled title="FGSM attack">
+                        Adversarial
+                      </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                      <button id="btn-uncertainty" class="btn-secondary text-xs py-1" disabled
+                        title="MC Dropout uncertainty">
+                        Uncertainty
+                      </button>
+                      <button id="btn-nas" class="btn-secondary text-xs py-1" disabled
+                        title="Neural Architecture Search">
+                        Auto-Optimize
+                      </button>
+                    </div>
+                    <div id="research-results"
+                      class="hidden mt-2 p-2 bg-navy-900/50 rounded text-xs max-h-64 overflow-y-auto">
+                      <!-- Research results rendered here -->
+                    </div>
+                  </div>
+                </div><!-- End section-content -->
+              </div>
+            </div><!-- End Tab Content: Analyse -->
+
+            <!-- Session Management (always visible) -->
+            <div class="p-4 bg-navy-800/50 rounded-xl border border-navy-700/50 mb-4">
+              <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                </svg> Session
+              </h3>
+              <div class="flex gap-2">
+                <button id="btn-save-session" class="btn-secondary flex-1 text-xs">
+                  <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                  Save
+                </button>
+                <button id="btn-load-session" class="btn-secondary flex-1 text-xs">
+                  <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  Load
+                </button>
+                <button id="btn-clear-session" class="btn-danger flex-1 text-xs">
+                  <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Clear
+                </button>
+              </div>
+              <div class="flex gap-2 mt-2">
+                <button id="btn-share-url" class="btn-secondary flex-1 text-xs" title="Copy config code to clipboard">
+                  <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  Copy Config
+                </button>
+                <button id="btn-load-config" class="btn-secondary flex-1 text-xs" title="Load config from code">
+                  <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Paste Config
+                </button>
+              </div>
+              <!-- Model Comparison -->
+              <div class="mt-3 pt-3 border-t border-navy-700/30">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs text-slate-400">Model Comparison</span>
+                  <div class="flex gap-1">
+                    <button id="btn-ab-compare" class="btn-secondary text-xs px-2 py-1" title="A/B comparison mode">
+                      A/B
+                    </button>
+                    <button id="btn-ensemble" class="btn-secondary text-xs px-2 py-1" title="Ensemble voting mode">
+                      Ensemble
+                    </button>
+                    <button id="btn-save-baseline" class="btn-secondary text-xs px-2 py-1" disabled
+                      title="Save current results as baseline">
+                      Base
+                    </button>
+                  </div>
+                </div>
+                <div id="comparison-panel" class="hidden">
+                  <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="bg-navy-800 rounded p-2">
+                      <div class="text-slate-500 mb-1">Baseline</div>
+                      <div class="text-slate-300">Acc: <span id="baseline-accuracy">—</span></div>
+                      <div class="text-slate-300">Loss: <span id="baseline-loss">—</span></div>
+                      <div class="text-slate-400 text-[10px]" id="baseline-config"></div>
+                    </div>
+                    <div class="bg-navy-800 rounded p-2">
+                      <div class="text-slate-500 mb-1">Current</div>
+                      <div class="text-slate-300">Acc: <span id="current-accuracy">—</span></div>
+                      <div class="text-slate-300">Loss: <span id="current-loss">—</span></div>
+                      <div id="comparison-diff" class="text-[10px] mt-1"></div>
+                    </div>
+                  </div>
+                  <button id="btn-clear-baseline" class="btn-secondary w-full text-xs mt-2">
+                    Clear Baseline
+                  </button>
+                </div>
+                <!-- A/B Comparison Panel -->
+                <div id="ab-comparison-panel" class="hidden mt-2">
+                  <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="bg-blue-900/30 border border-blue-700/50 rounded p-2">
+                      <div class="text-blue-400 font-medium mb-1">Model A</div>
+                      <div class="text-slate-300">Epoch: <span id="ab-epoch-a">0</span></div>
+                      <div class="text-slate-300">Acc: <span id="ab-accuracy-a">—</span></div>
+                      <div class="text-slate-300">Loss: <span id="ab-loss-a">—</span></div>
+                    </div>
+                    <div class="bg-red-900/30 border border-red-700/50 rounded p-2">
+                      <div class="text-red-400 font-medium mb-1">Model B</div>
+                      <div class="text-slate-300">Epoch: <span id="ab-epoch-b">0</span></div>
+                      <div class="text-slate-300">Acc: <span id="ab-accuracy-b">—</span></div>
+                      <div class="text-slate-300">Loss: <span id="ab-loss-b">—</span></div>
+                    </div>
+                  </div>
+                  <div id="ab-winner" class="text-center text-xs mt-2 py-1 rounded bg-navy-800"></div>
+                  <button id="btn-stop-ab" class="btn-secondary w-full text-xs mt-2">
+                    Stop A/B Test
+                  </button>
+                </div>
+                <!-- Ensemble Panel -->
+                <div id="ensemble-panel" class="hidden mt-2">
+                  <div class="text-xs text-slate-400 mb-2">
+                    <span id="ensemble-member-count">0</span> models • Epoch <span id="ensemble-epoch">0</span>
+                  </div>
+                  <div id="ensemble-members" class="space-y-1 max-h-32 overflow-y-auto">
+                    <!-- Ensemble members rendered here -->
+                  </div>
+                  <div id="ensemble-agreement" class="text-center text-xs mt-2 py-1 rounded bg-navy-800">
+                    Agreement: <span id="ensemble-agreement-value">—</span>
+                  </div>
+                  <div class="flex gap-1 mt-2">
+                    <button id="btn-add-ensemble-member" class="btn-secondary flex-1 text-xs">+ Add</button>
+                    <button id="btn-train-ensemble" class="btn-primary flex-1 text-xs">Train</button>
+                    <button id="btn-stop-ensemble" class="btn-secondary flex-1 text-xs">Stop</button>
+                  </div>
+                </div>
+              </div>
+              <p class="text-xs text-slate-500 mt-2 text-center">
+                Auto-saves on page close
+              </p>
+            </div>
+          </div><!-- End Scrollable Content Area -->
+
+          <!-- Sticky Training Controls Footer -->
+          <div id="sidebar-sticky-footer" class="sidebar-sticky-footer">
+            <div class="sticky-controls-grid">
+              <button id="btn-start-sticky" class="btn-primary btn-sticky" disabled aria-label="Start training">
+                <svg aria-hidden="true" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M8 5v14l11-7z" />
                 </svg>
                 Start
               </button>
-              <button id="btn-pause" class="btn-secondary" disabled>
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <button id="btn-pause-sticky" class="btn-secondary btn-sticky" disabled aria-label="Pause training">
+                <svg aria-hidden="true" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
                 </svg>
                 Pause
               </button>
-              <button id="btn-step" class="btn-secondary" disabled>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <button id="btn-step-sticky" class="btn-secondary btn-sticky" disabled aria-label="Execute single training step">
+                <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
                 </svg>
                 Step
               </button>
-              <button id="btn-reset" class="btn-danger" disabled>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              <button id="btn-reset-sticky" class="btn-danger btn-sticky" disabled aria-label="Reset training">
+                <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 Reset
               </button>
             </div>
-          </fieldset>
-
-          <!-- Status Display -->
-          <fieldset class="control-fieldset">
-            <legend class="control-legend">Metrics</legend>
-            <div class="grid grid-cols-3 gap-2">
-              <div class="metric-card">
-                <span class="metric-label">Epoch</span>
-                <span id="status-epoch" class="metric-value-accent">0</span>
+            <div class="sticky-metrics">
+              <div class="sticky-metric">
+                <span class="sticky-metric-label">Epoch</span>
+                <span id="sticky-epoch" class="sticky-metric-value text-accent-400">0</span>
               </div>
-              <div class="metric-card">
-                <span class="metric-label">Loss</span>
-                <span id="status-loss" class="metric-value text-slate-100">—</span>
+              <div class="sticky-metric-divider"></div>
+              <div class="sticky-metric">
+                <span class="sticky-metric-label">Loss</span>
+                <span id="sticky-loss" class="sticky-metric-value text-orange-400">—</span>
               </div>
-              <div class="metric-card">
-                <span class="metric-label">State</span>
-                <span id="status-state" class="metric-value status-idle">Idle</span>
+              <div class="sticky-metric-divider"></div>
+              <div class="sticky-metric">
+                <span class="sticky-metric-label">Acc</span>
+                <span id="sticky-accuracy" class="sticky-metric-value text-emerald-400">—</span>
               </div>
             </div>
-          </fieldset>
-        </aside>
-      </main>
+          </div>
+      </aside>
+    </main>
 
-      <!-- Footer -->
-      <footer class="text-center py-4 mt-6 border-t border-navy-700/50">
-        <p class="text-slate-500 text-xs">
-          Hexagonal Architecture Demo • Modular Monolith
-        </p>
-      </footer>
+    <!-- Mobile Floating Action Button (FAB) for Training Controls -->
+    <div id="mobile-fab" class="mobile-fab md:hidden hidden">
+      <button id="fab-start" class="fab-btn fab-primary" aria-label="Start training" title="Start" disabled>
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M8 5v14l11-7z" />
+        </svg>
+      </button>
+      <button id="fab-pause" class="fab-btn fab-secondary hidden" aria-label="Pause training" title="Pause">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+        </svg>
+      </button>
     </div>
 
-  </body>
+    <!-- Mobile Sticky Metrics Bar -->
+    <div id="mobile-metrics" class="metrics-sticky hidden">
+      <div class="metric-row">
+        <div class="metric-item">
+          <div id="mobile-epoch" class="metric-value text-accent-400">0</div>
+          <div class="metric-label">Epoch</div>
+        </div>
+        <div class="metric-item">
+          <div id="mobile-loss" class="metric-value text-orange-400">—</div>
+          <div class="metric-label">Loss</div>
+        </div>
+        <div class="metric-item">
+          <div id="mobile-accuracy" class="metric-value text-emerald-400">—</div>
+          <div class="metric-label">Acc</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Bottom Sheet for Quick Controls -->
+    <div id="mobile-bottom-sheet" class="bottom-sheet md:hidden">
+      <div class="bottom-sheet-handle" id="bottom-sheet-handle">
+        <div class="handle-bar"></div>
+      </div>
+      <div class="bottom-sheet-content">
+        <div class="bottom-sheet-header">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Quick Controls</span>
+          <button id="btn-sheet-expand" class="text-slate-400 hover:text-white p-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+            </svg>
+          </button>
+        </div>
+        <div class="bottom-sheet-controls">
+          <div class="sheet-control-group">
+            <label class="sheet-label">Dataset</label>
+            <select id="sheet-dataset" class="sheet-select">
+              <option value="circle">Circle</option>
+              <option value="xor">XOR</option>
+              <option value="spiral">Spiral</option>
+              <option value="gaussian">Gaussian</option>
+            </select>
+          </div>
+          <div class="sheet-control-group">
+            <label class="sheet-label">Layers</label>
+            <input type="text" id="sheet-layers" class="sheet-input" value="8, 4" placeholder="8, 4" />
+          </div>
+          <button id="btn-sheet-init" class="sheet-btn-primary">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Init & Train
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 mt-6 border-t border-navy-700/50 hidden md:block">
+      <p class="text-slate-500 text-xs">
+        Hexagonal Architecture Demo • Modular Monolith
+      </p>
+    </footer>
+  </div>
+
+  <!-- Help Modal -->
+  <div id="help-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-navy-800 rounded-xl border border-navy-600 shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden">
+      <div class="flex items-center justify-between p-4 border-b border-navy-700">
+        <h2 class="text-xl font-semibold text-white">Help & Tutorials</h2>
+        <button id="help-close" class="text-slate-400 hover:text-white">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="p-4 overflow-y-auto max-h-[60vh]">
+        <h3 class="text-sm font-semibold text-slate-300 mb-3">Interactive Tutorials</h3>
+        <div id="tutorial-list" class="space-y-2 mb-6">
+          <!-- Tutorial buttons generated dynamically -->
+        </div>
+
+        <h3 class="text-sm font-semibold text-slate-300 mb-3">Keyboard Shortcuts</h3>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div class="flex justify-between bg-navy-900/50 p-2 rounded">
+            <span class="text-slate-400">Start/Resume</span>
+            <kbd class="bg-navy-700 px-2 py-0.5 rounded text-slate-300">Space</kbd>
+          </div>
+          <div class="flex justify-between bg-navy-900/50 p-2 rounded">
+            <span class="text-slate-400">Step</span>
+            <kbd class="bg-navy-700 px-2 py-0.5 rounded text-slate-300">S</kbd>
+          </div>
+          <div class="flex justify-between bg-navy-900/50 p-2 rounded">
+            <span class="text-slate-400">Reset</span>
+            <kbd class="bg-navy-700 px-2 py-0.5 rounded text-slate-300">R</kbd>
+          </div>
+          <div class="flex justify-between bg-navy-900/50 p-2 rounded">
+            <span class="text-slate-400">Pause</span>
+            <kbd class="bg-navy-700 px-2 py-0.5 rounded text-slate-300">Escape</kbd>
+          </div>
+          <div class="flex justify-between bg-navy-900/50 p-2 rounded">
+            <span class="text-slate-400">Fullscreen</span>
+            <kbd class="bg-navy-700 px-2 py-0.5 rounded text-slate-300">F</kbd>
+          </div>
+          <div class="flex justify-between bg-navy-900/50 p-2 rounded">
+            <span class="text-slate-400">Help</span>
+            <kbd class="bg-navy-700 px-2 py-0.5 rounded text-slate-300">?</kbd>
+          </div>
+        </div>
+
+        <h3 class="text-sm font-semibold text-slate-300 mt-6 mb-3">Quick Tips</h3>
+        <ul class="text-xs text-slate-400 space-y-2">
+          <li>• Start with a simple dataset like "Circle" to understand the basics</li>
+          <li>• Watch the loss chart - it should decrease over time</li>
+          <li>• If training is slow, try increasing the learning rate</li>
+          <li>• If the boundary is too complex, try reducing layers or adding dropout</li>
+          <li>• Enable validation split to detect overfitting early</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onboarding Wizard Modal -->
+  <div id="onboarding-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-navy-800 rounded-2xl border border-navy-600 shadow-2xl max-w-lg w-full overflow-hidden">
+      <!-- Progress indicator -->
+      <div class="flex gap-1 p-4 pb-0">
+        <div class="wizard-progress-dot active" data-step="1"></div>
+        <div class="wizard-progress-dot" data-step="2"></div>
+        <div class="wizard-progress-dot" data-step="3"></div>
+        <div class="wizard-progress-dot" data-step="4"></div>
+      </div>
+
+      <!-- Step 1: Welcome -->
+      <div class="wizard-step active" data-wizard-step="1">
+        <div class="p-6 text-center">
+          <div
+            class="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-accent-400 to-accent-600 flex items-center justify-center">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold text-white mb-2">Welcome to NeuroViz</h2>
+          <p class="text-slate-400 mb-6">Learn how neural networks classify data through interactive visualisation.
+            Let's get you started in 30 seconds.</p>
+        </div>
+      </div>
+
+      <!-- Step 2: Choose Dataset -->
+      <div class="wizard-step" data-wizard-step="2">
+        <div class="p-6">
+          <h2 class="text-xl font-bold text-white mb-2">Choose a Dataset</h2>
+          <p class="text-slate-400 text-sm mb-4">Select a pattern for the network to learn. Start simple!</p>
+          <div class="grid grid-cols-2 gap-3">
+            <button class="wizard-dataset-btn active" data-dataset="circle">
+              <div class="wizard-dataset-icon">◎</div>
+              <div class="wizard-dataset-label">Circle</div>
+              <div class="wizard-dataset-desc">Easy • Concentric rings</div>
+            </button>
+            <button class="wizard-dataset-btn" data-dataset="xor">
+              <div class="wizard-dataset-icon">⊞</div>
+              <div class="wizard-dataset-label">XOR</div>
+              <div class="wizard-dataset-desc">Medium • Quadrants</div>
+            </button>
+            <button class="wizard-dataset-btn" data-dataset="spiral">
+              <div class="wizard-dataset-icon">🌀</div>
+              <div class="wizard-dataset-label">Spiral</div>
+              <div class="wizard-dataset-desc">Hard • Intertwined</div>
+            </button>
+            <button class="wizard-dataset-btn" data-dataset="gaussian">
+              <div class="wizard-dataset-icon">☁</div>
+              <div class="wizard-dataset-label">Clusters</div>
+              <div class="wizard-dataset-desc">Easy • Gaussian blobs</div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Network Architecture -->
+      <div class="wizard-step" data-wizard-step="3">
+        <div class="p-6">
+          <h2 class="text-xl font-bold text-white mb-2">Network Architecture</h2>
+          <p class="text-slate-400 text-sm mb-4">How many hidden layers? More layers = more complex patterns.</p>
+          <div class="space-y-3">
+            <button class="wizard-arch-btn active" data-layers="4">
+              <div class="wizard-arch-visual">
+                <span class="arch-node"></span><span class="arch-line"></span><span class="arch-node small"></span><span
+                  class="arch-line"></span><span class="arch-node"></span>
+              </div>
+              <div class="wizard-arch-info">
+                <div class="wizard-arch-label">Simple (4 neurons)</div>
+                <div class="wizard-arch-desc">Fast training, good for easy patterns</div>
+              </div>
+            </button>
+            <button class="wizard-arch-btn" data-layers="8, 4">
+              <div class="wizard-arch-visual">
+                <span class="arch-node"></span><span class="arch-line"></span><span class="arch-node"></span><span
+                  class="arch-line"></span><span class="arch-node small"></span><span class="arch-line"></span><span
+                  class="arch-node"></span>
+              </div>
+              <div class="wizard-arch-info">
+                <div class="wizard-arch-label">Medium (8 → 4 neurons)</div>
+                <div class="wizard-arch-desc">Balanced, recommended for most</div>
+              </div>
+            </button>
+            <button class="wizard-arch-btn" data-layers="16, 8, 4">
+              <div class="wizard-arch-visual">
+                <span class="arch-node"></span><span class="arch-line"></span><span class="arch-node"></span><span
+                  class="arch-line"></span><span class="arch-node"></span><span class="arch-line"></span><span
+                  class="arch-node small"></span><span class="arch-line"></span><span class="arch-node"></span>
+              </div>
+              <div class="wizard-arch-info">
+                <div class="wizard-arch-label">Deep (16 → 8 → 4 neurons)</div>
+                <div class="wizard-arch-desc">Complex patterns, slower training</div>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Ready to Train -->
+      <div class="wizard-step" data-wizard-step="4">
+        <div class="p-6 text-center">
+          <div
+            class="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
+            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold text-white mb-2">Ready to Train!</h2>
+          <p class="text-slate-400 mb-4">Watch the decision boundary evolve as the network learns.</p>
+          <div class="bg-navy-900/50 rounded-lg p-4 text-left mb-4">
+            <div class="text-xs text-slate-500 uppercase tracking-wider mb-2">Your Configuration</div>
+            <div class="flex justify-between text-sm mb-1">
+              <span class="text-slate-400">Dataset:</span>
+              <span id="wizard-summary-dataset" class="text-white font-medium">Circle</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-slate-400">Architecture:</span>
+              <span id="wizard-summary-layers" class="text-white font-medium">8, 4</span>
+            </div>
+          </div>
+          <label class="flex items-center justify-center gap-2 text-sm text-slate-400 cursor-pointer">
+            <input type="checkbox" id="wizard-dont-show" class="checkbox-field" />
+            Don't show this again
+          </label>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <div class="flex items-center justify-between p-4 border-t border-navy-700">
+        <button id="wizard-skip" class="text-slate-400 hover:text-white text-sm">
+          Skip tutorial
+        </button>
+        <div class="flex gap-2">
+          <button id="wizard-prev" class="btn-secondary text-sm hidden">
+            Back
+          </button>
+          <button id="wizard-next" class="btn-primary text-sm">
+            Get Started
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- A/B Test Modal -->
+  <div id="ab-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-navy-800 rounded-xl border border-navy-600 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+      <div class="flex items-center justify-between p-4 border-b border-navy-700">
+        <h2 class="text-xl font-semibold text-white">A/B Model Comparison</h2>
+        <button id="ab-modal-close" class="text-slate-400 hover:text-white">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="p-4 overflow-y-auto max-h-[calc(90vh-120px)]">
+        <p class="text-sm text-slate-400 mb-4">
+          Train two models side-by-side with different configurations to compare performance.
+        </p>
+
+        <div class="grid grid-cols-2 gap-4">
+          <!-- Model A Config -->
+          <div class="bg-blue-900/20 border border-blue-700/50 rounded-lg p-3">
+            <h3 class="text-blue-400 font-medium mb-3">Model A</h3>
+            <div class="space-y-2">
+              <div>
+                <label class="text-xs text-slate-400">Learning Rate</label>
+                <input type="number" id="ab-lr-a" value="0.03" step="0.001" min="0.0001" max="1"
+                  class="input-field w-full" />
+              </div>
+              <div>
+                <label class="text-xs text-slate-400">Layers (comma-separated)</label>
+                <input type="text" id="ab-layers-a" value="8,4" class="input-field w-full" />
+              </div>
+              <div>
+                <label class="text-xs text-slate-400">Activation</label>
+                <select id="ab-activation-a" class="input-field w-full">
+                  <option value="relu">ReLU</option>
+                  <option value="sigmoid">Sigmoid</option>
+                  <option value="tanh">Tanh</option>
+                  <option value="elu">ELU</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-xs text-slate-400">Optimizer</label>
+                <select id="ab-optimizer-a" class="input-field w-full">
+                  <option value="adam">Adam</option>
+                  <option value="sgd">SGD</option>
+                  <option value="rmsprop">RMSprop</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Model B Config -->
+          <div class="bg-red-900/20 border border-red-700/50 rounded-lg p-3">
+            <h3 class="text-red-400 font-medium mb-3">Model B</h3>
+            <div class="space-y-2">
+              <div>
+                <label class="text-xs text-slate-400">Learning Rate</label>
+                <input type="number" id="ab-lr-b" value="0.1" step="0.001" min="0.0001" max="1"
+                  class="input-field w-full" />
+              </div>
+              <div>
+                <label class="text-xs text-slate-400">Layers (comma-separated)</label>
+                <input type="text" id="ab-layers-b" value="16,8" class="input-field w-full" />
+              </div>
+              <div>
+                <label class="text-xs text-slate-400">Activation</label>
+                <select id="ab-activation-b" class="input-field w-full">
+                  <option value="relu">ReLU</option>
+                  <option value="sigmoid">Sigmoid</option>
+                  <option value="tanh">Tanh</option>
+                  <option value="elu">ELU</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-xs text-slate-400">Optimizer</label>
+                <select id="ab-optimizer-b" class="input-field w-full">
+                  <option value="adam">Adam</option>
+                  <option value="sgd">SGD</option>
+                  <option value="rmsprop">RMSprop</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <label class="text-xs text-slate-400">Epochs to train</label>
+          <input type="number" id="ab-epochs" value="100" min="10" max="1000" step="10" class="input-field w-32" />
+        </div>
+
+        <div class="flex gap-2 mt-6">
+          <button id="btn-start-ab" class="btn-primary flex-1">
+            Start A/B Test
+          </button>
+          <button id="btn-cancel-ab" class="btn-secondary flex-1">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- FAB for Mobile -->
+  <button id="fab-start"
+    class="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent-500 text-white shadow-lg flex items-center justify-center sm:hidden z-50 hover:bg-accent-600 transition-colors">
+    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  </button>
+  <button id="fab-pause"
+    class="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-amber-500 text-white shadow-lg flex items-center justify-center sm:hidden z-50 hover:bg-amber-600 transition-colors hidden">
+    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+    </svg>
+  </button>
+
+</body>
+
 </html>
