@@ -35,11 +35,10 @@ import { setupTouchGestures } from '@presentation/TouchGestures';
 import { setupBottomSheet } from '@presentation/BottomSheet';
 import { setupOnboardingWizard } from './presentation/Onboarding';
 import { TrainingState } from './core/application/ITrainingSession';
-import { ColourScheme } from './core/domain';
 
 // Expose TensorFlow.js globally for E2E tests
 // Tests check for window.tf to verify TensorFlow is loaded
-(window as any).tf = tf;
+(window as typeof window & { tf: typeof tf }).tf = tf;
 
 // Initialize Error Boundary
 const errorBoundary = new ErrorBoundary();

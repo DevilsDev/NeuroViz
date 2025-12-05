@@ -38,13 +38,13 @@ export class DatasetController {
   }
 
   private bindEvents(): void {
-    const loadDataHandler = () => void this.handleLoadData();
-    const datasetChangeHandler = () => this.handleDatasetSelectChange();
-    const clearCustomHandler = () => this.handleClearCustomData();
-    const samplesChangeHandler = () => this.handleSamplesChange();
-    const noiseChangeHandler = () => this.handleNoiseChange();
-    const csvUploadHandler = (e: Event) => this.handleCsvUpload(e);
-    const downloadHandler = () => this.handleDownloadDataset();
+    const loadDataHandler = (): void => void this.handleLoadData();
+    const datasetChangeHandler = (): void => this.handleDatasetSelectChange();
+    const clearCustomHandler = (): void => this.handleClearCustomData();
+    const samplesChangeHandler = (): void => this.handleSamplesChange();
+    const noiseChangeHandler = (): void => this.handleNoiseChange();
+    const csvUploadHandler = (e: Event): void => this.handleCsvUpload(e);
+    const downloadHandler = (): void => this.handleDownloadDataset();
 
     this.elements.btnLoadData.addEventListener('click', loadDataHandler);
     this.elements.datasetSelect.addEventListener('change', datasetChangeHandler);
