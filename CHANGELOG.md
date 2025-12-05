@@ -1,3 +1,9 @@
+## [2.2.0](https://github.com/DevilsDev/NeuroViz/compare/v2.1.0...v2.2.0) (2025-12-05)
+
+### Features
+
+* Add core neural network hyperparameters and training configuration domain models, and introduce comprehensive E2E and unit tests. ([fa9791f](https://github.com/DevilsDev/NeuroViz/commit/fa9791f84bfe43f2df7cf52a334aad833683c3b4))
+
 ## [2.1.0](https://github.com/DevilsDev/NeuroViz/compare/v2.0.1...v2.1.0) (2025-12-05)
 
 ### Features
