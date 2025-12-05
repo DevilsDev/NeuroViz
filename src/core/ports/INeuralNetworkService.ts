@@ -28,6 +28,15 @@ export interface INeuralNetworkService {
   initialize(config: Hyperparameters): Promise<void>;
 
   /**
+   * Updates the learning rate without destroying trained weights.
+   * Used for learning rate scheduling during training.
+   *
+   * @param newLearningRate - The new learning rate to apply
+   * @throws If called before initialize()
+   */
+  updateLearningRate(newLearningRate: number): void;
+
+  /**
    * Trains the network on the provided dataset.
    *
    * @param data - Array of labelled points for supervised learning

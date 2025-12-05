@@ -523,7 +523,7 @@ export class TrainingSession implements ITrainingSession {
       }
 
       // Update learning rate based on schedule
-      await this.updateLearningRateIfNeeded();
+      this.updateLearningRateIfNeeded();
 
       // Update visualisation at intervals (decouples rendering from training)
       if (this.currentEpoch % this.config.renderInterval === 0) {
@@ -782,9 +782,9 @@ export class TrainingSession implements ITrainingSession {
 
   /**
    * Updates the learning rate if it has changed significantly.
-   * Recompiles the model with the new learning rate.
+   * Uses updateLearningRate() to preserve trained weights.
    */
-  private async updateLearningRateIfNeeded(): Promise<void> {
+  private updateLearningRateIfNeeded(): void {
     const newLR = this.calculateScheduledLR(this.currentEpoch);
 
     // Only update if LR changed by more than 1%
@@ -792,12 +792,8 @@ export class TrainingSession implements ITrainingSession {
     if (lrChangeRatio > 0.01 && this.currentHyperparameters) {
       this.currentLearningRate = newLR;
 
-      // Reinitialize with new learning rate (keeps weights via TF.js optimizer update)
-      // Note: This is a simplified approach - ideally we'd just update the optimizer
-      await this.neuralNet.initialize({
-        ...this.currentHyperparameters,
-        learningRate: newLR,
-      });
+      // Update optimizer learning rate WITHOUT destroying weights
+      this.neuralNet.updateLearningRate(newLR);
     }
   }
 

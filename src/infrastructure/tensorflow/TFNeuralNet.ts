@@ -43,6 +43,52 @@ export class TFNeuralNet implements INeuralNetworkService {
   }
 
   /**
+   * Updates the learning rate of the current model WITHOUT destroying trained weights.
+   * Preserves all learned weights by saving and restoring them during optimizer update.
+   *
+   * @param newLearningRate - The new learning rate to apply
+   * @throws {ModelNotInitialisedError} If called before initialize()
+   *
+   * @remarks
+   * TensorFlow.js doesn't provide a direct way to update optimizer learning rate,
+   * so we recompile the model with a new optimizer while preserving weights.
+   */
+  updateLearningRate(newLearningRate: number): void {
+    const model = this.assertInitialised();
+    if (!this.config) {
+      throw new ModelNotInitialisedError();
+    }
+
+    // Save current weights before recompiling
+    const weights = model.getWeights();
+
+    // Update config with new learning rate
+    this.config = { ...this.config, learningRate: newLearningRate };
+
+    // Create new optimizer with updated learning rate
+    const optimizer = this.createOptimizer(
+      this.config.optimizer ?? DEFAULT_HYPERPARAMETERS.optimizer,
+      newLearningRate,
+      this.config.momentum ?? DEFAULT_HYPERPARAMETERS.momentum,
+      this.config.clipNorm ?? 0
+    );
+
+    // Recompile model with new optimizer (preserves architecture and weights)
+    const loss = this.numClasses === 2 ? 'binaryCrossentropy' : 'categoricalCrossentropy';
+    model.compile({
+      optimizer,
+      loss,
+      metrics: ['accuracy'],
+    });
+
+    // Restore weights - they persist through recompilation
+    model.setWeights(weights);
+
+    // Dispose old weight tensors to prevent memory leak
+    weights.forEach(w => w.dispose());
+  }
+
+  /**
    * Trains the model on a single batch of labelled data points.
    *
    * @param data - Array of labelled points for supervised learning
