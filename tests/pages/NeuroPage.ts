@@ -159,7 +159,7 @@ export class NeuroPage {
   /**
    * Set hyperparameters and initialise the network.
    */
-  async initialiseNetwork(learningRate = 0.03, layers = '8, 4'): Promise<void> {
+  async initialiseNetwork(learningRate = 0.003, layers = '8, 4'): Promise<void> {
     await this.learningRateInput.fill(learningRate.toString());
     await this.layersInput.fill(layers);
     await this.initButton.click();
@@ -332,7 +332,7 @@ export class NeuroPage {
    */
   async setupForTraining(
     dataset = 'circle',
-    learningRate = 0.03,
+    learningRate = 0.003,
     layers = '8, 4'
   ): Promise<void> {
     await this.goto();

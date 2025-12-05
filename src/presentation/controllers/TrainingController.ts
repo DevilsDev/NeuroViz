@@ -334,6 +334,11 @@ export class TrainingController {
             this.elements.fabPause.classList.add('hidden');
         }
 
+        // Enable Reset button if initialized and not running (or paused)
+        const canReset = state.isInitialised && (!state.isRunning || state.isPaused);
+        this.elements.btnReset.disabled = !canReset;
+        this.elements.btnResetSticky.disabled = !canReset;
+
         // Enable/disable Start buttons based on readiness
         this.elements.btnStart.disabled = !canStart;
         this.elements.btnStartSticky.disabled = !canStart;

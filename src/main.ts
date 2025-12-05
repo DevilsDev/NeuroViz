@@ -115,7 +115,6 @@ const _sessionController = new SessionController(
       });
     },
     onThemeChanged: (theme) => {
-      visualizer.setTheme(theme as ColourScheme);
       document.documentElement.setAttribute('data-theme', theme);
     }
   }
