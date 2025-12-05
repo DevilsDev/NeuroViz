@@ -305,23 +305,29 @@ export class TrainingController {
 
         // Update button states
         if (state.isRunning && !state.isPaused) {
+            // Training is running - show Pause, hide Start
             this.elements.btnStart.classList.add('hidden');
             this.elements.btnPause.classList.remove('hidden');
+            this.elements.btnPause.disabled = false;
             this.elements.btnStep.disabled = true;
 
             this.elements.btnStartSticky.classList.add('hidden');
             this.elements.btnPauseSticky.classList.remove('hidden');
+            this.elements.btnPauseSticky.disabled = false;
             this.elements.btnStepSticky.disabled = true;
 
             this.elements.fabStart.classList.add('hidden');
             this.elements.fabPause.classList.remove('hidden');
         } else {
+            // Training is paused or stopped - show Start, hide Pause
             this.elements.btnStart.classList.remove('hidden');
             this.elements.btnPause.classList.add('hidden');
+            this.elements.btnPause.disabled = true;
             this.elements.btnStep.disabled = !canStart;
 
             this.elements.btnStartSticky.classList.remove('hidden');
             this.elements.btnPauseSticky.classList.add('hidden');
+            this.elements.btnPauseSticky.disabled = true;
             this.elements.btnStepSticky.disabled = !canStart;
 
             this.elements.fabStart.classList.remove('hidden');
