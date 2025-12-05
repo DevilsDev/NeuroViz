@@ -1,3 +1,9 @@
+## [2.3.0](https://github.com/DevilsDev/NeuroViz/compare/v2.2.0...v2.3.0) (2025-12-05)
+
+### Features
+
+* Introduce `TrainingController` for managing UI interactions and add new testing infrastructure. ([97f9c1e](https://github.com/DevilsDev/NeuroViz/commit/97f9c1e2b6e4a76c80064695639536c8b803af58))
+
 ## [2.2.0](https://github.com/DevilsDev/NeuroViz/compare/v2.1.0...v2.2.0) (2025-12-05)
 
 ### Features
