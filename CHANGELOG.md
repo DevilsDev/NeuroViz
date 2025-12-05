@@ -1,3 +1,9 @@
+## [2.1.0](https://github.com/DevilsDev/NeuroViz/compare/v2.0.1...v2.1.0) (2025-12-05)
+
+### Features
+
+* Introduce training session orchestration with abstract neural network service and TensorFlow.js implementation. ([297129a](https://github.com/DevilsDev/NeuroViz/commit/297129a70a75bd5c5820bc6e36cbdc2cf8f5350a))
+
 ## [2.0.1](https://github.com/DevilsDev/NeuroViz/compare/v2.0.0...v2.0.1) (2025-12-05)
 
 ### Bug Fixes
