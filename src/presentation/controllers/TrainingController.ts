@@ -297,11 +297,13 @@ export class TrainingController {
             statusText = 'Training';
         } else if (state.isPaused) {
             statusText = 'Paused';
+        } else if (state.isInitialised && state.datasetLoaded) {
+            statusText = 'Ready';
         }
         this.elements.stateDisplay.textContent = statusText;
 
-        // Determine if training can be started
-        const canStart = state.isInitialised && state.datasetLoaded && !state.isRunning;
+        // Determine if training can be started (or resumed from pause)
+        const canStart = state.isInitialised && state.datasetLoaded && (!state.isRunning || state.isPaused);
 
         // Update button states
         if (state.isRunning && !state.isPaused) {
