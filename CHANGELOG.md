@@ -1,3 +1,46 @@
+## [2.0.0](https://github.com/DevilsDev/NeuroViz/compare/v1.1.1...v2.0.0) (2025-12-05)
+
+### ⚠ BREAKING CHANGES
+
+* **training:** Learning rate schedules now work correctly
+
+Previously, updating the learning rate would call initialize() which
+destroyed the model and all trained weights, causing training to reset.
+This made all LR schedules (exponential, step, cosine, cyclic) completely
+non-functional.
+
+Changes:
+- Add updateLearningRate() method to INeuralNetworkService interface
+- Implement updateLearningRate() in TFNeuralNet to preserve weights:
+  * Save current weights before recompiling
+  * Create new optimizer with updated learning rate
+  * Recompile model (preserves architecture)
+  * Restore saved weights
+  * Dispose old weight tensors to prevent memory leaks
+- Update TrainingSession.updateLearningRateIfNeeded() to use new method
+- Remove misleading comment that claimed weights were preserved
+
+Impact:
+- Learning rate schedules now function correctly
+- Training no longer resets when LR changes >1%
+- 5 out of 6 LR schedule types now work as intended:
+  * exponential decay ✓
+  * step-wise decay ✓
+  * cosine annealing ✓
+  * cyclic_triangular ✓
+  * cyclic_cosine ✓
+
+Fixes critical production bug where advanced training features appeared
+to exist but were completely broken.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+### Bug Fixes
+
+* **training:** preserve weights during learning rate updates ([d1ac149](https://github.com/DevilsDev/NeuroViz/commit/d1ac149e3bd980a5dece442aac29f1f953becbef))
+
 ## [1.1.1](https://github.com/DevilsDev/NeuroViz/compare/v1.1.0...v1.1.1) (2025-12-04)
 
 ### Bug Fixes
