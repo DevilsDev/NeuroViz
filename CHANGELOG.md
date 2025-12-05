@@ -1,3 +1,9 @@
+## [2.0.1](https://github.com/DevilsDev/NeuroViz/compare/v2.0.0...v2.0.1) (2025-12-05)
+
+### Bug Fixes
+
+* **e2e:** enable pause button when training starts ([c163d45](https://github.com/DevilsDev/NeuroViz/commit/c163d45b8607237b3c884fccab9899369125103e))
+
 ## [2.0.0](https://github.com/DevilsDev/NeuroViz/compare/v1.1.1...v2.0.0) (2025-12-05)
 
 ### ⚠ BREAKING CHANGES
