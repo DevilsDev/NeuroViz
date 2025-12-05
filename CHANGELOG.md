@@ -1,3 +1,9 @@
+## [2.4.0](https://github.com/DevilsDev/NeuroViz/compare/v2.3.0...v2.4.0) (2025-12-05)
+
+### Features
+
+* add initial application structure, services, and dataset management controller ([16df581](https://github.com/DevilsDev/NeuroViz/commit/16df5813c79efec056c7fa8054fe43c23586d9c1))
+
 ## [2.3.0](https://github.com/DevilsDev/NeuroViz/compare/v2.2.0...v2.3.0) (2025-12-05)
 
 ### Features
