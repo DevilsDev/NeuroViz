@@ -1,3 +1,9 @@
+## [2.8.0](https://github.com/DevilsDev/NeuroViz/compare/v2.7.0...v2.8.0) (2025-12-05)
+
+### Features
+
+* Implement global keyboard shortcuts utility and add dataset gallery tests. ([8ceff7a](https://github.com/DevilsDev/NeuroViz/commit/8ceff7a7b17a729298e062b9f8739ed0d59d226d))
+
 ## [2.7.0](https://github.com/DevilsDev/NeuroViz/compare/v2.6.0...v2.7.0) (2025-12-05)
 
 ### Features
