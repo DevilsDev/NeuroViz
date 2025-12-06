@@ -1,3 +1,9 @@
+## [2.16.0](https://github.com/DevilsDev/NeuroViz/compare/v2.15.0...v2.16.0) (2025-12-06)
+
+### Features
+
+* Add TrainingController for neural network UI and refactor base styling with CSS variables and data attributes. ([a72be44](https://github.com/DevilsDev/NeuroViz/commit/a72be44ce5491e5191eb8585e6a56fdddd01b00b))
+
 ## [2.15.0](https://github.com/DevilsDev/NeuroViz/compare/v2.14.0...v2.15.0) (2025-12-06)
 
 ### Features
