@@ -1,3 +1,9 @@
+## [2.13.0](https://github.com/DevilsDev/NeuroViz/compare/v2.12.0...v2.13.0) (2025-12-06)
+
+### Features
+
+* Implement core training session management, add new presentation controllers, and introduce comprehensive end-to-end testing. ([2088027](https://github.com/DevilsDev/NeuroViz/commit/20880270c8747a5eef53501c7a383298d116cfd0))
+
 ## [2.12.0](https://github.com/DevilsDev/NeuroViz/compare/v2.11.0...v2.12.0) (2025-12-06)
 
 ### Features
