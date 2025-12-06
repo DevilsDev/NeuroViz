@@ -1,3 +1,9 @@
+## [2.11.0](https://github.com/DevilsDev/NeuroViz/compare/v2.10.0...v2.11.0) (2025-12-06)
+
+### Features
+
+* Add main application entry point and new end-to-end test suite with page objects. ([d879e6c](https://github.com/DevilsDev/NeuroViz/commit/d879e6c1e8ca7aab58117efc6921ff47b5e46a2d))
+
 ## [2.10.0](https://github.com/DevilsDev/NeuroViz/compare/v2.9.0...v2.10.0) (2025-12-06)
 
 ### Features
