@@ -1,3 +1,9 @@
+## [2.17.0](https://github.com/DevilsDev/NeuroViz/compare/v2.16.0...v2.17.0) (2025-12-06)
+
+### Features
+
+* Introduce a centralized `UIFactory` for type-safe DOM element retrieval and add new styling. ([31a6679](https://github.com/DevilsDev/NeuroViz/commit/31a6679d035cccad73a16c12d4ec0544589a8624))
+
 ## [2.16.0](https://github.com/DevilsDev/NeuroViz/compare/v2.15.0...v2.16.0) (2025-12-06)
 
 ### Features
