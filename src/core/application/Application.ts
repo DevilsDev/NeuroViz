@@ -54,7 +54,7 @@ export class Application {
   constructor(
     public readonly services: Services,
     public readonly controllers: Controllers
-  ) {}
+  ) { }
 
   /**
    * Initializes the application
@@ -122,19 +122,7 @@ export class Application {
    */
   private setupCleanup(): void {
     window.addEventListener('beforeunload', () => {
-      // Dispose controllers (those with dispose methods)
-      if ('dispose' in this.controllers.dataset && typeof this.controllers.dataset.dispose === 'function') {
-        this.controllers.dataset.dispose();
-      }
-
-      // Dispose visualizer (includes ResizeObserver cleanup)
-      if ('dispose' in this.services.visualizer && typeof this.services.visualizer.dispose === 'function') {
-        this.services.visualizer.dispose();
-      }
-
-      // Clear D3 visualizations
-      this.services.lossChart.clear();
-      this.services.networkDiagram.clear();
+      this.dispose();
     });
   }
 
@@ -192,9 +180,46 @@ export class Application {
   }
 
   /**
-   * Disposes the application and cleans up resources
+   * Disposes the application and cleans up all resources.
+   * Call this method before re-instantiating or during hot reload.
    */
   dispose(): void {
-    // Cleanup is handled by beforeunload event
+    // Dispose all controllers with dispose methods
+    const controllers = this.controllers;
+
+    if (controllers.dataset && typeof controllers.dataset.dispose === 'function') {
+      controllers.dataset.dispose();
+    }
+    if (controllers.training && typeof controllers.training.dispose === 'function') {
+      controllers.training.dispose();
+    }
+    if (controllers.visualization && typeof controllers.visualization.dispose === 'function') {
+      controllers.visualization.dispose();
+    }
+    if (controllers.export && typeof controllers.export.dispose === 'function') {
+      controllers.export.dispose();
+    }
+    if (controllers.session && typeof controllers.session.dispose === 'function') {
+      controllers.session.dispose();
+    }
+    // Note: ComparisonController and ResearchController may not have dispose yet
+    if (controllers.comparison && 'dispose' in controllers.comparison && typeof (controllers.comparison as unknown as { dispose: () => void }).dispose === 'function') {
+      (controllers.comparison as unknown as { dispose: () => void }).dispose();
+    }
+    if (controllers.research && 'dispose' in controllers.research && typeof (controllers.research as unknown as { dispose: () => void }).dispose === 'function') {
+      (controllers.research as unknown as { dispose: () => void }).dispose();
+    }
+
+    // Dispose services with dispose methods
+    if (this.services.visualizer && typeof this.services.visualizer.dispose === 'function') {
+      this.services.visualizer.dispose();
+    }
+
+    // Clear D3 visualizations
+    this.services.lossChart.clear();
+    this.services.networkDiagram.clear();
+    this.services.confusionMatrix.clear();
+    this.services.weightHistogram.clear();
   }
 }
+

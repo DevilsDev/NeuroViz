@@ -160,7 +160,13 @@ export function getExportElements(): ExportElements {
     btnExportOnnx: document.getElementById('btn-export-onnx') as HTMLButtonElement,
     inputLoadModel: document.getElementById('input-load-model') as HTMLInputElement,
     inputLoadWeights: document.getElementById('input-load-weights') as HTMLInputElement,
+
+    // Sticky footer export buttons
+    btnExportHistorySticky: document.getElementById('btn-export-history-sticky') as HTMLButtonElement,
+    btnExportModelSticky: document.getElementById('btn-export-model-sticky') as HTMLButtonElement,
+
     inputLayers: document.getElementById('input-layers') as HTMLInputElement,
+
     inputLayerActivations: document.getElementById('input-layer-activations') as HTMLInputElement,
     inputLr: document.getElementById('input-lr') as HTMLInputElement,
     inputOptimizer: document.getElementById('input-optimizer') as HTMLSelectElement,
@@ -217,13 +223,13 @@ export function getSessionElements(): SessionElements {
     inputL2: document.getElementById('input-l2') as HTMLInputElement,
     inputBatchSize: document.getElementById('input-batch-size') as HTMLInputElement,
     inputMaxEpochs: document.getElementById('input-max-epochs') as HTMLInputElement,
-    inputFps: document.getElementById('input-target-fps') as HTMLInputElement,
+    inputFps: document.getElementById('input-fps') as HTMLInputElement,
     fpsValue: document.getElementById('fps-value') as HTMLSpanElement,
     inputValSplit: document.getElementById('input-val-split') as HTMLSelectElement,
     inputColourScheme: document.getElementById('input-colour-scheme') as HTMLSelectElement,
-    inputPointSize: document.getElementById('input-point-radius') as HTMLInputElement,
-    inputOpacity: document.getElementById('input-boundary-opacity') as HTMLInputElement,
-    opacityValue: document.getElementById('boundary-opacity-value') as HTMLSpanElement,
+    inputPointSize: document.getElementById('input-point-size') as HTMLInputElement,
+    inputOpacity: document.getElementById('input-opacity') as HTMLInputElement,
+    opacityValue: document.getElementById('opacity-value') as HTMLSpanElement,
     inputZoom: document.getElementById('input-zoom') as HTMLInputElement,
     inputTooltips: document.getElementById('input-tooltips') as HTMLInputElement,
     inputBalance: document.getElementById('input-balance') as HTMLInputElement,

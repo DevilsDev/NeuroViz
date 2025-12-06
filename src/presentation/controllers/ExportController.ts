@@ -17,6 +17,11 @@ export interface ExportElements {
     inputLoadModel: HTMLInputElement;
     inputLoadWeights: HTMLInputElement;
 
+    // Sticky footer export buttons
+    btnExportHistorySticky: HTMLButtonElement;
+    btnExportModelSticky: HTMLButtonElement;
+
+
     // Inputs needed for export config generation
     inputLayers: HTMLInputElement;
     inputLayerActivations: HTMLInputElement;
@@ -80,7 +85,12 @@ export class ExportController {
 
         this.addTrackedListener(this.elements.inputLoadModel, 'change', (e) => this.handleLoadModelJson(e as Event));
         this.addTrackedListener(this.elements.inputLoadWeights, 'change', (e) => void this.handleLoadModelWeights(e as Event));
+
+        // Sticky footer export buttons
+        this.addTrackedListener(this.elements.btnExportHistorySticky, 'click', () => this.handleExportJson());
+        this.addTrackedListener(this.elements.btnExportModelSticky, 'click', () => void this.handleExportModel());
     }
+
 
     /**
      * Clean up all event listeners to prevent memory leaks.
