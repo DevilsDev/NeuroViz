@@ -3,6 +3,9 @@
  *
  * This factory provides type-safe access to DOM elements required by various controllers.
  * It uses safe element access utilities to handle missing elements gracefully.
+ * 
+ * Performance Optimization: Elements are cached on first access to avoid duplicate
+ * getElementById calls across different getters (Training, Export, Session, etc.).
  */
 
 import { safeGetElement, getRequiredElement } from './dom';
@@ -15,6 +18,38 @@ import type {
   ComparisonElements,
   ResearchElements,
 } from '../presentation/controllers';
+
+// ===== DOM ELEMENT CACHE =====
+// Caches elements to avoid duplicate getElementById calls across getters
+const elementCache = new Map<string, HTMLElement | null>();
+
+/**
+ * Get a cached DOM element by ID. Returns null if element doesn't exist.
+ * Elements are cached on first access for performance.
+ */
+function getCached<T extends HTMLElement>(id: string): T | null {
+  if (!elementCache.has(id)) {
+    elementCache.set(id, document.getElementById(id));
+  }
+  return elementCache.get(id) as T | null;
+}
+
+/**
+ * Get a cached DOM element by ID, with a fallback element if not found.
+ */
+function getCachedOrCreate<T extends HTMLElement>(id: string, tagName: keyof HTMLElementTagNameMap): T {
+  const element = getCached<T>(id);
+  return element || (document.createElement(tagName) as unknown as T);
+}
+
+/**
+ * Clear the element cache. Call this when DOM structure changes significantly
+ * (e.g., during hot module replacement or after major DOM updates).
+ */
+export function clearElementCache(): void {
+  elementCache.clear();
+}
+
 
 /**
  * Get all DOM elements required by the DatasetController
@@ -43,6 +78,7 @@ export function getDatasetElements(): DatasetElements {
 
 /**
  * Get all DOM elements required by the TrainingController
+ * Uses cached lookups for elements also used by other controllers
  */
 export function getTrainingElements(): TrainingElements {
   return {
@@ -50,20 +86,21 @@ export function getTrainingElements(): TrainingElements {
     btnStart: document.getElementById('btn-start') as HTMLButtonElement,
     btnStep: document.getElementById('btn-step') as HTMLButtonElement,
     btnReset: document.getElementById('btn-reset') as HTMLButtonElement,
-    inputLayers: document.getElementById('input-layers') as HTMLInputElement,
+    // Cached elements (shared with Export/Session)
+    inputLayers: getCached<HTMLInputElement>('input-layers') as HTMLInputElement,
     inputLayerActivations: document.getElementById('input-layer-activations') as HTMLInputElement,
-    inputLr: document.getElementById('input-lr') as HTMLInputElement,
-    inputOptimizer: document.getElementById('input-optimizer') as HTMLSelectElement,
-    inputMomentum: document.getElementById('input-momentum') as HTMLInputElement,
-    inputActivation: document.getElementById('input-activation') as HTMLSelectElement,
-    inputL1: document.getElementById('input-l1') as HTMLInputElement,
-    inputL2: document.getElementById('input-l2') as HTMLInputElement,
-    inputNumClasses: document.getElementById('input-num-classes') as HTMLSelectElement,
-    inputDropout: document.getElementById('input-dropout') as HTMLSelectElement,
-    inputClipNorm: document.getElementById('input-clip-norm') as HTMLSelectElement,
-    inputBatchNorm: document.getElementById('input-batch-norm') as HTMLInputElement,
-    inputBatchSize: document.getElementById('input-batch-size') as HTMLInputElement,
-    inputMaxEpochs: document.getElementById('input-max-epochs') as HTMLInputElement,
+    inputLr: getCached<HTMLInputElement>('input-lr') as HTMLInputElement,
+    inputOptimizer: getCached<HTMLSelectElement>('input-optimizer') as HTMLSelectElement,
+    inputMomentum: getCached<HTMLInputElement>('input-momentum') as HTMLInputElement,
+    inputActivation: getCached<HTMLSelectElement>('input-activation') as HTMLSelectElement,
+    inputL1: getCached<HTMLInputElement>('input-l1') as HTMLInputElement,
+    inputL2: getCached<HTMLInputElement>('input-l2') as HTMLInputElement,
+    inputNumClasses: getCached<HTMLSelectElement>('input-num-classes') as HTMLSelectElement,
+    inputDropout: getCached<HTMLSelectElement>('input-dropout') as HTMLSelectElement,
+    inputClipNorm: getCached<HTMLSelectElement>('input-clip-norm') as HTMLSelectElement,
+    inputBatchNorm: getCached<HTMLInputElement>('input-batch-norm') as HTMLInputElement,
+    inputBatchSize: getCached<HTMLInputElement>('input-batch-size') as HTMLInputElement,
+    inputMaxEpochs: getCached<HTMLInputElement>('input-max-epochs') as HTMLInputElement,
     epochValue: document.getElementById('status-epoch') as HTMLElement,
     lossValue: document.getElementById('status-loss') as HTMLElement,
     accuracyValue: document.getElementById('status-accuracy') as HTMLElement,
@@ -72,17 +109,17 @@ export function getTrainingElements(): TrainingElements {
     stateDisplay: document.getElementById('status-state') as HTMLElement,
     suggestionsPanel: document.getElementById('suggestions-panel') as HTMLDivElement,
     suggestionsList: document.getElementById('suggestions-list') as HTMLDivElement,
-    momentumValue: document.getElementById('momentum-value') as HTMLSpanElement,
-    momentumControl: document.getElementById('momentum-control') as HTMLDivElement,
-    inputFps: document.getElementById('input-fps') as HTMLInputElement,
-    fpsValue: document.getElementById('fps-value') as HTMLSpanElement,
-    inputLrSchedule: document.getElementById('input-lr-schedule') as HTMLSelectElement,
-    inputWarmup: document.getElementById('input-warmup') as HTMLInputElement,
-    inputCycleLength: document.getElementById('input-cycle-length') as HTMLInputElement,
-    inputMinLr: document.getElementById('input-min-lr') as HTMLInputElement,
+    momentumValue: getCached<HTMLSpanElement>('momentum-value') as HTMLSpanElement,
+    momentumControl: getCached<HTMLDivElement>('momentum-control') as HTMLDivElement,
+    inputFps: getCached<HTMLInputElement>('input-fps') as HTMLInputElement,
+    fpsValue: getCached<HTMLSpanElement>('fps-value') as HTMLSpanElement,
+    inputLrSchedule: getCached<HTMLSelectElement>('input-lr-schedule') as HTMLSelectElement,
+    inputWarmup: getCached<HTMLInputElement>('input-warmup') as HTMLInputElement,
+    inputCycleLength: getCached<HTMLInputElement>('input-cycle-length') as HTMLInputElement,
+    inputMinLr: getCached<HTMLInputElement>('input-min-lr') as HTMLInputElement,
     inputEarlyStop: document.getElementById('input-early-stop') as HTMLInputElement,
     cyclicLrControls: document.getElementById('cyclic-lr-controls') as HTMLDivElement,
-    inputValSplit: document.getElementById('input-val-split') as HTMLSelectElement,
+    inputValSplit: getCached<HTMLSelectElement>('input-val-split') as HTMLSelectElement,
     inputTargetFps: document.getElementById('input-perf-mode') as HTMLSelectElement,
     btnStartSticky: document.getElementById('btn-start-sticky') as HTMLButtonElement,
     btnPauseSticky: document.getElementById('btn-pause-sticky') as HTMLButtonElement,
@@ -105,6 +142,7 @@ export function getTrainingElements(): TrainingElements {
     vizPanel: document.getElementById('viz-panel') as HTMLElement,
   };
 }
+
 
 /**
  * Get all DOM elements required by the VisualizationController
@@ -147,6 +185,7 @@ export function getVisualizationElements(): VisualizationElements {
 
 /**
  * Get all DOM elements required by the ExportController
+ * Uses cached lookups for elements also used by other controllers
  */
 export function getExportElements(): ExportElements {
   return {
@@ -165,34 +204,36 @@ export function getExportElements(): ExportElements {
     btnExportHistorySticky: document.getElementById('btn-export-history-sticky') as HTMLButtonElement,
     btnExportModelSticky: document.getElementById('btn-export-model-sticky') as HTMLButtonElement,
 
-    inputLayers: document.getElementById('input-layers') as HTMLInputElement,
-
+    // Cached elements (shared with Training/Session)
+    inputLayers: getCached<HTMLInputElement>('input-layers') as HTMLInputElement,
     inputLayerActivations: document.getElementById('input-layer-activations') as HTMLInputElement,
-    inputLr: document.getElementById('input-lr') as HTMLInputElement,
-    inputOptimizer: document.getElementById('input-optimizer') as HTMLSelectElement,
-    inputMomentum: document.getElementById('input-momentum') as HTMLInputElement,
-    inputActivation: document.getElementById('input-activation') as HTMLSelectElement,
-    inputL1: document.getElementById('input-l1') as HTMLInputElement,
-    inputL2: document.getElementById('input-l2') as HTMLInputElement,
-    inputNumClasses: document.getElementById('input-num-classes') as HTMLSelectElement,
-    inputDropout: document.getElementById('input-dropout') as HTMLSelectElement,
-    inputClipNorm: document.getElementById('input-clip-norm') as HTMLSelectElement,
-    inputBatchNorm: document.getElementById('input-batch-norm') as HTMLInputElement,
-    inputLrSchedule: document.getElementById('input-lr-schedule') as HTMLSelectElement,
-    inputWarmup: document.getElementById('input-warmup') as HTMLInputElement,
-    inputCycleLength: document.getElementById('input-cycle-length') as HTMLInputElement,
-    inputMinLr: document.getElementById('input-min-lr') as HTMLInputElement,
-    inputSamples: document.getElementById('input-samples') as HTMLInputElement,
-    inputNoise: document.getElementById('input-noise') as HTMLInputElement,
-    datasetSelect: document.getElementById('dataset-select') as HTMLSelectElement,
-    inputBatchSize: document.getElementById('input-batch-size') as HTMLInputElement,
-    inputMaxEpochs: document.getElementById('input-max-epochs') as HTMLInputElement,
-    inputValSplit: document.getElementById('input-val-split') as HTMLSelectElement,
+    inputLr: getCached<HTMLInputElement>('input-lr') as HTMLInputElement,
+    inputOptimizer: getCached<HTMLSelectElement>('input-optimizer') as HTMLSelectElement,
+    inputMomentum: getCached<HTMLInputElement>('input-momentum') as HTMLInputElement,
+    inputActivation: getCached<HTMLSelectElement>('input-activation') as HTMLSelectElement,
+    inputL1: getCached<HTMLInputElement>('input-l1') as HTMLInputElement,
+    inputL2: getCached<HTMLInputElement>('input-l2') as HTMLInputElement,
+    inputNumClasses: getCached<HTMLSelectElement>('input-num-classes') as HTMLSelectElement,
+    inputDropout: getCached<HTMLSelectElement>('input-dropout') as HTMLSelectElement,
+    inputClipNorm: getCached<HTMLSelectElement>('input-clip-norm') as HTMLSelectElement,
+    inputBatchNorm: getCached<HTMLInputElement>('input-batch-norm') as HTMLInputElement,
+    inputLrSchedule: getCached<HTMLSelectElement>('input-lr-schedule') as HTMLSelectElement,
+    inputWarmup: getCached<HTMLInputElement>('input-warmup') as HTMLInputElement,
+    inputCycleLength: getCached<HTMLInputElement>('input-cycle-length') as HTMLInputElement,
+    inputMinLr: getCached<HTMLInputElement>('input-min-lr') as HTMLInputElement,
+    inputSamples: getCached<HTMLInputElement>('input-samples') as HTMLInputElement,
+    inputNoise: getCached<HTMLInputElement>('input-noise') as HTMLInputElement,
+    datasetSelect: getCached<HTMLSelectElement>('dataset-select') as HTMLSelectElement,
+    inputBatchSize: getCached<HTMLInputElement>('input-batch-size') as HTMLInputElement,
+    inputMaxEpochs: getCached<HTMLInputElement>('input-max-epochs') as HTMLInputElement,
+    inputValSplit: getCached<HTMLSelectElement>('input-val-split') as HTMLSelectElement,
   };
 }
 
+
 /**
  * Get all DOM elements required by the SessionController
+ * Uses cached lookups for elements also used by other controllers
  */
 export function getSessionElements(): SessionElements {
   return {
@@ -210,22 +251,23 @@ export function getSessionElements(): SessionElements {
     iconSun: document.getElementById('icon-sun') as HTMLElement,
     iconMoon: document.getElementById('icon-moon') as HTMLElement,
     btnThemeToggle: document.getElementById('btn-theme-toggle') as HTMLButtonElement,
-    datasetSelect: document.getElementById('dataset-select') as HTMLSelectElement,
-    inputSamples: document.getElementById('input-samples') as HTMLInputElement,
+    // Cached elements (shared with Training/Export)
+    datasetSelect: getCached<HTMLSelectElement>('dataset-select') as HTMLSelectElement,
+    inputSamples: getCached<HTMLInputElement>('input-samples') as HTMLInputElement,
     samplesValue: document.getElementById('samples-value') as HTMLSpanElement,
-    inputNoise: document.getElementById('input-noise') as HTMLInputElement,
+    inputNoise: getCached<HTMLInputElement>('input-noise') as HTMLInputElement,
     noiseValue: document.getElementById('noise-value') as HTMLSpanElement,
-    inputNumClasses: document.getElementById('input-num-classes') as HTMLSelectElement,
-    inputLr: document.getElementById('input-lr') as HTMLInputElement,
-    inputLayers: document.getElementById('input-layers') as HTMLInputElement,
-    inputOptimizer: document.getElementById('input-optimizer') as HTMLSelectElement,
-    inputActivation: document.getElementById('input-activation') as HTMLSelectElement,
-    inputL2: document.getElementById('input-l2') as HTMLInputElement,
-    inputBatchSize: document.getElementById('input-batch-size') as HTMLInputElement,
-    inputMaxEpochs: document.getElementById('input-max-epochs') as HTMLInputElement,
-    inputFps: document.getElementById('input-fps') as HTMLInputElement,
-    fpsValue: document.getElementById('fps-value') as HTMLSpanElement,
-    inputValSplit: document.getElementById('input-val-split') as HTMLSelectElement,
+    inputNumClasses: getCached<HTMLSelectElement>('input-num-classes') as HTMLSelectElement,
+    inputLr: getCached<HTMLInputElement>('input-lr') as HTMLInputElement,
+    inputLayers: getCached<HTMLInputElement>('input-layers') as HTMLInputElement,
+    inputOptimizer: getCached<HTMLSelectElement>('input-optimizer') as HTMLSelectElement,
+    inputActivation: getCached<HTMLSelectElement>('input-activation') as HTMLSelectElement,
+    inputL2: getCached<HTMLInputElement>('input-l2') as HTMLInputElement,
+    inputBatchSize: getCached<HTMLInputElement>('input-batch-size') as HTMLInputElement,
+    inputMaxEpochs: getCached<HTMLInputElement>('input-max-epochs') as HTMLInputElement,
+    inputFps: getCached<HTMLInputElement>('input-fps') as HTMLInputElement,
+    fpsValue: getCached<HTMLSpanElement>('fps-value') as HTMLSpanElement,
+    inputValSplit: getCached<HTMLSelectElement>('input-val-split') as HTMLSelectElement,
     inputColourScheme: document.getElementById('input-colour-scheme') as HTMLSelectElement,
     inputPointSize: document.getElementById('input-point-size') as HTMLInputElement,
     inputOpacity: document.getElementById('input-opacity') as HTMLInputElement,
@@ -234,19 +276,20 @@ export function getSessionElements(): SessionElements {
     inputTooltips: document.getElementById('input-tooltips') as HTMLInputElement,
     inputBalance: document.getElementById('input-balance') as HTMLInputElement,
     balanceValue: document.getElementById('balance-value') as HTMLSpanElement,
-    inputMomentum: document.getElementById('input-momentum') as HTMLInputElement,
-    momentumValue: document.getElementById('momentum-value') as HTMLSpanElement,
-    inputL1: document.getElementById('input-l1') as HTMLInputElement,
-    inputDropout: document.getElementById('input-dropout') as HTMLSelectElement,
-    inputClipNorm: document.getElementById('input-clip-norm') as HTMLSelectElement,
-    inputBatchNorm: document.getElementById('input-batch-norm') as HTMLInputElement,
-    inputLrSchedule: document.getElementById('input-lr-schedule') as HTMLSelectElement,
-    inputWarmup: document.getElementById('input-warmup') as HTMLInputElement,
-    inputCycleLength: document.getElementById('input-cycle-length') as HTMLInputElement,
-    inputMinLr: document.getElementById('input-min-lr') as HTMLInputElement,
-    momentumControl: document.getElementById('momentum-control') as HTMLDivElement,
+    inputMomentum: getCached<HTMLInputElement>('input-momentum') as HTMLInputElement,
+    momentumValue: getCached<HTMLSpanElement>('momentum-value') as HTMLSpanElement,
+    inputL1: getCached<HTMLInputElement>('input-l1') as HTMLInputElement,
+    inputDropout: getCached<HTMLSelectElement>('input-dropout') as HTMLSelectElement,
+    inputClipNorm: getCached<HTMLSelectElement>('input-clip-norm') as HTMLSelectElement,
+    inputBatchNorm: getCached<HTMLInputElement>('input-batch-norm') as HTMLInputElement,
+    inputLrSchedule: getCached<HTMLSelectElement>('input-lr-schedule') as HTMLSelectElement,
+    inputWarmup: getCached<HTMLInputElement>('input-warmup') as HTMLInputElement,
+    inputCycleLength: getCached<HTMLInputElement>('input-cycle-length') as HTMLInputElement,
+    inputMinLr: getCached<HTMLInputElement>('input-min-lr') as HTMLInputElement,
+    momentumControl: getCached<HTMLDivElement>('momentum-control') as HTMLDivElement,
   };
 }
+
 
 /**
  * Get all DOM elements required by the ComparisonController

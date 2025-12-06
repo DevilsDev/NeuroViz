@@ -356,14 +356,15 @@
                   <div class="dataset-preview-card" data-dataset="circle">
                     <div class="dataset-preview-icon">
                       <svg viewBox="0 0 100 100" class="w-full h-full">
-                        <circle cx="50" cy="50" r="25" fill="none" stroke="#fb923c" stroke-width="2" opacity="0.6" />
-                        <circle cx="50" cy="50" r="15" fill="none" stroke="#00d9ff" stroke-width="2" opacity="0.6" />
-                        <circle cx="30" cy="30" r="2" fill="#fb923c" />
-                        <circle cx="70" cy="70" r="2" fill="#fb923c" />
-                        <circle cx="45" cy="50" r="2" fill="#00d9ff" />
-                        <circle cx="55" cy="50" r="2" fill="#00d9ff" />
+                        <circle cx="50" cy="50" r="25" fill="none" class="svg-class-a" stroke-width="2" opacity="0.6" />
+                        <circle cx="50" cy="50" r="15" fill="none" class="svg-class-b" stroke-width="2" opacity="0.6" />
+                        <circle cx="30" cy="30" r="2" class="svg-class-a" />
+                        <circle cx="70" cy="70" r="2" class="svg-class-a" />
+                        <circle cx="45" cy="50" r="2" class="svg-class-b" />
+                        <circle cx="55" cy="50" r="2" class="svg-class-b" />
                       </svg>
                     </div>
+
                     <div class="dataset-preview-label">Circle</div>
                     <div class="dataset-preview-desc">Concentric rings</div>
                     <div class="dataset-preview-badge">Easy</div>
@@ -373,14 +374,15 @@
                   <div class="dataset-preview-card" data-dataset="xor">
                     <div class="dataset-preview-icon">
                       <svg viewBox="0 0 100 100" class="w-full h-full">
-                        <line x1="50" y1="10" x2="50" y2="90" stroke="#475569" stroke-width="1" opacity="0.3" />
-                        <line x1="10" y1="50" x2="90" y2="50" stroke="#475569" stroke-width="1" opacity="0.3" />
-                        <circle cx="30" cy="30" r="2" fill="#fb923c" />
-                        <circle cx="70" cy="70" r="2" fill="#fb923c" />
-                        <circle cx="70" cy="30" r="2" fill="#00d9ff" />
-                        <circle cx="30" cy="70" r="2" fill="#00d9ff" />
+                        <line x1="50" y1="10" x2="50" y2="90" class="svg-grid" stroke-width="1" />
+                        <line x1="10" y1="50" x2="90" y2="50" class="svg-grid" stroke-width="1" />
+                        <circle cx="30" cy="30" r="2" class="svg-class-a" />
+                        <circle cx="70" cy="70" r="2" class="svg-class-a" />
+                        <circle cx="70" cy="30" r="2" class="svg-class-b" />
+                        <circle cx="30" cy="70" r="2" class="svg-class-b" />
                       </svg>
                     </div>
+
                     <div class="dataset-preview-label">XOR</div>
                     <div class="dataset-preview-desc">Quadrant pattern</div>
                     <div class="dataset-preview-badge">Medium</div>
@@ -390,16 +392,17 @@
                   <div class="dataset-preview-card" data-dataset="spiral">
                     <div class="dataset-preview-icon">
                       <svg viewBox="0 0 100 100" class="w-full h-full">
-                        <path d="M50,50 Q60,40 70,50 T80,70" fill="none" stroke="#fb923c" stroke-width="2"
+                        <path d="M50,50 Q60,40 70,50 T80,70" fill="none" class="svg-class-a" stroke-width="2"
                           opacity="0.6" />
-                        <path d="M50,50 Q40,60 30,50 T20,30" fill="none" stroke="#00d9ff" stroke-width="2"
+                        <path d="M50,50 Q40,60 30,50 T20,30" fill="none" class="svg-class-b" stroke-width="2"
                           opacity="0.6" />
-                        <circle cx="60" cy="45" r="2" fill="#fb923c" />
-                        <circle cx="75" cy="60" r="2" fill="#fb923c" />
-                        <circle cx="40" cy="55" r="2" fill="#00d9ff" />
-                        <circle cx="25" cy="40" r="2" fill="#00d9ff" />
+                        <circle cx="60" cy="45" r="2" class="svg-class-a" />
+                        <circle cx="75" cy="60" r="2" class="svg-class-a" />
+                        <circle cx="40" cy="55" r="2" class="svg-class-b" />
+                        <circle cx="25" cy="40" r="2" class="svg-class-b" />
                       </svg>
                     </div>
+
                     <div class="dataset-preview-label">Spiral</div>
                     <div class="dataset-preview-desc">Intertwined arms</div>
                     <div class="dataset-preview-badge badge-hard">Hard</div>
@@ -409,16 +412,17 @@
                   <div class="dataset-preview-card" data-dataset="gaussian">
                     <div class="dataset-preview-icon">
                       <svg viewBox="0 0 100 100" class="w-full h-full">
-                        <ellipse cx="35" cy="40" rx="15" ry="12" fill="none" stroke="#fb923c" stroke-width="2"
+                        <ellipse cx="35" cy="40" rx="15" ry="12" fill="none" class="svg-class-a" stroke-width="2"
                           opacity="0.4" />
-                        <ellipse cx="65" cy="60" rx="15" ry="12" fill="none" stroke="#00d9ff" stroke-width="2"
+                        <ellipse cx="65" cy="60" rx="15" ry="12" fill="none" class="svg-class-b" stroke-width="2"
                           opacity="0.4" />
-                        <circle cx="30" cy="38" r="2" fill="#fb923c" />
-                        <circle cx="40" cy="42" r="2" fill="#fb923c" />
-                        <circle cx="60" cy="58" r="2" fill="#00d9ff" />
-                        <circle cx="70" cy="62" r="2" fill="#00d9ff" />
+                        <circle cx="30" cy="38" r="2" class="svg-class-a" />
+                        <circle cx="40" cy="42" r="2" class="svg-class-a" />
+                        <circle cx="60" cy="58" r="2" class="svg-class-b" />
+                        <circle cx="70" cy="62" r="2" class="svg-class-b" />
                       </svg>
                     </div>
+
                     <div class="dataset-preview-label">Gaussian</div>
                     <div class="dataset-preview-desc">Blob clusters</div>
                     <div class="dataset-preview-badge">Easy</div>
@@ -428,12 +432,12 @@
                   <div class="dataset-preview-card" data-dataset="clusters">
                     <div class="dataset-preview-icon">
                       <svg viewBox="0 0 100 100" class="w-full h-full">
-                        <circle cx="30" cy="30" r="2" fill="#fb923c" />
-                        <circle cx="35" cy="28" r="2" fill="#fb923c" />
-                        <circle cx="70" cy="70" r="2" fill="#00d9ff" />
-                        <circle cx="65" cy="72" r="2" fill="#00d9ff" />
-                        <circle cx="50" cy="20" r="2" fill="#a855f7" />
-                        <circle cx="48" cy="25" r="2" fill="#a855f7" />
+                        <circle cx="30" cy="30" r="2" class="svg-class-a" />
+                        <circle cx="35" cy="28" r="2" class="svg-class-a" />
+                        <circle cx="70" cy="70" r="2" class="svg-class-b" />
+                        <circle cx="65" cy="72" r="2" class="svg-class-b" />
+                        <circle cx="50" cy="20" r="2" class="svg-class-c" />
+                        <circle cx="48" cy="25" r="2" class="svg-class-c" />
                       </svg>
                     </div>
                     <div class="dataset-preview-label">Clusters</div>
@@ -441,17 +445,18 @@
                     <div class="dataset-preview-badge badge-medium">Medium</div>
                   </div>
 
+
                   <!-- Iris Dataset (Real-world) -->
                   <div class="dataset-preview-card" data-dataset="iris">
                     <div class="dataset-preview-icon">
                       <svg viewBox="0 0 100 100" class="w-full h-full">
-                        <ellipse cx="50" cy="50" rx="28" ry="18" fill="none" stroke="#22c55e" stroke-width="2"
+                        <ellipse cx="50" cy="50" rx="28" ry="18" fill="none" class="svg-class-d" stroke-width="2"
                           opacity="0.6" />
-                        <circle cx="40" cy="50" r="2" fill="#22c55e" />
-                        <circle cx="50" cy="45" r="2" fill="#22c55e" />
-                        <circle cx="60" cy="55" r="2" fill="#22c55e" />
-                        <circle cx="45" cy="55" r="2" fill="#0ea5e9" />
-                        <circle cx="55" cy="45" r="2" fill="#0ea5e9" />
+                        <circle cx="40" cy="50" r="2" class="svg-class-d" />
+                        <circle cx="50" cy="45" r="2" class="svg-class-d" />
+                        <circle cx="60" cy="55" r="2" class="svg-class-d" />
+                        <circle cx="45" cy="55" r="2" class="svg-class-e" />
+                        <circle cx="55" cy="45" r="2" class="svg-class-e" />
                       </svg>
                     </div>
                     <div class="dataset-preview-label">Iris</div>
@@ -459,16 +464,17 @@
                     <div class="dataset-preview-badge badge-medium">Medium</div>
                   </div>
 
+
                   <!-- Wine Dataset (Real-world) -->
                   <div class="dataset-preview-card" data-dataset="wine">
                     <div class="dataset-preview-icon">
                       <svg viewBox="0 0 100 100" class="w-full h-full">
-                        <rect x="38" y="20" width="24" height="50" rx="6" ry="6" fill="none" stroke="#a855f7"
+                        <rect x="38" y="20" width="24" height="50" rx="6" ry="6" fill="none" class="svg-class-c"
                           stroke-width="2" opacity="0.6" />
-                        <line x1="38" y1="40" x2="62" y2="40" stroke="#a855f7" stroke-width="2" opacity="0.6" />
-                        <circle cx="48" cy="55" r="3" fill="#a855f7" />
-                        <circle cx="60" cy="60" r="3" fill="#e11d48" />
-                        <circle cx="52" cy="66" r="3" fill="#0ea5e9" />
+                        <line x1="38" y1="40" x2="62" y2="40" class="svg-class-c" stroke-width="2" opacity="0.6" />
+                        <circle cx="48" cy="55" r="3" class="svg-class-c" />
+                        <circle cx="60" cy="60" r="3" class="svg-class-f" />
+                        <circle cx="52" cy="66" r="3" class="svg-class-e" />
                       </svg>
                     </div>
                     <div class="dataset-preview-label">Wine</div>
@@ -476,20 +482,22 @@
                     <div class="dataset-preview-badge badge-medium">Medium</div>
                   </div>
 
+
                   <!-- Custom Dataset -->
                   <div class="dataset-preview-card" data-dataset="custom">
                     <div class="dataset-preview-icon">
                       <svg viewBox="0 0 100 100" class="w-full h-full">
-                        <path d="M30,50 L50,30 L70,50 L50,70 Z" fill="none" stroke="#00d9ff" stroke-width="2"
+                        <path d="M30,50 L50,30 L70,50 L50,70 Z" fill="none" class="svg-class-b" stroke-width="2"
                           opacity="0.4" />
-                        <circle cx="50" cy="50" r="3" fill="#00d9ff" />
-                        <text x="50" y="55" text-anchor="middle" fill="#94a3b8" font-size="24">✎</text>
+                        <circle cx="50" cy="50" r="3" class="svg-class-b" />
+                        <text x="50" y="55" text-anchor="middle" class="svg-text" font-size="24">✎</text>
                       </svg>
                     </div>
                     <div class="dataset-preview-label">Custom</div>
                     <div class="dataset-preview-desc">Draw your own</div>
                     <div class="dataset-preview-badge badge-custom">Pro</div>
                   </div>
+
                 </div>
               </div>
 

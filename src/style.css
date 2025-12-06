@@ -706,7 +706,58 @@ html:not(.dark) {
     @apply bg-cyan-500/20 text-cyan-400 border border-cyan-500/30;
 }
 
+/* ===== SVG THEMING CLASSES ===== */
+/* Used instead of hardcoded hex colors for theme flexibility */
+
+/* Class A (Orange) - primary dataset class */
+.svg-class-a {
+    fill: rgb(var(--color-orange-rgb));
+    stroke: rgb(var(--color-orange-rgb));
+}
+
+/* Class B (Cyan) - secondary dataset class */
+.svg-class-b {
+    fill: rgb(var(--color-cyan-rgb));
+    stroke: rgb(var(--color-cyan-rgb));
+}
+
+/* Class C (Purple) - tertiary for multi-class */
+.svg-class-c {
+    fill: #a855f7;
+    stroke: #a855f7;
+}
+
+/* Class D (Green) - for Iris/other datasets */
+.svg-class-d {
+    fill: #22c55e;
+    stroke: #22c55e;
+}
+
+/* Class E (Sky Blue) - for additional classes */
+.svg-class-e {
+    fill: #0ea5e9;
+    stroke: #0ea5e9;
+}
+
+/* Class F (Rose) - for Wine dataset */
+.svg-class-f {
+    fill: #e11d48;
+    stroke: #e11d48;
+}
+
+/* Grid/Guide lines */
+.svg-grid {
+    fill: none;
+    stroke: rgb(var(--color-text-secondary-rgb) / 0.3);
+}
+
+/* Text elements */
+.svg-text {
+    fill: rgb(var(--color-text-secondary-rgb));
+}
+
 /* Loading Overlay */
+
 .loading-overlay {
     @apply absolute inset-0 flex flex-col items-center justify-center bg-navy-950/80 backdrop-blur-sm z-30 rounded-xl;
 }
@@ -825,7 +876,7 @@ html:not(.dark) {
 
 /* Training button glow pulse */
 .btn-primary.training {
-    animation: training-pulse 2s ease-in-out infinite !important;
+    animation: training-pulse 2s ease-in-out infinite;
 }
 
 @keyframes training-pulse {
@@ -845,32 +896,33 @@ html:not(.dark) {
 /* Button scales - exact wireframe values */
 .btn-primary:hover:not(:disabled),
 .btn-secondary:hover:not(:disabled) {
-    transform: scale(1.02) !important;
+    transform: scale(1.02);
 }
 
 .btn-primary:active:not(:disabled),
 .btn-secondary:active:not(:disabled) {
-    transform: scale(0.98) !important;
-    transition-duration: 100ms !important;
+    transform: scale(0.98);
+    transition-duration: 100ms;
 }
 
 /* Button height - exact 48px */
 .btn-primary {
     min-height: 48px;
-    padding-top: 12px !important;
-    padding-bottom: 12px !important;
+    padding-top: 12px;
+    padding-bottom: 12px;
 }
 
 /* Card hover - exact -2px transform */
 .card-hover:hover {
-    transform: translateY(-2px) !important;
+    transform: translateY(-2px);
 }
 
 
 /* Tab animation duration - exact 250ms */
 .sidebar-tab {
-    transition-duration: 250ms !important;
+    transition-duration: 250ms;
 }
+
 
 /* ===== PREVIEW POINT POSITIONING (Data-Attribute Driven) ===== */
 /* Replaces inline style="" attributes for theming consistency */
