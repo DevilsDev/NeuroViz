@@ -1,3 +1,9 @@
+## [2.18.0](https://github.com/DevilsDev/NeuroViz/compare/v2.17.0...v2.18.0) (2025-12-06)
+
+### Features
+
+* Implement model comparison, A/B testing, and ensemble management features along with core application structure and UI components. ([894b06c](https://github.com/DevilsDev/NeuroViz/commit/894b06c2478d913e5bd1e221e6c7f31c0cf72914))
+
 ## [2.17.0](https://github.com/DevilsDev/NeuroViz/compare/v2.16.0...v2.17.0) (2025-12-06)
 
 ### Features
