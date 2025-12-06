@@ -6,7 +6,7 @@ import { ITrainingSession } from '../ITrainingSession';
  * Command to step through one epoch of training
  */
 export class StepTrainingCommand implements ICommand<void> {
-  constructor(private session: ITrainingSession) {}
+  constructor(private session: ITrainingSession) { }
 
   validate(): ValidationResult {
     const state = this.session.getState();
@@ -19,7 +19,7 @@ export class StepTrainingCommand implements ICommand<void> {
       return ValidationResult.error('Dataset must be loaded before stepping');
     }
 
-    if (state.isRunning) {
+    if (state.isRunning && !state.isPaused) {
       return ValidationResult.error('Cannot step while training is running');
     }
 

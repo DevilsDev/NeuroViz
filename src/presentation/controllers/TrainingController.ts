@@ -4,12 +4,12 @@ import { OptimizerType, ActivationType, LRScheduleType } from '../../core/domain
 import { TrainingState } from '../../core/application/ITrainingSession';
 import { resetSuggestionsDismissal } from '../SuggestedFixes';
 import {
-  CommandExecutor,
-  InitializeNetworkCommand,
-  InitializeNetworkConfig,
-  UpdateTrainingConfigCommand,
-  StartTrainingCommand,
-  StepTrainingCommand,
+    CommandExecutor,
+    InitializeNetworkCommand,
+    InitializeNetworkConfig,
+    UpdateTrainingConfigCommand,
+    StartTrainingCommand,
+    StepTrainingCommand,
 } from '../../core/application/commands';
 
 export interface TrainingElements {
@@ -338,6 +338,7 @@ export class TrainingController {
         }
 
         this.elements.btnStep.disabled = true;
+        this.elements.btnStepSticky.disabled = true;
 
         try {
             const command = new StepTrainingCommand(this.session);
@@ -356,7 +357,9 @@ export class TrainingController {
         } finally {
             // Re-enable only if state is valid for stepping
             const state = this.session.getState();
-            this.elements.btnStep.disabled = !state.isInitialised || !state.datasetLoaded || state.isRunning;
+            const canStep = state.isInitialised && state.datasetLoaded && (!state.isRunning || state.isPaused) && !state.isProcessing;
+            this.elements.btnStep.disabled = !canStep;
+            this.elements.btnStepSticky.disabled = !canStep;
         }
     }
 
@@ -407,12 +410,12 @@ export class TrainingController {
             this.elements.btnStart.classList.remove('hidden');
             this.elements.btnPause.classList.add('hidden');
             this.elements.btnPause.disabled = true;
-            this.elements.btnStep.disabled = !canStart;
+            this.elements.btnStep.disabled = !canStart || state.isProcessing;
 
             this.elements.btnStartSticky.classList.remove('hidden');
             this.elements.btnPauseSticky.classList.add('hidden');
             this.elements.btnPauseSticky.disabled = true;
-            this.elements.btnStepSticky.disabled = !canStart;
+            this.elements.btnStepSticky.disabled = !canStart || state.isProcessing;
 
             this.elements.fabStart.classList.remove('hidden');
             this.elements.fabPause.classList.add('hidden');

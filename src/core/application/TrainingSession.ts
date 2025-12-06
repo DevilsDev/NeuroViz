@@ -127,6 +127,7 @@ export class TrainingSession implements ITrainingSession {
       currentValAccuracy: this.currentValAccuracy,
       isRunning: this.isTraining,
       isPaused: this.isPaused,
+      isProcessing: this.isProcessingStep,
       isInitialised: this.isInitialised,
       datasetLoaded: this.datasetLoaded,
       maxEpochs: this.trainingConfig.maxEpochs,
@@ -570,6 +571,10 @@ export class TrainingSession implements ITrainingSession {
     } finally {
       // Unlock: allow next step
       this.isProcessingStep = false;
+      // Notify if we're stopping or pausing so UI knows processing is done
+      if (!this.isTraining || this.isPaused) {
+        this.notifyListeners();
+      }
     }
 
     // Schedule next frame (only if still training and not at epoch limit)

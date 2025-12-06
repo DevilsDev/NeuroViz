@@ -213,6 +213,8 @@ export class NeuroPage {
    */
   async stepTraining(): Promise<void> {
     const currentEpoch = await this.getEpochCount();
+    // Ensure button is enabled before clicking (allow time for async UI update)
+    await expect(this.stepButton).toBeEnabled({ timeout: 10000 });
     await this.stepButton.click();
     // Wait for epoch to increment (async training step)
     await this.page.waitForFunction(

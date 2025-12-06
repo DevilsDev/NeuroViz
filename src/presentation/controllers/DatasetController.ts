@@ -84,6 +84,10 @@ export class DatasetController {
     if (datasetType === 'custom') {
       this.customDataPoints = [];
       this.visualizerService.renderData([]);
+      // Show draw controls and enable draw mode
+      this.elements.drawControls.classList.remove('hidden');
+      this.elements.datasetOptions.classList.add('hidden');
+      this.updateDrawClassButtons();
       this.enableDrawMode();
       return;
     }

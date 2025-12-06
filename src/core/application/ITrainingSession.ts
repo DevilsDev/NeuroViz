@@ -16,6 +16,7 @@ export interface TrainingState {
   readonly currentValAccuracy: number | null;
   readonly isRunning: boolean;
   readonly isPaused: boolean;
+  readonly isProcessing: boolean;
   readonly isInitialised: boolean;
   readonly datasetLoaded: boolean;
   /** Maximum epochs (0 = unlimited) */

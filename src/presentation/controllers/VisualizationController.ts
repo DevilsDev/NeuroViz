@@ -99,6 +99,9 @@ export class VisualizationController {
         if (this.elements.inputShowActivations) {
             this.elements.inputShowActivations.addEventListener('change', () => this.handleActivationToggle());
         }
+
+        // Voronoi Overlay
+        this.elements.inputVoronoi.addEventListener('change', () => this.handleVoronoiToggle());
     }
 
     private handleColourSchemeChange(): void {
@@ -129,6 +132,10 @@ export class VisualizationController {
 
     private handleTooltipsToggle(): void {
         this.visualizerService.setConfig({ tooltipsEnabled: this.elements.inputTooltips.checked });
+    }
+
+    private handleVoronoiToggle(): void {
+        this.visualizerService.setVoronoiOverlay(this.elements.inputVoronoi.checked);
     }
 
     public async handle3dViewToggle(): Promise<void> {
