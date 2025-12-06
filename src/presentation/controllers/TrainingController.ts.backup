@@ -1,16 +1,8 @@
 import { TrainingSession } from '../../core/application/TrainingSession';
 import { toast } from '../toast';
-import { OptimizerType, ActivationType, LRScheduleType } from '../../core/domain';
+import { Hyperparameters, OptimizerType, ActivationType, LRScheduleType } from '../../core/domain';
 import { TrainingState } from '../../core/application/ITrainingSession';
 import { resetSuggestionsDismissal } from '../SuggestedFixes';
-import {
-  CommandExecutor,
-  InitializeNetworkCommand,
-  InitializeNetworkConfig,
-  UpdateTrainingConfigCommand,
-  StartTrainingCommand,
-  StepTrainingCommand,
-} from '../../core/application/commands';
 
 export interface TrainingElements {
     inputLr: HTMLInputElement;
@@ -40,7 +32,7 @@ export interface TrainingElements {
     inputEarlyStop: HTMLInputElement;
     cyclicLrControls: HTMLDivElement;
     inputValSplit: HTMLSelectElement;
-    inputTargetFps: HTMLSelectElement;
+    inputTargetFps: HTMLSelectElement; // Added
 
     btnStart: HTMLButtonElement;
     btnPause: HTMLButtonElement;
@@ -80,19 +72,9 @@ export interface TrainingElements {
     vizPanel: HTMLElement;
 }
 
-/**
- * TrainingController - Orchestrates UI interactions for neural network training
- *
- * This controller has been refactored to use the Command pattern, which:
- * - Moves business logic out of the presentation layer into commands
- * - Enables better validation and error handling
- * - Improves testability by separating concerns
- * - Reduces controller complexity from 469 lines to ~430 lines
- */
 export class TrainingController {
     private previousLoss: number | null = null;
     private previousAccuracy: number | null = null;
-    private commandExecutor: CommandExecutor;
 
     constructor(
         private session: TrainingSession,
@@ -103,7 +85,6 @@ export class TrainingController {
             onDismissSuggestions: () => void;
         }
     ) {
-        this.commandExecutor = new CommandExecutor();
         this.bindEvents();
     }
 
@@ -111,19 +92,19 @@ export class TrainingController {
         this.elements.btnInit.addEventListener('click', () => void this.handleInitialise());
 
         // Training controls
-        this.elements.btnStart.addEventListener('click', () => void this.handleStart());
+        this.elements.btnStart.addEventListener('click', () => this.handleStart());
         this.elements.btnPause.addEventListener('click', () => this.handlePause());
         this.elements.btnStep.addEventListener('click', () => void this.handleStep());
         this.elements.btnReset.addEventListener('click', () => this.handleReset());
 
         // Sticky footer controls
-        this.elements.btnStartSticky.addEventListener('click', () => void this.handleStart());
+        this.elements.btnStartSticky.addEventListener('click', () => this.handleStart());
         this.elements.btnPauseSticky.addEventListener('click', () => this.handlePause());
         this.elements.btnStepSticky.addEventListener('click', () => void this.handleStep());
         this.elements.btnResetSticky.addEventListener('click', () => this.handleReset());
 
         // Mobile FAB
-        this.elements.fabStart.addEventListener('click', () => void this.handleStart());
+        this.elements.fabStart.addEventListener('click', () => this.handleStart());
         this.elements.fabPause.addEventListener('click', () => this.handlePause());
 
         // Config changes
@@ -148,56 +129,22 @@ export class TrainingController {
         });
     }
 
-    /**
-     * Handles network initialization using InitializeNetworkCommand
-     * Business logic and validation have been moved to the command
-     */
     public async handleInitialise(): Promise<void> {
-        // Build configuration from UI inputs
-        const config = this.buildInitializeNetworkConfig();
-
-        // Create and execute command
-        const command = new InitializeNetworkCommand(
-            this.session,
-            config,
-            this.callbacks.onNetworkUpdate
-        );
-
-        this.elements.btnInit.disabled = true;
-        this.elements.btnInit.textContent = 'Initialising...';
-
-        try {
-            const result = await this.commandExecutor.execute(command);
-
-            if (!result.success) {
-                if (result.validationResult) {
-                    toast.warning(result.validationResult.message);
-                } else if (result.error) {
-                    toast.error(`Failed to initialise: ${result.error.message}`);
-                }
-                return;
-            }
-
-            // Apply training config after successful initialization
-            await this.applyTrainingConfig();
-
-            const optimizer = this.elements.inputOptimizer.value.toUpperCase();
-            toast.success(`Network initialized with ${optimizer} optimizer!`);
-        } catch (error) {
-            console.error('Unexpected error during initialization:', error);
-            toast.error('An unexpected error occurred during initialization');
-        } finally {
-            this.elements.btnInit.disabled = false;
-            this.elements.btnInit.textContent = 'Initialise Network';
-        }
-    }
-
-    /**
-     * Builds InitializeNetworkConfig from UI inputs
-     */
-    private buildInitializeNetworkConfig(): InitializeNetworkConfig {
         const learningRate = parseFloat(this.elements.inputLr.value);
-        const layers = this.parseLayersInput(this.elements.inputLayers.value);
+
+        if (isNaN(learningRate) || learningRate <= 0) {
+            toast.warning('Please enter a valid learning rate (positive number).');
+            return;
+        }
+
+        let layers: number[];
+        try {
+            layers = this.parseLayersInput(this.elements.inputLayers.value);
+        } catch (error) {
+            toast.warning(error instanceof Error ? error.message : 'Invalid layer configuration');
+            return;
+        }
+
         const optimizer = this.elements.inputOptimizer.value as OptimizerType;
         const momentum = parseFloat(this.elements.inputMomentum.value) || 0.9;
         const activation = this.elements.inputActivation.value as ActivationType;
@@ -207,9 +154,11 @@ export class TrainingController {
         const dropoutRate = parseFloat(this.elements.inputDropout.value) || 0;
         const clipNorm = parseFloat(this.elements.inputClipNorm.value) || 0;
         const batchNorm = this.elements.inputBatchNorm.checked;
+
+        // Parse per-layer activations (optional)
         const layerActivations = this.parseLayerActivations(this.elements.inputLayerActivations.value);
 
-        return {
+        const config: Hyperparameters = {
             learningRate,
             layers,
             optimizer,
@@ -223,30 +172,32 @@ export class TrainingController {
             clipNorm,
             batchNorm,
         };
-    }
 
-    /**
-     * Applies training configuration using UpdateTrainingConfigCommand
-     */
-    public async applyTrainingConfig(): Promise<void> {
-        const config = this.buildTrainingConfig();
-        const command = new UpdateTrainingConfigCommand(this.session, config);
+        this.elements.btnInit.disabled = true;
+        this.elements.btnInit.textContent = 'Initialising...';
 
-        const result = await this.commandExecutor.execute(command);
+        try {
+            await this.session.setHyperparameters(config);
 
-        if (!result.success) {
-            if (result.validationResult) {
-                console.warn('Training config validation failed:', result.validationResult.message);
-            } else if (result.error) {
-                console.error('Failed to apply training config:', result.error);
-            }
+            // Apply training config
+            this.applyTrainingConfig();
+
+            // Update network diagram
+            this.callbacks.onNetworkUpdate();
+
+            toast.success(`Network initialized with ${optimizer.toUpperCase()} optimizer!`);
+        } catch (error) {
+            console.error('Failed to initialise network:', error);
+            toast.error(
+                `Failed to initialise network: ${error instanceof Error ? error.message : 'Unknown error'}`
+            );
+        } finally {
+            this.elements.btnInit.disabled = false;
+            this.elements.btnInit.textContent = 'Initialise Network';
         }
     }
 
-    /**
-     * Builds training configuration from UI inputs
-     */
-    private buildTrainingConfig() {
+    public applyTrainingConfig(): void {
         const batchSize = parseInt(this.elements.inputBatchSize.value, 10) || 0;
         const maxEpochs = parseInt(this.elements.inputMaxEpochs.value, 10) || 0;
         const targetFps = parseInt(this.elements.inputFps.value, 10) || 60;
@@ -256,7 +207,7 @@ export class TrainingController {
         const minLR = parseFloat(this.elements.inputMinLr.value) || 0.001;
         const earlyStoppingPatience = parseInt(this.elements.inputEarlyStop.value, 10) || 0;
 
-        return {
+        this.session.setTrainingConfig({
             batchSize,
             maxEpochs,
             targetFps,
@@ -269,7 +220,7 @@ export class TrainingController {
                 minLR,
             },
             earlyStoppingPatience,
-        };
+        });
     }
 
     private handleLrScheduleChange(): void {
@@ -282,7 +233,7 @@ export class TrainingController {
             this.elements.cyclicLrControls.classList.add('hidden');
         }
 
-        void this.applyTrainingConfig();
+        this.applyTrainingConfig();
     }
 
     private handleFpsChange(): void {
@@ -306,21 +257,13 @@ export class TrainingController {
         this.session.setTrainingConfig({ validationSplit: split / 100 });
     }
 
-    /**
-     * Handles training start using StartTrainingCommand
-     */
-    public async handleStart(): Promise<void> {
-        resetSuggestionsDismissal('suggestions-panel');
-
-        const command = new StartTrainingCommand(this.session);
-        const result = await this.commandExecutor.execute(command);
-
-        if (!result.success) {
-            if (result.validationResult) {
-                toast.warning(result.validationResult.message);
-            } else if (result.error) {
-                toast.error(`Failed to start: ${result.error.message}`);
-            }
+    public handleStart(): void {
+        try {
+            resetSuggestionsDismissal('suggestions-panel');
+            this.session.start();
+        } catch (error) {
+            console.error('Failed to start training:', error);
+            toast.error(`Failed to start: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 
@@ -328,9 +271,6 @@ export class TrainingController {
         this.session.pause();
     }
 
-    /**
-     * Handles training step using StepTrainingCommand
-     */
     public async handleStep(): Promise<void> {
         // Guard against rapid clicks while processing
         if (this.elements.btnStep.disabled) {
@@ -340,19 +280,12 @@ export class TrainingController {
         this.elements.btnStep.disabled = true;
 
         try {
-            const command = new StepTrainingCommand(this.session);
-            const result = await this.commandExecutor.execute(command);
-
-            if (!result.success) {
-                if (result.validationResult) {
-                    toast.warning(result.validationResult.message);
-                } else if (result.error) {
-                    toast.error(`Step failed: ${result.error.message}`);
-                }
-            }
-
+            await this.session.step();
             // Wait a frame for state notification to complete
             await new Promise((resolve) => requestAnimationFrame(resolve));
+        } catch (error) {
+            console.error('Step failed:', error);
+            toast.error(`Step failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
         } finally {
             // Re-enable only if state is valid for stepping
             const state = this.session.getState();

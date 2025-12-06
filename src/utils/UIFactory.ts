@@ -200,6 +200,7 @@ export function getSessionElements(): SessionElements {
     bookmarkOptions: document.getElementById('bookmark-options') as HTMLDivElement,
     btnDeleteBookmark: document.getElementById('btn-delete-bookmark') as HTMLButtonElement,
     presetSelect: document.getElementById('preset-select') as HTMLSelectElement,
+    btnApplyPreset: document.getElementById('btn-apply-preset') as HTMLButtonElement,
     iconSun: document.getElementById('icon-sun') as HTMLElement,
     iconMoon: document.getElementById('icon-moon') as HTMLElement,
     btnThemeToggle: document.getElementById('btn-theme-toggle') as HTMLButtonElement,

@@ -11,12 +11,13 @@ export interface SessionElements {
     btnShareUrl: HTMLButtonElement;
     btnLoadConfig: HTMLButtonElement;
 
-    // Bookmarks
+    // Bookmarks & Presets
     inputBookmarkName: HTMLInputElement;
     btnSaveBookmark: HTMLButtonElement;
     bookmarkOptions: HTMLDivElement;
     btnDeleteBookmark: HTMLButtonElement;
-    presetSelect: HTMLSelectElement; // Reused for bookmarks
+    presetSelect: HTMLSelectElement;
+    btnApplyPreset: HTMLButtonElement;
 
     // Theme
     iconSun: HTMLElement;
@@ -66,6 +67,15 @@ export interface SessionElements {
 const SESSION_KEY = 'neuroviz-session';
 const BOOKMARKS_KEY = 'neuroviz-bookmarks';
 const THEME_KEY = 'neuroviz-theme';
+
+// Built-in presets for Quick Start
+const BUILTIN_PRESETS: Record<string, { dataset: string; lr: number; layers: string; optimizer: string; activation: string; maxEpochs: number; samples?: number; noise?: number }> = {
+    'quick-demo': { dataset: 'circle', lr: 0.03, layers: '8, 4', optimizer: 'adam', activation: 'relu', maxEpochs: 100, samples: 200, noise: 10 },
+    'xor-challenge': { dataset: 'xor', lr: 0.1, layers: '8, 8', optimizer: 'adam', activation: 'tanh', maxEpochs: 200, samples: 200, noise: 5 },
+    'spiral-hard': { dataset: 'spiral', lr: 0.01, layers: '16, 16, 8', optimizer: 'adam', activation: 'relu', maxEpochs: 500, samples: 300, noise: 5 },
+    'gaussian-easy': { dataset: 'gaussian', lr: 0.03, layers: '4, 2', optimizer: 'adam', activation: 'relu', maxEpochs: 50, samples: 200, noise: 20 },
+    'multiclass': { dataset: 'clusters', lr: 0.01, layers: '16, 8', optimizer: 'adam', activation: 'relu', maxEpochs: 200, samples: 300, noise: 10 },
+};
 
 export interface BookmarkConfig {
     id: string;
@@ -143,7 +153,7 @@ export class SessionController {
         this.elements.btnDeleteBookmark.addEventListener('click', () => this.handleDeleteBookmark());
         this.elements.btnThemeToggle.addEventListener('click', () => this.handleThemeToggle());
 
-        // Handle bookmark selection via preset select
+        // Handle preset/bookmark selection
         this.elements.presetSelect.addEventListener('change', () => {
             const value = this.elements.presetSelect.value;
             if (value.startsWith('bookmark:')) {
@@ -154,13 +164,99 @@ export class SessionController {
                     this.applyBookmarkConfig(bookmark);
                     this.elements.btnDeleteBookmark.disabled = false;
                 }
-            } else {
+                this.elements.btnApplyPreset.disabled = false;
+            } else if (value in BUILTIN_PRESETS) {
+                // Built-in preset selected
                 this.elements.btnDeleteBookmark.disabled = true;
+                this.elements.btnApplyPreset.disabled = false;
+            } else {
+                // Default "select" option
+                this.elements.btnDeleteBookmark.disabled = true;
+                this.elements.btnApplyPreset.disabled = true;
             }
+        });
+
+        // Handle Apply & Start Training button
+        this.elements.btnApplyPreset.addEventListener('click', () => {
+            void this.applyPresetAndStart();
         });
     }
 
-    // Theme Management
+    /**
+     * Applies the selected preset/bookmark and automatically starts training.
+     * This is the handler for the "Apply & Start Training" button.
+     */
+    private async applyPresetAndStart(): Promise<void> {
+        const value = this.elements.presetSelect.value;
+
+        if (!value || value === '') {
+            toast.warning('Please select a preset first');
+            return;
+        }
+
+        try {
+            // Apply preset configuration
+            if (value in BUILTIN_PRESETS) {
+                const preset = BUILTIN_PRESETS[value]!;
+
+                // Set dataset
+                this.elements.datasetSelect.value = preset.dataset;
+                if (preset.samples) {
+                    this.elements.inputSamples.value = preset.samples.toString();
+                    this.elements.samplesValue.textContent = preset.samples.toString();
+                }
+                if (preset.noise !== undefined) {
+                    this.elements.inputNoise.value = preset.noise.toString();
+                    this.elements.noiseValue.textContent = preset.noise.toString();
+                }
+
+                // Set hyperparameters
+                this.elements.inputLr.value = preset.lr.toString();
+                this.elements.inputLayers.value = preset.layers;
+                this.elements.inputOptimizer.value = preset.optimizer;
+                this.elements.inputActivation.value = preset.activation;
+                this.elements.inputMaxEpochs.value = preset.maxEpochs.toString();
+            }
+
+            // Trigger config loaded callback to update UI
+            this.callbacks.onConfigLoaded();
+
+            toast.info('Preset applied! Loading data and starting training...');
+
+            // Load dataset, initialize network, start training
+            // Uses a delay to allow UI to update first
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Click the fetch button to load dataset
+            const fetchBtn = document.getElementById('btn-load-data') as HTMLButtonElement;
+            if (fetchBtn) {
+                fetchBtn.click();
+            }
+
+            // Wait for data to load
+            await new Promise(resolve => setTimeout(resolve, 800));
+
+            // Click initialize network button
+            const initBtn = document.getElementById('btn-init') as HTMLButtonElement;
+            if (initBtn) {
+                initBtn.click();
+            }
+
+            // Wait for initialization
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Click start button
+            const startBtn = document.getElementById('btn-start-sticky') as HTMLButtonElement;
+            if (startBtn && !startBtn.disabled) {
+                startBtn.click();
+                toast.success('Training started!');
+            }
+
+        } catch (error) {
+            console.error('Failed to apply preset:', error);
+            toast.error('Failed to apply preset');
+        }
+    }
 
     private initTheme(): void {
         const stored = this.storage.getItem<string>(THEME_KEY).data;

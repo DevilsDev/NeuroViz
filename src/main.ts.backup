@@ -1,0 +1,323 @@
+import './style.css';
+import * as tf from '@tensorflow/tfjs';
+import { TrainingSession } from './core/application/TrainingSession';
+import { TFNeuralNet } from './infrastructure/tensorflow/TFNeuralNet';
+import { D3Chart } from './infrastructure/d3/D3Chart';
+import { D3LossChart } from './infrastructure/d3/D3LossChart';
+import { D3NetworkDiagram } from './infrastructure/d3/D3NetworkDiagram';
+import { D3ConfusionMatrix, calculateClassMetrics, calculateMacroMetrics } from './infrastructure/d3/D3ConfusionMatrix';
+import { D3WeightHistogram } from './infrastructure/d3/D3WeightHistogram';
+import { MockDataRepository } from './infrastructure/api/MockDataRepository';
+import { LocalStorageService } from './infrastructure/storage/LocalStorageService';
+import { ErrorBoundary } from './infrastructure/errorHandling/ErrorBoundary';
+import { WorkerManager } from './workers/WorkerManager';
+import { initELI5Tooltips } from './presentation/ELI5Tooltips';
+import { dismissSuggestions } from './presentation/SuggestedFixes';
+import {
+  DatasetController,
+  TrainingController,
+  VisualizationController,
+  ExportController,
+  SessionController,
+  ComparisonController,
+  ResearchController,
+} from './presentation/controllers';
+import { safeGetElement } from './utils/dom';
+import {
+  getDatasetElements,
+  getTrainingElements,
+  getVisualizationElements,
+  getExportElements,
+  getSessionElements,
+  getComparisonElements,
+  getResearchElements,
+} from './utils/UIFactory';
+import { setupTouchGestures } from '@presentation/TouchGestures';
+import { setupBottomSheet } from '@presentation/BottomSheet';
+import { setupOnboardingWizard } from './presentation/Onboarding';
+import { TrainingState } from './core/application/ITrainingSession';
+import { KeyboardShortcuts } from './utils/KeyboardShortcuts';
+import { DatasetGallery } from './utils/DatasetGallery';
+
+// Expose TensorFlow.js globally for E2E tests
+// Tests check for window.tf to verify TensorFlow is loaded
+(window as typeof window & { tf: typeof tf }).tf = tf;
+
+// Initialize Error Boundary
+const errorBoundary = new ErrorBoundary();
+errorBoundary.init();
+
+// Initialize Worker Manager
+const _workerManager = new WorkerManager();
+
+// Initialize Services
+const dataRepo = new MockDataRepository();
+const neuralNet = new TFNeuralNet();
+const visualizer = new D3Chart('viz-container');
+const lossChart = new D3LossChart('loss-chart-container');
+const networkDiagram = new D3NetworkDiagram(safeGetElement<HTMLElement>('network-diagram') || document.createElement('div'));
+const confusionMatrix = new D3ConfusionMatrix('confusion-matrix-container');
+const weightHistogram = new D3WeightHistogram(safeGetElement<HTMLElement>('weight-histogram') || document.createElement('div'));
+const storage = new LocalStorageService();
+const session = new TrainingSession(neuralNet, visualizer, dataRepo);
+
+// Initialize Controllers
+const datasetController = new DatasetController(session, visualizer, getDatasetElements());
+
+const trainingController = new TrainingController(
+  session,
+  getTrainingElements(),
+  {
+    onNetworkUpdate: () => {
+      const structure = neuralNet.getStructure();
+      if (structure) {
+        networkDiagram.render(structure.layers, structure.activations, neuralNet.getWeightMatrices());
+      }
+    },
+    onClearVisualization: () => {
+      lossChart.clear();
+      networkDiagram.clear();
+    },
+    onDismissSuggestions: () => dismissSuggestions('suggestions-panel'),
+  }
+);
+
+const visualizationController = new VisualizationController(
+  session,
+  neuralNet,
+  visualizer,
+  getVisualizationElements()
+);
+
+const _exportController = new ExportController(
+  session,
+  neuralNet,
+  visualizer,
+  getExportElements(),
+  {
+    onModelLoaded: () => {
+      // Refresh UI after loading model
+      const structure = neuralNet.getStructure();
+      if (structure) {
+        networkDiagram.render(structure.layers, structure.activations, neuralNet.getWeightMatrices());
+      }
+      visualizer.renderData(session.getData());
+    }
+  }
+);
+
+const _sessionController = new SessionController(
+  session,
+  visualizer,
+  storage,
+  getSessionElements(),
+  {
+    onConfigLoaded: () => {
+      // Refresh UI
+      void datasetController.handleLoadData().catch((error) => {
+        console.error('Failed to load data after config loaded:', error);
+      });
+    },
+    onThemeChanged: (theme) => {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+  }
+);
+
+const comparisonController = new ComparisonController(session, getComparisonElements());
+
+const _researchController = new ResearchController(session, getResearchElements());
+
+// Global Event Listeners
+session.onStateChange((state: TrainingState) => {
+  trainingController.updateUI(state);
+  lossChart.update(state.history);
+  comparisonController.updateComparisonDisplay();
+  visualizationController.updateGradientFlow();
+
+  // Update network diagram and weight histogram periodically
+  if (state.currentEpoch % 5 === 0 && state.isRunning) {
+    const structure = neuralNet.getStructure();
+    if (structure) {
+      networkDiagram.render(structure.layers, structure.activations, neuralNet.getWeightMatrices());
+
+      // Update weight histogram with flattened weights
+      const weights = neuralNet.getWeightMatrices().flat().flat();
+      weightHistogram.update(weights);
+    }
+  }
+
+  // Update confusion matrix and classification metrics when training completes or pauses
+  if (state.isInitialised && state.datasetLoaded && state.currentEpoch > 0 && !state.isRunning) {
+    updateClassificationMetrics();
+  }
+});
+
+// Helper function to update confusion matrix and classification metrics
+async function updateClassificationMetrics(): Promise<void> {
+  const data = session.getData();
+  if (!data?.length) return;
+
+  try {
+    const predictions = await neuralNet.predict(data);
+    const labels = data.map(d => d.label ?? 0);
+    const numClasses = Math.max(...labels) + 1;
+
+    // Build confusion matrix
+    const matrix: number[][] = Array(numClasses).fill(null).map(() => Array(numClasses).fill(0) as number[]);
+    for (let i = 0; i < predictions.length; i++) {
+      const predicted = predictions[i]?.predictedClass ?? 0;
+      const actual = labels[i] ?? 0;
+      if (matrix[actual]) {
+        matrix[actual][predicted] = (matrix[actual][predicted] ?? 0) + 1;
+      }
+    }
+
+    // Render confusion matrix
+    const classLabels = numClasses === 2 ? ['Class 0', 'Class 1'] : Array.from({ length: numClasses }, (_, i) => `Class ${i}`);
+    confusionMatrix.render({
+      matrix,
+      labels: classLabels,
+      total: predictions.length
+    });
+
+    // Calculate and display classification metrics
+    const classMetrics = calculateClassMetrics(matrix);
+    const macroMetrics = calculateMacroMetrics(classMetrics);
+
+    // Update DOM elements
+    const precisionEl = document.getElementById('metric-precision');
+    const recallEl = document.getElementById('metric-recall');
+    const f1El = document.getElementById('metric-f1');
+
+    if (precisionEl) precisionEl.textContent = (macroMetrics.precision * 100).toFixed(1) + '%';
+    if (recallEl) recallEl.textContent = (macroMetrics.recall * 100).toFixed(1) + '%';
+    if (f1El) f1El.textContent = (macroMetrics.f1 * 100).toFixed(1) + '%';
+
+    // Hide empty state
+    const emptyState = document.getElementById('confusion-matrix-empty');
+    if (emptyState) emptyState.classList.add('hidden');
+
+  } catch (error) {
+    console.error('Failed to update classification metrics:', error);
+  }
+}
+
+// Initialize sidebar tabs immediately (ES modules are deferred, DOM is ready)
+(function initializeSidebarTabs(): void {
+  const sidebarTabs = document.querySelector('.sidebar-tabs');
+
+  if (!sidebarTabs) {
+    console.error('[NeuroViz] .sidebar-tabs container not found - tab switching disabled');
+    return;
+  }
+
+  sidebarTabs.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement;
+    const tab = target.closest('.sidebar-tab') as HTMLElement | null;
+    if (!tab) return;
+
+    const targetId = tab.getAttribute('data-tab');
+    if (!targetId) return;
+
+    // Update active tab styling
+    document.querySelectorAll('.sidebar-tab').forEach(t => {
+      t.classList.toggle('active', t === tab);
+      t.setAttribute('aria-selected', t === tab ? 'true' : 'false');
+    });
+
+    // Show only the target panel
+    document.querySelectorAll('.tab-content').forEach(panel => {
+      panel.classList.toggle('active', panel.getAttribute('data-tab-content') === targetId);
+    });
+  });
+
+  // Initialize other UI components
+  setupTouchGestures();
+  setupBottomSheet();
+  setupOnboardingWizard();
+  initELI5Tooltips();
+})();
+
+// Initialize Dataset Gallery
+const _datasetGallery = new DatasetGallery();
+
+// Initialize Keyboard Shortcuts
+const _keyboardShortcuts = new KeyboardShortcuts({
+  onStartPause: () => {
+    const state = session.getState();
+    if (state.isRunning && !state.isPaused) {
+      trainingController.handlePause();
+    } else {
+      trainingController.handleStart();
+    }
+  },
+  onStep: () => {
+    void trainingController.handleStep();
+  },
+  onReset: () => {
+    trainingController.handleReset();
+  },
+  onPause: () => {
+    trainingController.handlePause();
+  },
+  onToggleFullscreen: () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.error('Failed to enter fullscreen:', err);
+      });
+    } else {
+      document.exitFullscreen().catch((err) => {
+        console.error('Failed to exit fullscreen:', err);
+      });
+    }
+  },
+  onToggleHelp: () => {
+    const helpModal = document.getElementById('help-modal');
+    if (helpModal) {
+      helpModal.classList.toggle('hidden');
+    }
+  },
+});
+
+// Load initial data
+window.addEventListener('load', () => {
+  // Trigger initial dataset load
+  void datasetController.handleLoadData().catch((error) => {
+    console.error('Failed to load initial dataset:', error);
+  });
+
+  // Show app
+  const appContainer = document.querySelector('.app-container');
+  if (appContainer) {
+    appContainer.classList.add('loaded');
+  }
+});
+
+// Cleanup on page unload to prevent memory leaks
+window.addEventListener('beforeunload', () => {
+  // Dispose controllers (those with dispose methods)
+  if ('dispose' in datasetController && typeof datasetController.dispose === 'function') {
+    datasetController.dispose();
+  }
+
+  // Dispose visualizer (includes ResizeObserver cleanup)
+  if ('dispose' in visualizer && typeof visualizer.dispose === 'function') {
+    visualizer.dispose();
+  }
+
+  // Clear D3 visualizations
+  if ('clear' in lossChart && typeof lossChart.clear === 'function') {
+    lossChart.clear();
+  }
+  if ('clear' in networkDiagram && typeof networkDiagram.clear === 'function') {
+    networkDiagram.clear();
+  }
+
+  // Note: Add dispose() methods to remaining controllers following the pattern in DatasetController:
+  // Each controller should:
+  // 1. Store event handler references in a Map
+  // 2. Remove all event listeners in dispose()
+  // 3. Clear any timers or subscriptions
+  // 4. Clean up any other resources (tooltips, observers, etc.)
+});

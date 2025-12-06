@@ -57,7 +57,7 @@ export class TFNeuralNet implements INeuralNetworkService {
    */
   updateLearningRate(newLearningRate: number): void {
     const model = this.assertInitialised();
-    if (!this.config) {
+    if (!this.config || this.isDisposed) {
       throw new ModelNotInitialisedError();
     }
 
@@ -689,6 +689,9 @@ export class TFNeuralNet implements INeuralNetworkService {
    */
   setLearningRate(learningRate: number): void {
     const model = this.assertInitialised();
+    if (this.isDisposed) {
+      throw new ModelNotInitialisedError();
+    }
 
     if (this.model && this.model.optimizer) {
       // TF.js optimizers have a protected `learningRate` property

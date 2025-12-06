@@ -1530,68 +1530,6 @@ header.training-active svg {
   font-family: monospace;
 }
 
-/* =============================================================================
-   D3 Chart Overrides
-   ============================================================================= */
-#viz-container {
-  @apply w-full;
-  /* Constrained, balanced chart size */
-  height: 280px;
-  @apply flex items-center justify-center;
-  @apply rounded-lg;
-  background-color: rgba(15, 23, 42, 0.3);
-  max-width: 100%;
-  position: relative;
-}
-
-/* Responsive canvas heights */
-@media (min-width: 480px) {
-  #viz-container {
-    height: 320px;
-  }
-}
-
-@media (min-width: 640px) {
-  #viz-container {
-    height: 360px;
-  }
-}
-
-@media (min-width: 768px) {
-  #viz-container {
-    height: 380px;
-  }
-}
-
-@media (min-width: 1024px) {
-  #viz-container {
-    height: 420px;
-  }
-}
-
-@media (min-width: 1280px) {
-  #viz-container {
-    height: 480px;
-  }
-}
-
-@media (min-width: 1440px) {
-  #viz-container {
-    height: 520px;
-  }
-}
-
-@media (min-width: 1920px) {
-  #viz-container {
-    height: 600px;
-  }
-}
-
-#viz-container svg {
-  @apply w-full h-full;
-  display: block;
-}
-
 #viz-container .x-axis,
 #viz-container .y-axis {
   @apply text-slate-500;
@@ -3172,17 +3110,22 @@ body {
   overflow-x: hidden;
 }
 
-/* Visualization panel - always fit within viewport */
+/* Visualization panel - use flex to fill available vertical space */
 .main-grid > section:first-child {
-  position: relative; /* Changed from sticky to avoid layout issues */
+  position: relative;
   max-width: 100%;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  /* Fill available height minus header (56px) and training bar (60px) and padding */
+  min-height: calc(100vh - 180px);
 }
 
-/* Canvas container - constrained to available space */
+/* Canvas container - grow to fill available space */
 #viz-container {
   max-width: 100%;
   box-sizing: border-box;
+  flex: 1 1 auto;
 }
 
 /* Sidebar - ensure it fits within viewport height */

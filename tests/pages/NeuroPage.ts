@@ -125,11 +125,13 @@ export class NeuroPage {
   // =========================================================================
 
   /**
-   * Select a dataset from the dropdown.
-   * @param name - Dataset value (circle, xor, spiral, gaussian)
+   * Select a dataset by clicking on its visual gallery card.
+   * @param name - Dataset value (circle, xor, spiral, gaussian, clusters)
    */
   async selectDataset(name: string): Promise<void> {
-    await this.datasetSelect.selectOption(name);
+    // Use visual gallery card instead of hidden dropdown
+    const card = this.page.locator(`.dataset-preview-card[data-dataset="${name}"]`);
+    await card.click();
   }
 
   /**

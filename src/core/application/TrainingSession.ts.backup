@@ -3,7 +3,6 @@ import { DEFAULT_TRAINING_CONFIG, DEFAULT_LR_SCHEDULE, createEmptyHistory, addHi
 import type { INeuralNetworkService, IVisualizerService, IDatasetRepository, DatasetOptions } from '../ports';
 import type { ITrainingSession, TrainingState } from './ITrainingSession';
 import { logger } from '../../infrastructure/logging/Logger';
-import { LearningRateScheduler, EarlyStoppingStrategy, TrainingDataSplitter } from './training';
 
 /**
  * Configuration for training session behaviour.
@@ -77,13 +76,13 @@ export class TrainingSession implements ITrainingSession {
   private lastFrameTime = 0;
   private frameInterval = 0; // ms between frames (0 = no limit)
 
-  // Decomposed services (SRP - each service has a single responsibility)
-  private lrScheduler: LearningRateScheduler;
-  private earlyStoppingStrategy: EarlyStoppingStrategy;
-  private readonly dataSplitter: TrainingDataSplitter;
+  // Early stopping tracking
+  private bestValLoss: number | null = null;
+  private epochsWithoutImprovement = 0;
 
-  // Learning rate tracking (for scheduler initialization)
+  // Learning rate scheduling
   private initialLearningRate = 0.03;
+  private currentLearningRate = 0.03;
   private currentHyperparameters: Hyperparameters | null = null;
 
   // Completion callback
@@ -102,16 +101,6 @@ export class TrainingSession implements ITrainingSession {
   ) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.initialisePredictionGrid();
-
-    // Initialize decomposed services
-    this.lrScheduler = new LearningRateScheduler(
-      this.initialLearningRate,
-      this.trainingConfig.lrSchedule ?? DEFAULT_LR_SCHEDULE
-    );
-    this.earlyStoppingStrategy = new EarlyStoppingStrategy(
-      this.trainingConfig.earlyStoppingPatience ?? 0
-    );
-    this.dataSplitter = new TrainingDataSplitter();
   }
 
   /**
@@ -154,16 +143,6 @@ export class TrainingSession implements ITrainingSession {
       this.frameInterval = config.epochDelayMs;
     }
 
-    // Update early stopping patience
-    if (config.earlyStoppingPatience !== undefined) {
-      this.earlyStoppingStrategy.setPatience(config.earlyStoppingPatience);
-    }
-
-    // Update LR schedule
-    if (config.lrSchedule !== undefined) {
-      this.lrScheduler.setSchedule(config.lrSchedule);
-    }
-
     // Re-split data if validation split changed
     if (config.validationSplit !== undefined && this.allData.length > 0) {
       this.splitData();
@@ -188,14 +167,14 @@ export class TrainingSession implements ITrainingSession {
     this.currentAccuracy = null;
     this.history = createEmptyHistory();
 
-    // Store for LR scheduling and reset scheduler
+    // Store for LR scheduling
     this.currentHyperparameters = config;
     this.initialLearningRate = config.learningRate;
-    this.lrScheduler.setInitialLR(config.learningRate);
-    this.lrScheduler.setSchedule(this.trainingConfig.lrSchedule ?? DEFAULT_LR_SCHEDULE);
+    this.currentLearningRate = config.learningRate;
 
-    // Reset early stopping strategy
-    this.earlyStoppingStrategy.reset();
+    // Reset early stopping
+    this.bestValLoss = null;
+    this.epochsWithoutImprovement = 0;
 
     this.notifyListeners();
   }
@@ -263,18 +242,35 @@ export class TrainingSession implements ITrainingSession {
   }
 
   /**
-   * Splits the dataset into training and validation sets using TrainingDataSplitter.
-   * Delegates to the splitter service for clean separation of concerns.
+   * Splits the dataset into training and validation sets based on validationSplit.
+   * Shuffles data before splitting for randomness.
    */
   private splitData(): void {
     const { validationSplit } = this.trainingConfig;
 
-    // Use the data splitter service
-    const split = this.dataSplitter.split(this.allData, validationSplit, true);
+    if (validationSplit <= 0 || validationSplit >= 1) {
+      // No validation split
+      this.trainingData = this.allData;
+      this.validationData = [];
+      return;
+    }
 
-    this.trainingData = split.training;
-    this.validationData = split.validation;
-    this.allData = split.all; // Updated with validation markers
+    // Shuffle data
+    const shuffled = [...this.allData];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = shuffled[i] as Point;
+      shuffled[i] = shuffled[j] as Point;
+      shuffled[j] = temp;
+    }
+
+    // Split
+    const splitIndex = Math.floor(shuffled.length * (1 - validationSplit));
+    this.trainingData = shuffled.slice(0, splitIndex).map(p => ({ ...p, isValidation: false }));
+    this.validationData = shuffled.slice(splitIndex).map(p => ({ ...p, isValidation: true }));
+
+    // Update allData with validation markers for visualization
+    this.allData = [...this.trainingData, ...this.validationData];
   }
 
   /**
@@ -521,8 +517,8 @@ export class TrainingSession implements ITrainingSession {
         timestamp: performance.now(),
       });
 
-      // Check early stopping using strategy service
-      if (this.earlyStoppingStrategy.shouldStop(valLoss)) {
+      // Check early stopping
+      if (this.checkEarlyStopping(valLoss)) {
         this.isTraining = false;
         this.notifyListeners();
         this.onCompleteCallback?.('earlyStopping');
@@ -530,13 +526,11 @@ export class TrainingSession implements ITrainingSession {
           component: 'TrainingSession',
           action: 'earlyStopping',
           epoch: this.currentEpoch,
-          bestValLoss: this.earlyStoppingStrategy.getBestValLoss(),
-          epochsWithoutImprovement: this.earlyStoppingStrategy.getEpochsWithoutImprovement(),
         });
         return; // Exit loop
       }
 
-      // Update learning rate based on schedule using scheduler service
+      // Update learning rate based on schedule
       this.updateLearningRateIfNeeded();
 
       // Update visualisation at intervals (decouples rendering from training)
@@ -724,27 +718,138 @@ export class TrainingSession implements ITrainingSession {
    * Returns the current learning rate (after warmup/decay adjustments).
    */
   getCurrentLearningRate(): number {
-    return this.lrScheduler.getCurrentLR();
+    return this.currentLearningRate;
+  }
+
+  // ===========================================================================
+  // Learning Rate Scheduling
+  // ===========================================================================
+
+  /**
+   * Calculates the learning rate based on the current epoch and schedule.
+   * Applies warmup first if configured, then applies the decay schedule.
+   */
+  private calculateScheduledLR(epoch: number): number {
+    const schedule = this.trainingConfig.lrSchedule ?? DEFAULT_LR_SCHEDULE;
+    const initialLR = this.initialLearningRate;
+    const warmupEpochs = schedule.warmupEpochs ?? 0;
+
+    // Apply warmup: linear increase from 0 to initialLR
+    if (warmupEpochs > 0 && epoch < warmupEpochs) {
+      return initialLR * (epoch + 1) / warmupEpochs;
+    }
+
+    // Adjust epoch for decay calculation (subtract warmup epochs)
+    const effectiveEpoch = warmupEpochs > 0 ? epoch - warmupEpochs : epoch;
+
+    switch (schedule.type) {
+      case 'exponential': {
+        // LR = initial_lr * decay_rate^epoch
+        const decayRate = schedule.decayRate ?? 0.95;
+        return initialLR * Math.pow(decayRate, effectiveEpoch);
+      }
+
+      case 'step': {
+        // LR = initial_lr * decay_rate^(epoch / decay_steps)
+        const decayRate = schedule.decayRate ?? 0.5;
+        const decaySteps = schedule.decaySteps ?? 10;
+        const numDecays = Math.floor(effectiveEpoch / decaySteps);
+        return initialLR * Math.pow(decayRate, numDecays);
+      }
+
+      case 'cosine': {
+        // Cosine annealing: LR = initial_lr * 0.5 * (1 + cos(pi * epoch / max_epochs))
+        const maxEpochs = Math.max((this.trainingConfig.maxEpochs || 100) - warmupEpochs, 1);
+        const progress = Math.min(effectiveEpoch / maxEpochs, 1);
+        return initialLR * 0.5 * (1 + Math.cos(Math.PI * progress));
+      }
+
+      case 'cyclic_triangular': {
+        // Triangle wave between minLR and maxLR (initialLR)
+        const cycleLength = schedule.cycleLength ?? 20;
+        const minLR = schedule.minLR ?? initialLR / 10;
+        const cyclePosition = effectiveEpoch % cycleLength;
+        const halfCycle = cycleLength / 2;
+
+        // Triangle: rise for first half, fall for second half
+        const triangleValue = cyclePosition < halfCycle
+          ? cyclePosition / halfCycle
+          : 1 - (cyclePosition - halfCycle) / halfCycle;
+
+        return minLR + (initialLR - minLR) * triangleValue;
+      }
+
+      case 'cyclic_cosine': {
+        // Cosine wave between minLR and maxLR (initialLR)
+        const cycleLength = schedule.cycleLength ?? 20;
+        const minLR = schedule.minLR ?? initialLR / 10;
+        const cyclePosition = effectiveEpoch % cycleLength;
+
+        // Cosine: smooth oscillation
+        const cosineValue = 0.5 * (1 + Math.cos(Math.PI * cyclePosition / cycleLength));
+
+        return minLR + (initialLR - minLR) * cosineValue;
+      }
+
+      case 'none':
+      default:
+        return initialLR;
+    }
   }
 
   /**
-   * Updates the learning rate using the LearningRateScheduler service.
-   * Only updates if the change is significant to avoid unnecessary optimizer updates.
+   * Updates the learning rate if it has changed significantly.
+   * Uses updateLearningRate() to preserve trained weights.
    */
   private updateLearningRateIfNeeded(): void {
-    const previousLR = this.lrScheduler.getCurrentLR();
-    const newLR = this.lrScheduler.calculateLR(this.currentEpoch, this.trainingConfig.maxEpochs);
+    const newLR = this.calculateScheduledLR(this.currentEpoch);
 
-    // Only update if LR changed significantly (more than 1%)
-    if (this.lrScheduler.hasSignificantChange(previousLR, 0.01) && this.currentHyperparameters) {
+    // Only update if LR changed by more than 1%
+    const lrChangeRatio = Math.abs(newLR - this.currentLearningRate) / this.currentLearningRate;
+    if (lrChangeRatio > 0.01 && this.currentHyperparameters) {
+      this.currentLearningRate = newLR;
+
       // Update optimizer learning rate WITHOUT destroying weights
       this.neuralNet.updateLearningRate(newLR);
     }
   }
 
   // ===========================================================================
-  // Training Completion & Recording
+  // Early Stopping
   // ===========================================================================
+
+  /**
+   * Checks if training should stop early based on validation loss.
+   * Returns true if early stopping is triggered.
+   */
+  private checkEarlyStopping(valLoss: number | null): boolean {
+    const patience = this.trainingConfig.earlyStoppingPatience ?? 0;
+
+    // Early stopping disabled
+    if (patience <= 0 || valLoss === null) {
+      return false;
+    }
+
+    // First validation loss - set as best
+    if (this.bestValLoss === null) {
+      this.bestValLoss = valLoss;
+      this.epochsWithoutImprovement = 0;
+      return false;
+    }
+
+    // Check if validation loss improved
+    if (valLoss < this.bestValLoss) {
+      this.bestValLoss = valLoss;
+      this.epochsWithoutImprovement = 0;
+      return false;
+    }
+
+    // No improvement
+    this.epochsWithoutImprovement++;
+
+    // Trigger early stopping if patience exceeded
+    return this.epochsWithoutImprovement >= patience;
+  }
 
   /**
    * Sets a callback to be called when training completes.

@@ -1,24 +1,31 @@
 export function setupSidebarTabs(): void {
     const tabs = document.querySelectorAll('.sidebar-tab');
-    const panels = document.querySelectorAll('.sidebar-panel');
+    const panels = document.querySelectorAll('.tab-content');
 
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
-            const targetId = tab.getAttribute('data-target');
+            const targetId = tab.getAttribute('data-tab');
             if (!targetId) return;
 
-            // Update active tab
+            // Update active tab styling
             tabs.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
 
-            // Show target panel
+            // Update aria-selected for accessibility
+            tabs.forEach(t => t.setAttribute('aria-selected', 'false'));
+            tab.setAttribute('aria-selected', 'true');
+
+            // Show only the target panel (CSS handles display:none/flex via .active class)
             panels.forEach(panel => {
-                if (panel.id === targetId) {
-                    panel.classList.remove('hidden');
+                const panelTarget = panel.getAttribute('data-tab-content');
+                if (panelTarget === targetId) {
+                    panel.classList.add('active');
                 } else {
-                    panel.classList.add('hidden');
+                    panel.classList.remove('active');
                 }
             });
         });
     });
 }
+
+
