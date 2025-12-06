@@ -1,3 +1,9 @@
+## [2.10.0](https://github.com/DevilsDev/NeuroViz/compare/v2.9.0...v2.10.0) (2025-12-06)
+
+### Features
+
+* Implement core training session, command pattern, TensorFlow integration, and comprehensive testing ([ca7a6d3](https://github.com/DevilsDev/NeuroViz/commit/ca7a6d3032284ad4bd409dd6a176ff769089528d))
+
 ## [2.9.0](https://github.com/DevilsDev/NeuroViz/compare/v2.8.0...v2.9.0) (2025-12-05)
 
 ### Features
