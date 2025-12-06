@@ -15,6 +15,8 @@ export interface ResearchElements {
 export class ResearchController {
     private lrFinderViz: D3LRFinder;
 
+    private eventCleanup: { element: Element, event: string, handler: EventListener }[] = [];
+
     constructor(
         private session: TrainingSession,
         private elements: ResearchElements
@@ -23,10 +25,18 @@ export class ResearchController {
         this.bindEvents();
     }
 
+    /**
+     * Helper to add event listener and track for cleanup
+     */
+    private addTrackedListener(element: Element, event: string, handler: EventListener): void {
+        element.addEventListener(event, handler);
+        this.eventCleanup.push({ element, event, handler });
+    }
+
     private bindEvents(): void {
-        this.elements.btnLrFinder.addEventListener('click', () => void this.handleLRFinder());
+        this.addTrackedListener(this.elements.btnLrFinder, 'click', () => void this.handleLRFinder());
         if (this.elements.btnStopLrFinder) {
-            this.elements.btnStopLrFinder.addEventListener('click', () => this.handleStopLRFinder());
+            this.addTrackedListener(this.elements.btnStopLrFinder, 'click', () => this.handleStopLRFinder());
         }
     }
 
@@ -71,10 +81,10 @@ export class ResearchController {
           </div>
         `;
 
-                // Bind apply button
+                // Bind apply button - TRACKED
                 const btnApply = document.getElementById('btn-apply-lr');
                 if (btnApply) {
-                    btnApply.addEventListener('click', () => {
+                    this.addTrackedListener(btnApply, 'click', () => {
                         this.elements.inputLr.value = optimalLR.toString();
                         toast.success(`Applied learning rate: ${optimalLR.toExponential(2)}`);
                     });
@@ -105,4 +115,16 @@ export class ResearchController {
         }
         this.lrFinderViz.clear();
     }
+
+    /**
+     * Clean up all event listeners and resources.
+     */
+    public dispose(): void {
+        for (const { element, event, handler } of this.eventCleanup) {
+            element.removeEventListener(event, handler);
+        }
+        this.eventCleanup = [];
+        this.clear();
+    }
 }
+

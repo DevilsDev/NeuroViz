@@ -78,11 +78,16 @@ export class ApplicationBuilder {
     // Build controllers
     const controllers = this.buildControllers(services);
 
+
     // Initialize UI components
-    this.initializeUIComponents(services.session, controllers.training);
+    const uiComponents = this.initializeUIComponents(services.session, controllers.training);
+    services.keyboardShortcuts = uiComponents.keyboardShortcuts;
+    services.datasetGallery = uiComponents.datasetGallery;
 
     return new Application(services, controllers);
   }
+
+
 
   /**
    * Initializes infrastructure-level services
@@ -226,7 +231,7 @@ export class ApplicationBuilder {
   /**
    * Initializes UI components (sidebar, gestures, shortcuts, etc.)
    */
-  private initializeUIComponents(session: TrainingSession, trainingController: TrainingController): void {
+  private initializeUIComponents(session: TrainingSession, trainingController: TrainingController): { keyboardShortcuts: KeyboardShortcuts, datasetGallery: DatasetGallery } {
     // Initialize sidebar tabs
     this.initializeSidebarTabs();
 
@@ -237,10 +242,10 @@ export class ApplicationBuilder {
     initELI5Tooltips();
 
     // Initialize Dataset Gallery
-    new DatasetGallery();
+    const datasetGallery = new DatasetGallery();
 
     // Initialize Keyboard Shortcuts
-    new KeyboardShortcuts({
+    const keyboardShortcuts = new KeyboardShortcuts({
       onStartPause: () => {
         const state = session.getState();
         if (state.isRunning && !state.isPaused) {
@@ -265,7 +270,6 @@ export class ApplicationBuilder {
           });
         } else {
           document.exitFullscreen().catch((err) => {
-            console.error('Failed to exit fullscreen:', err);
           });
         }
       },
@@ -276,7 +280,11 @@ export class ApplicationBuilder {
         }
       },
     });
+
+    return { keyboardShortcuts, datasetGallery };
+
   }
+
 
   /**
    * Initializes sidebar tab switching

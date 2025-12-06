@@ -92,6 +92,7 @@ export class ExportController {
     }
 
 
+
     /**
      * Clean up all event listeners to prevent memory leaks.
      * Call this before re-instantiating the controller.
@@ -101,8 +102,10 @@ export class ExportController {
             element.removeEventListener(event, handler);
         }
         this.eventCleanup = [];
-        this.pendingModelJson = null;
     }
+
+
+
 
 
     private handleExportJson(): void {
@@ -337,3 +340,5 @@ export class ExportController {
             .filter(a => validActivations.includes(a));
     }
 }
+
+

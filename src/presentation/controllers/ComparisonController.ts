@@ -75,6 +75,8 @@ export class ComparisonController {
     private ensemble: ModelEnsemble | null = null;
     private ensembleTrainingInterval: ReturnType<typeof setInterval> | null = null;
 
+    private eventCleanup: { element: Element, event: string, handler: EventListener }[] = [];
+
     constructor(
         private session: TrainingSession,
         private elements: ComparisonElements
@@ -82,19 +84,40 @@ export class ComparisonController {
         this.bindEvents();
     }
 
+    /**
+     * Helper to add event listener and track for cleanup
+     */
+    private addTrackedListener(element: Element, event: string, handler: EventListener): void {
+        element.addEventListener(event, handler);
+        this.eventCleanup.push({ element, event, handler });
+    }
+
     private bindEvents(): void {
         // Baseline
-        this.elements.btnSaveBaseline.addEventListener('click', () => this.handleSaveBaseline());
-        this.elements.btnClearBaseline.addEventListener('click', () => this.handleClearBaseline());
+        this.addTrackedListener(this.elements.btnSaveBaseline, 'click', () => this.handleSaveBaseline());
+        this.addTrackedListener(this.elements.btnClearBaseline, 'click', () => this.handleClearBaseline());
 
         // A/B Testing
-        this.elements.btnStartAbTest.addEventListener('click', () => void this.handleStartAbTest());
-        this.elements.btnStopAbTest.addEventListener('click', () => this.stopAbTest());
+        this.addTrackedListener(this.elements.btnStartAbTest, 'click', () => void this.handleStartAbTest());
+        this.addTrackedListener(this.elements.btnStopAbTest, 'click', () => this.stopAbTest());
 
         // Ensemble
-        this.elements.btnAddEnsembleMember.addEventListener('click', () => void this.addEnsembleMember());
-        this.elements.btnTrainEnsemble.addEventListener('click', () => void this.toggleEnsembleTraining());
-        this.elements.btnResetEnsemble.addEventListener('click', () => this.resetEnsemble());
+        this.addTrackedListener(this.elements.btnAddEnsembleMember, 'click', () => void this.addEnsembleMember());
+        this.addTrackedListener(this.elements.btnTrainEnsemble, 'click', () => void this.toggleEnsembleTraining());
+        this.addTrackedListener(this.elements.btnResetEnsemble, 'click', () => this.resetEnsemble());
+    }
+    /**
+
+     * Clean up all event listeners and intervals.
+     */
+    public dispose(): void {
+        this.stopAbTest();
+        this.resetEnsemble();
+
+        for (const { element, event, handler } of this.eventCleanup) {
+            element.removeEventListener(event, handler);
+        }
+        this.eventCleanup = [];
     }
 
     // =============================================================================

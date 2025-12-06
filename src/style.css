@@ -209,9 +209,6 @@ html:not(.dark) {
         @apply bg-navy-800 rounded-md border border-navy-700/50 p-4 transition-all duration-200;
     }
 
-    .card-hover {
-        @apply hover:border-cyan/30 hover:-translate-y-0.5 hover:shadow-lg cursor-pointer;
-    }
 
 
     .card-selected {
@@ -237,9 +234,7 @@ html:not(.dark) {
         @apply text-lg font-mono font-bold tabular-nums leading-tight text-text-primary;
     }
 
-    .metric-delta {
-        @apply text-xs font-mono text-success;
-    }
+
 
     .metric-delta.negative {
         @apply text-danger;

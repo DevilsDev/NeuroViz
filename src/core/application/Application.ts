@@ -16,6 +16,10 @@ import {
   ComparisonController,
   ResearchController,
 } from '../../presentation/controllers';
+import { KeyboardShortcuts } from '../../utils/KeyboardShortcuts';
+import { DatasetGallery } from '../../utils/DatasetGallery';
+
+
 
 /**
  * Core services used by the application
@@ -32,7 +36,11 @@ export interface Services {
   confusionMatrix: D3ConfusionMatrix;
   weightHistogram: D3WeightHistogram;
   storage: LocalStorageService;
+  keyboardShortcuts?: KeyboardShortcuts;
+  datasetGallery?: DatasetGallery;
 }
+
+
 
 /**
  * Controllers that orchestrate UI interactions
@@ -121,10 +129,12 @@ export class Application {
    * Sets up cleanup handlers
    */
   private setupCleanup(): void {
-    window.addEventListener('beforeunload', () => {
-      this.dispose();
-    });
+    this.boundCleanup = this.dispose.bind(this);
+    window.addEventListener('beforeunload', this.boundCleanup);
   }
+
+  private boundCleanup: () => void = () => { };
+
 
   /**
    * Updates classification metrics (confusion matrix, precision, recall, F1)
@@ -184,32 +194,6 @@ export class Application {
    * Call this method before re-instantiating or during hot reload.
    */
   dispose(): void {
-    // Dispose all controllers with dispose methods
-    const controllers = this.controllers;
-
-    if (controllers.dataset && typeof controllers.dataset.dispose === 'function') {
-      controllers.dataset.dispose();
-    }
-    if (controllers.training && typeof controllers.training.dispose === 'function') {
-      controllers.training.dispose();
-    }
-    if (controllers.visualization && typeof controllers.visualization.dispose === 'function') {
-      controllers.visualization.dispose();
-    }
-    if (controllers.export && typeof controllers.export.dispose === 'function') {
-      controllers.export.dispose();
-    }
-    if (controllers.session && typeof controllers.session.dispose === 'function') {
-      controllers.session.dispose();
-    }
-    // Note: ComparisonController and ResearchController may not have dispose yet
-    if (controllers.comparison && 'dispose' in controllers.comparison && typeof (controllers.comparison as unknown as { dispose: () => void }).dispose === 'function') {
-      (controllers.comparison as unknown as { dispose: () => void }).dispose();
-    }
-    if (controllers.research && 'dispose' in controllers.research && typeof (controllers.research as unknown as { dispose: () => void }).dispose === 'function') {
-      (controllers.research as unknown as { dispose: () => void }).dispose();
-    }
-
     // Dispose services with dispose methods
     if (this.services.visualizer && typeof this.services.visualizer.dispose === 'function') {
       this.services.visualizer.dispose();
@@ -220,6 +204,34 @@ export class Application {
     this.services.networkDiagram.clear();
     this.services.confusionMatrix.clear();
     this.services.weightHistogram.clear();
+
+    // Dispose keyboard listener
+    if (this.services.keyboardShortcuts) {
+      this.services.keyboardShortcuts.dispose();
+    }
+
+    if (this.services.datasetGallery) {
+      this.services.datasetGallery.dispose();
+    }
+
+    // Dispose all controllers
+    Object.values(this.controllers).forEach(controller => {
+      if (controller && typeof (controller as any).dispose === 'function') {
+        (controller as any).dispose();
+      }
+    });
+
+    // Dispose all controllers
+    Object.values(this.controllers).forEach(controller => {
+      if (controller && typeof (controller as any).dispose === 'function') {
+        (controller as any).dispose();
+      }
+    });
+
+    // Remove window listeners
+    window.removeEventListener('beforeunload', this.boundCleanup);
   }
+
+
 }
 

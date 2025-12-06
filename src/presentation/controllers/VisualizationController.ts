@@ -311,4 +311,7 @@ export class VisualizationController {
 
         this.activationHeatmap.render(activations);
     }
+
+
 }
+
