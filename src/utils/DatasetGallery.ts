@@ -14,6 +14,9 @@ export class DatasetGallery {
   private toggleButton: HTMLElement | null;
   private selectedDataset: string = 'circle';
 
+  // Event cleanup tracking for proper disposal
+  private eventCleanup: Array<{ element: Element; event: string; handler: EventListener }> = [];
+
   constructor() {
     this.cards = document.querySelectorAll('.dataset-preview-card');
     this.dropdown = document.getElementById('dataset-select') as HTMLSelectElement;
@@ -22,10 +25,18 @@ export class DatasetGallery {
     this.init();
   }
 
+  /**
+   * Helper to add event listener and track for cleanup
+   */
+  private addTrackedListener(element: Element, event: string, handler: EventListener): void {
+    element.addEventListener(event, handler);
+    this.eventCleanup.push({ element, event, handler });
+  }
+
   private init(): void {
     // Add click handlers to all gallery cards
     this.cards.forEach((card) => {
-      card.addEventListener('click', () => {
+      this.addTrackedListener(card, 'click', () => {
         const dataset = card.getAttribute('data-dataset');
         if (dataset) {
           this.selectDataset(dataset);
@@ -35,7 +46,7 @@ export class DatasetGallery {
 
     // Toggle dropdown visibility
     if (this.toggleButton) {
-      this.toggleButton.addEventListener('click', () => {
+      this.addTrackedListener(this.toggleButton, 'click', () => {
         this.dropdown.classList.toggle('hidden');
         const isHidden = this.dropdown.classList.contains('hidden');
         if (this.toggleButton) {
@@ -45,7 +56,7 @@ export class DatasetGallery {
     }
 
     // Sync gallery when dropdown changes
-    this.dropdown.addEventListener('change', () => {
+    this.addTrackedListener(this.dropdown, 'change', () => {
       this.selectDataset(this.dropdown.value);
     });
 
@@ -81,5 +92,16 @@ export class DatasetGallery {
    */
   public getSelectedDataset(): string {
     return this.selectedDataset;
+  }
+
+  /**
+   * Clean up all event listeners to prevent memory leaks.
+   * Call this before re-instantiating the gallery.
+   */
+  public dispose(): void {
+    for (const { element, event, handler } of this.eventCleanup) {
+      element.removeEventListener(event, handler);
+    }
+    this.eventCleanup = [];
   }
 }

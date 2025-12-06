@@ -127,6 +127,9 @@ export interface SessionData {
 }
 
 export class SessionController {
+    // Event cleanup tracking for proper disposal
+    private eventCleanup: Array<{ element: HTMLElement; event: string; handler: EventListener }> = [];
+
     constructor(
         private session: TrainingSession,
         private visualizerService: D3Chart,
@@ -142,19 +145,27 @@ export class SessionController {
         this.renderBookmarkOptions();
     }
 
-    private bindEvents(): void {
-        this.elements.btnSaveSession.addEventListener('click', () => this.saveSession());
-        this.elements.btnLoadSession.addEventListener('click', () => void this.loadSession());
-        this.elements.btnClearSession.addEventListener('click', () => this.clearSession());
-        this.elements.btnShareUrl.addEventListener('click', () => this.handleShareUrl());
-        this.elements.btnLoadConfig.addEventListener('click', () => this.handleLoadConfigCode());
+    /**
+     * Helper to add event listener and track for cleanup
+     */
+    private addTrackedListener(element: HTMLElement, event: string, handler: EventListener): void {
+        element.addEventListener(event, handler);
+        this.eventCleanup.push({ element, event, handler });
+    }
 
-        this.elements.btnSaveBookmark.addEventListener('click', () => this.handleSaveBookmark());
-        this.elements.btnDeleteBookmark.addEventListener('click', () => this.handleDeleteBookmark());
-        this.elements.btnThemeToggle.addEventListener('click', () => this.handleThemeToggle());
+    private bindEvents(): void {
+        this.addTrackedListener(this.elements.btnSaveSession, 'click', () => this.saveSession());
+        this.addTrackedListener(this.elements.btnLoadSession, 'click', () => void this.loadSession());
+        this.addTrackedListener(this.elements.btnClearSession, 'click', () => this.clearSession());
+        this.addTrackedListener(this.elements.btnShareUrl, 'click', () => this.handleShareUrl());
+        this.addTrackedListener(this.elements.btnLoadConfig, 'click', () => this.handleLoadConfigCode());
+
+        this.addTrackedListener(this.elements.btnSaveBookmark, 'click', () => this.handleSaveBookmark());
+        this.addTrackedListener(this.elements.btnDeleteBookmark, 'click', () => this.handleDeleteBookmark());
+        this.addTrackedListener(this.elements.btnThemeToggle, 'click', () => this.handleThemeToggle());
 
         // Handle preset/bookmark selection
-        this.elements.presetSelect.addEventListener('change', () => {
+        this.addTrackedListener(this.elements.presetSelect, 'change', () => {
             const value = this.elements.presetSelect.value;
             if (value.startsWith('bookmark:')) {
                 const bookmarkId = value.replace('bookmark:', '');
@@ -177,10 +188,22 @@ export class SessionController {
         });
 
         // Handle Apply & Start Training button
-        this.elements.btnApplyPreset.addEventListener('click', () => {
+        this.addTrackedListener(this.elements.btnApplyPreset, 'click', () => {
             void this.applyPresetAndStart();
         });
     }
+
+    /**
+     * Clean up all event listeners to prevent memory leaks.
+     * Call this before re-instantiating the controller.
+     */
+    public dispose(): void {
+        for (const { element, event, handler } of this.eventCleanup) {
+            element.removeEventListener(event, handler);
+        }
+        this.eventCleanup = [];
+    }
+
 
     /**
      * Applies the selected preset/bookmark and automatically starts training.

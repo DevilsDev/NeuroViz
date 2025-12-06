@@ -59,6 +59,9 @@ export class VisualizationController {
     private threeViz: ThreeVisualization | null = null;
     private previousWeights: number[][][] = [];
 
+    // Event cleanup tracking for proper disposal
+    private eventCleanup: Array<{ element: HTMLElement; event: string; handler: EventListener }> = [];
+
     constructor(
         private session: TrainingSession,
         private neuralNetService: TFNeuralNet,
@@ -68,41 +71,67 @@ export class VisualizationController {
         this.bindEvents();
     }
 
+    /**
+     * Helper to add event listener and track for cleanup
+     */
+    private addTrackedListener(element: HTMLElement, event: string, handler: EventListener): void {
+        element.addEventListener(event, handler);
+        this.eventCleanup.push({ element, event, handler });
+    }
+
     private bindEvents(): void {
-        this.elements.inputColourScheme.addEventListener('change', () => this.handleColourSchemeChange());
-        this.elements.inputPointSize.addEventListener('change', () => this.handlePointSizeChange());
-        this.elements.inputOpacity.addEventListener('input', () => this.handleOpacityChange());
-        this.elements.inputContours.addEventListener('input', () => this.handleContourChange());
-        this.elements.inputZoom.addEventListener('change', () => this.handleZoomToggle());
-        this.elements.inputTooltips.addEventListener('change', () => this.handleTooltipsToggle());
+        this.addTrackedListener(this.elements.inputColourScheme, 'change', () => this.handleColourSchemeChange());
+        this.addTrackedListener(this.elements.inputPointSize, 'change', () => this.handlePointSizeChange());
+        this.addTrackedListener(this.elements.inputOpacity, 'input', () => this.handleOpacityChange());
+        this.addTrackedListener(this.elements.inputContours, 'input', () => this.handleContourChange());
+        this.addTrackedListener(this.elements.inputZoom, 'change', () => this.handleZoomToggle());
+        this.addTrackedListener(this.elements.inputTooltips, 'change', () => this.handleTooltipsToggle());
 
         // 3D View
         if (this.elements.input3dView) {
-            this.elements.input3dView.addEventListener('change', () => void this.handle3dViewToggle());
+            this.addTrackedListener(this.elements.input3dView, 'change', () => void this.handle3dViewToggle());
         }
         if (this.elements.btn3dReset) {
-            this.elements.btn3dReset.addEventListener('click', () => this.threeViz?.resetCamera());
+            this.addTrackedListener(this.elements.btn3dReset, 'click', () => this.threeViz?.resetCamera());
         }
         if (this.elements.btn3dTop) {
-            this.elements.btn3dTop.addEventListener('click', () => this.threeViz?.setTopView());
+            this.addTrackedListener(this.elements.btn3dTop, 'click', () => this.threeViz?.setTopView());
         }
         if (this.elements.btn3dSide) {
-            this.elements.btn3dSide.addEventListener('click', () => this.threeViz?.setSideView());
+            this.addTrackedListener(this.elements.btn3dSide, 'click', () => this.threeViz?.setSideView());
         }
 
         // Gradient Flow
         if (this.elements.inputShowGradients) {
-            this.elements.inputShowGradients.addEventListener('change', () => this.handleGradientToggle());
+            this.addTrackedListener(this.elements.inputShowGradients, 'change', () => this.handleGradientToggle());
         }
 
         // Activation Heatmap
         if (this.elements.inputShowActivations) {
-            this.elements.inputShowActivations.addEventListener('change', () => this.handleActivationToggle());
+            this.addTrackedListener(this.elements.inputShowActivations, 'change', () => this.handleActivationToggle());
         }
 
         // Voronoi Overlay
-        this.elements.inputVoronoi.addEventListener('change', () => this.handleVoronoiToggle());
+        this.addTrackedListener(this.elements.inputVoronoi, 'change', () => this.handleVoronoiToggle());
     }
+
+    /**
+     * Clean up all event listeners and resources to prevent memory leaks.
+     * Call this before re-instantiating the controller.
+     */
+    public dispose(): void {
+        for (const { element, event, handler } of this.eventCleanup) {
+            element.removeEventListener(event, handler);
+        }
+        this.eventCleanup = [];
+
+        // Clean up visualization resources
+        this.threeViz?.dispose();
+        this.threeViz = null;
+        this.gradientFlow = null;
+        this.activationHeatmap = null;
+    }
+
 
     private handleColourSchemeChange(): void {
         const scheme = this.elements.inputColourScheme.value as ColourScheme;

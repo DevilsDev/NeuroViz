@@ -22,14 +22,26 @@ export interface KeyboardShortcutsCallbacks {
 export class KeyboardShortcuts {
     private enabled = true;
     private callbacks: KeyboardShortcutsCallbacks;
+    private boundHandler: (e: KeyboardEvent) => void;
 
     constructor(callbacks: KeyboardShortcutsCallbacks) {
         this.callbacks = callbacks;
+        // Store bound handler reference for proper cleanup
+        this.boundHandler = (e: KeyboardEvent) => this.handleKeydown(e);
         this.bindEvents();
     }
 
     private bindEvents(): void {
-        document.addEventListener('keydown', (e: KeyboardEvent) => this.handleKeydown(e));
+        document.addEventListener('keydown', this.boundHandler);
+    }
+
+    /**
+     * Remove event listener and clean up resources.
+     * Call this when the keyboard shortcuts are no longer needed.
+     */
+    public dispose(): void {
+        document.removeEventListener('keydown', this.boundHandler);
+        this.enabled = false;
     }
 
     private handleKeydown(e: KeyboardEvent): void {

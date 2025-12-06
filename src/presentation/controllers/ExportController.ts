@@ -45,6 +45,9 @@ export interface ExportElements {
 export class ExportController {
     private pendingModelJson: File | null = null;
 
+    // Event cleanup tracking for proper disposal
+    private eventCleanup: Array<{ element: HTMLElement; event: string; handler: EventListener }> = [];
+
     constructor(
         private session: TrainingSession,
         private neuralNetService: TFNeuralNet,
@@ -57,19 +60,40 @@ export class ExportController {
         this.bindEvents();
     }
 
-    private bindEvents(): void {
-        this.elements.btnExportJson.addEventListener('click', () => this.handleExportJson());
-        this.elements.btnExportCsv.addEventListener('click', () => this.handleExportCsv());
-        this.elements.btnExportPng.addEventListener('click', () => this.handleExportPng());
-        this.elements.btnExportSvg.addEventListener('click', () => this.handleExportSvg());
-        this.elements.btnScreenshot.addEventListener('click', () => this.handleScreenshot());
-        this.elements.btnExportModel.addEventListener('click', () => void this.handleExportModel());
-        this.elements.btnExportPython.addEventListener('click', () => this.handleExportPython());
-        this.elements.btnExportOnnx.addEventListener('click', () => this.handleExportOnnx());
-
-        this.elements.inputLoadModel.addEventListener('change', (e) => this.handleLoadModelJson(e));
-        this.elements.inputLoadWeights.addEventListener('change', (e) => void this.handleLoadModelWeights(e));
+    /**
+     * Helper to add event listener and track for cleanup
+     */
+    private addTrackedListener(element: HTMLElement, event: string, handler: EventListener): void {
+        element.addEventListener(event, handler);
+        this.eventCleanup.push({ element, event, handler });
     }
+
+    private bindEvents(): void {
+        this.addTrackedListener(this.elements.btnExportJson, 'click', () => this.handleExportJson());
+        this.addTrackedListener(this.elements.btnExportCsv, 'click', () => this.handleExportCsv());
+        this.addTrackedListener(this.elements.btnExportPng, 'click', () => this.handleExportPng());
+        this.addTrackedListener(this.elements.btnExportSvg, 'click', () => this.handleExportSvg());
+        this.addTrackedListener(this.elements.btnScreenshot, 'click', () => this.handleScreenshot());
+        this.addTrackedListener(this.elements.btnExportModel, 'click', () => void this.handleExportModel());
+        this.addTrackedListener(this.elements.btnExportPython, 'click', () => this.handleExportPython());
+        this.addTrackedListener(this.elements.btnExportOnnx, 'click', () => this.handleExportOnnx());
+
+        this.addTrackedListener(this.elements.inputLoadModel, 'change', (e) => this.handleLoadModelJson(e as Event));
+        this.addTrackedListener(this.elements.inputLoadWeights, 'change', (e) => void this.handleLoadModelWeights(e as Event));
+    }
+
+    /**
+     * Clean up all event listeners to prevent memory leaks.
+     * Call this before re-instantiating the controller.
+     */
+    public dispose(): void {
+        for (const { element, event, handler } of this.eventCleanup) {
+            element.removeEventListener(event, handler);
+        }
+        this.eventCleanup = [];
+        this.pendingModelJson = null;
+    }
+
 
     private handleExportJson(): void {
         const data = this.session.exportHistory('json');

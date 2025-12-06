@@ -94,6 +94,9 @@ export class TrainingController {
     private previousAccuracy: number | null = null;
     private commandExecutor: CommandExecutor;
 
+    // Event cleanup tracking for proper disposal
+    private eventCleanup: Array<{ element: HTMLElement; event: string; handler: EventListener }> = [];
+
     constructor(
         private session: TrainingSession,
         private elements: TrainingElements,
@@ -107,35 +110,43 @@ export class TrainingController {
         this.bindEvents();
     }
 
+    /**
+     * Helper to add event listener and track for cleanup
+     */
+    private addTrackedListener(element: HTMLElement, event: string, handler: EventListener): void {
+        element.addEventListener(event, handler);
+        this.eventCleanup.push({ element, event, handler });
+    }
+
     private bindEvents(): void {
-        this.elements.btnInit.addEventListener('click', () => void this.handleInitialise());
+        this.addTrackedListener(this.elements.btnInit, 'click', () => void this.handleInitialise());
 
         // Training controls
-        this.elements.btnStart.addEventListener('click', () => void this.handleStart());
-        this.elements.btnPause.addEventListener('click', () => this.handlePause());
-        this.elements.btnStep.addEventListener('click', () => void this.handleStep());
-        this.elements.btnReset.addEventListener('click', () => this.handleReset());
+        this.addTrackedListener(this.elements.btnStart, 'click', () => void this.handleStart());
+        this.addTrackedListener(this.elements.btnPause, 'click', () => this.handlePause());
+        this.addTrackedListener(this.elements.btnStep, 'click', () => void this.handleStep());
+        this.addTrackedListener(this.elements.btnReset, 'click', () => this.handleReset());
 
         // Sticky footer controls
-        this.elements.btnStartSticky.addEventListener('click', () => void this.handleStart());
-        this.elements.btnPauseSticky.addEventListener('click', () => this.handlePause());
-        this.elements.btnStepSticky.addEventListener('click', () => void this.handleStep());
-        this.elements.btnResetSticky.addEventListener('click', () => this.handleReset());
+        this.addTrackedListener(this.elements.btnStartSticky, 'click', () => void this.handleStart());
+        this.addTrackedListener(this.elements.btnPauseSticky, 'click', () => this.handlePause());
+        this.addTrackedListener(this.elements.btnStepSticky, 'click', () => void this.handleStep());
+        this.addTrackedListener(this.elements.btnResetSticky, 'click', () => this.handleReset());
 
         // Mobile FAB
-        this.elements.fabStart.addEventListener('click', () => void this.handleStart());
-        this.elements.fabPause.addEventListener('click', () => this.handlePause());
+        this.addTrackedListener(this.elements.fabStart, 'click', () => void this.handleStart());
+        this.addTrackedListener(this.elements.fabPause, 'click', () => this.handlePause());
 
         // Config changes
-        this.elements.inputLrSchedule.addEventListener('change', () => this.handleLrScheduleChange());
-        this.elements.inputFps.addEventListener('input', () => this.handleFpsChange());
-        this.elements.inputBatchSize.addEventListener('change', () => this.handleBatchSizeChange());
-        this.elements.inputMaxEpochs.addEventListener('change', () => this.handleMaxEpochsChange());
-        this.elements.inputValSplit.addEventListener('change', () => this.handleValSplitChange());
-        this.elements.inputTargetFps.addEventListener('change', () => this.handleFpsChange());
+        this.addTrackedListener(this.elements.inputLrSchedule, 'change', () => this.handleLrScheduleChange());
+        this.addTrackedListener(this.elements.inputFps, 'input', () => this.handleFpsChange());
+        this.addTrackedListener(this.elements.inputBatchSize, 'change', () => this.handleBatchSizeChange());
+        this.addTrackedListener(this.elements.inputMaxEpochs, 'change', () => this.handleMaxEpochsChange());
+        this.addTrackedListener(this.elements.inputValSplit, 'change', () => this.handleValSplitChange());
+        this.addTrackedListener(this.elements.inputTargetFps, 'change', () => this.handleFpsChange());
 
         // Optimizer change to toggle momentum
-        this.elements.inputOptimizer.addEventListener('change', () => {
+        this.addTrackedListener(this.elements.inputOptimizer, 'change', () => {
             if (this.elements.inputOptimizer.value === 'sgd') {
                 this.elements.momentumControl.classList.remove('hidden');
             } else {
@@ -143,10 +154,22 @@ export class TrainingController {
             }
         });
 
-        this.elements.inputMomentum.addEventListener('input', () => {
+        this.addTrackedListener(this.elements.inputMomentum, 'input', () => {
             this.elements.momentumValue.textContent = this.elements.inputMomentum.value;
         });
     }
+
+    /**
+     * Clean up all event listeners to prevent memory leaks.
+     * Call this before re-instantiating the controller.
+     */
+    public dispose(): void {
+        for (const { element, event, handler } of this.eventCleanup) {
+            element.removeEventListener(event, handler);
+        }
+        this.eventCleanup = [];
+    }
+
 
     /**
      * Handles network initialization using InitializeNetworkCommand
