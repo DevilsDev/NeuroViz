@@ -1,3 +1,9 @@
+## [2.12.0](https://github.com/DevilsDev/NeuroViz/compare/v2.11.0...v2.12.0) (2025-12-06)
+
+### Features
+
+* Add Iris and Wine dataset preview cards to the dataset selection interface ([6f413ee](https://github.com/DevilsDev/NeuroViz/commit/6f413eebd8c4adbd9797949c8f1de8da081f12d3))
+
 ## [2.11.0](https://github.com/DevilsDev/NeuroViz/compare/v2.10.0...v2.11.0) (2025-12-06)
 
 ### Features
