@@ -1,3 +1,9 @@
+## [2.14.0](https://github.com/DevilsDev/NeuroViz/compare/v2.13.0...v2.14.0) (2025-12-06)
+
+### Features
+
+* Add new controllers for visualization, export, session, and training, along with dataset gallery and keyboard shortcut utilities. ([e5d08f6](https://github.com/DevilsDev/NeuroViz/commit/e5d08f6cbc0f6b613a8630f157a5cf3000de7c8e))
+
 ## [2.13.0](https://github.com/DevilsDev/NeuroViz/compare/v2.12.0...v2.13.0) (2025-12-06)
 
 ### Features
