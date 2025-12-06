@@ -16,15 +16,26 @@
     rel="stylesheet" />
   <!-- Critical CSS inline to prevent FOUC -->
   <style>
-    /* Base theme colours applied immediately */
+    /* CSS Variables must be duplicated here for FOUC prevention */
+    :root {
+      --color-bg-primary-rgb: 10, 14, 26;
+      --color-text-primary-rgb: 241, 245, 249;
+    }
+
+    html:not(.dark) {
+      --color-bg-primary-rgb: 248, 250, 252;
+      --color-text-primary-rgb: 15, 23, 42;
+    }
+
+    /* Base theme colours applied immediately using CSS variables */
     html.dark body {
-      background: #0a0f1a;
-      color: #f1f5f9;
+      background: rgb(var(--color-bg-primary-rgb));
+      color: rgb(var(--color-text-primary-rgb));
     }
 
     html:not(.dark) body {
-      background: #f8fafc;
-      color: #0f172a;
+      background: rgb(var(--color-bg-primary-rgb));
+      color: rgb(var(--color-text-primary-rgb));
     }
 
     /* Hide content until styles load */
@@ -37,6 +48,7 @@
       opacity: 1;
     }
   </style>
+
 </head>
 
 <body>
@@ -102,19 +114,20 @@
             <!-- Animated Preview -->
             <div class="empty-state-preview">
               <div class="preview-boundary"></div>
-              <!-- Class A points (orange) -->
-              <div class="preview-point class-a" style="top: 15%; left: 25%; animation-delay: 0s;"></div>
-              <div class="preview-point class-a" style="top: 25%; left: 15%; animation-delay: 0.3s;"></div>
-              <div class="preview-point class-a" style="top: 20%; left: 40%; animation-delay: 0.6s;"></div>
-              <div class="preview-point class-a" style="top: 35%; left: 20%; animation-delay: 0.9s;"></div>
-              <div class="preview-point class-a" style="top: 10%; left: 35%; animation-delay: 1.2s;"></div>
-              <!-- Class B points (blue) -->
-              <div class="preview-point class-b" style="top: 65%; left: 60%; animation-delay: 0.15s;"></div>
-              <div class="preview-point class-b" style="top: 75%; left: 70%; animation-delay: 0.45s;"></div>
-              <div class="preview-point class-b" style="top: 70%; left: 80%; animation-delay: 0.75s;"></div>
-              <div class="preview-point class-b" style="top: 80%; left: 65%; animation-delay: 1.05s;"></div>
-              <div class="preview-point class-b" style="top: 60%; left: 75%; animation-delay: 1.35s;"></div>
+              <!-- Class A points (orange) - positioned via CSS data-pos selectors -->
+              <div class="preview-point class-a" data-pos="a1"></div>
+              <div class="preview-point class-a" data-pos="a2"></div>
+              <div class="preview-point class-a" data-pos="a3"></div>
+              <div class="preview-point class-a" data-pos="a4"></div>
+              <div class="preview-point class-a" data-pos="a5"></div>
+              <!-- Class B points (blue) - positioned via CSS data-pos selectors -->
+              <div class="preview-point class-b" data-pos="b1"></div>
+              <div class="preview-point class-b" data-pos="b2"></div>
+              <div class="preview-point class-b" data-pos="b3"></div>
+              <div class="preview-point class-b" data-pos="b4"></div>
+              <div class="preview-point class-b" data-pos="b5"></div>
             </div>
+
             <div class="empty-state-title">Train a Neural Network</div>
             <div class="empty-state-description">Watch the decision boundary evolve as the network learns to classify
               data</div>

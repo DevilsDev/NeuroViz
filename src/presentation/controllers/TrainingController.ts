@@ -139,11 +139,12 @@ export class TrainingController {
 
         // Config changes
         this.addTrackedListener(this.elements.inputLrSchedule, 'change', () => this.handleLrScheduleChange());
-        this.addTrackedListener(this.elements.inputFps, 'input', () => this.handleFpsChange());
+        this.addTrackedListener(this.elements.inputFps, 'input', () => this.handleFpsSliderChange());
         this.addTrackedListener(this.elements.inputBatchSize, 'change', () => this.handleBatchSizeChange());
         this.addTrackedListener(this.elements.inputMaxEpochs, 'change', () => this.handleMaxEpochsChange());
         this.addTrackedListener(this.elements.inputValSplit, 'change', () => this.handleValSplitChange());
-        this.addTrackedListener(this.elements.inputTargetFps, 'change', () => this.handleFpsChange());
+        this.addTrackedListener(this.elements.inputTargetFps, 'change', () => this.handlePerfModeChange());
+
 
         // Optimizer change to toggle momentum
         this.addTrackedListener(this.elements.inputOptimizer, 'change', () => {
@@ -308,11 +309,51 @@ export class TrainingController {
         void this.applyTrainingConfig();
     }
 
-    private handleFpsChange(): void {
+    /**
+     * Handles FPS slider changes - updates display and syncs performance mode dropdown
+     */
+    private handleFpsSliderChange(): void {
         const fps = parseInt(this.elements.inputFps.value, 10) || 60;
         this.elements.fpsValue.textContent = fps.toString();
         this.session.setTrainingConfig({ targetFps: fps });
+
+        // Sync performance mode dropdown based on FPS value
+        if (fps >= 50) {
+            this.elements.inputTargetFps.value = 'full';
+        } else if (fps >= 25) {
+            this.elements.inputTargetFps.value = 'balanced';
+        } else {
+            this.elements.inputTargetFps.value = 'battery';
+        }
     }
+
+    /**
+     * Handles performance mode dropdown changes - converts to FPS and syncs slider
+     */
+    private handlePerfModeChange(): void {
+        const mode = this.elements.inputTargetFps.value;
+        let fps: number;
+
+        switch (mode) {
+            case 'full':
+                fps = 60;
+                break;
+            case 'balanced':
+                fps = 30;
+                break;
+            case 'battery':
+                fps = 15;
+                break;
+            default:
+                fps = 60;
+        }
+
+        // Update slider and display
+        this.elements.inputFps.value = fps.toString();
+        this.elements.fpsValue.textContent = fps.toString();
+        this.session.setTrainingConfig({ targetFps: fps });
+    }
+
 
     private handleBatchSizeChange(): void {
         const batchSize = parseInt(this.elements.inputBatchSize.value, 10) || 0;

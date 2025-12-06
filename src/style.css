@@ -2,6 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== CSS VARIABLES FOR THEMING ===== */
+:root {
+    /* Primary colors (RGB values for flexible opacity) */
+    --color-bg-primary-rgb: 10, 14, 26;
+    /* #0A0E1A */
+    --color-bg-secondary-rgb: 26, 31, 46;
+    /* #1A1F2E */
+    --color-text-primary-rgb: 241, 245, 249;
+    /* #F1F5F9 (slate-100) */
+    --color-text-secondary-rgb: 148, 163, 184;
+    /* #94A3B8 (slate-400) */
+
+    /* Accent colors */
+    --color-cyan-rgb: 0, 217, 255;
+    /* #00D9FF */
+    --color-magenta-rgb: 255, 0, 170;
+    /* #FF00AA */
+    --color-orange-rgb: 251, 146, 60;
+    /* #FB923C */
+
+    /* Semantic colors */
+    --color-success-rgb: 16, 185, 129;
+    /* #10B981 */
+    --color-warning-rgb: 245, 158, 11;
+    /* #F59E0B */
+    --color-danger-rgb: 239, 68, 68;
+    /* #EF4444 */
+
+    /* Computed color values */
+    --color-bg-primary: rgb(var(--color-bg-primary-rgb));
+    --color-bg-secondary: rgb(var(--color-bg-secondary-rgb));
+    --color-text-primary: rgb(var(--color-text-primary-rgb));
+    --color-text-secondary: rgb(var(--color-text-secondary-rgb));
+    --color-cyan: rgb(var(--color-cyan-rgb));
+    --color-cyan-glow: rgb(var(--color-cyan-rgb) / 0.3);
+    --color-magenta: rgb(var(--color-magenta-rgb));
+    --color-orange: rgb(var(--color-orange-rgb));
+}
+
+/* Light mode overrides */
+html:not(.dark) {
+    --color-bg-primary-rgb: 248, 250, 252;
+    /* #F8FAFC (slate-50) */
+    --color-bg-secondary-rgb: 241, 245, 249;
+    /* #F1F5F9 (slate-100) */
+    --color-text-primary-rgb: 15, 23, 42;
+    /* #0F172A (slate-900) */
+    --color-text-secondary-rgb: 71, 85, 105;
+    /* #475569 (slate-600) */
+}
+
 @layer base {
     body {
         @apply bg-bg-primary text-text-primary font-sans antialiased;
@@ -19,6 +70,7 @@
         @apply text-md font-semibold text-text-primary;
     }
 }
+
 
 @layer components {
 
@@ -44,10 +96,13 @@
     }
 
     @keyframes viz-glow-pulse {
-        0%, 100% {
+
+        0%,
+        100% {
             border-color: rgba(255, 255, 255, 0.05);
             box-shadow: 0 0 20px rgba(0, 217, 255, 0.1);
         }
+
         50% {
             border-color: rgba(0, 217, 255, 0.3);
             box-shadow: 0 0 40px rgba(0, 217, 255, 0.2);
@@ -76,11 +131,14 @@
     /* ===== TABS - Segmented Control ===== */
 
     .sidebar-tabs {
-        @apply flex p-1 bg-navy-900/50 rounded-lg mb-4 border; gap: 2px border-navy-700/50;
+        @apply flex p-1 bg-navy-900/50 rounded-lg mb-4 border;
+        gap: 2px border-navy-700/50;
     }
 
     .sidebar-tab {
-        @apply flex-1 flex items-center justify-center gap-2 py-2 px-3 text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-navy-800/50 focus:outline-none focus:ring-2 focus:ring-cyan/50 cursor-pointer; border-radius: 8px; transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+        @apply flex-1 flex items-center justify-center gap-2 py-2 px-3 text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-navy-800/50 focus:outline-none focus:ring-2 focus:ring-cyan/50 cursor-pointer;
+        border-radius: 8px;
+        transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .sidebar-tab.active {
@@ -91,7 +149,11 @@
     /* ===== BUTTONS ===== */
 
     .btn-primary {
-        @apply flex items-center justify-center gap-2 px-4 text-white text-sm font-semibold rounded-lg bg-gradient-cyan shadow-glow-cyan hover:shadow-glow-lg disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-cyan/50; padding-top: 12px; padding-bottom: 12px; min-height: 48px; transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+        @apply flex items-center justify-center gap-2 px-4 text-white text-sm font-semibold rounded-lg bg-gradient-cyan shadow-glow-cyan hover:shadow-glow-lg disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-cyan/50;
+        padding-top: 12px;
+        padding-bottom: 12px;
+        min-height: 48px;
+        transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .btn-secondary {
@@ -151,33 +213,13 @@
         @apply hover:border-cyan/30 hover:-translate-y-0.5 hover:shadow-lg cursor-pointer;
     }
 
+
     .card-selected {
         @apply border-cyan ring-2 ring-cyan/20;
     }
 
-    /* Dataset cards */
-    .dataset-card {
-        @apply flex flex-col items-center justify-center bg-navy-800 rounded-md border border-navy-700/50 p-4 cursor-pointer transition-all duration-200 hover:border-cyan/50  relative;
-    }
-
-    .dataset-card.selected {
-        @apply border-cyan ring-2 ring-cyan/20;
-        box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
-    }
-
-    .dataset-card-icon {
-        @apply w-16 h-16 flex items-center justify-center mb-2;
-    }
-
-    .dataset-card-label {
-        @apply text-xs font-medium text-slate-300;
-    }
-
-    .dataset-card-badge {
-        @apply absolute top-2 right-2 w-5 h-5 bg-cyan rounded-full flex items-center justify-center text-white text-xs;
-    }
-
     /* ===== METRICS ===== */
+
 
     .metrics-bar {
         @apply flex items-center justify-between px-4 py-3 bg-navy-900/50 border-t border-white/5;
@@ -558,10 +600,13 @@
 }
 
 @keyframes metrics-pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         box-shadow: 0 0 20px rgba(0, 217, 255, 0.2), 0 4px 6px -1px rgb(0 0 0 / 0.3);
         border-color: rgba(0, 217, 255, 0.3);
     }
+
     50% {
         box-shadow: 0 0 30px rgba(0, 217, 255, 0.4), 0 4px 6px -1px rgb(0 0 0 / 0.3);
         border-color: rgba(0, 217, 255, 0.6);
@@ -775,6 +820,7 @@
         @apply shadow-none;
     }
 }
+
 /* ===== ENHANCED ANIMATIONS (Phase 5-6 Polish) ===== */
 
 /* Training button glow pulse */
@@ -783,8 +829,15 @@
 }
 
 @keyframes training-pulse {
-    0%, 100% { box-shadow: 0 0 20px rgba(0, 217, 255, 0.3); }
-    50% { box-shadow: 0 0 40px rgba(0, 217, 255, 0.6); }
+
+    0%,
+    100% {
+        box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 0 40px rgba(0, 217, 255, 0.6);
+    }
 }
 
 /* ===== WIREFRAME PRECISION ADJUSTMENTS ===== */
@@ -809,15 +862,75 @@
 }
 
 /* Card hover - exact -2px transform */
-.dataset-card:hover {
-    transform: translateY(-2px) !important;
-}
-
 .card-hover:hover {
     transform: translateY(-2px) !important;
 }
 
+
 /* Tab animation duration - exact 250ms */
 .sidebar-tab {
     transition-duration: 250ms !important;
+}
+
+/* ===== PREVIEW POINT POSITIONING (Data-Attribute Driven) ===== */
+/* Replaces inline style="" attributes for theming consistency */
+
+.preview-point[data-pos="a1"] {
+    top: 15%;
+    left: 25%;
+    animation-delay: 0s;
+}
+
+.preview-point[data-pos="a2"] {
+    top: 25%;
+    left: 15%;
+    animation-delay: 0.3s;
+}
+
+.preview-point[data-pos="a3"] {
+    top: 20%;
+    left: 40%;
+    animation-delay: 0.6s;
+}
+
+.preview-point[data-pos="a4"] {
+    top: 35%;
+    left: 20%;
+    animation-delay: 0.9s;
+}
+
+.preview-point[data-pos="a5"] {
+    top: 10%;
+    left: 35%;
+    animation-delay: 1.2s;
+}
+
+.preview-point[data-pos="b1"] {
+    top: 65%;
+    left: 60%;
+    animation-delay: 0.15s;
+}
+
+.preview-point[data-pos="b2"] {
+    top: 75%;
+    left: 70%;
+    animation-delay: 0.45s;
+}
+
+.preview-point[data-pos="b3"] {
+    top: 70%;
+    left: 80%;
+    animation-delay: 0.75s;
+}
+
+.preview-point[data-pos="b4"] {
+    top: 80%;
+    left: 65%;
+    animation-delay: 1.05s;
+}
+
+.preview-point[data-pos="b5"] {
+    top: 60%;
+    left: 75%;
+    animation-delay: 1.35s;
 }
