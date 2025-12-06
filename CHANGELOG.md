@@ -1,3 +1,9 @@
+## [2.15.0](https://github.com/DevilsDev/NeuroViz/compare/v2.14.0...v2.15.0) (2025-12-06)
+
+### Features
+
+* Add core application structure, new ExportController, and centralized UIFactory for DOM element access. ([369e736](https://github.com/DevilsDev/NeuroViz/commit/369e73694cf95fd49176a4cf00201b22044330ee))
+
 ## [2.14.0](https://github.com/DevilsDev/NeuroViz/compare/v2.13.0...v2.14.0) (2025-12-06)
 
 ### Features
