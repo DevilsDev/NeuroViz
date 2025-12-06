@@ -104,6 +104,8 @@ export class NeuroPage {
     await expect(this.vizContainer).toBeVisible();
     // Wait for TensorFlow.js to be ready (check for tf global)
     await this.waitForTensorFlowReady();
+    // Wait for window.app to be initialized
+    await this.waitForAppReady();
   }
 
   /**
@@ -117,6 +119,21 @@ export class NeuroPage {
         return typeof (window as unknown as { tf?: unknown }).tf !== 'undefined';
       },
       { timeout: 30000 }
+    );
+  }
+
+  /**
+   * Wait for window.app to be initialized.
+   * This is required for white box tests that access internal state.
+   */
+  async waitForAppReady(): Promise<void> {
+    await this.page.waitForFunction(
+      () => {
+        // Check if app is defined with services and controllers
+        const app = (window as any).app;
+        return app && app.services && app.services.session && app.controllers;
+      },
+      { timeout: 10000 }
     );
   }
 

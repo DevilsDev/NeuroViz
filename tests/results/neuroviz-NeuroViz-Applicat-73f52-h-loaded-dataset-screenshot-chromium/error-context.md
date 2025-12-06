@@ -562,7 +562,4 @@
     - status [ref=e790]:
       - text: ✓Dataset "circle" loaded (200 samples, 2 classes)
       - button "Close notification" [ref=e791] [cursor=pointer]: ×
-    - status [ref=e792]:
-      - text: ✓Dataset "xor" loaded (200 samples, 2 classes)
-      - button "Close notification" [ref=e793] [cursor=pointer]: ×
 ```

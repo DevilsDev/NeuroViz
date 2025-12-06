@@ -23,3 +23,12 @@ const app = new ApplicationBuilder({
 
 // Initialize the application (sets up event listeners and state synchronization)
 app.initialize();
+
+// Expose app globally for debugging and E2E testing
+declare global {
+  interface Window {
+    app: typeof app;
+  }
+}
+
+window.app = app;

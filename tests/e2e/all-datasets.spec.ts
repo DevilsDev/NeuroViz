@@ -125,10 +125,10 @@ test.describe('All Datasets Training - White Box Tests', () => {
     const state = await page.evaluate(() => {
       const app = (window as any).app;
       return {
-        hasTrainingData: app.session.getData().length > 0,
-        isTraining: app.session.getState().isRunning,
-        epoch: app.session.getState().currentEpoch,
-        loss: app.session.getState().currentLoss,
+        hasTrainingData: app.services.session.getData().length > 0,
+        isTraining: app.services.session.getState().isRunning,
+        epoch: app.services.session.getState().currentEpoch,
+        loss: app.services.session.getState().currentLoss,
       };
     });
 
@@ -212,7 +212,7 @@ test.describe('All Datasets Training - White Box Tests', () => {
     // White box: Verify data structure
     const dataInfo = await page.evaluate(() => {
       const app = (window as any).app;
-      const data = app.session.getData();
+      const data = app.services.session.getData();
       return {
         count: data.length,
         hasLabels: data.every((p: any) => typeof p.label === 'number'),
@@ -232,7 +232,7 @@ test.describe('All Datasets Training - White Box Tests', () => {
 
     const dataInfo = await page.evaluate(() => {
       const app = (window as any).app;
-      const data = app.session.getData();
+      const data = app.services.session.getData();
       return {
         count: data.length,
         hasLabels: data.every((p: any) => typeof p.label === 'number'),
@@ -283,7 +283,7 @@ test.describe('Dataset Switching - State Management', () => {
     // Verify only one dataset is rendered (no overlap)
     const dataInfo = await page.evaluate(() => {
       const app = (window as any).app;
-      return app.session.getData().length;
+      return app.services.session.getData().length;
     });
 
     expect(dataInfo).toBeGreaterThan(0);
@@ -356,7 +356,7 @@ test.describe('Dataset Parameters - White Box', () => {
     // Verify 3 distinct labels exist
     const labels = await page.evaluate(() => {
       const app = (window as any).app;
-      const data = app.session.getData();
+      const data = app.services.session.getData();
       const uniqueLabels = new Set(data.map((p: any) => p.label));
       return Array.from(uniqueLabels).sort();
     });

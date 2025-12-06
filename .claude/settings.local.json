@@ -14,7 +14,10 @@
       "Bash(gh run list:*)",
       "Bash(gh run view:*)",
       "Bash(git pull:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(npx playwright test:*)",
+      "Bash(lsof:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

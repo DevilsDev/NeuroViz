@@ -18,576 +18,578 @@
       - region "Neural network visualization" [ref=e19]:
         - img "Neural network decision boundary visualization" [ref=e20]:
           - img [ref=e21]:
-            - generic [ref=e231]:
-              - generic [ref=e232]:
-                - generic [ref=e235]: −1.0
-                - generic [ref=e237]: −0.5
-                - generic [ref=e239]: "0.0"
-                - generic [ref=e241]: "0.5"
-                - generic [ref=e243]: "1.0"
-              - generic [ref=e244]:
-                - generic [ref=e247]: −1.0
-                - generic [ref=e249]: −0.5
-                - generic [ref=e251]: "0.0"
-                - generic [ref=e253]: "0.5"
-                - generic [ref=e255]: "1.0"
-        - button "Explain what's happening in training" [ref=e256] [cursor=pointer]:
-          - img [ref=e257]
+            - generic [ref=e230]:
+              - generic [ref=e231]:
+                - generic [ref=e234]: −1.0
+                - generic [ref=e236]: −0.5
+                - generic [ref=e238]: "0.0"
+                - generic [ref=e240]: "0.5"
+                - generic [ref=e242]: "1.0"
+              - generic [ref=e243]:
+                - generic [ref=e246]: −1.0
+                - generic [ref=e248]: −0.5
+                - generic [ref=e250]: "0.0"
+                - generic [ref=e252]: "0.5"
+                - generic [ref=e254]: "1.0"
+        - button "Explain what's happening in training" [ref=e255] [cursor=pointer]:
+          - img [ref=e256]
           - text: 💡 Explain This Moment
-        - status [ref=e258]:
-          - generic [ref=e259]:
-            - generic [ref=e260]: Epoch
-            - generic [ref=e261]: "19"
-            - generic [ref=e262]: /100
-          - generic [ref=e264]:
-            - generic [ref=e265]: Loss
-            - generic [ref=e266]: "0.6285"
-          - generic [ref=e268]:
-            - generic [ref=e269]: Accuracy
-            - generic [ref=e270]: 71.9%
-          - generic [ref=e272]:
-            - generic [ref=e273]: Learning Rate
-            - generic [ref=e274]: "0.0100"
-      - complementary "Training controls" [ref=e275]:
-        - generic [ref=e276]:
-          - generic [ref=e277]:
-            - generic [ref=e278]:
-              - img [ref=e280]
-              - generic [ref=e282]: Data
-            - generic [ref=e284]:
-              - img [ref=e286]
-              - generic [ref=e289]: Network
-            - generic [ref=e291]:
-              - img [ref=e293]
-              - generic [ref=e295]: Train
-          - tablist "Control panel sections" [ref=e296]:
-            - tab "Setup" [selected] [ref=e297] [cursor=pointer]:
-              - img [ref=e298]
+        - status [ref=e257]:
+          - generic [ref=e258]:
+            - generic [ref=e259]: Epoch
+            - generic [ref=e260]: "24"
+            - generic [ref=e261]: /100
+          - generic [ref=e263]:
+            - generic [ref=e264]: Loss
+            - generic [ref=e265]: "0.5458"
+          - generic [ref=e267]:
+            - generic [ref=e268]: Accuracy
+            - generic [ref=e269]: 100.0%
+          - generic [ref=e271]:
+            - generic [ref=e272]: Learning Rate
+            - generic [ref=e273]: "0.0100"
+      - complementary "Training controls" [ref=e274]:
+        - generic [ref=e275]:
+          - generic [ref=e276]:
+            - generic [ref=e277]:
+              - img [ref=e279]
+              - generic [ref=e281]: Data
+            - generic [ref=e283]:
+              - img [ref=e285]
+              - generic [ref=e288]: Network
+            - generic [ref=e290]:
+              - img [ref=e292]
+              - generic [ref=e294]: Train
+          - tablist "Control panel sections" [ref=e295]:
+            - tab "Setup" [selected] [ref=e296] [cursor=pointer]:
+              - img [ref=e297]
               - text: Setup
-            - tab "Train" [ref=e300] [cursor=pointer]:
-              - img [ref=e301]
+            - tab "Train" [ref=e299] [cursor=pointer]:
+              - img [ref=e300]
               - text: Train
-            - tab "Analyse" [ref=e303] [cursor=pointer]:
-              - img [ref=e304]
+            - tab "Analyse" [ref=e302] [cursor=pointer]:
+              - img [ref=e303]
               - text: Analyse
-          - tabpanel "Setup" [ref=e306]:
-            - generic [ref=e307]:
-              - heading "Quick Start" [level=3] [ref=e308]:
-                - img [ref=e309]
+          - tabpanel "Setup" [ref=e305]:
+            - generic [ref=e306]:
+              - heading "Quick Start" [level=3] [ref=e307]:
+                - img [ref=e308]
                 - text: Quick Start
-              - combobox "Select preset configuration" [ref=e311]:
+              - combobox "Select preset configuration" [ref=e310]:
                 - option "— Select a preset —" [selected]
                 - option "🚀 Quick Demo (Simple Circle)"
                 - option "🎯 XOR Challenge (Classic Problem)"
                 - option "🌀 Deep Spiral (Complex Pattern)"
                 - option "🎨 Multi-class Clusters (4 Classes)"
                 - option "📈 Overfitting Demo (High Capacity)"
-              - button "Apply & Start Training" [disabled] [ref=e312]:
-                - img [ref=e313]
+              - button "Apply & Start Training" [disabled] [ref=e311]:
+                - img [ref=e312]
                 - text: Apply & Start Training
-              - generic [ref=e315]:
-                - button "Save" [ref=e316] [cursor=pointer]:
-                  - img [ref=e317]
+              - generic [ref=e314]:
+                - button "Save" [ref=e315] [cursor=pointer]:
+                  - img [ref=e316]
                   - text: Save
-                - button "Delete" [disabled] [ref=e319]:
-                  - img [ref=e320]
+                - button "Delete" [disabled] [ref=e318]:
+                  - img [ref=e319]
                   - text: Delete
-            - generic [ref=e322]:
-              - heading "Dataset" [level=3] [ref=e323]:
-                - img [ref=e324]
+            - generic [ref=e321]:
+              - heading "Dataset" [level=3] [ref=e322]:
+                - img [ref=e323]
                 - text: Dataset
-              - generic [ref=e328]:
-                - generic [ref=e329] [cursor=pointer]:
-                  - img [ref=e331]
-                  - generic [ref=e338]: Circle
-                  - generic [ref=e339]: Concentric rings
-                  - generic [ref=e340]: Easy
-                - generic [ref=e341] [cursor=pointer]:
-                  - img [ref=e343]
-                  - generic [ref=e348]: XOR
-                  - generic [ref=e349]: Quadrant pattern
-                  - generic [ref=e350]: Medium
-                - generic [ref=e351] [cursor=pointer]:
-                  - img [ref=e353]
-                  - generic [ref=e360]: Spiral
-                  - generic [ref=e361]: Intertwined arms
-                  - generic [ref=e362]: Hard
-                - generic [ref=e363] [cursor=pointer]:
-                  - img [ref=e365]
-                  - generic [ref=e372]: Gaussian
-                  - generic [ref=e373]: Blob clusters
-                  - generic [ref=e374]: Easy
-                - generic [ref=e375] [cursor=pointer]:
-                  - img [ref=e377]
-                  - generic [ref=e384]: Clusters
-                  - generic [ref=e385]: Multi-class
-                  - generic [ref=e386]: Medium
-                - generic [ref=e387] [cursor=pointer]:
-                  - img [ref=e389]:
-                    - generic [ref=e392]: ✎
-                  - generic [ref=e393]: Custom
-                  - generic [ref=e394]: Draw your own
-                  - generic [ref=e395]: Pro
-              - button "Show all datasets" [ref=e396] [cursor=pointer]:
-                - img [ref=e397]
+              - generic [ref=e327]:
+                - generic [ref=e328] [cursor=pointer]:
+                  - img [ref=e330]
+                  - generic [ref=e337]: Circle
+                  - generic [ref=e338]: Concentric rings
+                  - generic [ref=e339]: Easy
+                - generic [ref=e340] [cursor=pointer]:
+                  - img [ref=e342]
+                  - generic [ref=e347]: XOR
+                  - generic [ref=e348]: Quadrant pattern
+                  - generic [ref=e349]: Medium
+                - generic [ref=e350] [cursor=pointer]:
+                  - img [ref=e352]
+                  - generic [ref=e359]: Spiral
+                  - generic [ref=e360]: Intertwined arms
+                  - generic [ref=e361]: Hard
+                - generic [ref=e362] [cursor=pointer]:
+                  - img [ref=e364]
+                  - generic [ref=e371]: Gaussian
+                  - generic [ref=e372]: Blob clusters
+                  - generic [ref=e373]: Easy
+                - generic [ref=e374] [cursor=pointer]:
+                  - img [ref=e376]
+                  - generic [ref=e383]: Clusters
+                  - generic [ref=e384]: Multi-class
+                  - generic [ref=e385]: Medium
+                - generic [ref=e386] [cursor=pointer]:
+                  - img [ref=e388]:
+                    - generic [ref=e391]: ✎
+                  - generic [ref=e392]: Custom
+                  - generic [ref=e393]: Draw your own
+                  - generic [ref=e394]: Pro
+              - button "Show all datasets" [ref=e395] [cursor=pointer]:
+                - img [ref=e396]
                 - text: Show all datasets
-              - generic [ref=e399]:
-                - generic [ref=e400]:
-                  - generic [ref=e401]: "Samples: 200"
-                  - 'slider "Samples: 200" [ref=e402] [cursor=pointer]': "200"
-                - generic [ref=e403]:
-                  - generic [ref=e404]: "Noise: 0.1"
-                  - 'slider "Noise: 0.1" [ref=e405] [cursor=pointer]': "10"
-                - generic [ref=e406]:
-                  - generic [ref=e407]: "Class Balance: 50%"
-                  - 'slider "Class Balance: 50%" [ref=e408] [cursor=pointer]': "50"
-                - generic [ref=e409]:
-                  - generic [ref=e410]: Preprocessing
-                  - combobox "Preprocessing" [ref=e411]:
+              - generic [ref=e398]:
+                - generic [ref=e399]:
+                  - generic [ref=e400]: "Samples: 200"
+                  - 'slider "Samples: 200" [ref=e401] [cursor=pointer]': "200"
+                - generic [ref=e402]:
+                  - generic [ref=e403]: "Noise: 0.1"
+                  - 'slider "Noise: 0.1" [ref=e404] [cursor=pointer]': "10"
+                - generic [ref=e405]:
+                  - generic [ref=e406]: "Class Balance: 50%"
+                  - 'slider "Class Balance: 50%" [ref=e407] [cursor=pointer]': "50"
+                - generic [ref=e408]:
+                  - generic [ref=e409]: Preprocessing
+                  - combobox "Preprocessing" [ref=e410]:
                     - option "None" [selected]
                     - option "Normalize (Min-Max)"
                     - option "Standardize (Z-Score)"
-              - generic [ref=e412]:
-                - button "Load dataset" [ref=e413] [cursor=pointer]:
-                  - img [ref=e414]
+              - generic [ref=e411]:
+                - button "Load dataset" [ref=e412] [cursor=pointer]:
+                  - img [ref=e413]
                   - text: Fetch
-                - generic [ref=e416] [cursor=pointer]:
-                  - img [ref=e417]
+                - generic [ref=e415] [cursor=pointer]:
+                  - img [ref=e416]
                   - text: CSV
-              - button "Download Dataset" [disabled] [ref=e419]:
-                - img [ref=e420]
+              - button "Download Dataset" [disabled] [ref=e418]:
+                - img [ref=e419]
                 - text: Download Dataset
-            - generic [ref=e422]:
-              - heading "Visualisation" [level=3] [ref=e423]:
-                - img [ref=e424]
+            - generic [ref=e421]:
+              - heading "Visualisation" [level=3] [ref=e422]:
+                - img [ref=e423]
                 - text: Visualisation
-              - generic [ref=e426]:
-                - generic [ref=e427]:
-                  - generic [ref=e428]:
-                    - generic [ref=e429]: Colour Scheme
-                    - combobox "Colour Scheme" [ref=e430]:
+              - generic [ref=e425]:
+                - generic [ref=e426]:
+                  - generic [ref=e427]:
+                    - generic [ref=e428]: Colour Scheme
+                    - combobox "Colour Scheme" [ref=e429]:
                       - option "Default" [selected]
                       - option "Viridis"
                       - option "Plasma"
                       - option "Cool"
                       - option "Warm"
-                  - generic [ref=e431]:
-                    - generic [ref=e432]: Point Size
-                    - combobox "Point Size" [ref=e433]:
+                  - generic [ref=e430]:
+                    - generic [ref=e431]: Point Size
+                    - combobox "Point Size" [ref=e432]:
                       - option "Small"
                       - option "Medium" [selected]
                       - option "Large"
-                - generic [ref=e434]:
-                  - generic [ref=e435]:
-                    - generic [ref=e436]: "Opacity: 70%"
-                    - 'slider "Opacity: 70%" [ref=e437] [cursor=pointer]': "70"
-                  - generic [ref=e438]:
-                    - generic [ref=e439]: "Contours: 10"
-                    - 'slider "Contours: 10" [ref=e440] [cursor=pointer]': "10"
-                - generic [ref=e441]:
-                  - generic [ref=e442]:
-                    - checkbox "Zoom/Pan" [checked] [ref=e443]
+                - generic [ref=e433]:
+                  - generic [ref=e434]:
+                    - generic [ref=e435]: "Opacity: 70%"
+                    - 'slider "Opacity: 70%" [ref=e436] [cursor=pointer]': "70"
+                  - generic [ref=e437]:
+                    - generic [ref=e438]: "Contours: 10"
+                    - 'slider "Contours: 10" [ref=e439] [cursor=pointer]': "10"
+                - generic [ref=e440]:
+                  - generic [ref=e441]:
+                    - checkbox "Zoom/Pan" [checked] [ref=e442]
                     - text: Zoom/Pan
-                  - generic [ref=e444]:
-                    - checkbox "Tooltips" [checked] [ref=e445]
+                  - generic [ref=e443]:
+                    - checkbox "Tooltips" [checked] [ref=e444]
                     - text: Tooltips
-                  - generic [ref=e446]:
-                    - checkbox "Show Errors" [ref=e447]
+                  - generic [ref=e445]:
+                    - checkbox "Show Errors" [ref=e446]
                     - text: Show Errors
-                  - generic [ref=e448]:
-                    - checkbox "Confidence" [ref=e449]
+                  - generic [ref=e447]:
+                    - checkbox "Confidence" [ref=e448]
                     - text: Confidence
-                  - generic "Browser notification when training completes" [ref=e450]:
-                    - checkbox "Notify" [ref=e451]
+                  - generic "Browser notification when training completes" [ref=e449]:
+                    - checkbox "Notify" [ref=e450]
                     - text: Notify
-                  - generic "Record boundary evolution for replay" [ref=e452]:
-                    - checkbox "Record" [ref=e453]
+                  - generic "Record boundary evolution for replay" [ref=e451]:
+                    - checkbox "Record" [ref=e452]
                     - text: Record
-                  - generic "Toggle 3D visualization" [ref=e454]:
-                    - checkbox "3D View" [ref=e455]
+                  - generic "Toggle 3D visualization" [ref=e453]:
+                    - checkbox "3D View" [ref=e454]
                     - text: 3D View
-                  - generic "Show Voronoi diagram overlay" [ref=e456]:
-                    - checkbox "Voronoi" [ref=e457]
+                  - generic "Show Voronoi diagram overlay" [ref=e455]:
+                    - checkbox "Voronoi" [ref=e456]
                     - text: Voronoi
-                - generic [ref=e458]:
-                  - button "PNG" [disabled] [ref=e459]:
-                    - img [ref=e460]
+                - generic [ref=e457]:
+                  - button "PNG" [disabled] [ref=e458]:
+                    - img [ref=e459]
                     - text: PNG
-                  - button "SVG" [disabled] [ref=e462]:
-                    - img [ref=e463]
+                  - button "SVG" [disabled] [ref=e461]:
+                    - img [ref=e462]
                     - text: SVG
-                  - button "📋" [disabled] [ref=e465]:
-                    - img [ref=e466]
+                  - button "📋" [disabled] [ref=e464]:
+                    - img [ref=e465]
                     - text: 📋
-              - generic [ref=e469]:
-                - heading "Hyperparameters" [level=3] [ref=e470]:
-                  - img [ref=e471]
+              - generic [ref=e468]:
+                - heading "Hyperparameters" [level=3] [ref=e469]:
+                  - img [ref=e470]
                   - text: Hyperparameters
-                - generic [ref=e474]:
-                  - generic [ref=e475]:
-                    - generic [ref=e476]:
-                      - generic [ref=e477]: Learning Rate ⓘ
-                      - spinbutton "Learning Rate ⓘ" [ref=e478]: "0.01"
-                    - generic [ref=e479]:
-                      - generic [ref=e480]: Optimizer ⓘ
-                      - combobox "Optimizer ⓘ" [ref=e481]:
+                - generic [ref=e473]:
+                  - generic [ref=e474]:
+                    - generic [ref=e475]:
+                      - generic [ref=e476]: Learning Rate ⓘ
+                      - spinbutton "Learning Rate ⓘ" [ref=e477]: "0.01"
+                    - generic [ref=e478]:
+                      - generic [ref=e479]: Optimizer ⓘ
+                      - combobox "Optimizer ⓘ" [ref=e480]:
                         - option "Adam" [selected]
                         - option "SGD"
                         - option "RMSprop"
                         - option "Adagrad"
-                  - generic [ref=e482]:
-                    - generic [ref=e483]: Hidden Layers ⓘ
-                    - textbox "Hidden Layers ⓘ" [ref=e484]:
+                  - generic [ref=e481]:
+                    - generic [ref=e482]: Hidden Layers ⓘ
+                    - textbox "Hidden Layers ⓘ" [ref=e483]:
                       - /placeholder: e.g., 8, 4, 2
                       - text: 4, 2
-                  - generic [ref=e485]:
-                    - generic [ref=e486]: Layer Activations (optional)
-                    - textbox "Layer Activations (optional)" [ref=e487]:
+                  - generic [ref=e484]:
+                    - generic [ref=e485]: Layer Activations (optional)
+                    - textbox "Layer Activations (optional)" [ref=e486]:
                       - /placeholder: e.g., relu, tanh, sigmoid
-                  - button "Initialize neural network" [ref=e488] [cursor=pointer]: Initialise Network
-                  - generic [ref=e489]:
-                    - generic [ref=e490]:
-                      - generic [ref=e491]: Default Activation ⓘ
-                      - combobox "Default Activation ⓘ" [ref=e492]:
+                  - button "Initialize neural network" [ref=e487] [cursor=pointer]: Initialise Network
+                  - generic [ref=e488]:
+                    - generic [ref=e489]:
+                      - generic [ref=e490]: Default Activation ⓘ
+                      - combobox "Default Activation ⓘ" [ref=e491]:
                         - option "ReLU" [selected]
                         - option "Tanh"
                         - option "Sigmoid"
                         - option "ELU"
-                    - generic [ref=e493]:
-                      - generic [ref=e494]: Classes
-                      - combobox "Classes" [ref=e495]:
+                    - generic [ref=e492]:
+                      - generic [ref=e493]: Classes
+                      - combobox "Classes" [ref=e494]:
                         - option "2 (Binary)" [selected]
                         - option "3"
                         - option "4"
                         - option "5"
-                  - generic [ref=e496]:
-                    - generic [ref=e497]:
-                      - generic [ref=e498]: L1 Reg ⓘ
-                      - spinbutton "L1 Reg ⓘ" [ref=e499]: "0"
-                    - generic [ref=e500]:
-                      - generic [ref=e501]: L2 Reg ⓘ
-                      - spinbutton "L2 Reg ⓘ" [ref=e502]: "0"
-                  - generic [ref=e503]:
-                    - generic [ref=e504]:
-                      - generic [ref=e505]: Dropout ⓘ
-                      - combobox "Dropout ⓘ" [ref=e506]:
+                  - generic [ref=e495]:
+                    - generic [ref=e496]:
+                      - generic [ref=e497]: L1 Reg ⓘ
+                      - spinbutton "L1 Reg ⓘ" [ref=e498]: "0"
+                    - generic [ref=e499]:
+                      - generic [ref=e500]: L2 Reg ⓘ
+                      - spinbutton "L2 Reg ⓘ" [ref=e501]: "0"
+                  - generic [ref=e502]:
+                    - generic [ref=e503]:
+                      - generic [ref=e504]: Dropout ⓘ
+                      - combobox "Dropout ⓘ" [ref=e505]:
                         - option "None (0%)" [selected]
                         - option "10%"
                         - option "20%"
                         - option "30%"
                         - option "50%"
-                    - generic [ref=e507]:
-                      - generic [ref=e508]: Gradient Clip
-                      - combobox "Gradient Clip" [ref=e509]:
+                    - generic [ref=e506]:
+                      - generic [ref=e507]: Gradient Clip
+                      - combobox "Gradient Clip" [ref=e508]:
                         - option "None" [selected]
                         - option "0.5"
                         - option "1.0"
                         - option "2.0"
                         - option "5.0"
-                  - generic [ref=e510]:
-                    - checkbox "Batch Normalization" [ref=e511]
-                    - generic [ref=e512]: Batch Normalization
-            - generic [ref=e513]:
-              - heading "Training Config" [level=3] [ref=e514]:
-                - img [ref=e515]
+                  - generic [ref=e509]:
+                    - checkbox "Batch Normalization" [ref=e510]
+                    - generic [ref=e511]: Batch Normalization
+            - generic [ref=e512]:
+              - heading "Training Config" [level=3] [ref=e513]:
+                - img [ref=e514]
                 - text: Training Config
-              - generic [ref=e517]:
-                - generic [ref=e518]:
-                  - generic [ref=e519]:
-                    - generic [ref=e520]: Batch Size ⓘ
-                    - spinbutton "Batch Size ⓘ" [ref=e521]: "0"
-                  - generic [ref=e522]:
-                    - generic [ref=e523]: Max Epochs ⓘ
-                    - spinbutton "Max Epochs ⓘ" [ref=e524]: "0"
-                - generic [ref=e525]:
-                  - generic [ref=e526]:
-                    - generic [ref=e527]: Validation Split ⓘ
-                    - combobox "Validation Split ⓘ" [ref=e528]:
+              - generic [ref=e516]:
+                - generic [ref=e517]:
+                  - generic [ref=e518]:
+                    - generic [ref=e519]: Batch Size ⓘ
+                    - spinbutton "Batch Size ⓘ" [ref=e520]: "0"
+                  - generic [ref=e521]:
+                    - generic [ref=e522]: Max Epochs ⓘ
+                    - spinbutton "Max Epochs ⓘ" [ref=e523]: "0"
+                - generic [ref=e524]:
+                  - generic [ref=e525]:
+                    - generic [ref=e526]: Validation Split ⓘ
+                    - combobox "Validation Split ⓘ" [ref=e527]:
                       - option "None"
                       - option "10%"
                       - option "20%" [selected]
                       - option "30%"
-                  - generic [ref=e529]:
-                    - generic [ref=e530]: "Speed: 60 FPS"
-                    - 'slider "Speed: 60 FPS" [ref=e531] [cursor=pointer]': "60"
-                - generic [ref=e532]:
-                  - generic [ref=e533]:
-                    - generic [ref=e534]: Performance Mode
-                    - combobox "Performance Mode" [ref=e535]:
+                  - generic [ref=e528]:
+                    - generic [ref=e529]: "Speed: 60 FPS"
+                    - 'slider "Speed: 60 FPS" [ref=e530] [cursor=pointer]': "60"
+                - generic [ref=e531]:
+                  - generic [ref=e532]:
+                    - generic [ref=e533]: Performance Mode
+                    - combobox "Performance Mode" [ref=e534]:
                       - option "Full (60 FPS)" [selected]
                       - option "Balanced (30 FPS)"
                       - option "Battery Saver (15 FPS)"
-                  - generic [ref=e537]: —
-                - generic [ref=e538]:
-                  - generic [ref=e539]:
-                    - generic [ref=e540]: LR Schedule
-                    - combobox "LR Schedule" [ref=e541]:
+                  - generic [ref=e536]: —
+                - generic [ref=e537]:
+                  - generic [ref=e538]:
+                    - generic [ref=e539]: LR Schedule
+                    - combobox "LR Schedule" [ref=e540]:
                       - option "None (constant)" [selected]
                       - option "Exponential Decay"
                       - option "Step Decay"
                       - option "Cosine Annealing"
                       - option "Cyclic Triangle"
                       - option "Cyclic Cosine"
-                  - generic [ref=e542]:
-                    - generic [ref=e543]: Warmup Epochs
-                    - spinbutton "Warmup Epochs" [ref=e544]: "0"
-                - generic [ref=e546]:
-                  - generic [ref=e547]: Early Stop Patience
-                  - spinbutton "Early Stop Patience" [ref=e548]: "0"
-          - tabpanel "Train" [ref=e549]:
-            - generic [ref=e550]: Space Start/Pause S Step R Reset Esc Stop
-            - generic [ref=e551]:
-              - heading "Metrics" [level=3] [ref=e552]:
-                - img [ref=e553]
+                  - generic [ref=e541]:
+                    - generic [ref=e542]: Warmup Epochs
+                    - spinbutton "Warmup Epochs" [ref=e543]: "0"
+                - generic [ref=e545]:
+                  - generic [ref=e546]: Early Stop Patience
+                  - spinbutton "Early Stop Patience" [ref=e547]: "0"
+          - tabpanel "Train" [ref=e548]:
+            - generic [ref=e549]: Space Start/Pause S Step R Reset Esc Stop
+            - generic [ref=e550]:
+              - heading "Metrics" [level=3] [ref=e551]:
+                - img [ref=e552]
                 - text: Metrics
-              - generic [ref=e555]:
-                - generic [ref=e556]:
-                  - generic [ref=e557]: "19"
-                  - generic [ref=e558]: Epoch
-                - generic [ref=e560]:
-                  - generic [ref=e561]: "0.6285"
-                  - generic [ref=e562]: Loss
-                - generic [ref=e564]:
-                  - generic [ref=e565]: 71.9%
-                  - generic [ref=e566]: Accuracy
-              - generic [ref=e567]:
-                - generic [ref=e568]:
-                  - generic [ref=e569]: State
-                  - generic [ref=e570]: Paused
-                - generic [ref=e571]:
-                  - generic [ref=e572]: LR
-                  - generic [ref=e573]: —
-                - generic [ref=e574]:
-                  - generic [ref=e575]: Val Loss
-                  - generic [ref=e576]: "0.6430"
-                - generic [ref=e577]:
-                  - generic [ref=e578]: Val Acc
-                  - generic [ref=e579]: 75.0%
-            - generic [ref=e580]:
-              - heading "Training History" [level=3] [ref=e581]:
-                - img [ref=e582]
+              - generic [ref=e554]:
+                - generic [ref=e555]:
+                  - generic [ref=e556]: "24"
+                  - generic [ref=e557]: Epoch
+                - generic [ref=e559]:
+                  - generic [ref=e560]: "0.5458"
+                  - generic [ref=e561]: Loss
+                - generic [ref=e563]:
+                  - generic [ref=e564]: 100.0%
+                  - generic [ref=e565]: Accuracy
+              - generic [ref=e566]:
+                - generic [ref=e567]:
+                  - generic [ref=e568]: State
+                  - generic [ref=e569]: Paused
+                - generic [ref=e570]:
+                  - generic [ref=e571]: LR
+                  - generic [ref=e572]: —
+                - generic [ref=e573]:
+                  - generic [ref=e574]: Val Loss
+                  - generic [ref=e575]: "0.5300"
+                - generic [ref=e576]:
+                  - generic [ref=e577]: Val Acc
+                  - generic [ref=e578]: 100.0%
+            - generic [ref=e579]:
+              - heading "Training History" [level=3] [ref=e580]:
+                - img [ref=e581]
                 - text: Training History
-              - generic [ref=e584]:
-                - generic [ref=e585]:
-                  - generic [ref=e586]:
-                    - generic [ref=e587]: Best Loss
-                    - generic [ref=e588]: —
-                  - generic [ref=e589]:
-                    - generic [ref=e590]: Best Epoch
-                    - generic [ref=e591]: —
-                  - generic [ref=e592]:
-                    - generic [ref=e593]: Improvement
-                    - generic [ref=e594]: —
-                - img [ref=e596]:
-                  - generic [ref=e597]:
-                    - generic [ref=e598]:
-                      - generic [ref=e601]: "2"
-                      - generic [ref=e603]: "4"
-                      - generic [ref=e605]: "6"
-                      - generic [ref=e607]: "8"
-                      - generic [ref=e609]: "10"
-                      - generic [ref=e611]: "12"
-                      - generic [ref=e613]: "14"
-                      - generic [ref=e615]: "16"
-                      - generic [ref=e617]: "18"
-                    - generic [ref=e618]:
-                      - generic [ref=e621]: "0.000"
-                      - generic [ref=e623]: "0.200"
-                      - generic [ref=e625]: "0.400"
-                      - generic [ref=e627]: "0.600"
-                    - generic [ref=e628]:
-                      - generic [ref=e631]: 0%
-                      - generic [ref=e633]: 20%
-                      - generic [ref=e635]: 40%
-                      - generic [ref=e637]: 60%
-                      - generic [ref=e639]: 80%
-                      - generic [ref=e641]: 100%
-                    - generic [ref=e645]:
-                      - generic [ref=e646]: Train
-                      - generic [ref=e647]: Val
-                      - generic [ref=e648]: Acc
-                    - generic [ref=e649]: Epoch
-                    - generic [ref=e650]: Loss
-                    - generic [ref=e651]: Accuracy
-                - generic [ref=e652]:
-                  - generic [ref=e653]:
-                    - generic [ref=e654]: Best Acc
-                    - generic [ref=e655]: —
-                  - generic [ref=e656]:
-                    - generic [ref=e657]: Convergence
-                    - generic [ref=e658]: —
-                  - generic [ref=e659]:
-                    - generic [ref=e660]: Trend
-                    - generic [ref=e661]: —
-              - generic [ref=e663]:
-                - generic [ref=e664]: 💡 Suggestions
-                - button "✕" [ref=e665] [cursor=pointer]
-              - button "Export / Import" [disabled] [ref=e667]:
-                - img [ref=e668]
+              - generic [ref=e583]:
+                - generic [ref=e584]:
+                  - generic [ref=e585]:
+                    - generic [ref=e586]: Best Loss
+                    - generic [ref=e587]: —
+                  - generic [ref=e588]:
+                    - generic [ref=e589]: Best Epoch
+                    - generic [ref=e590]: —
+                  - generic [ref=e591]:
+                    - generic [ref=e592]: Improvement
+                    - generic [ref=e593]: —
+                - img [ref=e595]:
+                  - generic [ref=e596]:
+                    - generic [ref=e597]:
+                      - generic [ref=e600]: "2"
+                      - generic [ref=e602]: "4"
+                      - generic [ref=e604]: "6"
+                      - generic [ref=e606]: "8"
+                      - generic [ref=e608]: "10"
+                      - generic [ref=e610]: "12"
+                      - generic [ref=e612]: "14"
+                      - generic [ref=e614]: "16"
+                      - generic [ref=e616]: "18"
+                      - generic [ref=e618]: "20"
+                      - generic [ref=e620]: "22"
+                      - generic [ref=e622]: "24"
+                    - generic [ref=e623]:
+                      - generic [ref=e626]: "0.000"
+                      - generic [ref=e628]: "0.200"
+                      - generic [ref=e630]: "0.400"
+                      - generic [ref=e632]: "0.600"
+                    - generic [ref=e633]:
+                      - generic [ref=e636]: 0%
+                      - generic [ref=e638]: 20%
+                      - generic [ref=e640]: 40%
+                      - generic [ref=e642]: 60%
+                      - generic [ref=e644]: 80%
+                      - generic [ref=e646]: 100%
+                    - generic [ref=e650]:
+                      - generic [ref=e651]: Train
+                      - generic [ref=e652]: Val
+                      - generic [ref=e653]: Acc
+                    - generic [ref=e654]: Epoch
+                    - generic [ref=e655]: Loss
+                    - generic [ref=e656]: Accuracy
+                - generic [ref=e657]:
+                  - generic [ref=e658]:
+                    - generic [ref=e659]: Best Acc
+                    - generic [ref=e660]: —
+                  - generic [ref=e661]:
+                    - generic [ref=e662]: Convergence
+                    - generic [ref=e663]: —
+                  - generic [ref=e664]:
+                    - generic [ref=e665]: Trend
+                    - generic [ref=e666]: —
+              - generic [ref=e668]:
+                - generic [ref=e669]: 💡 Suggestions
+                - button "✕" [ref=e670] [cursor=pointer]
+              - button "Export / Import" [disabled] [ref=e672]:
+                - img [ref=e673]
                 - text: Export / Import
-                - img [ref=e670]
-            - tabpanel "Analyse" [ref=e672]:
-              - generic [ref=e673]:
-                - heading "What-If Analysis" [level=3] [ref=e674]:
-                  - img [ref=e675]
+                - img [ref=e675]
+            - tabpanel "Analyse" [ref=e677]:
+              - generic [ref=e678]:
+                - heading "What-If Analysis" [level=3] [ref=e679]:
+                  - img [ref=e680]
                   - text: What-If Analysis
-                - generic [ref=e677]:
-                  - generic [ref=e678]:
-                    - generic [ref=e679]: "Parameter:"
-                    - combobox [ref=e680]:
+                - generic [ref=e682]:
+                  - generic [ref=e683]:
+                    - generic [ref=e684]: "Parameter:"
+                    - combobox [ref=e685]:
                       - option "Learning Rate" [selected]
                       - option "Network Depth"
                       - option "Dropout"
-                  - button "Run Analysis" [disabled] [ref=e681]:
-                    - img [ref=e682]
+                  - button "Run Analysis" [disabled] [ref=e686]:
+                    - img [ref=e687]
                     - text: Run Analysis
-              - generic [ref=e684]:
-                - heading "Classification" [level=3] [ref=e685] [cursor=pointer]:
-                  - img [ref=e686]
-                  - generic [ref=e690]: Classification
+              - generic [ref=e689]:
+                - heading "Classification" [level=3] [ref=e690] [cursor=pointer]:
                   - img [ref=e691]
-                - generic [ref=e693]:
-                  - generic [ref=e696]: No predictions yet
-                  - generic [ref=e697]:
-                    - generic [ref=e698]:
-                      - generic [ref=e699]: Prec
-                      - generic [ref=e700]: —
-                    - generic [ref=e701]:
-                      - generic [ref=e702]: Recall
-                      - generic [ref=e703]: —
-                    - generic [ref=e704]:
-                      - generic [ref=e705]: F1
-                      - generic [ref=e706]: —
-              - generic [ref=e709]:
-                - heading "Model Internals" [level=3] [ref=e710] [cursor=pointer]:
-                  - img [ref=e711]
-                  - generic [ref=e713]: Model Internals
-                  - img [ref=e714]
-                - generic [ref=e716]:
-                  - generic [ref=e717]:
-                    - generic [ref=e718]:
-                      - generic [ref=e719]: Architecture
-                      - generic [ref=e720]:
-                        - checkbox "Weights" [ref=e721]
+                  - generic [ref=e695]: Classification
+                  - img [ref=e696]
+                - generic [ref=e698]:
+                  - generic [ref=e701]: No predictions yet
+                  - generic [ref=e702]:
+                    - generic [ref=e703]:
+                      - generic [ref=e704]: Prec
+                      - generic [ref=e705]: —
+                    - generic [ref=e706]:
+                      - generic [ref=e707]: Recall
+                      - generic [ref=e708]: —
+                    - generic [ref=e709]:
+                      - generic [ref=e710]: F1
+                      - generic [ref=e711]: —
+              - generic [ref=e714]:
+                - heading "Model Internals" [level=3] [ref=e715] [cursor=pointer]:
+                  - img [ref=e716]
+                  - generic [ref=e718]: Model Internals
+                  - img [ref=e719]
+                - generic [ref=e721]:
+                  - generic [ref=e722]:
+                    - generic [ref=e723]:
+                      - generic [ref=e724]: Architecture
+                      - generic [ref=e725]:
+                        - checkbox "Weights" [ref=e726]
                         - text: Weights
-                    - img [ref=e723]:
-                      - generic [ref=e755]:
-                        - generic [ref=e756]: Input (2)
-                        - generic [ref=e757]: Hidden 1 (4)
-                        - generic [ref=e758]: Hidden 2 (2)
-                        - generic [ref=e759]: Output (2)
-                        - generic [ref=e760]: relu
-                        - generic [ref=e761]: relu
-                        - generic [ref=e762]: sigmoid
-                  - generic [ref=e763]:
-                    - generic [ref=e764]: Weight Distribution
-                    - img [ref=e766]:
-                      - generic [ref=e767]:
-                        - generic [ref=e777]:
-                          - generic [ref=e780]: −1.0
-                          - generic [ref=e782]: −0.5
-                          - generic [ref=e784]: "0.0"
-                          - generic [ref=e786]: "0.5"
-                          - generic [ref=e788]: "1.0"
-                          - generic [ref=e790]: "1.5"
-                          - generic [ref=e792]: "2.0"
-                        - generic [ref=e793]:
-                          - generic [ref=e796]: "0"
-                          - generic [ref=e798]: "2"
-                          - generic [ref=e800]: "4"
-                        - generic [ref=e801]: μ=-0.074 σ=0.770
-                  - generic [ref=e803]:
-                    - generic [ref=e804]: Gradients
-                    - generic [ref=e805]:
-                      - checkbox "Show" [ref=e806]
+                    - img [ref=e728]:
+                      - generic [ref=e760]:
+                        - generic [ref=e761]: Input (2)
+                        - generic [ref=e762]: Hidden 1 (4)
+                        - generic [ref=e763]: Hidden 2 (2)
+                        - generic [ref=e764]: Output (2)
+                        - generic [ref=e765]: relu
+                        - generic [ref=e766]: relu
+                        - generic [ref=e767]: sigmoid
+                  - generic [ref=e768]:
+                    - generic [ref=e769]: Weight Distribution
+                    - img [ref=e771]:
+                      - generic [ref=e772]:
+                        - generic [ref=e785]:
+                          - generic [ref=e788]: −1.0
+                          - generic [ref=e790]: −0.5
+                          - generic [ref=e792]: "0.0"
+                          - generic [ref=e794]: "0.5"
+                          - generic [ref=e796]: "1.0"
+                        - generic [ref=e797]:
+                          - generic [ref=e800]: "0"
+                          - generic [ref=e802]: "1"
+                          - generic [ref=e804]: "2"
+                          - generic [ref=e806]: "3"
+                        - generic [ref=e807]: μ=-0.032 σ=0.649
+                  - generic [ref=e809]:
+                    - generic [ref=e810]: Gradients
+                    - generic [ref=e811]:
+                      - checkbox "Show" [ref=e812]
                       - text: Show
-                  - generic [ref=e807]:
-                    - generic [ref=e808]:
-                      - generic [ref=e809]: Activations
-                      - generic [ref=e810]:
-                        - checkbox "Live" [ref=e811]
+                  - generic [ref=e813]:
+                    - generic [ref=e814]:
+                      - generic [ref=e815]: Activations
+                      - generic [ref=e816]:
+                        - checkbox "Live" [ref=e817]
                         - text: Live
-                    - paragraph [ref=e812]: Hover points to see activations
-              - generic [ref=e813]:
-                - heading "LR Finder" [level=3] [ref=e814] [cursor=pointer]:
-                  - img [ref=e815]
-                  - generic [ref=e817]: LR Finder
-                  - img [ref=e818]
-                - button "Run LR Range Test" [disabled] [ref=e821]
-              - generic [ref=e822]:
-                - heading "Research Tools" [level=3] [ref=e823] [cursor=pointer]:
+                    - paragraph [ref=e818]: Hover points to see activations
+              - generic [ref=e819]:
+                - heading "LR Finder" [level=3] [ref=e820] [cursor=pointer]:
+                  - img [ref=e821]
+                  - generic [ref=e823]: LR Finder
                   - img [ref=e824]
-                  - generic [ref=e826]: Research Tools
-                  - img [ref=e827]
-                - generic [ref=e830]:
-                  - generic [ref=e831]:
-                    - button "Feature Importance" [disabled] [ref=e832]
-                    - button "LIME Explain" [disabled] [ref=e833]
-                  - generic [ref=e834]:
-                    - button "Saliency Map" [disabled] [ref=e835]
-                    - button "Adversarial" [disabled] [ref=e836]
+                - button "Run LR Range Test" [disabled] [ref=e827]
+              - generic [ref=e828]:
+                - heading "Research Tools" [level=3] [ref=e829] [cursor=pointer]:
+                  - img [ref=e830]
+                  - generic [ref=e832]: Research Tools
+                  - img [ref=e833]
+                - generic [ref=e836]:
                   - generic [ref=e837]:
-                    - button "Uncertainty" [disabled] [ref=e838]
-                    - button "Auto-Optimize" [disabled] [ref=e839]
-            - generic [ref=e840]:
-              - heading "Session" [level=3] [ref=e841]:
-                - img [ref=e842]
+                    - button "Feature Importance" [disabled] [ref=e838]
+                    - button "LIME Explain" [disabled] [ref=e839]
+                  - generic [ref=e840]:
+                    - button "Saliency Map" [disabled] [ref=e841]
+                    - button "Adversarial" [disabled] [ref=e842]
+                  - generic [ref=e843]:
+                    - button "Uncertainty" [disabled] [ref=e844]
+                    - button "Auto-Optimize" [disabled] [ref=e845]
+            - generic [ref=e846]:
+              - heading "Session" [level=3] [ref=e847]:
+                - img [ref=e848]
                 - text: Session
-              - generic [ref=e844]:
-                - button "Save" [ref=e845] [cursor=pointer]:
-                  - img [ref=e846]
-                  - text: Save
-                - button "Load" [ref=e848] [cursor=pointer]:
-                  - img [ref=e849]
-                  - text: Load
-                - button "Clear" [ref=e851] [cursor=pointer]:
+              - generic [ref=e850]:
+                - button "Save" [ref=e851] [cursor=pointer]:
                   - img [ref=e852]
+                  - text: Save
+                - button "Load" [ref=e854] [cursor=pointer]:
+                  - img [ref=e855]
+                  - text: Load
+                - button "Clear" [ref=e857] [cursor=pointer]:
+                  - img [ref=e858]
                   - text: Clear
-              - generic [ref=e854]:
-                - button "Copy Config" [ref=e855] [cursor=pointer]:
-                  - img [ref=e856]
+              - generic [ref=e860]:
+                - button "Copy Config" [ref=e861] [cursor=pointer]:
+                  - img [ref=e862]
                   - text: Copy Config
-                - button "Paste Config" [ref=e858] [cursor=pointer]:
-                  - img [ref=e859]
+                - button "Paste Config" [ref=e864] [cursor=pointer]:
+                  - img [ref=e865]
                   - text: Paste Config
-              - generic [ref=e862]:
-                - generic [ref=e863]: Model Comparison
-                - generic [ref=e864]:
-                  - button "A/B" [ref=e865] [cursor=pointer]
-                  - button "Ensemble" [ref=e866] [cursor=pointer]
-                  - button "Base" [disabled] [ref=e867]
-              - paragraph [ref=e868]: Auto-saves on page close
-          - generic [ref=e869]:
-            - generic [ref=e870]:
-              - button "Start training" [ref=e871] [cursor=pointer]:
-                - img [ref=e872]
-                - text: Start
-              - button "Execute single training step" [ref=e874] [cursor=pointer]:
-                - img [ref=e875]
-                - text: Step
-              - button "Reset training" [ref=e877] [cursor=pointer]:
+              - generic [ref=e868]:
+                - generic [ref=e869]: Model Comparison
+                - generic [ref=e870]:
+                  - button "A/B" [ref=e871] [cursor=pointer]
+                  - button "Ensemble" [ref=e872] [cursor=pointer]
+                  - button "Base" [disabled] [ref=e873]
+              - paragraph [ref=e874]: Auto-saves on page close
+          - generic [ref=e875]:
+            - generic [ref=e876]:
+              - button "Start training" [ref=e877] [cursor=pointer]:
                 - img [ref=e878]
+                - text: Start
+              - button "Execute single training step" [ref=e880] [cursor=pointer]:
+                - img [ref=e881]
+                - text: Step
+              - button "Reset training" [ref=e883] [cursor=pointer]:
+                - img [ref=e884]
                 - text: Reset
-            - generic [ref=e880]:
-              - generic [ref=e881]:
-                - generic [ref=e882]: Epoch
-                - generic [ref=e883]: "0"
-              - generic [ref=e885]:
-                - generic [ref=e886]: Loss
-                - generic [ref=e887]: —
-              - generic [ref=e889]:
-                - generic [ref=e890]: Acc
-                - generic [ref=e891]: —
-    - contentinfo [ref=e892]:
-      - paragraph [ref=e893]: Hexagonal Architecture Demo • Modular Monolith
-  - region "Notifications" [ref=e894]:
-    - status [ref=e895]:
+            - generic [ref=e886]:
+              - generic [ref=e887]:
+                - generic [ref=e888]: Epoch
+                - generic [ref=e889]: "0"
+              - generic [ref=e891]:
+                - generic [ref=e892]: Loss
+                - generic [ref=e893]: —
+              - generic [ref=e895]:
+                - generic [ref=e896]: Acc
+                - generic [ref=e897]: —
+    - contentinfo [ref=e898]:
+      - paragraph [ref=e899]: Hexagonal Architecture Demo • Modular Monolith
+  - region "Notifications" [ref=e900]:
+    - status [ref=e901]:
       - text: ✓Dataset "circle" loaded (200 samples, 2 classes)
-      - button "Close notification" [ref=e896] [cursor=pointer]: ×
-    - status [ref=e897]:
+      - button "Close notification" [ref=e902] [cursor=pointer]: ×
+    - status [ref=e903]:
       - text: ✓Dataset "gaussian" loaded (200 samples, 2 classes)
-      - button "Close notification" [ref=e898] [cursor=pointer]: ×
-    - status [ref=e899]:
+      - button "Close notification" [ref=e904] [cursor=pointer]: ×
+    - status [ref=e905]:
       - text: ✓Network initialized with ADAM optimizer!
-      - button "Close notification" [ref=e900] [cursor=pointer]: ×
+      - button "Close notification" [ref=e906] [cursor=pointer]: ×
 ```
