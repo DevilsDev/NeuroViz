@@ -1,3 +1,9 @@
+## [2.20.0](https://github.com/DevilsDev/NeuroViz/compare/v2.19.0...v2.20.0) (2025-12-08)
+
+### Features
+
+* Implement D3 loss chart, new styling, and comprehensive E2E tests for all UI controls. ([d3c1d6d](https://github.com/DevilsDev/NeuroViz/commit/d3c1d6d3bd2730a93e9f77d4029d6f30f7b277f3))
+
 ## [2.19.0](https://github.com/DevilsDev/NeuroViz/compare/v2.18.0...v2.19.0) (2025-12-07)
 
 ### Features
