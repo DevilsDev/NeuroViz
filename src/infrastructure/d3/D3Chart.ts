@@ -469,9 +469,15 @@ export class D3Chart implements IVisualizerService {
     this.disableDrawMode();
     if (this.tooltip) {
       this.tooltip.remove();
+      this.tooltip = null;
     }
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
+    if (this.voronoiOverlay) {
+      this.voronoiOverlay.clear();
+      this.voronoiOverlay = null;
     }
     this.container.selectAll('*').remove();
   }

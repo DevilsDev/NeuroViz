@@ -194,6 +194,11 @@ export class Application {
    * Call this method before re-instantiating or during hot reload.
    */
   dispose(): void {
+    // Dispose TensorFlow.js neural network to release GPU memory
+    if (this.services.neuralNet && typeof this.services.neuralNet.dispose === 'function') {
+      this.services.neuralNet.dispose();
+    }
+
     // Dispose services with dispose methods
     if (this.services.visualizer && typeof this.services.visualizer.dispose === 'function') {
       this.services.visualizer.dispose();
