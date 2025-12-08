@@ -1,3 +1,9 @@
+## [2.21.1](https://github.com/DevilsDev/NeuroViz/compare/v2.21.0...v2.21.1) (2025-12-08)
+
+### Code Refactoring
+
+* Remove sticky footer controls and make performance mode dropdown required ([06bbe2b](https://github.com/DevilsDev/NeuroViz/commit/06bbe2bed666fa60beab9bf87bc2761b46317e9e))
+
 ## [2.21.0](https://github.com/DevilsDev/NeuroViz/compare/v2.20.0...v2.21.0) (2025-12-08)
 
 ### Features
