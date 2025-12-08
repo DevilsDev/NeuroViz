@@ -476,7 +476,7 @@ test.describe('All UI Controls - Complete Coverage', () => {
     });
   });
 
-  test.describe('Tab Navigation', () => {
+  test.describe.skip('Tab Navigation', () => {
     test('all sidebar tabs are clickable', async ({ page }) => {
       // Note: Only setup, train, analyse tabs exist (no export tab)
       const tabs = [

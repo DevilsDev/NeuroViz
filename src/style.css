@@ -76,15 +76,72 @@ html:not(.dark) {
 
     /* ===== LAYOUT ===== */
 
-    .main-grid {
+    /* ===== LAYOUT: ENGINEER'S DASHBOARD ===== */
+
+    .dashboard-grid {
+        @apply grid h-screen w-full overflow-hidden bg-bg-primary;
+        grid-template-columns: minmax(280px, 20%) 1fr minmax(320px, 25%);
+        grid-template-rows: auto 1fr;
+        grid-template-areas:
+            "header header header"
+            "left center right";
+    }
+
+    /* Mobile Responsiveness: Stack columns vertically */
+    @media (max-width: 1024px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto auto 1fr auto;
+            grid-template-areas:
+                "header"
+                "center"
+                "right"
+                "left";
+            height: auto;
+            overflow-y: auto;
+        }
+    }
+
+    .panel-left {
+        grid-area: left;
+        @apply border-r border-white/5 bg-navy-900/50 flex flex-col overflow-hidden;
+    }
+
+    .panel-center {
+        grid-area: center;
+        @apply relative flex flex-col overflow-hidden p-4;
+    }
+
+    .panel-right {
+        grid-area: right;
+        @apply border-l border-white/5 bg-navy-900/50 flex flex-col overflow-hidden;
+    }
+
+    .panel-scroll {
+        @apply overflow-y-auto flex-1 p-4 custom-scrollbar;
+    }
+
+    .panel-fixed {
+        @apply flex-none p-4 border-t border-white/5 bg-navy-900/80 backdrop-blur-sm;
+    }
+
+    /* Custom Scrollbar for panels */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        @apply bg-transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        @apply bg-slate-700/50 rounded-full hover:bg-slate-600;
+    }
+
+    /* Legacy class kept for safe removal later if referenced elsewhere */
+    .main-grid-legacy {
         @apply grid gap-4;
-        @apply grid-cols-1;
-        @apply md:gap-5 md:grid-cols-[1fr_340px];
-        @apply lg:grid-cols-[1fr_380px];
-        @apply xl:grid-cols-[1fr_420px];
-        align-items: start;
         width: 100%;
-        max-width: 100%;
     }
 
     .panel-glow {
@@ -182,6 +239,68 @@ html:not(.dark) {
     .input-field:disabled,
     .select-field:disabled {
         @apply opacity-50 cursor-not-allowed;
+    }
+
+    /* Custom Checkbox */
+    .custom-checkbox {
+        @apply appearance-none w-4 h-4 bg-navy-700 border border-navy-600 rounded cursor-pointer relative transition-all duration-200;
+    }
+
+    .custom-checkbox:checked {
+        @apply bg-cyan border-cyan;
+    }
+
+    .custom-checkbox:checked::after {
+        content: '';
+        @apply absolute inset-0 flex items-center justify-center;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+        background-size: 70%;
+        background-repeat: no-repeat;
+        background-position: center;
+    }
+
+    .custom-checkbox:hover {
+        @apply border-cyan/50;
+    }
+
+    .custom-checkbox:focus {
+        @apply ring-2 ring-cyan/30 ring-offset-1 ring-offset-navy-900;
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+        @apply relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan focus-visible:ring-offset-2 focus-visible:ring-offset-navy-900 bg-navy-700;
+    }
+
+    .toggle-switch:checked {
+        @apply bg-cyan;
+    }
+
+    .toggle-switch-thumb {
+        @apply pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0;
+    }
+
+    .toggle-switch:checked::-webkit-slider-thumb {
+        /* Pseudo-element for standard checkbox inputs acting as switches */
+        @apply translate-x-4;
+    }
+
+    /* Input-based Toggle Switch override */
+    input.toggle-switch {
+        @apply appearance-none bg-navy-700 w-9 h-5 rounded-full relative cursor-pointer border-0;
+    }
+
+    input.toggle-switch:checked {
+        @apply bg-cyan;
+    }
+
+    input.toggle-switch::after {
+        content: '';
+        @apply absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200;
+    }
+
+    input.toggle-switch:checked::after {
+        @apply transform translate-x-4;
     }
 
     /* Sliders */
@@ -403,6 +522,11 @@ html:not(.dark) {
 
     .text-gradient {
         @apply bg-clip-text text-transparent bg-gradient-cyan;
+    }
+
+    .text-tiny {
+        font-size: 0.625rem;
+        line-height: 0.75rem;
     }
 
     .text-gradient-magenta {

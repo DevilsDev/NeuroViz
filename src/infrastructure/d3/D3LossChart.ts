@@ -106,6 +106,9 @@ export class D3LossChart {
       .attr('class', 'y-axis-accuracy axis')
       .attr('transform', `translate(${this.width},0)`);
 
+    // Add Grid Lines Group (behind data)
+    this.svg.append('g').attr('class', 'grid-lines');
+
     // Create path elements
     this.lossPath = this.svg
       .append('path')
@@ -144,6 +147,9 @@ export class D3LossChart {
       }
     });
     this.resizeObserver.observe(element);
+
+    // Initial clear to set empty state styling
+    this.clear();
   }
 
   /**
@@ -164,13 +170,16 @@ export class D3LossChart {
     this.yScaleLoss.range([this.height, 0]);
     this.yScaleAccuracy.range([this.height, 0]);
 
+    // Update Grid
+    this.updateGrid();
+
     // Update axes
     this.svg.select<SVGGElement>('.x-axis')
       .attr('transform', `translate(0,${this.height})`)
       .call(d3.axisBottom(this.xScale).ticks(5).tickFormat(d3.format('d')));
 
     this.svg.select<SVGGElement>('.y-axis-loss')
-      .call(d3.axisLeft(this.yScaleLoss).ticks(5).tickFormat(d3.format('.3f')));
+      .call(d3.axisLeft(this.yScaleLoss).ticks(5).tickFormat(d3.format('.2f')));
 
     this.svg.select<SVGGElement>('.y-axis-accuracy')
       .attr('transform', `translate(${this.width},0)`)
@@ -186,7 +195,7 @@ export class D3LossChart {
 
     // Re-render lines if data exists
     const currentData = this.lossPath.datum() as TrainingRecord[];
-    if (currentData) {
+    if (currentData && currentData.length > 0) {
       this.lossPath.attr('d', this.lossLine as unknown as string);
       this.valLossPath.attr('d', this.valLossLine as unknown as string);
       this.accuracyPath.attr('d', this.accuracyLine as unknown as string);
@@ -204,6 +213,11 @@ export class D3LossChart {
       return;
     }
 
+    // Show axes and labels
+    this.svg.selectAll('.axis').style('opacity', 1);
+    this.svg.selectAll('.axis-label').style('opacity', 1);
+    this.svg.selectAll('.grid-lines').style('opacity', 1);
+
     // Update scales - include validation loss in max calculation
     const maxEpoch = d3.max(records, (d) => d.epoch) ?? 1;
     const maxTrainLoss = d3.max(records, (d) => d.loss) ?? 1;
@@ -213,12 +227,15 @@ export class D3LossChart {
     this.xScale.domain([1, maxEpoch]);
     this.yScaleLoss.domain([0, maxLoss * 1.1]); // 10% padding
 
+    // Update Grid
+    this.updateGrid();
+
     // Update axes
     this.xAxisGroup.call(
       d3.axisBottom(this.xScale).ticks(Math.min(maxEpoch, 10)).tickFormat(d3.format('d'))
     );
 
-    this.yAxisLossGroup.call(d3.axisLeft(this.yScaleLoss).ticks(5).tickFormat(d3.format('.3f')));
+    this.yAxisLossGroup.call(d3.axisLeft(this.yScaleLoss).ticks(5).tickFormat(d3.format('.2f')));
 
     this.yAxisAccuracyGroup.call(
       d3.axisRight(this.yScaleAccuracy).ticks(5).tickFormat(d3.format('.0%'))
@@ -237,11 +254,11 @@ export class D3LossChart {
     this.lossPath.attr('d', null);
     this.valLossPath.attr('d', null);
     this.accuracyPath.attr('d', null);
-    this.xScale.domain([1, 10]);
-    this.yScaleLoss.domain([0, 1]);
-    this.xAxisGroup.call(d3.axisBottom(this.xScale).ticks(5));
-    this.yAxisLossGroup.call(d3.axisLeft(this.yScaleLoss).ticks(5));
-    this.yAxisAccuracyGroup.call(d3.axisRight(this.yScaleAccuracy).ticks(5));
+
+    // Hide axes and grid in empty state for cleaner look
+    this.svg.selectAll('.axis').style('opacity', 0);
+    this.svg.selectAll('.axis-label').style('opacity', 0);
+    this.svg.selectAll('.grid-lines').style('opacity', 0);
   }
 
   // Resize observer
@@ -257,6 +274,28 @@ export class D3LossChart {
     this.container.selectAll('*').remove();
   }
 
+  private updateGrid(): void {
+    const gridContext = this.svg.select('.grid-lines');
+
+    // Remove old grid
+    gridContext.selectAll('*').remove();
+
+    // Add Y-axis grid lines
+    gridContext.call(
+      d3.axisLeft(this.yScaleLoss)
+        .ticks(5)
+        .tickSize(-this.width)
+        .tickFormat(() => '') // No labels
+    );
+
+    // Style grid lines
+    gridContext.selectAll('.tick line')
+      .attr('stroke', 'rgba(255, 255, 255, 0.05)')
+      .attr('stroke-dasharray', '2,2');
+
+    gridContext.select('.domain').remove(); // Remove outer border
+  }
+
   private addLegend(): void {
     const legend = this.svg
       .append('g')
@@ -270,7 +309,7 @@ export class D3LossChart {
       .attr('x2', 20)
       .attr('y1', 0)
       .attr('y2', 0)
-      .attr('stroke', '#14b8a6')
+      .attr('stroke', '#00D9FF')
       .attr('stroke-width', 2);
 
     legend
@@ -278,6 +317,8 @@ export class D3LossChart {
       .attr('x', 25)
       .attr('y', 4)
       .attr('class', 'legend-text')
+      .attr('fill', '#94a3b8')
+      .style('font-size', '10px')
       .text('Train');
 
     // Validation Loss legend
@@ -287,7 +328,7 @@ export class D3LossChart {
       .attr('x2', 20)
       .attr('y1', 12)
       .attr('y2', 12)
-      .attr('stroke', '#ef4444')
+      .attr('stroke', '#FF00AA')
       .attr('stroke-width', 2)
       .attr('stroke-dasharray', '4,2');
 
@@ -296,6 +337,8 @@ export class D3LossChart {
       .attr('x', 25)
       .attr('y', 16)
       .attr('class', 'legend-text')
+      .attr('fill', '#94a3b8')
+      .style('font-size', '10px')
       .text('Val');
 
     // Accuracy legend
@@ -305,7 +348,7 @@ export class D3LossChart {
       .attr('x2', 20)
       .attr('y1', 24)
       .attr('y2', 24)
-      .attr('stroke', '#22c55e')
+      .attr('stroke', '#10B981')
       .attr('stroke-width', 2);
 
     legend
@@ -313,6 +356,8 @@ export class D3LossChart {
       .attr('x', 25)
       .attr('y', 28)
       .attr('class', 'legend-text')
+      .attr('fill', '#94a3b8')
+      .style('font-size', '10px')
       .text('Acc');
   }
 
@@ -320,32 +365,33 @@ export class D3LossChart {
     // X-axis label
     this.svg
       .append('text')
-      .attr('class', 'axis-label')
+      .attr('class', 'axis-label text-tiny')
       .attr('x', this.width / 2)
       .attr('y', this.height + 25)
       .attr('text-anchor', 'middle')
+      .attr('fill', '#64748b')
       .text('Epoch');
 
     // Y-axis label (Loss)
     this.svg
       .append('text')
-      .attr('class', 'axis-label')
+      .attr('class', 'axis-label text-tiny')
       .attr('transform', 'rotate(-90)')
       .attr('x', -this.height / 2)
       .attr('y', -35)
       .attr('text-anchor', 'middle')
-      .attr('fill', '#14b8a6')
+      .attr('fill', '#00D9FF') // Match line color
       .text('Loss');
 
     // Y-axis label (Accuracy)
     this.svg
       .append('text')
-      .attr('class', 'axis-label')
+      .attr('class', 'axis-label text-tiny')
       .attr('transform', 'rotate(90)')
       .attr('x', this.height / 2)
       .attr('y', -this.width - 35)
       .attr('text-anchor', 'middle')
-      .attr('fill', '#22c55e')
+      .attr('fill', '#10B981') // Match line color
       .text('Accuracy');
   }
 }
