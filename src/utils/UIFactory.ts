@@ -352,3 +352,12 @@ export function getResearchElements(): ResearchElements {
     inputLr: getCachedOrCreate<HTMLInputElement>('input-lr', 'input'),
   };
 }
+
+// ===== HOT MODULE REPLACEMENT (HMR) =====
+// Clear element cache during HMR to prevent stale references to dummy elements
+if (import.meta.hot) {
+  import.meta.hot.accept(() => {
+    clearElementCache();
+    console.log('[HMR] Element cache cleared');
+  });
+}
