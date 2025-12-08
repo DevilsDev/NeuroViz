@@ -1,3 +1,9 @@
+## [2.21.0](https://github.com/DevilsDev/NeuroViz/compare/v2.20.0...v2.21.0) (2025-12-08)
+
+### Features
+
+* Add neural network disposal, make sticky footer controls optional, and improve D3Chart cleanup ([03ae144](https://github.com/DevilsDev/NeuroViz/commit/03ae144311015b3e4948dee92aac838d32a2fba2))
+
 ## [2.20.0](https://github.com/DevilsDev/NeuroViz/compare/v2.19.0...v2.20.0) (2025-12-08)
 
 ### Features
