@@ -40,18 +40,12 @@ export interface TrainingElements {
     inputEarlyStop: HTMLInputElement;
     cyclicLrControls: HTMLDivElement;
     inputValSplit: HTMLSelectElement;
-    inputTargetFps?: HTMLSelectElement; // Optional - performance mode dropdown
+    inputTargetFps: HTMLSelectElement;
 
     btnStart: HTMLButtonElement;
     btnPause: HTMLButtonElement;
     btnStep: HTMLButtonElement;
     btnReset: HTMLButtonElement;
-
-    // Sticky footer controls (optional - not present in all layouts)
-    btnStartSticky?: HTMLButtonElement;
-    btnPauseSticky?: HTMLButtonElement;
-    btnStepSticky?: HTMLButtonElement;
-    btnResetSticky?: HTMLButtonElement;
 
     // Mobile FAB
     fabStart: HTMLButtonElement;
@@ -127,20 +121,6 @@ export class TrainingController {
         this.addTrackedListener(this.elements.btnStep, 'click', () => void this.handleStep());
         this.addTrackedListener(this.elements.btnReset, 'click', () => this.handleReset());
 
-        // Sticky footer controls (only if present)
-        if (this.elements.btnStartSticky) {
-            this.addTrackedListener(this.elements.btnStartSticky, 'click', () => void this.handleStart());
-        }
-        if (this.elements.btnPauseSticky) {
-            this.addTrackedListener(this.elements.btnPauseSticky, 'click', () => this.handlePause());
-        }
-        if (this.elements.btnStepSticky) {
-            this.addTrackedListener(this.elements.btnStepSticky, 'click', () => void this.handleStep());
-        }
-        if (this.elements.btnResetSticky) {
-            this.addTrackedListener(this.elements.btnResetSticky, 'click', () => this.handleReset());
-        }
-
         // Mobile FAB
         this.addTrackedListener(this.elements.fabStart, 'click', () => void this.handleStart());
         this.addTrackedListener(this.elements.fabPause, 'click', () => this.handlePause());
@@ -151,9 +131,7 @@ export class TrainingController {
         this.addTrackedListener(this.elements.inputBatchSize, 'change', () => this.handleBatchSizeChange());
         this.addTrackedListener(this.elements.inputMaxEpochs, 'change', () => this.handleMaxEpochsChange());
         this.addTrackedListener(this.elements.inputValSplit, 'change', () => this.handleValSplitChange());
-        if (this.elements.inputTargetFps) {
-            this.addTrackedListener(this.elements.inputTargetFps, 'change', () => this.handlePerfModeChange());
-        }
+        this.addTrackedListener(this.elements.inputTargetFps, 'change', () => this.handlePerfModeChange());
 
 
         // Optimizer change to toggle momentum
@@ -320,22 +298,20 @@ export class TrainingController {
     }
 
     /**
-     * Handles FPS slider changes - updates display and syncs performance mode dropdown (if present)
+     * Handles FPS slider changes - updates display and syncs performance mode dropdown
      */
     private handleFpsSliderChange(): void {
         const fps = parseInt(this.elements.inputFps.value, 10) || 60;
         this.elements.fpsValue.textContent = fps.toString();
         this.session.setTrainingConfig({ targetFps: fps });
 
-        // Sync performance mode dropdown based on FPS value (if element exists)
-        if (this.elements.inputTargetFps) {
-            if (fps >= 50) {
-                this.elements.inputTargetFps.value = 'full';
-            } else if (fps >= 25) {
-                this.elements.inputTargetFps.value = 'balanced';
-            } else {
-                this.elements.inputTargetFps.value = 'battery';
-            }
+        // Sync performance mode dropdown based on FPS value
+        if (fps >= 50) {
+            this.elements.inputTargetFps.value = 'full';
+        } else if (fps >= 25) {
+            this.elements.inputTargetFps.value = 'balanced';
+        } else {
+            this.elements.inputTargetFps.value = 'battery';
         }
     }
 
@@ -343,8 +319,6 @@ export class TrainingController {
      * Handles performance mode dropdown changes - converts to FPS and syncs slider
      */
     private handlePerfModeChange(): void {
-        if (!this.elements.inputTargetFps) return;
-
         const mode = this.elements.inputTargetFps.value;
         let fps: number;
 
@@ -416,9 +390,6 @@ export class TrainingController {
         }
 
         this.elements.btnStep.disabled = true;
-        if (this.elements.btnStepSticky) {
-            this.elements.btnStepSticky.disabled = true;
-        }
 
         try {
             const command = new StepTrainingCommand(this.session);
@@ -439,9 +410,6 @@ export class TrainingController {
             const state = this.session.getState();
             const canStep = state.isInitialised && state.datasetLoaded && (!state.isRunning || state.isPaused) && !state.isProcessing;
             this.elements.btnStep.disabled = !canStep;
-            if (this.elements.btnStepSticky) {
-                this.elements.btnStepSticky.disabled = !canStep;
-            }
         }
     }
 
@@ -480,17 +448,6 @@ export class TrainingController {
             this.elements.btnPause.disabled = false;
             this.elements.btnStep.disabled = true;
 
-            if (this.elements.btnStartSticky) {
-                this.elements.btnStartSticky.classList.add('hidden');
-            }
-            if (this.elements.btnPauseSticky) {
-                this.elements.btnPauseSticky.classList.remove('hidden');
-                this.elements.btnPauseSticky.disabled = false;
-            }
-            if (this.elements.btnStepSticky) {
-                this.elements.btnStepSticky.disabled = true;
-            }
-
             this.elements.fabStart.classList.add('hidden');
             this.elements.fabPause.classList.remove('hidden');
         } else {
@@ -500,17 +457,6 @@ export class TrainingController {
             this.elements.btnPause.disabled = true;
             this.elements.btnStep.disabled = !canStart || state.isProcessing;
 
-            if (this.elements.btnStartSticky) {
-                this.elements.btnStartSticky.classList.remove('hidden');
-            }
-            if (this.elements.btnPauseSticky) {
-                this.elements.btnPauseSticky.classList.add('hidden');
-                this.elements.btnPauseSticky.disabled = true;
-            }
-            if (this.elements.btnStepSticky) {
-                this.elements.btnStepSticky.disabled = !canStart || state.isProcessing;
-            }
-
             this.elements.fabStart.classList.remove('hidden');
             this.elements.fabPause.classList.add('hidden');
         }
@@ -518,15 +464,9 @@ export class TrainingController {
         // Enable Reset button if initialized and not running (or paused)
         const canReset = state.isInitialised && (!state.isRunning || state.isPaused);
         this.elements.btnReset.disabled = !canReset;
-        if (this.elements.btnResetSticky) {
-            this.elements.btnResetSticky.disabled = !canReset;
-        }
 
         // Enable/disable Start buttons based on readiness
         this.elements.btnStart.disabled = !canStart;
-        if (this.elements.btnStartSticky) {
-            this.elements.btnStartSticky.disabled = !canStart;
-        }
         this.elements.fabStart.classList.toggle('opacity-50', !canStart);
         this.elements.fabStart.classList.toggle('pointer-events-none', !canStart);
 

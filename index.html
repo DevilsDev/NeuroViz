@@ -437,9 +437,17 @@
               <input type="checkbox" id="input-batch-norm" class="checkbox-field" />
               <span class="text-xs text-slate-400">Batch Normalization</span>
             </label>
-            <label class="block">
+            <label class="block mb-2">
               <span class="input-label">Speed (FPS): <span id="fps-value">60</span></span>
               <input type="range" id="input-fps" class="w-full h-1 accent-accent-500" value="60" min="1" max="60" />
+            </label>
+            <label class="block">
+              <span class="input-label">Performance Mode</span>
+              <select id="input-perf-mode" class="select-field text-xs">
+                <option value="full" selected>Full Speed (60 FPS)</option>
+                <option value="balanced">Balanced (30 FPS)</option>
+                <option value="battery">Battery Saver (15 FPS)</option>
+              </select>
             </label>
           </div>
 
