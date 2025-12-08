@@ -1,3 +1,10 @@
+## [2.22.0](https://github.com/DevilsDev/NeuroViz/compare/v2.21.1...v2.22.0) (2025-12-08)
+
+### Features
+
+* Add HMR support to UIFactory to clear element cache on hot reload ([c92081e](https://github.com/DevilsDev/NeuroViz/commit/c92081eb9e047649cfd97f47e7f136e179c535fe))
+* Add HMR support to UIFactory to clear element cache on hot reload ([1d7cf06](https://github.com/DevilsDev/NeuroViz/commit/1d7cf0636a13affd2a3e6d16c9787b607c49e543))
+
 ## [2.21.1](https://github.com/DevilsDev/NeuroViz/compare/v2.21.0...v2.21.1) (2025-12-08)
 
 ### Code Refactoring
