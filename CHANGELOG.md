@@ -1,3 +1,9 @@
+## [2.19.0](https://github.com/DevilsDev/NeuroViz/compare/v2.18.0...v2.19.0) (2025-12-07)
+
+### Features
+
+* introduce Playwright test report files ([aa8d294](https://github.com/DevilsDev/NeuroViz/commit/aa8d294a3ab1e472e0940d86de13c277b269fd94))
+
 ## [2.18.0](https://github.com/DevilsDev/NeuroViz/compare/v2.17.0...v2.18.0) (2025-12-06)
 
 ### Features
