@@ -72,3 +72,71 @@ export function getElements<T extends Record<string, HTMLElement>>(
 export function elementExists(id: string): boolean {
     return document.getElementById(id) !== null;
 }
+
+// =============================================================================
+// Visibility & Interactivity Helpers
+// =============================================================================
+
+/**
+ * Sets the visibility of an element using Tailwind's 'hidden' class.
+ * Tolerant of null/undefined elements for test environments.
+ * 
+ * @param element - The element to show/hide (can be null)
+ * @param visible - Whether the element should be visible
+ */
+export function setVisible(element: HTMLElement | null | undefined, visible: boolean): void {
+    if (!element) return;
+    element.classList.toggle('hidden', !visible);
+}
+
+/**
+ * Sets the enabled state of a button or input element.
+ * Applies consistent styling for disabled state.
+ * 
+ * @param element - The element to enable/disable (can be null)
+ * @param enabled - Whether the element should be enabled
+ */
+export function setEnabled(
+    element: HTMLButtonElement | HTMLInputElement | HTMLSelectElement | null | undefined,
+    enabled: boolean
+): void {
+    if (!element) return;
+    element.disabled = !enabled;
+    element.classList.toggle('opacity-50', !enabled);
+    element.classList.toggle('pointer-events-none', !enabled);
+}
+
+/**
+ * Sets both visibility and enabled state for an interactive element.
+ * 
+ * @param element - The element to configure
+ * @param options - Configuration options
+ */
+export function setInteractive(
+    element: HTMLButtonElement | HTMLInputElement | HTMLSelectElement | null | undefined,
+    options: { visible?: boolean; enabled?: boolean }
+): void {
+    if (!element) return;
+    if (options.visible !== undefined) {
+        setVisible(element, options.visible);
+    }
+    if (options.enabled !== undefined) {
+        setEnabled(element, options.enabled);
+    }
+}
+
+/**
+ * Adds a CSS class indicating active/training state with animation.
+ * 
+ * @param element - The element to animate
+ * @param active - Whether the element should show active state
+ * @param className - The class to toggle (default: 'training')
+ */
+export function setActiveState(
+    element: HTMLElement | null | undefined,
+    active: boolean,
+    className = 'training'
+): void {
+    if (!element) return;
+    element.classList.toggle(className, active);
+}

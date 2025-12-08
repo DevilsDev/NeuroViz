@@ -15,7 +15,7 @@ export class D3LossChart {
   private readonly svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
   private width: number;
   private height: number;
-  private readonly margin = { top: 20, right: 50, bottom: 30, left: 50 };
+  private readonly margin = { top: 20, right: 70, bottom: 30, left: 50 };
 
   private xScale: d3.ScaleLinear<number, number>;
   private yScaleLoss: d3.ScaleLinear<number, number>;
@@ -34,29 +34,33 @@ export class D3LossChart {
 
   /**
    * @param containerId - DOM element ID where the chart will be rendered
-   * @param width - Chart width in pixels (default: 400)
-   * @param height - Chart height in pixels (default: 200)
    */
-  constructor(containerId: string, width = 400, height = 200) {
+  constructor(containerId: string) {
     const element = document.getElementById(containerId);
     if (!element) {
       throw new Error(`Container element with ID "${containerId}" not found.`);
     }
 
     this.container = d3.select(element);
-    this.width = width - this.margin.left - this.margin.right;
-    this.height = height - this.margin.top - this.margin.bottom;
+    
+    // Get actual container dimensions
+    const rect = element.getBoundingClientRect();
+    const containerWidth = rect.width || 600;
+    const containerHeight = rect.height || 150;
+    
+    this.width = containerWidth - this.margin.left - this.margin.right;
+    this.height = containerHeight - this.margin.top - this.margin.bottom;
 
     // Clear any existing content
     this.container.selectAll('*').remove();
 
-    // Create responsive SVG using viewBox
+    // Create responsive SVG that fills container
     const svgElement = this.container
       .append('svg')
-      .attr('viewBox', `0 0 ${width} ${height}`)
-      .attr('preserveAspectRatio', 'xMidYMid meet')
-      .style('width', '100%')
-      .style('height', '100%')
+      .attr('width', '100%')
+      .attr('height', '100%')
+      .attr('viewBox', `0 0 ${containerWidth} ${containerHeight}`)
+      .attr('preserveAspectRatio', 'xMinYMin meet')
       .attr('class', 'loss-chart');
 
     this.svg = svgElement
@@ -162,8 +166,8 @@ export class D3LossChart {
     this.width = width - this.margin.left - this.margin.right;
     this.height = height - this.margin.top - this.margin.bottom;
 
-    // Update SVG viewBox
-    this.svg.attr('viewBox', `0 0 ${width} ${height}`);
+    // Update SVG viewBox (select the actual SVG element, not the inner g)
+    this.container.select('svg').attr('viewBox', `0 0 ${width} ${height}`);
 
     // Update scales
     this.xScale.range([0, this.width]);
@@ -185,9 +189,9 @@ export class D3LossChart {
       .attr('transform', `translate(${this.width},0)`)
       .call(d3.axisRight(this.yScaleAccuracy).ticks(5).tickFormat(d3.format('.0%')));
 
-    // Update legend position
+    // Update legend position (in right margin area)
     this.svg.select('.legend')
-      .attr('transform', `translate(${this.width - 80}, -5)`);
+      .attr('transform', `translate(${this.width + 10}, 5)`);
 
     // Update axis labels positions
     this.svg.selectAll('.axis-label').remove();
@@ -275,7 +279,7 @@ export class D3LossChart {
   }
 
   private updateGrid(): void {
-    const gridContext = this.svg.select('.grid-lines');
+    const gridContext = this.svg.select<SVGGElement>('.grid-lines');
 
     // Remove old grid
     gridContext.selectAll('*').remove();
@@ -285,7 +289,7 @@ export class D3LossChart {
       d3.axisLeft(this.yScaleLoss)
         .ticks(5)
         .tickSize(-this.width)
-        .tickFormat(() => '') // No labels
+        .tickFormat(() => '') as unknown as (selection: d3.Selection<SVGGElement, unknown, null, undefined>) => void
     );
 
     // Style grid lines
@@ -297,10 +301,11 @@ export class D3LossChart {
   }
 
   private addLegend(): void {
+    // Position legend in the top-right corner, inside the margin area
     const legend = this.svg
       .append('g')
       .attr('class', 'legend')
-      .attr('transform', `translate(${this.width - 80}, -5)`);
+      .attr('transform', `translate(${this.width + 10}, 5)`);
 
     // Training Loss legend
     legend

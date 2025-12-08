@@ -274,4 +274,12 @@ export class D3NetworkDiagram {
   clear(): void {
     this.svg.selectAll('*').remove();
   }
+
+  /**
+   * Disposes of all resources and removes DOM elements.
+   * Call this when the diagram is no longer needed.
+   */
+  dispose(): void {
+    this.clear();
+  }
 }

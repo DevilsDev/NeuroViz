@@ -1,12 +1,12 @@
 import { TrainingSession } from './TrainingSession';
-import { IDatasetRepository } from '../ports/IDatasetRepository';
-import { TFNeuralNet } from '../../infrastructure/tensorflow/TFNeuralNet';
-import { D3Chart } from '../../infrastructure/d3/D3Chart';
-import { D3LossChart } from '../../infrastructure/d3/D3LossChart';
-import { D3NetworkDiagram } from '../../infrastructure/d3/D3NetworkDiagram';
-import { D3ConfusionMatrix } from '../../infrastructure/d3/D3ConfusionMatrix';
-import { D3WeightHistogram } from '../../infrastructure/d3/D3WeightHistogram';
-import { LocalStorageService } from '../../infrastructure/storage/LocalStorageService';
+import type { IDatasetRepository } from '../ports/IDatasetRepository';
+import type { TFNeuralNet } from '../../infrastructure/tensorflow/TFNeuralNet';
+import type { D3Chart } from '../../infrastructure/d3/D3Chart';
+import type { D3LossChart } from '../../infrastructure/d3/D3LossChart';
+import type { D3NetworkDiagram } from '../../infrastructure/d3/D3NetworkDiagram';
+import type { D3ConfusionMatrix } from '../../infrastructure/d3/D3ConfusionMatrix';
+import type { D3WeightHistogram } from '../../infrastructure/d3/D3WeightHistogram';
+import type { LocalStorageService } from '../../infrastructure/storage/LocalStorageService';
 import {
   DatasetController,
   TrainingController,
@@ -22,9 +22,16 @@ import { DatasetGallery } from '../../utils/DatasetGallery';
 
 
 /**
- * Core services used by the application
- * Note: Uses concrete types rather than interfaces to simplify integration
- * with existing controller implementations that expect specific types
+ * Disposable interface for services that need cleanup.
+ */
+export interface Disposable {
+  dispose(): void;
+}
+
+/**
+ * Core services used by the application.
+ * Uses concrete types to match controller expectations.
+ * Controllers depend on port interfaces internally where appropriate.
  */
 export interface Services {
   dataRepo: IDatasetRepository;
@@ -84,6 +91,11 @@ export class Application {
       this.controllers.comparison.updateComparisonDisplay();
       this.controllers.visualization.updateGradientFlow();
 
+      // Update 3D view periodically during training (every 5 epochs to avoid performance issues)
+      if (state.currentEpoch % 5 === 0 && state.isRunning) {
+        void this.controllers.visualization.update3dView();
+      }
+
       // Update network diagram and weight histogram periodically
       if (state.currentEpoch % 5 === 0 && state.isRunning) {
         const structure = this.services.neuralNet.getStructure();
@@ -112,11 +124,7 @@ export class Application {
    */
   private setupUIInitialization(): void {
     window.addEventListener('load', () => {
-      // Trigger initial dataset load
-      void this.controllers.dataset.handleLoadData().catch((error) => {
-        console.error('Failed to load initial dataset:', error);
-      });
-
+      // App starts empty - user must select a dataset first
       // Show app
       const appContainer = document.querySelector('.app-container');
       if (appContainer) {
@@ -190,6 +198,19 @@ export class Application {
   }
 
   /**
+   * Clears classification metrics display (called on reset).
+   */
+  clearClassificationMetrics(): void {
+    const precisionEl = document.getElementById('metric-precision');
+    const recallEl = document.getElementById('metric-recall');
+    const f1El = document.getElementById('metric-f1');
+
+    if (precisionEl) precisionEl.textContent = '—';
+    if (recallEl) recallEl.textContent = '—';
+    if (f1El) f1El.textContent = '—';
+  }
+
+  /**
    * Disposes the application and cleans up all resources.
    * Call this method before re-instantiating or during hot reload.
    */
@@ -204,11 +225,11 @@ export class Application {
       this.services.visualizer.dispose();
     }
 
-    // Clear D3 visualizations
-    this.services.lossChart.clear();
-    this.services.networkDiagram.clear();
-    this.services.confusionMatrix.clear();
-    this.services.weightHistogram.clear();
+    // Dispose D3 visualizations (calls clear() internally and cleans up observers)
+    this.services.lossChart.dispose();
+    this.services.networkDiagram.dispose();
+    this.services.confusionMatrix.dispose();
+    this.services.weightHistogram.dispose();
 
     // Dispose keyboard listener
     if (this.services.keyboardShortcuts) {
@@ -219,14 +240,7 @@ export class Application {
       this.services.datasetGallery.dispose();
     }
 
-    // Dispose all controllers
-    Object.values(this.controllers).forEach(controller => {
-      if (controller && typeof (controller as any).dispose === 'function') {
-        (controller as any).dispose();
-      }
-    });
-
-    // Dispose all controllers
+    // Dispose all controllers (single iteration - no duplicates)
     Object.values(this.controllers).forEach(controller => {
       if (controller && typeof (controller as any).dispose === 'function') {
         (controller as any).dispose();

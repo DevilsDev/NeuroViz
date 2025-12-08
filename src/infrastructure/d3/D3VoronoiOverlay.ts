@@ -13,16 +13,16 @@ export class D3VoronoiOverlay {
   private yScale: d3.ScaleLinear<number, number>;
   private voronoiGroup: d3.Selection<SVGGElement, unknown, null, undefined> | null = null;
 
-  // Colour palette for classes
+  // Colour palette for classes - more vibrant for better visibility
   private classColours = [
-    '#3b82f6', // Blue
-    '#ef4444', // Red
-    '#22c55e', // Green
-    '#f59e0b', // Amber
-    '#8b5cf6', // Purple
-    '#06b6d4', // Cyan
-    '#ec4899', // Pink
-    '#84cc16', // Lime
+    '#60a5fa', // Bright Blue
+    '#f97316', // Bright Orange
+    '#4ade80', // Bright Green
+    '#facc15', // Bright Yellow
+    '#a78bfa', // Bright Purple
+    '#22d3ee', // Bright Cyan
+    '#f472b6', // Bright Pink
+    '#a3e635', // Bright Lime
   ];
 
   constructor(
@@ -45,7 +45,7 @@ export class D3VoronoiOverlay {
    * @param predictions - Predictions for each point
    * @param opacity - Opacity of the Voronoi cells (0-1)
    */
-  render(points: Point[], predictions: Prediction[], opacity = 0.3): void {
+  render(points: Point[], predictions: Prediction[], opacity = 0.5): void {
     this.clear();
 
     if (points.length < 3) return; // Need at least 3 points for Voronoi
@@ -71,7 +71,7 @@ export class D3VoronoiOverlay {
       .enter()
       .append('path')
       .attr('d', (_, i) => voronoi.renderCell(i))
-      .attr('fill', (_, i) => {
+      .attr('fill', (p, i) => {
         const pred = predictions[i];
         if (!pred) return 'transparent';
         const classIndex = pred.predictedClass;
@@ -80,12 +80,31 @@ export class D3VoronoiOverlay {
       .attr('fill-opacity', (_, i) => {
         const pred = predictions[i];
         if (!pred) return 0;
-        // Opacity based on confidence
-        return opacity * (0.5 + pred.confidence * 0.5);
+        // Higher base opacity for better visibility, scaled by confidence
+        return opacity * (0.6 + pred.confidence * 0.4);
       })
-      .attr('stroke', 'var(--border-color)')
-      .attr('stroke-width', 0.5)
-      .attr('stroke-opacity', 0.3);
+      .attr('stroke', (p, i) => {
+        // Highlight misclassified cells with red stroke
+        const pred = predictions[i];
+        if (!pred) return '#ffffff';
+        const isMisclassified = p.label !== pred.predictedClass;
+        return isMisclassified ? '#ef4444' : '#ffffff';
+      })
+      .attr('stroke-width', (p, i) => {
+        // Thicker stroke for misclassified cells
+        const pred = predictions[i];
+        if (!pred) return 1.5;
+        const isMisclassified = p.label !== pred.predictedClass;
+        return isMisclassified ? 2.5 : 1.5;
+      })
+      .attr('stroke-opacity', (p, i) => {
+        // More visible stroke for misclassified cells
+        const pred = predictions[i];
+        if (!pred) return 0.6;
+        const isMisclassified = p.label !== pred.predictedClass;
+        return isMisclassified ? 0.9 : 0.6;
+      })
+      .attr('stroke-linejoin', 'round');
   }
 
   /**

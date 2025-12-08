@@ -11,6 +11,15 @@ import {
     StartTrainingCommand,
     StepTrainingCommand,
 } from '../../core/application/commands';
+import {
+    parseOptimizerType,
+    parseActivationType,
+    parseLRScheduleType,
+    parsePerformanceMode,
+    performanceModeToFps,
+    fpsToPerformanceMode,
+} from '../../utils/validation';
+import { setVisible, setEnabled, setActiveState } from '../../utils/dom';
 
 export interface TrainingElements {
     inputLr: HTMLInputElement;
@@ -205,14 +214,16 @@ export class TrainingController {
     }
 
     /**
-     * Builds InitializeNetworkConfig from UI inputs
+     * Builds InitializeNetworkConfig from UI inputs.
+     * Uses runtime validation for enum-like values to ensure type safety.
      */
     private buildInitializeNetworkConfig(): InitializeNetworkConfig {
         const learningRate = parseFloat(this.elements.inputLr.value);
         const layers = this.parseLayersInput(this.elements.inputLayers.value);
-        const optimizer = this.elements.inputOptimizer.value as OptimizerType;
+        // Validate enum values at runtime to prevent invalid configurations
+        const optimizer = parseOptimizerType(this.elements.inputOptimizer.value);
         const momentum = parseFloat(this.elements.inputMomentum.value) || 0.9;
-        const activation = this.elements.inputActivation.value as ActivationType;
+        const activation = parseActivationType(this.elements.inputActivation.value);
         const l1Regularization = parseFloat(this.elements.inputL1.value) || 0;
         const l2Regularization = parseFloat(this.elements.inputL2.value) || 0;
         const numClasses = parseInt(this.elements.inputNumClasses.value, 10) || 2;
@@ -256,13 +267,15 @@ export class TrainingController {
     }
 
     /**
-     * Builds training configuration from UI inputs
+     * Builds training configuration from UI inputs.
+     * Uses runtime validation for enum-like values.
      */
     private buildTrainingConfig() {
         const batchSize = parseInt(this.elements.inputBatchSize.value, 10) || 0;
         const maxEpochs = parseInt(this.elements.inputMaxEpochs.value, 10) || 0;
         const targetFps = parseInt(this.elements.inputFps.value, 10) || 60;
-        const lrScheduleType = this.elements.inputLrSchedule.value as LRScheduleType;
+        // Validate LR schedule type at runtime
+        const lrScheduleType = parseLRScheduleType(this.elements.inputLrSchedule.value);
         const warmupEpochs = parseInt(this.elements.inputWarmup.value, 10) || 0;
         const cycleLength = parseInt(this.elements.inputCycleLength.value, 10) || 20;
         const minLR = parseFloat(this.elements.inputMinLr.value) || 0.001;
@@ -298,43 +311,26 @@ export class TrainingController {
     }
 
     /**
-     * Handles FPS slider changes - updates display and syncs performance mode dropdown
+     * Handles FPS slider changes - updates display and syncs performance mode dropdown.
+     * Uses validated conversion to performance mode.
      */
     private handleFpsSliderChange(): void {
         const fps = parseInt(this.elements.inputFps.value, 10) || 60;
         this.elements.fpsValue.textContent = fps.toString();
         this.session.setTrainingConfig({ targetFps: fps });
 
-        // Sync performance mode dropdown based on FPS value
-        if (fps >= 50) {
-            this.elements.inputTargetFps.value = 'full';
-        } else if (fps >= 25) {
-            this.elements.inputTargetFps.value = 'balanced';
-        } else {
-            this.elements.inputTargetFps.value = 'battery';
-        }
+        // Sync performance mode dropdown using validated conversion
+        this.elements.inputTargetFps.value = fpsToPerformanceMode(fps);
     }
 
     /**
-     * Handles performance mode dropdown changes - converts to FPS and syncs slider
+     * Handles performance mode dropdown changes - converts to FPS and syncs slider.
+     * Uses runtime validation for the performance mode value.
      */
     private handlePerfModeChange(): void {
-        const mode = this.elements.inputTargetFps.value;
-        let fps: number;
-
-        switch (mode) {
-            case 'full':
-                fps = 60;
-                break;
-            case 'balanced':
-                fps = 30;
-                break;
-            case 'battery':
-                fps = 15;
-                break;
-            default:
-                fps = 60;
-        }
+        // Validate performance mode at runtime
+        const mode = parsePerformanceMode(this.elements.inputTargetFps.value);
+        const fps = performanceModeToFps(mode);
 
         // Update slider and display
         this.elements.inputFps.value = fps.toString();
@@ -440,35 +436,26 @@ export class TrainingController {
         // Determine if training can be started (or resumed from pause)
         const canStart = state.isInitialised && state.datasetLoaded && (!state.isRunning || state.isPaused);
 
-        // Update button states
-        if (state.isRunning && !state.isPaused) {
-            // Training is running - show Pause, hide Start
-            this.elements.btnStart.classList.add('hidden');
-            this.elements.btnPause.classList.remove('hidden');
-            this.elements.btnPause.disabled = false;
-            this.elements.btnStep.disabled = true;
+        // Update button states using standardised DOM helpers
+        const isTraining = state.isRunning && !state.isPaused;
+        
+        // Toggle Start/Pause button visibility
+        setVisible(this.elements.btnStart, !isTraining);
+        setVisible(this.elements.btnPause, isTraining);
+        setEnabled(this.elements.btnPause, isTraining);
+        setEnabled(this.elements.btnStep, canStart && !isTraining && !state.isProcessing);
 
-            this.elements.fabStart.classList.add('hidden');
-            this.elements.fabPause.classList.remove('hidden');
-        } else {
-            // Training is paused or stopped - show Start, hide Pause
-            this.elements.btnStart.classList.remove('hidden');
-            this.elements.btnPause.classList.add('hidden');
-            this.elements.btnPause.disabled = true;
-            this.elements.btnStep.disabled = !canStart || state.isProcessing;
-
-            this.elements.fabStart.classList.remove('hidden');
-            this.elements.fabPause.classList.add('hidden');
-        }
+        // Mobile FAB buttons
+        setVisible(this.elements.fabStart, !isTraining);
+        setVisible(this.elements.fabPause, isTraining);
 
         // Enable Reset button if initialized and not running (or paused)
         const canReset = state.isInitialised && (!state.isRunning || state.isPaused);
-        this.elements.btnReset.disabled = !canReset;
+        setEnabled(this.elements.btnReset, canReset);
 
         // Enable/disable Start buttons based on readiness
-        this.elements.btnStart.disabled = !canStart;
-        this.elements.fabStart.classList.toggle('opacity-50', !canStart);
-        this.elements.fabStart.classList.toggle('pointer-events-none', !canStart);
+        setEnabled(this.elements.btnStart, canStart);
+        setEnabled(this.elements.fabStart, canStart);
 
         // Update Floating Metrics Bar
         this.updateFloatingMetrics(state);
@@ -477,18 +464,14 @@ export class TrainingController {
     private updateFloatingMetrics(state: TrainingState): void {
         // Show/hide floating metrics bar based on dataset and training state
         const showMetrics = state.datasetLoaded && state.currentEpoch > 0;
+        const isTraining = state.isRunning && !state.isPaused;
+
+        setVisible(this.elements.floatingMetricsBar, showMetrics);
 
         if (showMetrics) {
-            this.elements.floatingMetricsBar.classList.remove('hidden');
-
-            // Add pulsing animation during training
-            if (state.isRunning && !state.isPaused) {
-                this.elements.floatingMetricsBar.classList.add('training');
-                this.elements.vizPanel.classList.add('training');
-            } else {
-                this.elements.floatingMetricsBar.classList.remove('training');
-                this.elements.vizPanel.classList.remove('training');
-            }
+            // Add pulsing animation during training using standardised helper
+            setActiveState(this.elements.floatingMetricsBar, isTraining, 'training');
+            setActiveState(this.elements.vizPanel, isTraining, 'training');
 
             // Update epoch
             this.elements.floatEpoch.textContent = state.currentEpoch.toString();
@@ -551,8 +534,8 @@ export class TrainingController {
                 this.elements.floatLr.textContent = '—';
             }
         } else {
-            this.elements.floatingMetricsBar.classList.add('hidden');
-            this.elements.floatingMetricsBar.classList.remove('training');
+            // Already hidden by setVisible above, just reset training state
+            setActiveState(this.elements.floatingMetricsBar, false, 'training');
             // Reset trend tracking
             this.previousLoss = null;
             this.previousAccuracy = null;

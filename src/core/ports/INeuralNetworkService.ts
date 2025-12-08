@@ -89,4 +89,12 @@ export interface INeuralNetworkService {
    * @throws If loading fails
    */
   loadModel(modelJson: File, weightsBlob: File): Promise<void>;
+
+  /**
+   * Returns the current network structure (layers and activations).
+   * Used for visualisation and export.
+   *
+   * @returns Object with layer sizes and activation functions, or null if not initialised
+   */
+  getStructure(): { layers: number[]; activations: string[] } | null;
 }

@@ -1,8 +1,8 @@
 import { TrainingSession } from '../../core/application/TrainingSession';
+import { TFNeuralNet } from '../../infrastructure/tensorflow/TFNeuralNet';
 import { D3Chart } from '../../infrastructure/d3/D3Chart';
 import { D3GradientFlow, estimateGradients } from '../../infrastructure/d3/D3GradientFlow';
 import { D3ActivationHeatmap } from '../../infrastructure/d3/D3ActivationHeatmap';
-import { TFNeuralNet } from '../../infrastructure/tensorflow/TFNeuralNet';
 import { toast } from '../toast';
 import { Point, ColourScheme } from '../../core/domain';
 import { APP_CONFIG } from '../../config/app.config';
@@ -113,6 +113,24 @@ export class VisualizationController {
 
         // Voronoi Overlay
         this.addTrackedListener(this.elements.inputVoronoi, 'change', () => this.handleVoronoiToggle());
+    }
+
+    /**
+     * Clears all visualization state without disposing resources.
+     * Call this on reset to clear displayed data while keeping the controller active.
+     */
+    public clear(): void {
+        // Clear 3D view
+        this.threeViz?.clear();
+        
+        // Clear gradient flow
+        this.gradientFlow?.clear();
+        
+        // Clear activation heatmap
+        this.activationHeatmap?.clear();
+        
+        // Reset previous weights baseline
+        this.previousWeights = [];
     }
 
     /**
@@ -271,8 +289,13 @@ export class VisualizationController {
         const learningRate = this.session.getCurrentLearningRate();
         const gradients = estimateGradients(this.previousWeights, currentWeights, learningRate);
 
-        this.gradientFlow.render(gradients);
-        this.previousWeights = currentWeights;
+        // Only update if there are actual weight changes (training is active)
+        // This preserves the last gradient visualization when training stops
+        const hasChanges = gradients.maxGradient > 0.0001;
+        if (hasChanges) {
+            this.gradientFlow.render(gradients);
+            this.previousWeights = currentWeights;
+        }
     }
 
     private handleActivationToggle(): void {
@@ -297,17 +320,29 @@ export class VisualizationController {
         }
     }
 
-    public updateActivationHeatmap(): void {
+    /**
+     * Updates the activation heatmap with real layer activations from the neural network.
+     * 
+     * @param inputPoint - Optional input point to compute activations for.
+     *                     If not provided, uses a default point at origin.
+     */
+    public updateActivationHeatmap(inputPoint?: Point): void {
         if (!this.elements.inputShowActivations?.checked || !this.activationHeatmap) return;
 
         const structure = this.neuralNetService.getStructure();
         if (!structure) return;
 
-        // Visualize activations (simplified - using random data for demo if real not available)
-        // In real app, we'd hook into the forward pass
-        const activations = structure.layers.map((size, _i) => {
-            return Array(size).fill(0).map(() => Math.random());
-        });
+        // Use provided point or default to origin
+        const point = inputPoint ?? { x: 0, y: 0, label: 0 };
+
+        // Get real activations from the neural network service
+        const activations = this.neuralNetService.getLayerActivations(point);
+
+        // Guard against empty activations (model not initialised or disposed)
+        if (!activations || activations.length === 0) {
+            console.warn('[VisualizationController] No activations available from neural network');
+            return;
+        }
 
         this.activationHeatmap.render(activations);
     }

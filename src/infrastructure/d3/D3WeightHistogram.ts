@@ -117,4 +117,12 @@ export class D3WeightHistogram {
   clear(): void {
     this.svg.selectAll('*').remove();
   }
+
+  /**
+   * Disposes of all resources and removes DOM elements.
+   * Call this when the histogram is no longer needed.
+   */
+  dispose(): void {
+    this.clear();
+  }
 }

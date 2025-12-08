@@ -634,7 +634,7 @@ export class TrainingSession implements ITrainingSession {
       return;
     }
 
-    // Get predictions (predictionGrid is reused, reducing input allocations)
+    // Get predictions for grid (decision boundary)
     this.cachedPredictions = await this.neuralNet.predict(this.predictionGrid);
 
     // Guard again after async operation - session may have been cleared
@@ -642,9 +642,20 @@ export class TrainingSession implements ITrainingSession {
       return;
     }
 
+    // Get predictions for actual data points (for Voronoi overlay)
+    const pointPredictions = await this.neuralNet.predict(this.allData);
+
+    // Guard again after async operation
+    if (!this.datasetLoaded) {
+      return;
+    }
+
     // Render boundary, then data points on top
     this.visualizer.renderBoundary(this.cachedPredictions, this.config.gridSize);
     this.visualizer.renderData(this.allData);
+    
+    // Update point predictions for Voronoi
+    this.visualizer.setPointPredictions(pointPredictions);
   }
 
   // ===========================================================================

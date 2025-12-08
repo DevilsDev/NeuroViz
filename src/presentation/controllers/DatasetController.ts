@@ -3,6 +3,7 @@ import { D3Chart } from '../../infrastructure/d3/D3Chart';
 import { toast } from '../toast';
 import { Point, MULTI_CLASS_COLOURS } from '../../core/domain';
 import { PreprocessingType } from '../../core/ports';
+import { setVisible } from '../../utils/dom';
 
 export interface DatasetElements {
   datasetSelect: HTMLSelectElement;
@@ -28,6 +29,8 @@ export class DatasetController {
   private customDataPoints: Point[] = [];
   private currentDrawLabel: number = 0;
   private boundHandlers = new Map<string, EventListener>();
+  /** Cleanup functions for dynamically created button listeners */
+  private drawButtonCleanup: Array<() => void> = [];
 
   constructor(
     private session: TrainingSession,
@@ -43,6 +46,7 @@ export class DatasetController {
     const clearCustomHandler = (): void => this.handleClearCustomData();
     const samplesChangeHandler = (): void => this.handleSamplesChange();
     const noiseChangeHandler = (): void => this.handleNoiseChange();
+    const balanceChangeHandler = (): void => this.handleBalanceChange();
     const csvUploadHandler = (e: Event): void => this.handleCsvUpload(e);
     const downloadHandler = (): void => this.handleDownloadDataset();
 
@@ -51,6 +55,7 @@ export class DatasetController {
     this.elements.btnClearCustom.addEventListener('click', clearCustomHandler);
     this.elements.inputSamples.addEventListener('input', samplesChangeHandler);
     this.elements.inputNoise.addEventListener('input', noiseChangeHandler);
+    this.elements.inputBalance.addEventListener('input', balanceChangeHandler);
     this.elements.inputCsvUpload.addEventListener('change', csvUploadHandler);
     this.elements.btnDownloadDataset.addEventListener('click', downloadHandler);
 
@@ -59,6 +64,7 @@ export class DatasetController {
     this.boundHandlers.set('clearCustom', clearCustomHandler);
     this.boundHandlers.set('samplesChange', samplesChangeHandler);
     this.boundHandlers.set('noiseChange', noiseChangeHandler);
+    this.boundHandlers.set('balanceChange', balanceChangeHandler);
     this.boundHandlers.set('csvUpload', csvUploadHandler);
     this.boundHandlers.set('download', downloadHandler);
   }
@@ -67,14 +73,19 @@ export class DatasetController {
    * Clean up event listeners to prevent memory leaks
    */
   public dispose(): void {
+    // Clean up static event listeners
     this.elements.btnLoadData.removeEventListener('click', this.boundHandlers.get('loadData')!);
     this.elements.datasetSelect.removeEventListener('change', this.boundHandlers.get('datasetChange')!);
     this.elements.btnClearCustom.removeEventListener('click', this.boundHandlers.get('clearCustom')!);
     this.elements.inputSamples.removeEventListener('input', this.boundHandlers.get('samplesChange')!);
     this.elements.inputNoise.removeEventListener('input', this.boundHandlers.get('noiseChange')!);
+    this.elements.inputBalance.removeEventListener('input', this.boundHandlers.get('balanceChange')!);
     this.elements.inputCsvUpload.removeEventListener('change', this.boundHandlers.get('csvUpload')!);
     this.elements.btnDownloadDataset.removeEventListener('click', this.boundHandlers.get('download')!);
     this.boundHandlers.clear();
+    
+    // Clean up dynamically created button listeners
+    this.cleanupDrawButtons();
   }
 
   public async handleLoadData(): Promise<void> {
@@ -176,6 +187,10 @@ export class DatasetController {
     this.elements.noiseValue.textContent = this.elements.inputNoise.value;
   }
 
+  private handleBalanceChange(): void {
+    this.elements.balanceValue.textContent = `${this.elements.inputBalance.value}%`;
+  }
+
   private enableDrawMode(): void {
     this.visualizerService.enableDrawMode(this.currentDrawLabel, (point) => this.handlePointAdded(point));
     toast.info('Draw mode enabled - click on chart to add points');
@@ -192,6 +207,9 @@ export class DatasetController {
   private updateDrawClassButtons(): void {
     const numClasses = parseInt(this.elements.inputNumClasses.value, 10) || 2;
 
+    // Clean up previous button listeners to prevent memory leaks
+    this.cleanupDrawButtons();
+
     // Clear existing buttons
     this.elements.drawClassButtons.innerHTML = '';
 
@@ -205,12 +223,25 @@ export class DatasetController {
         <span class="w-3 h-3 rounded-full inline-block" style="background-color: ${colour}"></span>
         Class ${i}
       `;
-      button.addEventListener('click', () => this.handleDrawClassSelect(i));
+      
+      // Track listener for cleanup
+      const handler = () => this.handleDrawClassSelect(i);
+      button.addEventListener('click', handler);
+      this.drawButtonCleanup.push(() => button.removeEventListener('click', handler));
+      
       this.elements.drawClassButtons.appendChild(button);
     }
 
     // Reset to class 0
     this.currentDrawLabel = 0;
+  }
+
+  /**
+   * Cleans up dynamically created button listeners.
+   */
+  private cleanupDrawButtons(): void {
+    this.drawButtonCleanup.forEach(cleanup => cleanup());
+    this.drawButtonCleanup = [];
   }
 
   private handleDrawClassSelect(label: number): void {
@@ -229,11 +260,7 @@ export class DatasetController {
   }
 
   private showLoading(show: boolean): void {
-    if (show) {
-      this.elements.loadingOverlay.classList.remove('hidden');
-    } else {
-      this.elements.loadingOverlay.classList.add('hidden');
-    }
+    setVisible(this.elements.loadingOverlay, show);
   }
 
   // CSV Upload & Download

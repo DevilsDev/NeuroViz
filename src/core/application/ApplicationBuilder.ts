@@ -162,17 +162,33 @@ export class ApplicationBuilder {
         onClearVisualization: () => {
           services.lossChart.clear();
           services.networkDiagram.clear();
+          services.confusionMatrix.clear();
+          services.weightHistogram.clear();
+          services.visualizer.clear();
+          // Clear visualization controller state (set after controller creation)
+          visualizationControllerRef?.clear();
+          
+          // Clear classification metrics display
+          const precisionEl = document.getElementById('metric-precision');
+          const recallEl = document.getElementById('metric-recall');
+          const f1El = document.getElementById('metric-f1');
+          if (precisionEl) precisionEl.textContent = '—';
+          if (recallEl) recallEl.textContent = '—';
+          if (f1El) f1El.textContent = '—';
         },
         onDismissSuggestions: () => dismissSuggestions('suggestions-panel'),
       }
     );
 
+    // Create visualization controller and store reference for reset callback
+    let visualizationControllerRef: VisualizationController | null = null;
     const visualizationController = new VisualizationController(
       services.session,
       services.neuralNet,
       services.visualizer,
       getVisualizationElements()
     );
+    visualizationControllerRef = visualizationController;
 
     const exportController = new ExportController(
       services.session,

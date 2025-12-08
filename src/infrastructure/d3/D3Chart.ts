@@ -33,6 +33,7 @@ export class D3Chart implements IVisualizerService {
   private cachedPoints: Point[] = [];
   private cachedPredictions: Prediction[] = [];
   private cachedGridSize = 0;
+  private cachedPointPredictions: Prediction[] = []; // Predictions for actual data points (for Voronoi)
 
   // Draw mode state
   private drawModeEnabled = false;
@@ -140,9 +141,9 @@ export class D3Chart implements IVisualizerService {
     if (this.cachedPredictions.length > 0) {
       this.renderBoundary(this.cachedPredictions, this.cachedGridSize);
     }
-    if (this.voronoiEnabled && this.voronoiOverlay) {
+    if (this.voronoiEnabled && this.voronoiOverlay && this.cachedPointPredictions.length > 0) {
       this.voronoiOverlay.resize(this.width, this.height, this.xScale, this.yScale);
-      this.voronoiOverlay.render(this.cachedPoints, this.cachedPredictions, this.config.boundaryOpacity);
+      this.voronoiOverlay.render(this.cachedPoints, this.cachedPointPredictions, this.config.boundaryOpacity);
     }
   }
 
@@ -364,9 +365,27 @@ export class D3Chart implements IVisualizerService {
     this.cachedPoints = [];
     this.cachedPredictions = [];
     this.cachedGridSize = 0;
+    this.cachedPointPredictions = [];
+
+    // Clear Voronoi overlay
+    this.voronoiOverlay?.clear();
 
     // Remove ALL children of chartGroup (axes are in a separate group on svg)
     this.chartGroup.selectAll('*').remove();
+  }
+
+  /**
+   * Sets predictions for data points (used by Voronoi overlay).
+   * Call this after getting predictions for the actual data points.
+   * @param predictions - Predictions for each data point
+   */
+  setPointPredictions(predictions: Prediction[]): void {
+    this.cachedPointPredictions = predictions;
+    
+    // Update Voronoi if enabled
+    if (this.voronoiEnabled && this.voronoiOverlay && this.cachedPoints.length > 0) {
+      this.voronoiOverlay.render(this.cachedPoints, predictions, this.config.boundaryOpacity);
+    }
   }
 
   /**
@@ -792,9 +811,9 @@ export class D3Chart implements IVisualizerService {
         );
       }
 
-      // Render if we have cached data
-      if (this.cachedPoints.length > 0 && this.cachedPredictions.length > 0) {
-        this.voronoiOverlay.render(this.cachedPoints, this.cachedPredictions, this.config.boundaryOpacity);
+      // Render if we have cached point predictions (predictions for actual data points)
+      if (this.cachedPoints.length > 0 && this.cachedPointPredictions.length > 0) {
+        this.voronoiOverlay.render(this.cachedPoints, this.cachedPointPredictions, this.config.boundaryOpacity);
       }
     } else {
       // Clear overlay

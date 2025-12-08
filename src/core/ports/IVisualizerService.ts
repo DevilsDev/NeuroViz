@@ -100,4 +100,16 @@ export interface IVisualizerService {
    * Cleans up resources and removes DOM elements.
    */
   dispose(): void;
+
+  /**
+   * Enables or disables the Voronoi diagram overlay.
+   * @param enabled - Whether to show the Voronoi overlay
+   */
+  setVoronoiOverlay(enabled: boolean): void;
+
+  /**
+   * Sets predictions for data points (used by Voronoi overlay).
+   * @param predictions - Predictions for each data point
+   */
+  setPointPredictions(predictions: Prediction[]): void;
 }
