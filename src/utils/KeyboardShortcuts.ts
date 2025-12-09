@@ -8,6 +8,8 @@
  * - Esc: Pause
  * - F: Toggle fullscreen
  * - ?: Toggle help modal
+ * - Ctrl+Z: Undo config
+ * - Ctrl+Y: Redo config
  */
 
 export interface KeyboardShortcutsCallbacks {
@@ -17,6 +19,8 @@ export interface KeyboardShortcutsCallbacks {
     onPause: () => void;
     onToggleFullscreen: () => void;
     onToggleHelp: () => void;
+    onUndo?: () => void;
+    onRedo?: () => void;
 }
 
 export class KeyboardShortcuts {
@@ -56,6 +60,20 @@ export class KeyboardShortcuts {
         }
 
         const key = e.key.toLowerCase();
+
+        // Handle Ctrl+Z (Undo) and Ctrl+Y (Redo)
+        if (e.ctrlKey || e.metaKey) {
+            if (key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                this.callbacks.onUndo?.();
+                return;
+            }
+            if (key === 'y' || (key === 'z' && e.shiftKey)) {
+                e.preventDefault();
+                this.callbacks.onRedo?.();
+                return;
+            }
+        }
 
         switch (key) {
             case ' ':

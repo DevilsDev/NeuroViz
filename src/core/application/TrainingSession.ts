@@ -4,6 +4,7 @@ import type { INeuralNetworkService, IVisualizerService, IDatasetRepository, Dat
 import type { ITrainingSession, TrainingState } from './ITrainingSession';
 import { logger } from '../../infrastructure/logging/Logger';
 import { LearningRateScheduler, EarlyStoppingStrategy, TrainingDataSplitter } from './training';
+import { ConfigHistory } from '../domain/ConfigHistory';
 
 /**
  * Configuration for training session behaviour.
@@ -85,6 +86,9 @@ export class TrainingSession implements ITrainingSession {
   // Learning rate tracking (for scheduler initialization)
   private initialLearningRate = 0.03;
   private currentHyperparameters: Hyperparameters | null = null;
+
+  // Configuration history for undo/redo
+  private readonly configHistory: ConfigHistory = new ConfigHistory();
 
   // Completion callback
   private onCompleteCallback: ((reason: 'maxEpochs' | 'earlyStopping' | 'manual') => void) | null = null;
@@ -173,7 +177,7 @@ export class TrainingSession implements ITrainingSession {
     this.notifyListeners();
   }
 
-  async setHyperparameters(config: Hyperparameters): Promise<void> {
+  async setHyperparameters(config: Hyperparameters, skipHistory: boolean = false): Promise<void> {
     // Stop training before re-initializing to prevent accessing disposed model
     const wasTraining = this.isTraining && !this.isPaused;
     if (wasTraining) {
@@ -197,6 +201,11 @@ export class TrainingSession implements ITrainingSession {
 
     // Reset early stopping strategy
     this.earlyStoppingStrategy.reset();
+
+    // Save to config history (unless this is an undo/redo operation)
+    if (!skipHistory) {
+      this.configHistory.push(config, 'Configuration updated');
+    }
 
     this.notifyListeners();
   }
@@ -403,7 +412,7 @@ export class TrainingSession implements ITrainingSession {
         this.currentValAccuracy = valAccuracy;
       }
 
-      // Record in history
+      // Record in history (including current learning rate)
       this.history = addHistoryRecord(this.history, {
         epoch: this.currentEpoch,
         loss: result.loss,
@@ -411,6 +420,7 @@ export class TrainingSession implements ITrainingSession {
         valLoss,
         valAccuracy,
         timestamp: performance.now(),
+        learningRate: this.lrScheduler.getCurrentLR(),
       });
 
       // Render boundary at intervals
@@ -512,7 +522,7 @@ export class TrainingSession implements ITrainingSession {
         this.currentValAccuracy = valAccuracy;
       }
 
-      // Record in history
+      // Record in history (including current learning rate)
       this.history = addHistoryRecord(this.history, {
         epoch: this.currentEpoch,
         loss: result.loss,
@@ -520,6 +530,7 @@ export class TrainingSession implements ITrainingSession {
         valLoss,
         valAccuracy,
         timestamp: performance.now(),
+        learningRate: this.lrScheduler.getCurrentLR(),
       });
 
       // Check early stopping using strategy service
@@ -866,5 +877,41 @@ export class TrainingSession implements ITrainingSession {
     await this.neuralNet.initialize(originalHyperparams);
 
     return results;
+  }
+
+  /**
+   * Undo to previous configuration
+   */
+  async undoConfig(): Promise<boolean> {
+    const config = this.configHistory.undo();
+    if (!config) return false;
+
+    await this.setHyperparameters(config, true); // skipHistory=true to avoid creating new snapshot
+    return true;
+  }
+
+  /**
+   * Redo to next configuration
+   */
+  async redoConfig(): Promise<boolean> {
+    const config = this.configHistory.redo();
+    if (!config) return false;
+
+    await this.setHyperparameters(config, true); // skipHistory=true
+    return true;
+  }
+
+  /**
+   * Check if undo is available
+   */
+  canUndo(): boolean {
+    return this.configHistory.canUndo();
+  }
+
+  /**
+   * Check if redo is available
+   */
+  canRedo(): boolean {
+    return this.configHistory.canRedo();
   }
 }

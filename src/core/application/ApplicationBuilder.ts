@@ -4,9 +4,11 @@ import { TrainingSession } from './TrainingSession';
 import { TFNeuralNet } from '../../infrastructure/tensorflow/TFNeuralNet';
 import { D3Chart } from '../../infrastructure/d3/D3Chart';
 import { D3LossChart } from '../../infrastructure/d3/D3LossChart';
+import { D3LearningRateChart } from '../../infrastructure/d3/D3LearningRateChart';
 import { D3NetworkDiagram } from '../../infrastructure/d3/D3NetworkDiagram';
 import { D3ConfusionMatrix } from '../../infrastructure/d3/D3ConfusionMatrix';
 import { D3WeightHistogram } from '../../infrastructure/d3/D3WeightHistogram';
+import { D3ActivationHistogram } from '../../infrastructure/d3/D3ActivationHistogram';
 import { MockDataRepository } from '../../infrastructure/api/MockDataRepository';
 import { LocalStorageService } from '../../infrastructure/storage/LocalStorageService';
 import { ErrorBoundary } from '../../infrastructure/errorHandling/ErrorBoundary';
@@ -44,9 +46,11 @@ import { initELI5Tooltips } from '../../presentation/ELI5Tooltips';
 export interface ApplicationConfig {
   vizContainerId?: string;
   lossChartContainerId?: string;
+  lrChartContainerId?: string;
   networkDiagramId?: string;
   confusionMatrixContainerId?: string;
   weightHistogramId?: string;
+  activationHistogramId?: string;
 }
 
 /**
@@ -59,9 +63,11 @@ export class ApplicationBuilder {
     this.config = {
       vizContainerId: config.vizContainerId ?? 'viz-container',
       lossChartContainerId: config.lossChartContainerId ?? 'loss-chart-container',
+      lrChartContainerId: config.lrChartContainerId ?? 'lr-chart-container',
       networkDiagramId: config.networkDiagramId ?? 'network-diagram',
       confusionMatrixContainerId: config.confusionMatrixContainerId ?? 'confusion-matrix-container',
       weightHistogramId: config.weightHistogramId ?? 'weight-histogram',
+      activationHistogramId: config.activationHistogramId ?? 'activation-histogram',
     };
   }
 
@@ -112,12 +118,16 @@ export class ApplicationBuilder {
     const neuralNet = new TFNeuralNet();
     const visualizer = new D3Chart(this.config.vizContainerId!);
     const lossChart = new D3LossChart(this.config.lossChartContainerId!);
+    const lrChart = new D3LearningRateChart(this.config.lrChartContainerId!);
     const networkDiagram = new D3NetworkDiagram(
       safeGetElement<HTMLElement>(this.config.networkDiagramId!) || document.createElement('div')
     );
     const confusionMatrix = new D3ConfusionMatrix(this.config.confusionMatrixContainerId!);
     const weightHistogram = new D3WeightHistogram(
       safeGetElement<HTMLElement>(this.config.weightHistogramId!) || document.createElement('div')
+    );
+    const activationHistogram = new D3ActivationHistogram(
+      safeGetElement<HTMLElement>(this.config.activationHistogramId!) || document.createElement('div')
     );
     const storage = new LocalStorageService();
     const session = new TrainingSession(neuralNet, visualizer, dataRepo);
@@ -128,9 +138,11 @@ export class ApplicationBuilder {
       visualizer,
       session,
       lossChart,
+      lrChart,
       networkDiagram,
       confusionMatrix,
       weightHistogram,
+      activationHistogram,
       storage,
     };
   }
@@ -164,6 +176,7 @@ export class ApplicationBuilder {
           services.networkDiagram.clear();
           services.confusionMatrix.clear();
           services.weightHistogram.clear();
+          services.activationHistogram.clear();
           services.visualizer.clear();
           // Clear visualization controller state (set after controller creation)
           visualizationControllerRef?.clear();
@@ -294,6 +307,12 @@ export class ApplicationBuilder {
         if (helpModal) {
           helpModal.classList.toggle('hidden');
         }
+      },
+      onUndo: () => {
+        void session.undoConfig();
+      },
+      onRedo: () => {
+        void session.redoConfig();
       },
     });
 

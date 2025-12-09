@@ -116,19 +116,14 @@
             <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Quick Start</h3>
             <select id="preset-select" aria-label="Select preset configuration" class="select-field mb-2 text-xs">
               <option value="">— Select a preset —</option>
-              <optgroup label="Built-in Presets">
-                <option value="quick-demo">🚀 Quick Demo</option>
-                <option value="xor-challenge">🎯 XOR Challenge</option>
-                <option value="spiral-deep">🌀 Deep Spiral</option>
-                <option value="multiclass">🎨 Multi-class</option>
-                <option value="overfit-demo">📈 Overfitting Demo</option>
-              </optgroup>
-              <optgroup id="bookmark-options" label="My Bookmarks">
-                <!-- Bookmarks populated dynamically -->
-              </optgroup>
+              <option value="quickDemo">🚀 Quick Demo - Fast & Simple</option>
+              <option value="deepNetwork">🌀 Deep Network - Complex Patterns</option>
+              <option value="highAccuracy">🎯 High Accuracy - Slower but Better</option>
+              <option value="overfitDemo">📈 Overfit Demo - See Overfitting</option>
             </select>
-            <button id="btn-apply-preset" class="btn-primary w-full text-xs" disabled>
-              Apply & Load
+            <div id="preset-description" class="text-[10px] text-slate-400 mb-2 min-h-[2rem] italic leading-tight"></div>
+            <button id="btn-apply-preset" class="btn-primary w-full text-xs py-2" disabled>
+              Apply Preset
             </button>
           </div>
 
@@ -220,6 +215,28 @@
               <div id="draw-class-buttons" class="flex flex-wrap gap-2"></div>
               <button id="btn-clear-custom" class="btn-secondary w-full mt-2 text-xs">Clear Points</button>
             </div>
+
+            <!-- Dataset Statistics -->
+            <div id="dataset-stats-panel" class="mt-3 p-3 bg-navy-900/50 rounded-lg border border-navy-700 hidden">
+              <h4 class="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Dataset Stats
+              </h4>
+              <div id="dataset-stats-content" class="text-[10px] text-slate-400 space-y-1">
+                <div class="flex justify-between">
+                  <span>Total Samples:</span>
+                  <span id="stats-total" class="text-slate-300 font-mono">—</span>
+                </div>
+                <div id="stats-classes" class="space-y-0.5 mt-2">
+                  <!-- Class distribution populated dynamically -->
+                </div>
+                <div id="stats-outliers" class="mt-2 text-[9px] text-amber-400 hidden">
+                  ⚠ <span id="stats-outliers-count">0</span> outliers detected
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Session Management -->
@@ -291,6 +308,20 @@
               </svg>
               Pause
             </button>
+            <div class="flex gap-1 ml-auto">
+              <button id="btn-undo-config" class="p-2 rounded hover:bg-navy-700 text-slate-400 hover:text-slate-300 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Undo Config (Ctrl+Z)" disabled>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                </svg>
+              </button>
+              <button id="btn-redo-config" class="p-2 rounded hover:bg-navy-700 text-slate-400 hover:text-slate-300 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Redo Config (Ctrl+Y)" disabled>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -355,7 +386,20 @@
           </div>
         </section>
 
-        <!-- Bottom Timeline / Metrics -->
+        <!-- Learning Rate Timeline -->
+        <div class="h-[100px] bg-navy-900/30 rounded-xl border border-white/5 relative flex flex-col overflow-hidden transition-all duration-300 hover:border-white/10 mt-4">
+          <div class="flex items-center justify-between px-3 py-1 border-b border-white/5 bg-navy-900/40 shrink-0">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+              <svg class="w-3 h-3 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Learning Rate
+            </h3>
+          </div>
+          <div id="lr-chart-container" class="flex-1 w-full relative"></div>
+        </div>
+
+        <!-- Loss & Accuracy Timeline -->
         <div
           class="h-[180px] bg-navy-900/30 rounded-xl border border-white/5 relative flex flex-col overflow-hidden transition-all duration-300 hover:border-white/10 mt-4">
           <div class="flex items-center justify-between px-3 py-1.5 border-b border-white/5 bg-navy-900/40 shrink-0">
@@ -509,14 +553,56 @@
                 </div>
               </div>
             </details>
+
+            <!-- Activation Histograms -->
+            <details class="group bg-navy-800/30 rounded-lg p-2">
+              <summary class="text-xs font-bold text-slate-400 cursor-pointer list-none flex justify-between">
+                Layer Activations <span class="group-open:rotate-180 transition-transform">▼</span>
+              </summary>
+              <div id="activation-histogram" class="mt-2 min-h-[120px]"></div>
+            </details>
+
+            <!-- Speed Comparison -->
+            <details class="group bg-navy-800/30 rounded-lg p-2">
+              <summary class="text-xs font-bold text-slate-400 cursor-pointer list-none flex justify-between">
+                Training Speed <span class="group-open:rotate-180 transition-transform">▼</span>
+              </summary>
+              <div class="mt-2 space-y-2">
+                <div class="text-[10px] text-slate-400">
+                  <div class="flex justify-between">
+                    <span>Current:</span>
+                    <span id="speed-current" class="text-emerald-400 font-mono">—</span>
+                  </div>
+                  <div id="speed-comparison-container" class="mt-2 hidden">
+                    <div class="flex justify-between">
+                      <span>Baseline:</span>
+                      <span id="speed-baseline" class="text-slate-500 font-mono">—</span>
+                    </div>
+                    <div class="mt-1 text-center">
+                      <span id="speed-comparison-result" class="text-xs font-bold text-cyan-400">—</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex gap-1">
+                  <button id="btn-save-speed-baseline" class="btn-secondary text-[10px] py-1 flex-1">Save Baseline</button>
+                  <button id="btn-clear-speed-baseline" class="btn-secondary text-[10px] py-1 flex-1 hidden">Clear</button>
+                </div>
+              </div>
+            </details>
           </div>
 
           <!-- Export Tools -->
           <div class="mt-4 pt-4 border-t border-white/5">
-            <div class="grid grid-cols-2 gap-2">
+            <div class="grid grid-cols-2 gap-2 mb-2">
               <button id="btn-export-model-sticky" class="btn-secondary text-xs">Export Model</button>
               <button id="btn-export-history-sticky" class="btn-secondary text-xs">Export Stats</button>
             </div>
+            <button id="btn-export-report" class="btn-primary w-full text-xs py-2 flex items-center justify-center gap-2" disabled>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Export Training Report
+            </button>
           </div>
 
         </div>
@@ -589,10 +675,110 @@
   </div> <!-- app-container -->
 
   <!-- HELP & ONBOARDING MODALS (Preserved) -->
-  <div id="help-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-navy-800 rounded-xl border border-navy-600 shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden">
-      <button id="help-close" class="hidden">Close</button>
-      <!-- Content preserved for structure, hidden/simplified -->
+  <div id="help-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4" role="dialog" aria-labelledby="help-title" aria-modal="true">
+    <div class="bg-navy-800 rounded-xl border border-navy-600 shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+      <!-- Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-navy-600">
+        <h2 id="help-title" class="text-lg font-bold text-slate-200 flex items-center gap-2">
+          <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Keyboard Shortcuts
+        </h2>
+        <button id="help-close" class="p-2 rounded hover:bg-navy-700 text-slate-400 hover:text-slate-200 transition-colors" aria-label="Close help">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Shortcuts List -->
+      <div class="overflow-y-auto p-6 space-y-6">
+        <!-- Training Controls -->
+        <div>
+          <h3 class="text-sm font-bold text-cyan-400 mb-3 uppercase tracking-wider">Training Controls</h3>
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-slate-300 text-sm">Start / Pause Training</span>
+              <kbd class="px-2 py-1 bg-navy-900 border border-navy-600 rounded text-xs font-mono text-slate-400">Space</kbd>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-300 text-sm">Step One Epoch</span>
+              <kbd class="px-2 py-1 bg-navy-900 border border-navy-600 rounded text-xs font-mono text-slate-400">S</kbd>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-300 text-sm">Reset Training</span>
+              <kbd class="px-2 py-1 bg-navy-900 border border-navy-600 rounded text-xs font-mono text-slate-400">R</kbd>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-300 text-sm">Pause</span>
+              <kbd class="px-2 py-1 bg-navy-900 border border-navy-600 rounded text-xs font-mono text-slate-400">Esc</kbd>
+            </div>
+          </div>
+        </div>
+
+        <!-- Configuration -->
+        <div>
+          <h3 class="text-sm font-bold text-cyan-400 mb-3 uppercase tracking-wider">Configuration</h3>
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-slate-300 text-sm">Undo Config Change</span>
+              <kbd class="px-2 py-1 bg-navy-900 border border-navy-600 rounded text-xs font-mono text-slate-400">Ctrl + Z</kbd>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-300 text-sm">Redo Config Change</span>
+              <kbd class="px-2 py-1 bg-navy-900 border border-navy-600 rounded text-xs font-mono text-slate-400">Ctrl + Y</kbd>
+            </div>
+          </div>
+        </div>
+
+        <!-- Datasets -->
+        <div>
+          <h3 class="text-sm font-bold text-cyan-400 mb-3 uppercase tracking-wider">Datasets</h3>
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-slate-300 text-sm">Circle Dataset</span>
+              <kbd class="px-2 py-1 bg-navy-900 border border-navy-600 rounded text-xs font-mono text-slate-400">1</kbd>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-300 text-sm">XOR Dataset</span>
+              <kbd class="px-2 py-1 bg-navy-900 border border-navy-600 rounded text-xs font-mono text-slate-400">2</kbd>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-300 text-sm">Gaussian Dataset</span>
+              <kbd class="px-2 py-1 bg-navy-900 border border-navy-600 rounded text-xs font-mono text-slate-400">3</kbd>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-300 text-sm">Spiral Dataset</span>
+              <kbd class="px-2 py-1 bg-navy-900 border border-navy-600 rounded text-xs font-mono text-slate-400">4</kbd>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-300 text-sm">Moons Dataset</span>
+              <kbd class="px-2 py-1 bg-navy-900 border border-navy-600 rounded text-xs font-mono text-slate-400">5</kbd>
+            </div>
+          </div>
+        </div>
+
+        <!-- View -->
+        <div>
+          <h3 class="text-sm font-bold text-cyan-400 mb-3 uppercase tracking-wider">View</h3>
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-slate-300 text-sm">Toggle Fullscreen</span>
+              <kbd class="px-2 py-1 bg-navy-900 border border-navy-600 rounded text-xs font-mono text-slate-400">F</kbd>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-300 text-sm">Show This Help</span>
+              <kbd class="px-2 py-1 bg-navy-900 border border-navy-600 rounded text-xs font-mono text-slate-400">?</kbd>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="px-6 py-4 border-t border-navy-600 bg-navy-900/50">
+        <p class="text-xs text-slate-500 text-center">Press <kbd class="px-1 bg-navy-800 border border-navy-600 rounded text-slate-400">?</kbd> or <kbd class="px-1 bg-navy-800 border border-navy-600 rounded text-slate-400">Esc</kbd> to close</p>
+      </div>
     </div>
   </div>
 

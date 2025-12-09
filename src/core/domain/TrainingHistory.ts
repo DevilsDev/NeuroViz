@@ -14,6 +14,8 @@ export interface TrainingRecord {
   readonly valAccuracy: number | null;
   /** Timestamp when this epoch completed */
   readonly timestamp: number;
+  /** Learning rate at this epoch */
+  readonly learningRate: number;
 }
 
 /**

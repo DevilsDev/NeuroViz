@@ -1,5 +1,6 @@
 export { D3Chart } from './D3Chart';
 export { D3LossChart } from './D3LossChart';
+export { D3LearningRateChart } from './D3LearningRateChart';
 export { D3ConfusionMatrix, calculateConfusionMatrix, calculateClassMetrics, calculateMacroMetrics } from './D3ConfusionMatrix';
 export type { ConfusionMatrixData, ClassMetrics } from './D3ConfusionMatrix';
 export { D3WeightHistogram } from './D3WeightHistogram';
@@ -9,5 +10,7 @@ export { D3LRFinder, findOptimalLR } from './D3LRFinder';
 export type { LRFinderPoint } from './D3LRFinder';
 export { D3NetworkDiagram } from './D3NetworkDiagram';
 export { D3ActivationHeatmap } from './D3ActivationHeatmap';
+export { D3ActivationHistogram } from './D3ActivationHistogram';
+export type { LayerActivationData } from './D3ActivationHistogram';
 export { D3VoronoiOverlay } from './D3VoronoiOverlay';
 export { D3GradientFlow, estimateGradients } from './D3GradientFlow';

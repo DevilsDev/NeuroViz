@@ -3,10 +3,13 @@ import type { IDatasetRepository } from '../ports/IDatasetRepository';
 import type { TFNeuralNet } from '../../infrastructure/tensorflow/TFNeuralNet';
 import type { D3Chart } from '../../infrastructure/d3/D3Chart';
 import type { D3LossChart } from '../../infrastructure/d3/D3LossChart';
+import type { D3LearningRateChart } from '../../infrastructure/d3/D3LearningRateChart';
 import type { D3NetworkDiagram } from '../../infrastructure/d3/D3NetworkDiagram';
 import type { D3ConfusionMatrix } from '../../infrastructure/d3/D3ConfusionMatrix';
 import type { D3WeightHistogram } from '../../infrastructure/d3/D3WeightHistogram';
+import type { D3ActivationHistogram, LayerActivationData } from '../../infrastructure/d3/D3ActivationHistogram';
 import type { LocalStorageService } from '../../infrastructure/storage/LocalStorageService';
+import { calculateSpeedMetrics, compareSpeed, formatSpeedMetrics, type SpeedBaseline } from '../domain/SpeedComparison';
 import {
   DatasetController,
   TrainingController,
@@ -39,9 +42,11 @@ export interface Services {
   visualizer: D3Chart;
   session: TrainingSession;
   lossChart: D3LossChart;
+  lrChart: D3LearningRateChart;
   networkDiagram: D3NetworkDiagram;
   confusionMatrix: D3ConfusionMatrix;
   weightHistogram: D3WeightHistogram;
+  activationHistogram: D3ActivationHistogram;
   storage: LocalStorageService;
   keyboardShortcuts?: KeyboardShortcuts;
   datasetGallery?: DatasetGallery;
@@ -66,6 +71,8 @@ export interface Controllers {
  * Main application class that encapsulates all services and controllers
  */
 export class Application {
+  private speedBaseline: SpeedBaseline | null = null;
+
   constructor(
     public readonly services: Services,
     public readonly controllers: Controllers
@@ -88,8 +95,12 @@ export class Application {
     this.services.session.onStateChange((state) => {
       this.controllers.training.updateUI(state);
       this.services.lossChart.update(state.history);
+      this.services.lrChart.render(state.history);
       this.controllers.comparison.updateComparisonDisplay();
       this.controllers.visualization.updateGradientFlow();
+
+      // Update speed metrics
+      this.updateSpeedMetrics(state.history);
 
       // Update 3D view periodically during training (every 5 epochs to avoid performance issues)
       if (state.currentEpoch % 5 === 0 && state.isRunning) {
@@ -109,6 +120,9 @@ export class Application {
           // Update weight histogram with flattened weights
           const weights = this.services.neuralNet.getWeightMatrices().flat().flat();
           this.services.weightHistogram.update(weights);
+
+          // Update activation histogram with sample activations
+          this.updateActivationHistogram();
         }
       }
 
@@ -130,6 +144,24 @@ export class Application {
       if (appContainer) {
         appContainer.classList.add('loaded');
       }
+
+      // Setup speed comparison buttons
+      this.setupSpeedComparison();
+
+      // Setup undo/redo buttons
+      this.setupUndoRedo();
+
+      // Setup help modal close button
+      this.setupHelpModal();
+
+      // Setup training presets
+      this.setupPresets();
+
+      // Setup report export
+      this.setupReportExport();
+
+      // Setup dataset statistics
+      this.setupDatasetStatistics();
     });
   }
 
@@ -211,6 +243,370 @@ export class Application {
   }
 
   /**
+   * Updates speed metrics display
+   */
+  private updateSpeedMetrics(history: import('../domain/TrainingHistory').TrainingHistory): void {
+    const metrics = calculateSpeedMetrics(history);
+    if (!metrics) return;
+
+    const currentEl = document.getElementById('speed-current');
+    if (currentEl) {
+      currentEl.textContent = formatSpeedMetrics(metrics);
+    }
+
+    // Show comparison if baseline exists
+    if (this.speedBaseline) {
+      const comparison = compareSpeed(metrics, this.speedBaseline.metrics);
+      const comparisonContainer = document.getElementById('speed-comparison-container');
+      const baselineEl = document.getElementById('speed-baseline');
+      const resultEl = document.getElementById('speed-comparison-result');
+
+      if (comparisonContainer) comparisonContainer.classList.remove('hidden');
+      if (baselineEl) baselineEl.textContent = formatSpeedMetrics(this.speedBaseline.metrics);
+      if (resultEl) resultEl.textContent = comparison.description;
+    }
+  }
+
+  /**
+   * Sets up speed comparison UI handlers
+   */
+  private setupSpeedComparison(): void {
+    const saveBtn = document.getElementById('btn-save-speed-baseline');
+    const clearBtn = document.getElementById('btn-clear-speed-baseline');
+
+    if (saveBtn) {
+      saveBtn.addEventListener('click', () => {
+        const state = this.services.session.getState();
+        const metrics = calculateSpeedMetrics(state.history);
+        if (metrics) {
+          this.speedBaseline = {
+            name: 'Baseline',
+            metrics,
+            timestamp: Date.now(),
+          };
+          if (clearBtn) clearBtn.classList.remove('hidden');
+        }
+      });
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        this.speedBaseline = null;
+        const comparisonContainer = document.getElementById('speed-comparison-container');
+        if (comparisonContainer) comparisonContainer.classList.add('hidden');
+        clearBtn.classList.add('hidden');
+      });
+    }
+  }
+
+  /**
+   * Sets up undo/redo UI handlers and state sync
+   */
+  private setupUndoRedo(): void {
+    const undoBtn = document.getElementById('btn-undo-config') as HTMLButtonElement | null;
+    const redoBtn = document.getElementById('btn-redo-config') as HTMLButtonElement | null;
+
+    if (undoBtn) {
+      undoBtn.addEventListener('click', () => {
+        void this.services.session.undoConfig();
+      });
+    }
+
+    if (redoBtn) {
+      redoBtn.addEventListener('click', () => {
+        void this.services.session.redoConfig();
+      });
+    }
+
+    // Update button states on every state change
+    this.services.session.onStateChange(() => {
+      if (undoBtn) {
+        undoBtn.disabled = !this.services.session.canUndo();
+      }
+      if (redoBtn) {
+        redoBtn.disabled = !this.services.session.canRedo();
+      }
+    });
+  }
+
+  /**
+   * Sets up training presets UI handlers
+   */
+  private setupPresets(): void {
+    const presetSelect = document.getElementById('preset-select') as HTMLSelectElement | null;
+    const applyBtn = document.getElementById('btn-apply-preset') as HTMLButtonElement | null;
+    const descriptionEl = document.getElementById('preset-description');
+
+    if (!presetSelect || !applyBtn) return;
+
+    // Update description when preset selection changes
+    presetSelect.addEventListener('change', async () => {
+      const presetId = presetSelect.value;
+
+      if (!presetId) {
+        applyBtn.disabled = true;
+        if (descriptionEl) descriptionEl.textContent = '';
+        return;
+      }
+
+      // Dynamic import to avoid circular dependencies
+      const { getPreset } = await import('../domain/TrainingPresets');
+      const preset = getPreset(presetId);
+
+      if (preset && descriptionEl) {
+        descriptionEl.textContent = preset.description;
+        applyBtn.disabled = false;
+      }
+    });
+
+    // Apply preset when button clicked
+    if (applyBtn) {
+      applyBtn.addEventListener('click', async () => {
+        const presetId = presetSelect.value;
+        if (!presetId) return;
+
+        const { getPreset } = await import('../domain/TrainingPresets');
+        const preset = getPreset(presetId);
+
+        if (!preset) return;
+
+        try {
+          // Set dataset dropdown value and trigger load
+          const datasetSelect = document.getElementById('dataset-select') as HTMLSelectElement | null;
+          if (datasetSelect) {
+            datasetSelect.value = preset.datasetType;
+            await this.controllers.dataset.handleLoadData();
+          }
+
+          // Apply hyperparameters (this will trigger config history)
+          await this.services.session.setHyperparameters(preset.hyperparameters);
+
+          // Update epoch input if available
+          const epochInput = document.getElementById('input-epochs') as HTMLInputElement | null;
+          if (epochInput) {
+            epochInput.value = preset.recommendedEpochs.toString();
+          }
+
+          // Reset selection
+          presetSelect.value = '';
+          applyBtn.disabled = true;
+          if (descriptionEl) descriptionEl.textContent = '';
+
+        } catch (error) {
+          console.error('Failed to apply preset:', error);
+        }
+      });
+    }
+  }
+
+  /**
+   * Sets up training report export
+   */
+  private setupReportExport(): void {
+    const exportBtn = document.getElementById('btn-export-report') as HTMLButtonElement | null;
+    if (!exportBtn) return;
+
+    // Enable button when training has started
+    this.services.session.onStateChange((state) => {
+      exportBtn.disabled = !state.isInitialised || state.currentEpoch === 0;
+    });
+
+    exportBtn.addEventListener('click', async () => {
+      const state = this.services.session.getState();
+      if (!state.isInitialised || state.currentEpoch === 0) return;
+
+      try {
+        const { generateHTMLReport, downloadHTMLReport } = await import('../../infrastructure/export/TrainingReport');
+
+        // Collect classification metrics if available
+        let classMetrics;
+        const precisionEl = document.getElementById('metric-precision');
+        const recallEl = document.getElementById('metric-recall');
+        const f1El = document.getElementById('metric-f1');
+
+        if (precisionEl && recallEl && f1El) {
+          const precisionText = precisionEl.textContent?.replace('%', '') || '0';
+          const recallText = recallEl.textContent?.replace('%', '') || '0';
+          const f1Text = f1El.textContent?.replace('%', '') || '0';
+
+          if (precisionText !== '—' && recallText !== '—' && f1Text !== '—') {
+            classMetrics = {
+              precision: parseFloat(precisionText) / 100,
+              recall: parseFloat(recallText) / 100,
+              f1: parseFloat(f1Text) / 100,
+            };
+          }
+        }
+
+        // Get dataset info
+        const data = this.services.session.getData();
+        const datasetName = (document.getElementById('dataset-select') as HTMLSelectElement)?.value || 'Unknown';
+
+        // Get current hyperparameters from neural net structure
+        const structure = this.services.neuralNet.getStructure();
+        const config: import('../../core/domain/Hyperparameters').Hyperparameters = {
+          learningRate: state.history.records[state.history.records.length - 1]?.learningRate ?? 0.03,
+          layers: structure?.layers.slice(1, -1) ?? [],
+        };
+
+        // Get final metrics from last record
+        const lastRecord = state.history.records[state.history.records.length - 1];
+
+        const reportData = {
+          config,
+          history: state.history,
+          datasetInfo: {
+            name: datasetName,
+            samples: data.length,
+            classes: structure?.layers[structure.layers.length - 1] ?? 2,
+          },
+          finalMetrics: {
+            loss: lastRecord?.loss ?? state.currentLoss ?? 0,
+            accuracy: lastRecord?.accuracy ?? state.currentAccuracy ?? 0,
+            valLoss: lastRecord?.valLoss ?? undefined,
+            valAccuracy: lastRecord?.valAccuracy ?? undefined,
+          },
+          classMetrics,
+        };
+
+        const html = generateHTMLReport(reportData);
+        const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+        downloadHTMLReport(html, `neuroviz-report-${timestamp}.html`);
+
+      } catch (error) {
+        console.error('Failed to generate report:', error);
+      }
+    });
+  }
+
+  /**
+   * Sets up dataset statistics display
+   */
+  private setupDatasetStatistics(): void {
+    // Update statistics when dataset changes
+    this.services.session.onStateChange((state) => {
+      if (!state.datasetLoaded) return;
+
+      const data = this.services.session.getData();
+      if (!data || data.length === 0) return;
+
+      this.updateDatasetStatistics(data);
+    });
+  }
+
+  /**
+   * Updates dataset statistics panel
+   */
+  private async updateDatasetStatistics(data: readonly import('../domain/Point').Point[]): Promise<void> {
+    const { calculateDatasetStatistics } = await import('../domain/DatasetStatistics');
+    const stats = calculateDatasetStatistics(Array.from(data));
+
+    // Show panel
+    const panel = document.getElementById('dataset-stats-panel');
+    if (panel) panel.classList.remove('hidden');
+
+    // Update total samples
+    const totalEl = document.getElementById('stats-total');
+    if (totalEl) totalEl.textContent = stats.totalSamples.toString();
+
+    // Update class distribution
+    const classesEl = document.getElementById('stats-classes');
+    if (classesEl) {
+      classesEl.innerHTML = '';
+      const sortedClasses = Array.from(stats.classDistribution.entries()).sort((a, b) => a[0] - b[0]);
+
+      for (const [classLabel, count] of sortedClasses) {
+        const percentage = ((count / stats.totalSamples) * 100).toFixed(1);
+        const classDiv = document.createElement('div');
+        classDiv.className = 'flex justify-between items-center';
+        classDiv.innerHTML = `
+          <span>Class ${classLabel}:</span>
+          <span class="text-slate-300 font-mono">${count} <span class="text-slate-500">(${percentage}%)</span></span>
+        `;
+        classesEl.appendChild(classDiv);
+      }
+    }
+
+    // Update outliers
+    const outliersEl = document.getElementById('stats-outliers');
+    const outliersCountEl = document.getElementById('stats-outliers-count');
+    if (outliersEl && outliersCountEl) {
+      if (stats.outliers.length > 0) {
+        outliersCountEl.textContent = stats.outliers.length.toString();
+        outliersEl.classList.remove('hidden');
+      } else {
+        outliersEl.classList.add('hidden');
+      }
+    }
+  }
+
+  /**
+   * Sets up help modal close handlers
+   */
+  private setupHelpModal(): void {
+    const helpModal = document.getElementById('help-modal');
+    const helpClose = document.getElementById('help-close');
+
+    if (helpClose && helpModal) {
+      helpClose.addEventListener('click', () => {
+        helpModal.classList.add('hidden');
+      });
+    }
+
+    // Close on Esc or clicking backdrop
+    if (helpModal) {
+      helpModal.addEventListener('click', (e) => {
+        if (e.target === helpModal) {
+          helpModal.classList.add('hidden');
+        }
+      });
+    }
+  }
+
+  /**
+   * Updates activation histogram with sample points from the dataset.
+   */
+  private updateActivationHistogram(): void {
+    const data = this.services.session.getData();
+    const structure = this.services.neuralNet.getStructure();
+    if (!data?.length || !structure) return;
+
+    try {
+      // Sample up to 100 random points to get activation distributions
+      const sampleSize = Math.min(100, data.length);
+      const sampledPoints: typeof data = [];
+      const step = Math.max(1, Math.floor(data.length / sampleSize));
+      for (let i = 0; i < data.length && sampledPoints.length < sampleSize; i += step) {
+        const point = data[i];
+        if (point) {
+          sampledPoints.push(point);
+        }
+      }
+
+      // Collect all activations per layer
+      const layerActivations: number[][] = Array(structure.layers.length).fill(null).map(() => []);
+
+      for (const point of sampledPoints) {
+        const activations = this.services.neuralNet.getLayerActivations(point);
+        activations.forEach((layerVals, layerIdx) => {
+          layerActivations[layerIdx]?.push(...layerVals);
+        });
+      }
+
+      // Convert to LayerActivationData format
+      const layersData: LayerActivationData[] = structure.layers.map((layerSize, idx) => ({
+        layerIndex: idx,
+        layerName: idx === 0 ? 'Input' : idx === structure.layers.length - 1 ? 'Output' : `Layer ${idx}`,
+        activations: layerActivations[idx] ?? []
+      }));
+
+      this.services.activationHistogram.update(layersData);
+    } catch (error) {
+      console.error('Failed to update activation histogram:', error);
+    }
+  }
+
+  /**
    * Disposes the application and cleans up all resources.
    * Call this method before re-instantiating or during hot reload.
    */
@@ -227,9 +623,11 @@ export class Application {
 
     // Dispose D3 visualizations (calls clear() internally and cleans up observers)
     this.services.lossChart.dispose();
+    this.services.lrChart.dispose();
     this.services.networkDiagram.dispose();
     this.services.confusionMatrix.dispose();
     this.services.weightHistogram.dispose();
+    this.services.activationHistogram.dispose();
 
     // Dispose keyboard listener
     if (this.services.keyboardShortcuts) {
