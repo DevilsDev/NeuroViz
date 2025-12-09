@@ -90,6 +90,45 @@
                 d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l-5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
             </svg>
           </button>
+          <!-- Learn Menu Dropdown -->
+          <div class="relative" id="learn-menu-container">
+            <button id="btn-learn-menu" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 transition-colors flex items-center gap-2 text-sm font-medium text-white"
+              aria-label="Learning resources" title="Tutorials & Challenges">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              Learn
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            <div id="learn-menu-dropdown" class="absolute right-0 mt-2 w-56 bg-navy-800 border border-navy-600 rounded-lg shadow-xl hidden z-50">
+              <div class="p-2">
+                <button id="btn-open-tutorials" class="w-full text-left px-3 py-2 rounded hover:bg-navy-700 text-slate-300 hover:text-white transition-colors flex items-center gap-2">
+                  <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                  Guided Tutorials
+                </button>
+                <button id="btn-open-challenges" class="w-full text-left px-3 py-2 rounded hover:bg-navy-700 text-slate-300 hover:text-white transition-colors flex items-center gap-2">
+                  <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                  </svg>
+                  Challenge Mode
+                  <span id="challenge-completion-badge" class="ml-auto text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded">0/7</span>
+                </button>
+              </div>
+              <div class="border-t border-navy-600 p-2">
+                <button id="btn-open-help" class="w-full text-left px-3 py-2 rounded hover:bg-navy-700 text-slate-300 hover:text-white transition-colors flex items-center gap-2">
+                  <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Keyboard Shortcuts
+                  <kbd class="ml-auto text-[10px] bg-navy-900 px-1.5 py-0.5 rounded text-slate-500">?</kbd>
+                </button>
+              </div>
+            </div>
+          </div>
           <button id="btn-theme-toggle" class="p-2 rounded-lg bg-navy-800 hover:bg-navy-700 transition-colors"
             aria-label="Toggle theme" title="Toggle light/dark theme">
             <!-- Sun icon (shown in dark mode) -->
@@ -784,6 +823,87 @@
 
   <div id="onboarding-modal" class="hidden"></div>
   <div id="ab-modal" class="hidden"></div>
+
+  <!-- TUTORIALS MODAL -->
+  <div id="tutorials-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4" role="dialog" aria-labelledby="tutorials-title" aria-modal="true">
+    <div class="bg-navy-800 rounded-xl border border-navy-600 shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-navy-600">
+        <h2 id="tutorials-title" class="text-lg font-bold text-slate-200 flex items-center gap-2">
+          <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+          Guided Tutorials
+        </h2>
+        <button id="tutorials-close" class="p-2 rounded hover:bg-navy-700 text-slate-400 hover:text-slate-200 transition-colors" aria-label="Close tutorials">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div id="tutorials-list" class="overflow-y-auto p-6 space-y-4">
+        <!-- Tutorials populated dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- CHALLENGES MODAL -->
+  <div id="challenges-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4" role="dialog" aria-labelledby="challenges-title" aria-modal="true">
+    <div class="bg-navy-800 rounded-xl border border-navy-600 shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-navy-600">
+        <h2 id="challenges-title" class="text-lg font-bold text-slate-200 flex items-center gap-2">
+          <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+          </svg>
+          Challenge Mode
+        </h2>
+        <div class="flex items-center gap-4">
+          <div class="text-sm">
+            <span class="text-slate-400">Total Points:</span>
+            <span id="challenge-total-points" class="text-amber-400 font-bold ml-1">0</span>
+          </div>
+          <button id="challenges-close" class="p-2 rounded hover:bg-navy-700 text-slate-400 hover:text-slate-200 transition-colors" aria-label="Close challenges">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="flex border-b border-navy-600">
+        <button class="challenge-tab px-4 py-2 text-sm font-medium text-cyan-400 border-b-2 border-cyan-400" data-tab="challenges">Challenges</button>
+        <button class="challenge-tab px-4 py-2 text-sm font-medium text-slate-400 hover:text-slate-300" data-tab="leaderboard">Leaderboard</button>
+      </div>
+      <div id="challenges-content" class="overflow-y-auto p-6">
+        <div id="challenges-list" class="space-y-4">
+          <!-- Challenges populated dynamically -->
+        </div>
+        <div id="leaderboard-content" class="hidden">
+          <div id="leaderboard-list" class="space-y-2">
+            <!-- Leaderboard populated dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIVE CHALLENGE BANNER -->
+  <div id="challenge-banner" class="fixed top-16 left-1/2 -translate-x-1/2 z-40 hidden">
+    <div class="bg-amber-500/20 border border-amber-500/50 rounded-lg px-4 py-2 flex items-center gap-3 shadow-lg backdrop-blur">
+      <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+      </svg>
+      <div>
+        <div class="text-xs text-amber-300 font-medium">Active Challenge</div>
+        <div id="challenge-banner-name" class="text-sm text-white font-bold"></div>
+      </div>
+      <div id="challenge-banner-status" class="text-xs text-slate-300 ml-4"></div>
+      <button id="challenge-banner-abandon" class="ml-4 text-xs text-slate-400 hover:text-red-400 transition-colors">
+        Abandon
+      </button>
+    </div>
+  </div>
+
+  <!-- LEARN MENU BUTTON (in header) -->
+  <!-- Note: This will be added to the header via JavaScript -->
 
   <!-- SCRIPT IMPORT -->
   <script type="module" src="/src/main.ts"></script>

@@ -32,3 +32,49 @@ export {
   COLOUR_PALETTES,
   MULTI_CLASS_COLOURS,
 } from './VisualizationConfig';
+
+// Education domain types
+export type {
+  Tutorial,
+  TutorialStep,
+  TutorialProgress,
+  TutorialCompletion,
+  TutorialAction,
+  HighlightPosition,
+} from './Tutorial';
+export {
+  TUTORIALS,
+  getTutorial,
+  getTutorialsByCategory,
+  getTutorialsByDifficulty,
+} from './Tutorial';
+
+export type {
+  TooltipDefinition,
+  TooltipCategory,
+} from './Tooltip';
+export {
+  TOOLTIP_REGISTRY,
+  getAllTooltips,
+  getTooltipForTarget,
+  getTooltipsByCategory,
+  hasTooltip,
+} from './Tooltip';
+
+export type {
+  Challenge,
+  ChallengeConstraint,
+  ChallengeGoal,
+  ChallengeDifficulty,
+  ChallengeCompletion,
+  ChallengeValidationResult,
+  LeaderboardEntry,
+} from './Challenge';
+export {
+  CHALLENGES,
+  getChallenge,
+  getChallengesByDifficulty,
+  getChallengesByCategory,
+  validateChallenge,
+  calculateChallengeScore,
+} from './Challenge';

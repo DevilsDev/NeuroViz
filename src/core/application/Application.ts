@@ -19,6 +19,7 @@ import {
   ComparisonController,
   ResearchController,
 } from '../../presentation/controllers';
+import { EducationController } from '../../presentation/controllers/EducationController';
 import { KeyboardShortcuts } from '../../utils/KeyboardShortcuts';
 import { DatasetGallery } from '../../utils/DatasetGallery';
 
@@ -72,6 +73,7 @@ export interface Controllers {
  */
 export class Application {
   private speedBaseline: SpeedBaseline | null = null;
+  private educationController: EducationController | null = null;
 
   constructor(
     public readonly services: Services,
@@ -162,6 +164,9 @@ export class Application {
 
       // Setup dataset statistics
       this.setupDatasetStatistics();
+
+      // Setup education features (tutorials, tooltips, challenges)
+      this.setupEducation();
     });
   }
 
@@ -607,6 +612,67 @@ export class Application {
   }
 
   /**
+   * Sets up education features (tutorials, tooltips, challenges)
+   */
+  private setupEducation(): void {
+    this.educationController = new EducationController();
+    this.educationController.initialise();
+
+    // Hook into training events for tutorials and challenges
+    this.services.session.onStateChange((state) => {
+      if (!this.educationController) return;
+
+      // Notify tutorial service of training events
+      if (state.isRunning && state.currentEpoch === 1) {
+        this.educationController.notifyTrainingEvent('start');
+      }
+      if (state.currentEpoch > 0) {
+        this.educationController.notifyTrainingEvent('epoch', state.currentEpoch);
+      }
+      if (!state.isRunning && state.currentEpoch > 0) {
+        this.educationController.notifyTrainingEvent('complete');
+      }
+
+      // Validate active challenge
+      const challengeState = this.educationController.getChallengeService().getState();
+      if (challengeState.isActive && !challengeState.isComplete) {
+        const datasetSelect = document.getElementById('dataset-select') as HTMLSelectElement | null;
+        const datasetType = datasetSelect?.value ?? 'circle';
+        const config = this.getCurrentConfig();
+        if (config) {
+          this.educationController.validateChallenge(config, state.history, datasetType);
+        }
+      }
+    });
+
+    // Listen for dataset load events from challenges
+    window.addEventListener('load-dataset', ((e: CustomEvent<{ dataset: string }>) => {
+      const datasetSelect = document.getElementById('dataset-select') as HTMLSelectElement | null;
+      if (datasetSelect) {
+        datasetSelect.value = e.detail.dataset;
+        void this.controllers.dataset.handleLoadData();
+      }
+    }) as EventListener);
+  }
+
+  /**
+   * Gets current hyperparameters configuration
+   */
+  private getCurrentConfig(): import('../domain/Hyperparameters').Hyperparameters | null {
+    const structure = this.services.neuralNet.getStructure();
+    if (!structure) return null;
+
+    const state = this.services.session.getState();
+    const lastRecord = state.history.records[state.history.records.length - 1];
+
+    return {
+      learningRate: lastRecord?.learningRate ?? 0.03,
+      layers: structure.layers.slice(1, -1), // Hidden layers only
+      activation: structure.activations[0] as import('../domain/Hyperparameters').ActivationType,
+    };
+  }
+
+  /**
    * Disposes the application and cleans up all resources.
    * Call this method before re-instantiating or during hot reload.
    */
@@ -644,6 +710,11 @@ export class Application {
         (controller as any).dispose();
       }
     });
+
+    // Dispose education controller
+    if (this.educationController) {
+      this.educationController.dispose();
+    }
 
     // Remove window listeners
     window.removeEventListener('beforeunload', this.boundCleanup);
