@@ -328,7 +328,7 @@ export class ApplicationBuilder {
     const sidebarTabs = document.querySelector('.sidebar-tabs');
 
     if (!sidebarTabs) {
-      console.error('[NeuroViz] .sidebar-tabs container not found - tab switching disabled');
+      // Sidebar tabs are optional - the compact layout doesn't use them
       return;
     }
 

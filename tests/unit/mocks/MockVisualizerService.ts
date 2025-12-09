@@ -66,6 +66,14 @@ export class MockVisualizerService implements IVisualizerService {
     // No-op for mock
   });
 
+  readonly setPointPredictions = vi.fn((_predictions: Prediction[]): void => {
+    // No-op for mock - used for Voronoi overlay
+  });
+
+  readonly setVoronoiOverlay = vi.fn((_enabled: boolean): void => {
+    // No-op for mock
+  });
+
   readonly exportAsPng = vi.fn(async (_metadata?: Record<string, string>): Promise<Blob> => {
     return new Blob(['mock-png'], { type: 'image/png' });
   });
@@ -116,5 +124,7 @@ export class MockVisualizerService implements IVisualizerService {
     this.enableDrawMode.mockClear();
     this.disableDrawMode.mockClear();
     this.isDrawModeEnabled.mockClear();
+    this.setPointPredictions.mockClear();
+    this.setVoronoiOverlay.mockClear();
   }
 }

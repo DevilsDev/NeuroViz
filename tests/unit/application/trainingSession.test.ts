@@ -400,7 +400,8 @@ describe('TrainingSession', () => {
         await session.step();
       }
 
-      expect(neuralNet.predict).toHaveBeenCalledTimes(1);
+      // predict is called twice per render: once for grid, once for point predictions
+      expect(neuralNet.predict).toHaveBeenCalledTimes(2);
       expect(visualizer.renderBoundary).toHaveBeenCalledTimes(1);
     });
 
@@ -430,7 +431,8 @@ describe('TrainingSession', () => {
         await session.step();
       }
 
-      expect(callOrder).toEqual(['predict', 'renderBoundary']);
+      // predict is called twice (grid + points), then renderBoundary
+      expect(callOrder).toEqual(['predict', 'predict', 'renderBoundary']);
     });
 
     it('should re-render data points after boundary render', async () => {

@@ -1,7 +1,7 @@
 import { ICommand } from './ICommand';
 import { ValidationResult } from './ValidationResult';
 import { ITrainingSession } from '../ITrainingSession';
-import { Hyperparameters, OptimizerType, ActivationType } from '../../domain';
+import { Hyperparameters, OptimizerType, ActivationType, LossType } from '../../domain';
 
 /**
  * Configuration for InitializeNetworkCommand
@@ -19,6 +19,7 @@ export interface InitializeNetworkConfig {
   dropoutRate?: number;
   clipNorm?: number;
   batchNorm?: boolean;
+  lossFunction?: LossType;
 }
 
 /**
@@ -115,6 +116,7 @@ export class InitializeNetworkCommand implements ICommand<void> {
       dropoutRate: this.config.dropoutRate ?? 0,
       clipNorm: this.config.clipNorm ?? 0,
       batchNorm: this.config.batchNorm ?? false,
+      lossFunction: this.config.lossFunction ?? 'crossEntropy',
     };
 
     await this.session.setHyperparameters(hyperparameters);

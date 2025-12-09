@@ -119,16 +119,20 @@ export class DatasetController {
     try {
       await this.session.loadData(datasetType, { samples, noise, numClasses, classBalance, preprocessing });
 
+      // Get the actual number of classes detected in the data
+      const detectedClasses = this.session.getDetectedNumClasses();
+      
+      // Auto-update the numClasses dropdown to match the data
+      this.elements.inputNumClasses.value = detectedClasses.toString();
+      this.updateDrawClassButtons();
+
       if (isRealWorld) {
         const datasetInfo = datasetType === 'iris'
           ? 'Iris (150 samples, 3 classes)'
           : 'Wine (178 samples, 3 classes)';
         toast.success(`${datasetInfo} loaded`);
-        // Update numClasses to 3 for real-world datasets
-        this.elements.inputNumClasses.value = '3';
-        this.updateDrawClassButtons();
       } else {
-        toast.success(`Dataset "${datasetType}" loaded (${samples} samples, ${numClasses} classes)`);
+        toast.success(`Dataset "${datasetType}" loaded (${samples} samples, ${detectedClasses} classes)`);
       }
 
       // Update visualization

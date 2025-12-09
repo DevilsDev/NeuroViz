@@ -167,17 +167,10 @@ html:not(.dark) {
     }
 
     #viz-container {
-        @apply w-full flex items-center justify-center;
-        height: 60vh;
-        min-height: 400px;
-        max-height: 800px;
-    }
-
-    @media (max-width: 768px) {
-        #viz-container {
-            height: 50vh;
-            min-height: 350px;
-        }
+        @apply w-full flex-1;
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
     }
 
     /* Header */

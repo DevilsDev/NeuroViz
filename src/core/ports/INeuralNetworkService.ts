@@ -97,4 +97,12 @@ export interface INeuralNetworkService {
    * @returns Object with layer sizes and activation functions, or null if not initialised
    */
   getStructure(): { layers: number[]; activations: string[] } | null;
+
+  /**
+   * Checks if the model is ready for use (initialised and not disposed).
+   * Use this before calling methods that access the model to avoid errors.
+   *
+   * @returns true if the model can be used, false otherwise
+   */
+  isReady(): boolean;
 }

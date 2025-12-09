@@ -367,7 +367,7 @@
         <!-- Visualization Area -->
         <section id="viz-panel" class="panel-glow relative flex-1 mb-4 flex flex-col"
           aria-label="Neural network visualization">
-          <div id="viz-container" role="img" class="flex-1 w-full h-full min-h-[400px]"
+          <div id="viz-container" role="img" class="flex-1 w-full h-full min-h-0"
             aria-label="Neural network decision boundary visualization">
             <!-- D3 chart renders here -->
             <div id="viz-empty-state"
@@ -386,8 +386,8 @@
           <!-- 3D View Container (hidden by default) -->
           <div id="three-container" class="absolute inset-0 hidden z-10"></div>
           
-          <!-- Footer Controls for Viz (z-30 to be above 3D view) -->
-          <div class="absolute bottom-4 left-4 right-4 flex justify-between pointer-events-none z-30">
+          <!-- Footer Controls for Viz (z-30 to be above 3D view, bottom-10 to clear X-axis) -->
+          <div class="absolute bottom-10 left-4 right-4 flex justify-between pointer-events-none z-30">
             <!-- Left: Metric Cards Overlay -->
             <div class="flex gap-2 pointer-events-auto">
               <div class="bg-navy-900/80 backdrop-blur p-2 rounded border border-white/10 text-xs shadow-lg">
@@ -491,6 +491,20 @@
                   </select>
                 </label>
               </div>
+              <div class="grid grid-cols-2 gap-2">
+                <label class="block">
+                  <span class="input-label">Loss Function</span>
+                  <select id="input-loss-function" class="select-field text-xs">
+                    <option value="crossEntropy" selected>Cross Entropy</option>
+                    <option value="mse">MSE</option>
+                    <option value="hinge">Hinge</option>
+                  </select>
+                </label>
+                <label class="flex items-center gap-2 mt-4">
+                  <input type="checkbox" id="input-batch-norm" class="w-4 h-4 rounded border-slate-600 bg-navy-900 text-cyan-500 focus:ring-cyan-500" />
+                  <span class="input-label">Batch Norm</span>
+                </label>
+              </div>
               <label class="block">
                 <span class="input-label">Hidden Layers</span>
                 <input type="text" id="input-layers" class="input-field text-xs" value="8, 4"
@@ -540,12 +554,21 @@
               <span class="input-label">Speed (FPS): <span id="fps-value">60</span></span>
               <input type="range" id="input-fps" class="w-full h-1 accent-accent-500" value="60" min="1" max="60" />
             </label>
-            <label class="block">
+            <label class="block mb-2">
               <span class="input-label">Performance Mode</span>
               <select id="input-perf-mode" class="select-field text-xs">
                 <option value="full" selected>Full Speed (60 FPS)</option>
                 <option value="balanced">Balanced (30 FPS)</option>
                 <option value="battery">Battery Saver (15 FPS)</option>
+              </select>
+            </label>
+            <label class="block">
+              <span class="input-label">LR Schedule</span>
+              <select id="input-lr-schedule" class="select-field text-xs">
+                <option value="none" selected>None (Constant)</option>
+                <option value="step">Step Decay</option>
+                <option value="exponential">Exponential Decay</option>
+                <option value="cosine">Cosine Annealing</option>
               </select>
             </label>
           </div>
@@ -569,6 +592,22 @@
                     <option value="0.5">50%</option>
                   </select></label>
               </div>
+            </details>
+
+            <!-- Network Architecture Diagram -->
+            <details class="group bg-navy-800/30 rounded-lg p-2" open>
+              <summary class="text-xs font-bold text-slate-400 cursor-pointer list-none flex justify-between">
+                Network Diagram <span class="group-open:rotate-180 transition-transform">▼</span>
+              </summary>
+              <div id="network-diagram" class="mt-2 min-h-[120px]"></div>
+            </details>
+
+            <!-- Weight Distribution -->
+            <details class="group bg-navy-800/30 rounded-lg p-2">
+              <summary class="text-xs font-bold text-slate-400 cursor-pointer list-none flex justify-between">
+                Weight Distribution <span class="group-open:rotate-180 transition-transform">▼</span>
+              </summary>
+              <div id="weight-histogram" class="mt-2 min-h-[80px]"></div>
             </details>
 
             <!-- Classification Metrics -->
@@ -599,6 +638,65 @@
                 Layer Activations <span class="group-open:rotate-180 transition-transform">▼</span>
               </summary>
               <div id="activation-histogram" class="mt-2 min-h-[120px]"></div>
+            </details>
+
+            <!-- Model Complexity Metrics -->
+            <details class="group bg-navy-800/30 rounded-lg p-2" open>
+              <summary class="text-xs font-bold text-slate-400 cursor-pointer list-none flex justify-between">
+                Model Complexity <span class="group-open:rotate-180 transition-transform">▼</span>
+              </summary>
+              <div id="model-complexity-panel" class="mt-2 space-y-2">
+                <div class="grid grid-cols-2 gap-2 text-[10px]">
+                  <div class="p-2 bg-navy-900/50 rounded">
+                    <div class="text-slate-500">Parameters</div>
+                    <div id="complexity-params" class="text-lg font-bold text-cyan-400">—</div>
+                  </div>
+                  <div class="p-2 bg-navy-900/50 rounded">
+                    <div class="text-slate-500">FLOPs/Forward</div>
+                    <div id="complexity-flops" class="text-lg font-bold text-emerald-400">—</div>
+                  </div>
+                </div>
+                <div class="p-2 bg-navy-900/50 rounded text-[10px]">
+                  <div class="flex justify-between">
+                    <span class="text-slate-500">Memory (Params)</span>
+                    <span id="complexity-param-memory" class="text-slate-300">—</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-500">Memory (Activations)</span>
+                    <span id="complexity-activation-memory" class="text-slate-300">—</span>
+                  </div>
+                  <div class="flex justify-between font-medium">
+                    <span class="text-slate-400">Total Memory</span>
+                    <span id="complexity-total-memory" class="text-amber-400">—</span>
+                  </div>
+                </div>
+                <div id="complexity-rating" class="text-[10px] text-slate-400 italic p-2 bg-navy-900/30 rounded"></div>
+              </div>
+            </details>
+
+            <!-- Adversarial Examples -->
+            <details class="group bg-navy-800/30 rounded-lg p-2">
+              <summary class="text-xs font-bold text-slate-400 cursor-pointer list-none flex justify-between">
+                Adversarial Examples <span class="group-open:rotate-180 transition-transform">▼</span>
+              </summary>
+              <div class="mt-2 space-y-2">
+                <p class="text-[10px] text-slate-500">Generate points that fool the model - small perturbations that cause misclassification.</p>
+                <button id="btn-generate-adversarial" class="btn-secondary w-full text-xs py-1.5" disabled>
+                  Generate Adversarial Examples
+                </button>
+                <div id="adversarial-results" class="hidden">
+                  <div class="flex justify-between text-[10px] mb-1">
+                    <span class="text-slate-400">Found:</span>
+                    <span id="adversarial-count" class="text-amber-400 font-bold">0</span>
+                  </div>
+                  <div id="adversarial-list" class="max-h-24 overflow-y-auto space-y-1 text-[10px]">
+                    <!-- Adversarial examples listed here -->
+                  </div>
+                  <button id="btn-clear-adversarial" class="btn-secondary w-full text-[10px] py-1 mt-2">
+                    Clear Adversarial Points
+                  </button>
+                </div>
+              </div>
             </details>
 
             <!-- Speed Comparison -->

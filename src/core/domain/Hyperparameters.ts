@@ -4,6 +4,14 @@
 export type OptimizerType = 'sgd' | 'adam' | 'rmsprop' | 'adagrad';
 
 /**
+ * Supported loss functions.
+ * - crossEntropy: Standard for classification (binary or categorical)
+ * - mse: Mean Squared Error - treats outputs as continuous
+ * - hinge: SVM-style loss, good for max-margin classification
+ */
+export type LossType = 'crossEntropy' | 'mse' | 'hinge';
+
+/**
  * Supported activation functions.
  */
 export type ActivationType = 'linear' | 'relu' | 'sigmoid' | 'tanh' | 'elu' | 'leaky_relu' | 'selu' | 'softmax';
@@ -77,6 +85,9 @@ export interface Hyperparameters {
 
   /** Whether to use batch normalization between layers. */
   readonly batchNorm?: boolean;
+
+  /** Loss function to use for training (default: crossEntropy) */
+  readonly lossFunction?: LossType;
 }
 
 /**
@@ -121,6 +132,7 @@ export const DEFAULT_HYPERPARAMETERS: Required<Hyperparameters> = {
   dropoutRate: 0,
   clipNorm: 0,
   batchNorm: false,
+  lossFunction: 'crossEntropy',
 };
 
 /**

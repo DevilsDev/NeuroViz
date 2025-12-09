@@ -16,7 +16,7 @@ export class D3LearningRateChart {
   private readonly svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
   private width: number;
   private height: number;
-  private readonly margin = { top: 15, right: 40, bottom: 25, left: 45 };
+  private readonly margin = { top: 15, right: 15, bottom: 25, left: 55 };
 
   private xScale: d3.ScaleLinear<number, number>;
   private yScale: d3.ScaleLinear<number, number>;
@@ -37,13 +37,13 @@ export class D3LearningRateChart {
 
     this.container = d3.select(element);
 
-    // Get actual container dimensions
+    // Get actual container dimensions with minimum bounds
     const rect = element.getBoundingClientRect();
-    const containerWidth = rect.width || 400;
-    const containerHeight = rect.height || 120;
+    const containerWidth = Math.max(rect.width || 400, this.margin.left + this.margin.right + 50);
+    const containerHeight = Math.max(rect.height || 120, this.margin.top + this.margin.bottom + 20);
 
-    this.width = containerWidth - this.margin.left - this.margin.right;
-    this.height = containerHeight - this.margin.top - this.margin.bottom;
+    this.width = Math.max(0, containerWidth - this.margin.left - this.margin.right);
+    this.height = Math.max(0, containerHeight - this.margin.top - this.margin.bottom);
 
     // Clear any existing content
     this.container.selectAll('*').remove();

@@ -9,6 +9,7 @@ interface NetworkNode {
   type: 'input' | 'hidden' | 'output';
   activation?: string;
   activationValue?: number; // For showing node activation during training
+  isDropped?: boolean; // For dropout visualization
 }
 
 interface NetworkLink {
@@ -49,11 +50,13 @@ export class D3NetworkDiagram {
    * @param layers - Array of layer sizes [input, hidden1, hidden2, ..., output]
    * @param activations - Array of activation functions per layer
    * @param weights - Optional weight matrices for connection thickness
+   * @param dropoutMask - Optional dropout mask for hidden layers (true = active, false = dropped)
    */
   render(
     layers: number[],
     activations: string[] = [],
-    weights?: number[][][]
+    weights?: number[][][],
+    dropoutMask?: boolean[][]
   ): void {
     if (layers.length === 0) return;
 
@@ -80,6 +83,17 @@ export class D3NetworkDiagram {
         : 'hidden';
 
       for (let i = 0; i < nodeCount; i++) {
+        // Check if this neuron is dropped (only for hidden layers)
+        let isDropped = false;
+        if (layerType === 'hidden' && dropoutMask) {
+          // dropoutMask is indexed by hidden layer (0 = first hidden)
+          const hiddenLayerIdx = layerIndex - 1;
+          const layerMask = dropoutMask[hiddenLayerIdx];
+          if (layerMask && layerMask[i] === false) {
+            isDropped = true;
+          }
+        }
+
         const node: NetworkNode = {
           id: `L${layerIndex}N${i}`,
           layer: layerIndex,
@@ -88,6 +102,7 @@ export class D3NetworkDiagram {
           y: (i + 1) * nodeSpacing,
           type: layerType,
           activation: activations[layerIndex] ?? (layerType === 'output' ? 'softmax' : 'relu'),
+          isDropped,
         };
         nodes.push(node);
 
@@ -223,14 +238,21 @@ export class D3NetworkDiagram {
       .attr('cy', d => d.y)
       .attr('r', nodeRadius)
       .attr('fill', d => {
+        // Dropped neurons are shown with reduced opacity and different color
+        if (d.isDropped) {
+          return '#64748b'; // Slate gray for dropped
+        }
         switch (d.type) {
           case 'input': return '#3b82f6';
           case 'output': return '#22c55e';
           default: return '#8b5cf6';
         }
       })
-      .attr('stroke', 'var(--bg-primary)')
-      .attr('stroke-width', 2);
+      .attr('fill-opacity', d => d.isDropped ? 0.3 : 1)
+      .attr('stroke', d => d.isDropped ? '#ef4444' : 'var(--bg-primary)')
+      .attr('stroke-width', d => d.isDropped ? 1.5 : 2)
+      .attr('stroke-dasharray', d => d.isDropped ? '3,2' : 'none')
+      .attr('class', d => d.isDropped ? 'neuron-dropped' : 'neuron-active');
 
     // Add layer labels
     const labelGroup = g.append('g').attr('class', 'labels');

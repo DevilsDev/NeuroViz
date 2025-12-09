@@ -8,7 +8,7 @@ export class D3WeightHistogram {
   private svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
   private width: number;
   private height: number;
-  private margin = { top: 10, right: 10, bottom: 25, left: 35 };
+  private margin = { top: 15, right: 15, bottom: 25, left: 50 };
 
   constructor(container: HTMLElement) {
     const rect = container.getBoundingClientRect();
@@ -77,25 +77,25 @@ export class D3WeightHistogram {
       .attr('width', d => Math.max(0, x(d.x1 ?? 0) - x(d.x0 ?? 0) - 1))
       .attr('y', d => y(d.length))
       .attr('height', d => innerHeight - y(d.length))
-      .attr('fill', 'var(--accent-500)')
-      .attr('opacity', 0.8);
+      .attr('fill', '#06b6d4')
+      .attr('opacity', 0.85);
 
     // X axis
     g.append('g')
       .attr('transform', `translate(0,${innerHeight})`)
       .call(d3.axisBottom(x).ticks(5).tickFormat(d3.format('.1f')))
       .selectAll('text')
-      .attr('fill', 'var(--text-secondary)')
+      .attr('fill', '#94a3b8')
       .attr('font-size', '9px');
 
     g.selectAll('.domain, .tick line')
-      .attr('stroke', 'var(--border-color)');
+      .attr('stroke', '#475569');
 
     // Y axis
     g.append('g')
       .call(d3.axisLeft(y).ticks(3))
       .selectAll('text')
-      .attr('fill', 'var(--text-secondary)')
+      .attr('fill', '#94a3b8')
       .attr('font-size', '9px');
 
     // Stats text

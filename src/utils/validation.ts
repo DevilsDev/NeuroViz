@@ -3,7 +3,7 @@
  * Ensures type safety when parsing user input that should match TypeScript types.
  */
 
-import type { OptimizerType, ActivationType, LRScheduleType } from '../core/domain';
+import type { OptimizerType, ActivationType, LRScheduleType, LossType } from '../core/domain';
 
 // =============================================================================
 // Valid Value Sets
@@ -25,6 +25,9 @@ export const VALID_LR_SCHEDULES: readonly LRScheduleType[] = [
 /** Valid performance mode values */
 export const VALID_PERFORMANCE_MODES = ['full', 'balanced', 'battery'] as const;
 export type PerformanceMode = typeof VALID_PERFORMANCE_MODES[number];
+
+/** Valid loss function types matching LossType */
+export const VALID_LOSS_TYPES: readonly LossType[] = ['crossEntropy', 'mse', 'hinge'];
 
 // =============================================================================
 // Type Guards
@@ -56,6 +59,13 @@ export function isValidLRScheduleType(value: string): value is LRScheduleType {
  */
 export function isValidPerformanceMode(value: string): value is PerformanceMode {
     return VALID_PERFORMANCE_MODES.includes(value as PerformanceMode);
+}
+
+/**
+ * Checks if a string is a valid LossType.
+ */
+export function isValidLossType(value: string): value is LossType {
+    return VALID_LOSS_TYPES.includes(value as LossType);
 }
 
 // =============================================================================
@@ -244,4 +254,26 @@ export function validateLayersInput(
     }
 
     return { isValid: true, layers };
+}
+
+/**
+ * Parses and validates a loss function type from a DOM value.
+ * Returns the validated type or a default if invalid.
+ * 
+ * @param value - The string value to validate
+ * @param defaultValue - Fallback value if validation fails (default: 'crossEntropy')
+ * @param logWarning - Whether to log a warning on invalid input (default: true)
+ */
+export function parseLossType(
+    value: string,
+    defaultValue: LossType = 'crossEntropy',
+    logWarning = true
+): LossType {
+    if (isValidLossType(value)) {
+        return value;
+    }
+    if (logWarning) {
+        console.warn(`[Validation] Invalid loss type "${value}", using default "${defaultValue}"`);
+    }
+    return defaultValue;
 }

@@ -102,6 +102,7 @@ export function getTrainingElements(): TrainingElements {
     inputDropout: getCachedOrCreate<HTMLSelectElement>('input-dropout', 'select'),
     inputClipNorm: getCachedOrCreate<HTMLSelectElement>('input-clip-norm', 'select'),
     inputBatchNorm: getCachedOrCreate<HTMLInputElement>('input-batch-norm', 'input'),
+    inputLossFunction: getCachedOrCreate<HTMLSelectElement>('input-loss-function', 'select'),
     inputBatchSize: getCachedOrCreate<HTMLInputElement>('input-batch-size', 'input'),
     inputMaxEpochs: getCachedOrCreate<HTMLInputElement>('input-max-epochs', 'input'),
     epochValue: getCachedOrCreate<HTMLElement>('status-epoch', 'span'),

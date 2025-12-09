@@ -70,6 +70,7 @@ export class TrainingSession implements ITrainingSession {
   private validationData: Point[] = []; // Validation split
   private readonly predictionGrid: Point[] = [];
   private cachedPredictions: Prediction[] = [];
+  private detectedNumClasses = 2; // Detected from loaded data
 
   // Runtime training configuration
   private trainingConfig: Required<TrainingConfig> = { ...DEFAULT_TRAINING_CONFIG };
@@ -222,8 +223,27 @@ export class TrainingSession implements ITrainingSession {
     this.allData = this.applyPreprocessing(rawData, options?.preprocessing ?? 'none');
     this.splitData();
     this.datasetLoaded = true;
+    
+    // Detect actual number of classes in the data
+    this.detectedNumClasses = this.detectNumClasses(this.allData);
+    
     this.visualizer.renderData(this.allData);
     this.notifyListeners();
+  }
+
+  /**
+   * Detects the number of unique classes in the dataset.
+   */
+  private detectNumClasses(data: Point[]): number {
+    const uniqueLabels = new Set(data.map(p => p.label));
+    return uniqueLabels.size;
+  }
+
+  /**
+   * Returns the detected number of classes in the current dataset.
+   */
+  getDetectedNumClasses(): number {
+    return this.detectedNumClasses;
   }
 
   /**
@@ -501,11 +521,26 @@ export class TrainingSession implements ITrainingSession {
     this.isProcessingStep = true;
 
     try {
+      // Guard: check if model is still ready (may have been disposed during reinitialisation)
+      if (!this.neuralNet.isReady()) {
+        this.isTraining = false;
+        this.isProcessingStep = false;
+        this.notifyListeners();
+        return;
+      }
+
       // Get training batch (all data or subset)
       const batch = this.getTrainingBatch();
 
-      // Execute training step
+      // Increment epoch BEFORE calculating LR (so epoch 1 gets the right schedule)
       this.currentEpoch++;
+
+      // Update learning rate for THIS epoch BEFORE training
+      // This ensures the optimizer uses the correct LR for this epoch
+      this.updateLearningRateIfNeeded();
+      const epochLearningRate = this.lrScheduler.getCurrentLR();
+
+      // Execute training step (uses the LR we just set)
       const result = await this.neuralNet.train(batch);
       this.currentLoss = result.loss;
       this.currentAccuracy = result.accuracy;
@@ -522,7 +557,7 @@ export class TrainingSession implements ITrainingSession {
         this.currentValAccuracy = valAccuracy;
       }
 
-      // Record in history (including current learning rate)
+      // Record in history (using the LR that was actually used for training)
       this.history = addHistoryRecord(this.history, {
         epoch: this.currentEpoch,
         loss: result.loss,
@@ -530,7 +565,7 @@ export class TrainingSession implements ITrainingSession {
         valLoss,
         valAccuracy,
         timestamp: performance.now(),
-        learningRate: this.lrScheduler.getCurrentLR(),
+        learningRate: epochLearningRate,
       });
 
       // Check early stopping using strategy service
@@ -547,9 +582,6 @@ export class TrainingSession implements ITrainingSession {
         });
         return; // Exit loop
       }
-
-      // Update learning rate based on schedule using scheduler service
-      this.updateLearningRateIfNeeded();
 
       // Update visualisation at intervals (decouples rendering from training)
       if (this.currentEpoch % this.config.renderInterval === 0) {
@@ -569,6 +601,14 @@ export class TrainingSession implements ITrainingSession {
       // Stop training on error (e.g., GradientExplosionError)
       this.isTraining = false;
       this.notifyListeners();
+      
+      // Silently handle disposed model errors (expected during reinitialisation)
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('disposed')) {
+        // Model was disposed during training - this is expected when reinitialising
+        return;
+      }
+      
       console.error('Training loop error:', error);
       logger.error(
         'Training loop crashed',

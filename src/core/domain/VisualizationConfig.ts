@@ -33,7 +33,7 @@ export const DEFAULT_VISUALIZATION_CONFIG: VisualizationConfig = {
   boundaryOpacity: 0.7,
   pointRadius: 5,
   colourScheme: 'default',
-  zoomEnabled: true,
+  zoomEnabled: false,
   tooltipsEnabled: true,
   contourCount: 10,
 };

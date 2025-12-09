@@ -10,6 +10,7 @@ import type { D3WeightHistogram } from '../../infrastructure/d3/D3WeightHistogra
 import type { D3ActivationHistogram, LayerActivationData } from '../../infrastructure/d3/D3ActivationHistogram';
 import type { LocalStorageService } from '../../infrastructure/storage/LocalStorageService';
 import { calculateSpeedMetrics, compareSpeed, formatSpeedMetrics, type SpeedBaseline } from '../domain/SpeedComparison';
+import { calculateModelComplexity } from '../domain/ModelComplexity';
 import {
   DatasetController,
   TrainingController,
@@ -22,6 +23,7 @@ import {
 import { EducationController } from '../../presentation/controllers/EducationController';
 import { KeyboardShortcuts } from '../../utils/KeyboardShortcuts';
 import { DatasetGallery } from '../../utils/DatasetGallery';
+import { AdvancedFeaturesService } from '../../infrastructure/ml/AdvancedFeaturesService';
 
 
 
@@ -74,6 +76,7 @@ export interface Controllers {
 export class Application {
   private speedBaseline: SpeedBaseline | null = null;
   private educationController: EducationController | null = null;
+  private advancedFeatures: AdvancedFeaturesService | null = null;
 
   constructor(
     public readonly services: Services,
@@ -99,6 +102,12 @@ export class Application {
       this.services.lossChart.update(state.history);
       this.services.lrChart.render(state.history);
       this.controllers.comparison.updateComparisonDisplay();
+
+      // Guard against disposed model - skip neural net operations if model is not ready
+      if (!this.services.neuralNet.isReady()) {
+        return;
+      }
+
       this.controllers.visualization.updateGradientFlow();
 
       // Update speed metrics
@@ -110,7 +119,7 @@ export class Application {
       }
 
       // Update network diagram and weight histogram periodically
-      if (state.currentEpoch % 5 === 0 && state.isRunning) {
+      if (state.currentEpoch % 5 === 0 && state.isRunning && this.services.neuralNet.isReady()) {
         const structure = this.services.neuralNet.getStructure();
         if (structure) {
           this.services.networkDiagram.render(
@@ -167,6 +176,9 @@ export class Application {
 
       // Setup education features (tutorials, tooltips, challenges)
       this.setupEducation();
+
+      // Setup advanced ML features (complexity, adversarial, dropout viz)
+      this.setupAdvancedFeatures();
     });
   }
 
@@ -188,8 +200,18 @@ export class Application {
     const data = this.services.session.getData();
     if (!data?.length) return;
 
+    // Guard against disposed model
+    if (!this.services.neuralNet.isReady()) return;
+
     try {
+      // Double-check model is still ready after async operation
+      if (!this.services.neuralNet.isReady()) return;
+      
       const predictions = await this.services.neuralNet.predict(data);
+      
+      // Check again after await in case model was disposed during prediction
+      if (!this.services.neuralNet.isReady()) return;
+      
       const labels = data.map(d => d.label ?? 0);
       const numClasses = Math.max(...labels) + 1;
 
@@ -230,7 +252,11 @@ export class Application {
       if (emptyState) emptyState.classList.add('hidden');
 
     } catch (error) {
-      console.error('Failed to update classification metrics:', error);
+      // Silently ignore disposed model errors (expected during reinitialisation)
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (!errorMessage.includes('disposed')) {
+        console.error('Failed to update classification metrics:', error);
+      }
     }
   }
 
@@ -670,6 +696,147 @@ export class Application {
       layers: structure.layers.slice(1, -1), // Hidden layers only
       activation: structure.activations[0] as import('../domain/Hyperparameters').ActivationType,
     };
+  }
+
+  /**
+   * Sets up advanced ML features (complexity metrics, adversarial examples, dropout viz)
+   */
+  private setupAdvancedFeatures(): void {
+    this.advancedFeatures = new AdvancedFeaturesService();
+
+    // Update complexity metrics when architecture changes
+    this.services.session.onStateChange((state) => {
+      if (state.isInitialised && this.advancedFeatures) {
+        this.updateModelComplexity();
+      }
+    });
+
+    // Setup adversarial example generation button
+    const generateBtn = document.getElementById('btn-generate-adversarial') as HTMLButtonElement | null;
+    const clearBtn = document.getElementById('btn-clear-adversarial');
+
+    if (generateBtn) {
+      generateBtn.addEventListener('click', () => {
+        void this.generateAdversarialExamples();
+      });
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        this.advancedFeatures?.clearAdversarialExamples();
+        this.advancedFeatures?.updateAdversarialDisplay();
+        // Clear from visualisation
+        this.services.visualizer.clearAdversarialPoints?.();
+      });
+    }
+
+    // Enable adversarial button when model is trained
+    this.services.session.onStateChange((state) => {
+      if (generateBtn) {
+        generateBtn.disabled = !state.isInitialised || state.currentEpoch === 0;
+      }
+    });
+
+    // Update network diagram with dropout mask during training
+    this.services.session.onStateChange((state) => {
+      // Guard against disposed model
+      if (!this.services.neuralNet.isReady()) return;
+
+      if (state.isRunning && this.advancedFeatures) {
+        const config = this.services.neuralNet.getConfig();
+        const dropoutRate = config?.dropoutRate ?? 0;
+
+        if (dropoutRate > 0) {
+          // Generate new dropout mask every few epochs
+          if (state.currentEpoch % 3 === 0) {
+            const structure = this.services.neuralNet.getStructure();
+            if (structure) {
+              const mask = this.advancedFeatures.generateDropoutMask(
+                structure.layers.slice(1, -1), // Hidden layers only
+                dropoutRate
+              );
+
+              // Update network diagram with dropout mask
+              this.services.networkDiagram.render(
+                structure.layers,
+                structure.activations,
+                this.services.neuralNet.getWeightMatrices(),
+                mask
+              );
+            }
+          }
+        }
+      }
+    });
+  }
+
+  /**
+   * Updates model complexity display
+   */
+  private updateModelComplexity(): void {
+    const structure = this.services.neuralNet.getStructure();
+    const config = this.services.neuralNet.getConfig();
+
+    if (!structure || !config || !this.advancedFeatures) return;
+
+    const metrics = this.advancedFeatures.calculateComplexity(
+      structure.layers.slice(1, -1), // Hidden layers
+      structure.layers[structure.layers.length - 1] ?? 2, // Output size
+      config.batchNorm ?? false,
+      config.dropoutRate ?? 0
+    );
+
+    this.advancedFeatures.updateComplexityDisplay(metrics);
+  }
+
+  /**
+   * Generates adversarial examples for the current model
+   */
+  private async generateAdversarialExamples(): Promise<void> {
+    if (!this.advancedFeatures) return;
+
+    const data = this.services.session.getData();
+    if (!data?.length) return;
+
+    const generateBtn = document.getElementById('btn-generate-adversarial') as HTMLButtonElement | null;
+    if (generateBtn) {
+      generateBtn.disabled = true;
+      generateBtn.textContent = 'Generating...';
+    }
+
+    try {
+      // Guard: ensure model is ready
+      if (!this.services.neuralNet.isReady()) {
+        console.warn('Cannot generate adversarial examples: model not ready');
+        throw new Error('Model not ready');
+      }
+
+      // Create prediction function
+      const predictFn = async (point: import('../domain/Point').Point) => {
+        if (!this.services.neuralNet.isReady()) return null;
+        const predictions = await this.services.neuralNet.predict([point]);
+        return predictions[0] ?? null;
+      };
+
+      const examples = await this.advancedFeatures.generateAdversarialExamples(data, predictFn);
+      this.advancedFeatures.updateAdversarialDisplay();
+
+      // Add adversarial points to visualisation
+      if (examples.length > 0) {
+        const adversarialPoints = examples.map(ex => ({
+          ...ex.point,
+          isAdversarial: true,
+        }));
+        this.services.visualizer.renderAdversarialPoints?.(adversarialPoints);
+      }
+    } catch (error) {
+      console.error('Failed to generate adversarial examples:', error);
+    } finally {
+      if (generateBtn) {
+        generateBtn.disabled = false;
+        generateBtn.textContent = 'Generate Adversarial Examples';
+      }
+    }
   }
 
   /**

@@ -16,6 +16,7 @@ import {
     parseActivationType,
     parseLRScheduleType,
     parsePerformanceMode,
+    parseLossType,
     performanceModeToFps,
     fpsToPerformanceMode,
 } from '../../utils/validation';
@@ -35,6 +36,7 @@ export interface TrainingElements {
     inputDropout: HTMLSelectElement;
     inputClipNorm: HTMLSelectElement;
     inputBatchNorm: HTMLInputElement;
+    inputLossFunction: HTMLSelectElement;
     inputLayerActivations: HTMLInputElement;
     btnInit: HTMLButtonElement;
 
@@ -230,6 +232,7 @@ export class TrainingController {
         const dropoutRate = parseFloat(this.elements.inputDropout.value) || 0;
         const clipNorm = parseFloat(this.elements.inputClipNorm.value) || 0;
         const batchNorm = this.elements.inputBatchNorm.checked;
+        const lossFunction = parseLossType(this.elements.inputLossFunction.value);
         const layerActivations = this.parseLayerActivations(this.elements.inputLayerActivations.value);
 
         return {
@@ -245,6 +248,7 @@ export class TrainingController {
             dropoutRate,
             clipNorm,
             batchNorm,
+            lossFunction,
         };
     }
 
@@ -274,6 +278,7 @@ export class TrainingController {
         const batchSize = parseInt(this.elements.inputBatchSize.value, 10) || 0;
         const maxEpochs = parseInt(this.elements.inputMaxEpochs.value, 10) || 0;
         const targetFps = parseInt(this.elements.inputFps.value, 10) || 60;
+        const validationSplit = parseInt(this.elements.inputValSplit.value, 10) / 100;
         // Validate LR schedule type at runtime
         const lrScheduleType = parseLRScheduleType(this.elements.inputLrSchedule.value);
         const warmupEpochs = parseInt(this.elements.inputWarmup.value, 10) || 0;
@@ -285,6 +290,7 @@ export class TrainingController {
             batchSize,
             maxEpochs,
             targetFps,
+            validationSplit,
             lrSchedule: {
                 type: lrScheduleType,
                 decayRate: 0.95,
@@ -417,10 +423,10 @@ export class TrainingController {
 
     public updateUI(state: TrainingState): void {
         this.elements.epochValue.textContent = state.currentEpoch.toString();
-        this.elements.lossValue.textContent = state.currentLoss?.toFixed(4) ?? '—';
-        this.elements.accuracyValue.textContent = state.currentAccuracy ? `${(state.currentAccuracy * 100).toFixed(1)}%` : '—';
-        this.elements.valLossValue.textContent = state.currentValLoss?.toFixed(4) ?? '—';
-        this.elements.valAccuracyValue.textContent = state.currentValAccuracy ? `${(state.currentValAccuracy * 100).toFixed(1)}%` : '—';
+        this.elements.lossValue.textContent = state.currentLoss !== null ? state.currentLoss.toFixed(4) : '—';
+        this.elements.accuracyValue.textContent = state.currentAccuracy !== null ? `${(state.currentAccuracy * 100).toFixed(1)}%` : '—';
+        this.elements.valLossValue.textContent = state.currentValLoss !== null ? state.currentValLoss.toFixed(4) : '—';
+        this.elements.valAccuracyValue.textContent = state.currentValAccuracy !== null ? `${(state.currentValAccuracy * 100).toFixed(1)}%` : '—';
 
         // Update status display text
         let statusText = 'Idle';

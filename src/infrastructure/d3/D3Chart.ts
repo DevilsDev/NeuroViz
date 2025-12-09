@@ -44,31 +44,37 @@ export class D3Chart implements IVisualizerService {
   private voronoiOverlay: D3VoronoiOverlay | null = null;
   private voronoiEnabled = false;
 
+  // Adversarial points
+  private adversarialPoints: Array<Point & { isAdversarial: boolean }> = [];
+
   /**
    * @param containerId - DOM element ID where the chart will be rendered
-   * @param width - Chart width in pixels (default: 500)
-   * @param height - Chart height in pixels (default: 500)
    */
-  constructor(containerId: string, width = 500, height = 500) {
+  constructor(containerId: string) {
     const element = document.getElementById(containerId);
     if (!element) {
       throw new Error(`Container element with ID "${containerId}" not found.`);
     }
 
     this.container = d3.select(element);
-    this.width = width - this.margin.left - this.margin.right;
-    this.height = height - this.margin.top - this.margin.bottom;
+    
+    // Get actual container dimensions
+    const rect = element.getBoundingClientRect();
+    const containerWidth = rect.width || 500;
+    const containerHeight = rect.height || 500;
+    
+    this.width = containerWidth - this.margin.left - this.margin.right;
+    this.height = containerHeight - this.margin.top - this.margin.bottom;
 
     // Clear any existing content
     this.container.selectAll('*').remove();
 
-    // Create SVG with viewBox for responsive sizing
+    // Create SVG that fills container completely
     this.svg = this.container
       .append('svg')
-      .attr('viewBox', `0 0 ${width} ${height}`)
-      .attr('preserveAspectRatio', 'xMidYMid meet')
-      .style('width', '100%')
-      .style('height', '100%') as d3.Selection<SVGSVGElement, unknown, null, undefined>;
+      .attr('width', '100%')
+      .attr('height', '100%')
+      .style('display', 'block') as d3.Selection<SVGSVGElement, unknown, null, undefined>;
 
     // Add clip path to prevent rendering outside chart area
     this.svg
@@ -108,14 +114,14 @@ export class D3Chart implements IVisualizerService {
    * Resizes the chart to fit the new container dimensions.
    */
   resize(width: number, height: number): void {
-    if (width === 0 || height === 0) return;
+    // Guard against invalid dimensions
+    const minWidth = this.margin.left + this.margin.right + 50;
+    const minHeight = this.margin.top + this.margin.bottom + 50;
+    if (width < minWidth || height < minHeight) return;
 
     // Update dimensions
-    this.width = width - this.margin.left - this.margin.right;
-    this.height = height - this.margin.top - this.margin.bottom;
-
-    // Update SVG viewBox
-    this.svg.attr('viewBox', `0 0 ${width} ${height}`);
+    this.width = Math.max(0, width - this.margin.left - this.margin.right);
+    this.height = Math.max(0, height - this.margin.top - this.margin.bottom);
 
     // Update clip path
     this.svg.select('#chart-clip rect')
@@ -826,5 +832,86 @@ export class D3Chart implements IVisualizerService {
    */
   isVoronoiEnabled(): boolean {
     return this.voronoiEnabled;
+  }
+
+  /**
+   * Renders adversarial example points on the chart.
+   * These are displayed with a distinctive style (diamond shape, amber color).
+   */
+  renderAdversarialPoints(points: Array<Point & { isAdversarial: boolean }>): void {
+    this.adversarialPoints = points;
+
+    // Remove existing adversarial points
+    this.chartGroup.selectAll('.adversarial-point').remove();
+
+    if (points.length === 0) return;
+
+    // Render adversarial points as diamonds
+    const adversarialGroup = this.chartGroup.append('g').attr('class', 'adversarial-points');
+
+    adversarialGroup.selectAll('.adversarial-point')
+      .data(points)
+      .enter()
+      .append('path')
+      .attr('class', 'adversarial-point')
+      .attr('d', d3.symbol().type(d3.symbolDiamond).size(80))
+      .attr('transform', d => `translate(${this.xScale(d.x)}, ${this.yScale(d.y)})`)
+      .attr('fill', '#f59e0b') // Amber
+      .attr('stroke', '#fbbf24')
+      .attr('stroke-width', 2)
+      .attr('opacity', 0.9)
+      .style('cursor', 'pointer')
+      .on('mouseenter', (event, d) => {
+        // Show tooltip
+        if (!this.tooltip) {
+          this.tooltip = d3.select('body').append('div')
+            .attr('class', 'chart-tooltip')
+            .style('position', 'absolute')
+            .style('background', 'rgba(15, 23, 42, 0.95)')
+            .style('color', '#f1f5f9')
+            .style('padding', '8px 12px')
+            .style('border-radius', '6px')
+            .style('font-size', '12px')
+            .style('pointer-events', 'none')
+            .style('z-index', '1000')
+            .style('border', '1px solid rgba(245, 158, 11, 0.5)');
+        }
+
+        this.tooltip
+          .style('display', 'block')
+          .html(`
+            <div class="font-bold text-amber-400">⚠ Adversarial Example</div>
+            <div>Position: (${d.x.toFixed(2)}, ${d.y.toFixed(2)})</div>
+            <div>True class: ${d.label}</div>
+            <div class="text-xs text-slate-400 mt-1">This point fools the model</div>
+          `)
+          .style('left', `${event.pageX + 10}px`)
+          .style('top', `${event.pageY - 10}px`);
+      })
+      .on('mousemove', (event) => {
+        this.tooltip
+          ?.style('left', `${event.pageX + 10}px`)
+          .style('top', `${event.pageY - 10}px`);
+      })
+      .on('mouseleave', () => {
+        this.tooltip?.style('display', 'none');
+      });
+
+    // Add pulsing animation
+    adversarialGroup.selectAll('.adversarial-point')
+      .append('animate')
+      .attr('attributeName', 'opacity')
+      .attr('values', '0.9;0.5;0.9')
+      .attr('dur', '2s')
+      .attr('repeatCount', 'indefinite');
+  }
+
+  /**
+   * Clears all adversarial points from the chart.
+   */
+  clearAdversarialPoints(): void {
+    this.adversarialPoints = [];
+    this.chartGroup.selectAll('.adversarial-points').remove();
+    this.chartGroup.selectAll('.adversarial-point').remove();
   }
 }

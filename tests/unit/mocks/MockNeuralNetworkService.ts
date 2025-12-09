@@ -83,6 +83,26 @@ export class MockNeuralNetworkService implements INeuralNetworkService {
     // No-op for mock
   });
 
+  readonly updateLearningRate = vi.fn((_newLearningRate: number): void => {
+    // No-op for mock
+  });
+
+  readonly getStructure = vi.fn((): { layers: number[]; activations: string[] } | null => {
+    return { layers: [2, 8, 4, 2], activations: ['linear', 'relu', 'relu', 'sigmoid'] };
+  });
+
+  readonly getConfig = vi.fn((): Hyperparameters | null => {
+    return this.lastConfig;
+  });
+
+  readonly generateDropoutMask = vi.fn((_dropoutRate: number): boolean[][] => {
+    return [[true, true, true, true], [true, true]];
+  });
+
+  readonly isReady = vi.fn((): boolean => {
+    return this.initializeCalled;
+  });
+
   /**
    * Reset all state and spies for clean test isolation.
    */

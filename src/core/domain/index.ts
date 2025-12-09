@@ -7,12 +7,41 @@ export type {
   ActivationType,
   LRScheduleType,
   LRScheduleConfig,
+  LossType,
 } from './Hyperparameters';
 export {
   DEFAULT_HYPERPARAMETERS,
   DEFAULT_TRAINING_CONFIG,
   DEFAULT_LR_SCHEDULE,
 } from './Hyperparameters';
+
+// Model complexity
+export type {
+  ModelComplexityMetrics,
+  LayerComplexity,
+} from './ModelComplexity';
+export {
+  calculateModelComplexity,
+  formatBytes,
+  formatNumber,
+  getComplexityRating,
+  getComplexityExplanation,
+} from './ModelComplexity';
+
+// Adversarial examples
+export type {
+  AdversarialExample,
+  AdversarialConfig,
+  AdversarialGenerationResult,
+} from './AdversarialExample';
+export {
+  DEFAULT_ADVERSARIAL_CONFIG,
+  generateAdversarialExplanation,
+  pointDistance,
+  perturbPoint,
+  findBoundaryPoints,
+  generateSimpleAdversarial,
+} from './AdversarialExample';
 export type {
   TrainingRecord,
   TrainingHistory,

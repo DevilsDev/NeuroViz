@@ -268,8 +268,10 @@ export class VisualizationController {
             if (!this.gradientFlow) {
                 this.gradientFlow = new D3GradientFlow(this.elements.gradientFlowContainer);
             }
-            // Store current weights as baseline
-            this.previousWeights = this.neuralNetService.getWeightMatrices();
+            // Store current weights as baseline (guard against disposed model)
+            if (this.neuralNetService.isReady()) {
+                this.previousWeights = this.neuralNetService.getWeightMatrices();
+            }
         } else {
             this.elements.gradientFlowContainer.classList.add('hidden');
         }
@@ -277,6 +279,9 @@ export class VisualizationController {
 
     public updateGradientFlow(): void {
         if (!this.elements.inputShowGradients?.checked || !this.gradientFlow) return;
+
+        // Guard against disposed model
+        if (!this.neuralNetService.isReady()) return;
 
         const currentWeights = this.neuralNetService.getWeightMatrices();
         if (this.previousWeights.length === 0 || currentWeights.length === 0) {

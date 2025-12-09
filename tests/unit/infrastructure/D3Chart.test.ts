@@ -5,7 +5,7 @@
  * Verifies SVG rendering, data visualization, and DOM manipulation.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { D3Chart } from '../../../src/infrastructure/d3/D3Chart';
 import type { Point, Prediction } from '../../../src/core/domain';
 import * as d3 from 'd3';
@@ -15,12 +15,14 @@ describe('D3Chart', () => {
   let container: HTMLElement;
 
   beforeEach(() => {
-    // Create a container element in the document
+    // Create a container element in the document with explicit size
     container = document.createElement('div');
     container.id = 'test-viz-container';
+    container.style.width = '500px';
+    container.style.height = '500px';
     document.body.appendChild(container);
 
-    chart = new D3Chart('test-viz-container', 500, 500);
+    chart = new D3Chart('test-viz-container');
   });
 
   afterEach(() => {
@@ -38,9 +40,9 @@ describe('D3Chart', () => {
 
     it('should set correct SVG dimensions', () => {
       const svg = container.querySelector('svg');
-      expect(svg?.getAttribute('viewBox')).toBe('0 0 500 500');
-      expect(svg?.style.width).toBe('100%');
-      expect(svg?.style.height).toBe('100%');
+      // SVG fills container completely
+      expect(svg?.getAttribute('width')).toBe('100%');
+      expect(svg?.getAttribute('height')).toBe('100%');
     });
 
     it('should create axes', () => {
@@ -55,17 +57,19 @@ describe('D3Chart', () => {
       expect(() => new D3Chart('non-existent-container')).toThrow();
     });
 
-    it('should accept custom dimensions', () => {
+    it('should use container dimensions', () => {
       const customContainer = document.createElement('div');
       customContainer.id = 'custom-container';
+      customContainer.style.width = '800px';
+      customContainer.style.height = '600px';
       document.body.appendChild(customContainer);
 
-      const customChart = new D3Chart('custom-container', 800, 600);
+      const customChart = new D3Chart('custom-container');
       const svg = customContainer.querySelector('svg');
 
-      expect(svg?.getAttribute('viewBox')).toBe('0 0 800 600');
-      expect(svg?.style.width).toBe('100%');
-      expect(svg?.style.height).toBe('100%');
+      // SVG fills container completely
+      expect(svg?.getAttribute('width')).toBe('100%');
+      expect(svg?.getAttribute('height')).toBe('100%');
 
       customChart.dispose();
       customContainer.remove();
@@ -74,7 +78,7 @@ describe('D3Chart', () => {
     it('should clear existing content in container', () => {
       container.innerHTML = '<div>Existing content</div>';
 
-      const newChart = new D3Chart('test-viz-container', 500, 500);
+      const newChart = new D3Chart('test-viz-container');
       const existingContent = container.querySelector('div');
 
       expect(existingContent).toBeNull();
@@ -174,6 +178,14 @@ describe('D3Chart', () => {
     });
   });
 
+  // Helper to create valid prediction objects for tests
+  const createPrediction = (predictedClass: number, confidence: number, x = 0, y = 0): Prediction => ({
+    x,
+    y,
+    confidence,
+    predictedClass,
+  });
+
   describe('renderBoundary', () => {
     it('should render decision boundary contours', () => {
       const gridSize = 10;
@@ -181,10 +193,7 @@ describe('D3Chart', () => {
 
       // Create a simple gradient from 0 to 1
       for (let i = 0; i < gridSize * gridSize; i++) {
-        predictions.push({
-          label: i > 50 ? 1 : 0,
-          confidence: i / 100,
-        });
+        predictions.push(createPrediction(i > 50 ? 1 : 0, i / 100));
       }
 
       chart.renderBoundary(predictions, gridSize);
@@ -197,10 +206,7 @@ describe('D3Chart', () => {
       const testGridSize = (size: number) => {
         const predictions: Prediction[] = [];
         for (let i = 0; i < size * size; i++) {
-          predictions.push({
-            label: Math.random() > 0.5 ? 1 : 0,
-            confidence: Math.random(),
-          });
+          predictions.push(createPrediction(Math.random() > 0.5 ? 1 : 0, Math.random()));
         }
 
         chart.renderBoundary(predictions, size);
@@ -217,8 +223,8 @@ describe('D3Chart', () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       const predictions: Prediction[] = [
-        { label: 0, confidence: 0.5 },
-        { label: 1, confidence: 0.7 },
+        createPrediction(0, 0.5),
+        createPrediction(1, 0.7),
       ];
 
       chart.renderBoundary(predictions, 10); // Expects 100 predictions
@@ -235,7 +241,7 @@ describe('D3Chart', () => {
       const predictions: Prediction[] = [];
 
       for (let i = 0; i < 100; i++) {
-        predictions.push({ label: 0, confidence: 0.5 });
+        predictions.push(createPrediction(0, 0.5));
       }
 
       chart.renderData(points);
@@ -258,7 +264,7 @@ describe('D3Chart', () => {
     it('should replace previous boundary when called multiple times', () => {
       const predictions: Prediction[] = [];
       for (let i = 0; i < 100; i++) {
-        predictions.push({ label: 0, confidence: 0.5 });
+        predictions.push(createPrediction(0, 0.5));
       }
 
       chart.renderBoundary(predictions, 10);
@@ -271,7 +277,7 @@ describe('D3Chart', () => {
     it('should handle uniform confidence values', () => {
       const predictions: Prediction[] = [];
       for (let i = 0; i < 100; i++) {
-        predictions.push({ label: 0, confidence: 0.5 });
+        predictions.push(createPrediction(0, 0.5));
       }
 
       chart.renderBoundary(predictions, 10);
@@ -283,10 +289,7 @@ describe('D3Chart', () => {
     it('should handle extreme confidence values', () => {
       const predictions: Prediction[] = [];
       for (let i = 0; i < 100; i++) {
-        predictions.push({
-          label: i < 50 ? 0 : 1,
-          confidence: i < 50 ? 0 : 1,
-        });
+        predictions.push(createPrediction(i < 50 ? 0 : 1, i < 50 ? 0 : 1));
       }
 
       chart.renderBoundary(predictions, 10);
@@ -313,7 +316,7 @@ describe('D3Chart', () => {
     it('should remove boundary', () => {
       const predictions: Prediction[] = [];
       for (let i = 0; i < 100; i++) {
-        predictions.push({ label: 0, confidence: 0.5 });
+        predictions.push(createPrediction(0, 0.5));
       }
 
       chart.renderBoundary(predictions, 10);
@@ -367,10 +370,7 @@ describe('D3Chart', () => {
 
       const predictions: Prediction[] = [];
       for (let i = 0; i < 100; i++) {
-        predictions.push({
-          label: Math.random() > 0.5 ? 1 : 0,
-          confidence: Math.random(),
-        });
+        predictions.push(createPrediction(Math.random() > 0.5 ? 1 : 0, Math.random()));
       }
 
       // Render boundary first

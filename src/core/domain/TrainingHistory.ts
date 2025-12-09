@@ -100,6 +100,7 @@ export function exportHistory(history: TrainingHistory, format: ExportFormat): s
           finalAccuracy: lastRecord?.accuracy ?? null,
           finalValLoss: lastRecord?.valLoss ?? null,
           finalValAccuracy: lastRecord?.valAccuracy ?? null,
+          finalLearningRate: lastRecord?.learningRate ?? null,
         },
       },
       null,
@@ -108,10 +109,10 @@ export function exportHistory(history: TrainingHistory, format: ExportFormat): s
   }
 
   // CSV format
-  const header = 'epoch,loss,accuracy,val_loss,val_accuracy,timestamp';
+  const header = 'epoch,loss,accuracy,val_loss,val_accuracy,learning_rate,timestamp';
   const rows = history.records.map(
     (r) =>
-      `${r.epoch},${r.loss.toFixed(6)},${r.accuracy.toFixed(4)},${r.valLoss?.toFixed(6) ?? ''},${r.valAccuracy?.toFixed(4) ?? ''},${r.timestamp}`
+      `${r.epoch},${r.loss.toFixed(6)},${r.accuracy.toFixed(4)},${r.valLoss?.toFixed(6) ?? ''},${r.valAccuracy?.toFixed(4) ?? ''},${r.learningRate.toFixed(6)},${r.timestamp}`
   );
   return [header, ...rows].join('\n');
 }

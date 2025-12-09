@@ -160,11 +160,14 @@ export class D3LossChart {
    * Resizes the chart to fit the new container dimensions.
    */
   resize(width: number, height: number): void {
-    if (width === 0 || height === 0) return;
+    // Guard against invalid dimensions
+    const minWidth = this.margin.left + this.margin.right + 50;
+    const minHeight = this.margin.top + this.margin.bottom + 20;
+    if (width < minWidth || height < minHeight) return;
 
     // Update dimensions
-    this.width = width - this.margin.left - this.margin.right;
-    this.height = height - this.margin.top - this.margin.bottom;
+    this.width = Math.max(0, width - this.margin.left - this.margin.right);
+    this.height = Math.max(0, height - this.margin.top - this.margin.bottom);
 
     // Update SVG viewBox (select the actual SVG element, not the inner g)
     this.container.select('svg').attr('viewBox', `0 0 ${width} ${height}`);

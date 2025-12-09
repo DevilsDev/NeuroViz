@@ -59,6 +59,11 @@ export interface ITrainingSession {
   loadData(datasetType: string, options?: DatasetOptions): Promise<void>;
 
   /**
+   * Returns the detected number of classes in the current dataset.
+   */
+  getDetectedNumClasses(): number;
+
+  /**
    * Starts or resumes the training loop.
    * @throws If hyperparameters not set or data not loaded
    */

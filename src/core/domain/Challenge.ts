@@ -334,7 +334,7 @@ export function validateChallenge(
         if (!met) messages.push('No L2 regularisation allowed');
         break;
       case 'no-dropout':
-        met = (config.dropout ?? 0) === 0;
+        met = (config.dropoutRate ?? 0) === 0;
         if (!met) messages.push('No dropout allowed');
         break;
       case 'activation-only':
@@ -361,13 +361,14 @@ export function validateChallenge(
         met = metrics.epochs < goal.target;
         if (!met) messages.push(`Need to complete in under ${goal.target} epochs (took ${metrics.epochs})`);
         break;
-      case 'converge':
+      case 'converge': {
         // Check if loss has stabilised in last 10 epochs
         const recentLosses = history.records.slice(-10).map(r => r.loss);
         const variance = calculateVariance(recentLosses);
         met = variance < 0.001;
         if (!met) messages.push('Model has not converged yet');
         break;
+      }
     }
     goalsMet.push(met);
   }

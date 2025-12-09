@@ -1,6 +1,6 @@
 import * as tf from '@tensorflow/tfjs';
 import type { INeuralNetworkService, TrainResult } from '../../core/ports';
-import type { Hyperparameters, Point, Prediction, OptimizerType, ActivationType } from '../../core/domain';
+import type { Hyperparameters, Point, Prediction, OptimizerType, ActivationType, LossType } from '../../core/domain';
 import { DEFAULT_HYPERPARAMETERS } from '../../core/domain';
 import { GradientExplosionError, ModelNotInitialisedError } from './errors';
 
@@ -76,7 +76,8 @@ export class TFNeuralNet implements INeuralNetworkService {
     );
 
     // Recompile model with new optimizer (preserves architecture and weights)
-    const loss = this.numClasses === 2 ? 'binaryCrossentropy' : 'categoricalCrossentropy';
+    const lossType = this.config.lossFunction ?? DEFAULT_HYPERPARAMETERS.lossFunction;
+    const loss = this.getLossFunction(lossType, this.numClasses);
     model.compile({
       optimizer,
       loss,
@@ -110,8 +111,13 @@ export class TFNeuralNet implements INeuralNetworkService {
   async train(data: Point[]): Promise<TrainResult> {
     const model = this.assertInitialised();
 
+    // Guard against empty data
+    if (data.length === 0) {
+      return { loss: 0, accuracy: 0 };
+    }
+
     // Create tensors outside tf.tidy() since trainOnBatch is async
-    const xs = tf.tensor2d(data.map((p) => [p.x, p.y]));
+    const xs = tf.tensor2d(data.map((p) => [p.x, p.y]), [data.length, 2]);
     const ys = this.createLabelTensor(data);
 
     try {
@@ -154,7 +160,12 @@ export class TFNeuralNet implements INeuralNetworkService {
   async evaluate(data: Point[]): Promise<TrainResult> {
     const model = this.assertInitialised();
 
-    const xs = tf.tensor2d(data.map((p) => [p.x, p.y]));
+    // Guard against empty data
+    if (data.length === 0) {
+      return { loss: 0, accuracy: 0 };
+    }
+
+    const xs = tf.tensor2d(data.map((p) => [p.x, p.y]), [data.length, 2]);
     const ys = this.createLabelTensor(data);
 
     try {
@@ -193,8 +204,13 @@ export class TFNeuralNet implements INeuralNetworkService {
   async predict(grid: Point[]): Promise<Prediction[]> {
     const model = this.assertInitialised();
 
+    // Guard against empty grid
+    if (grid.length === 0) {
+      return [];
+    }
+
     // Create input tensor (manual disposal since we need async .data())
-    const inputTensor = tf.tensor2d(grid.map((p) => [p.x, p.y]));
+    const inputTensor = tf.tensor2d(grid.map((p) => [p.x, p.y]), [grid.length, 2]);
 
     try {
       // Run inference
@@ -420,9 +436,9 @@ export class TFNeuralNet implements INeuralNetworkService {
       }
 
       return matrices;
-    } catch (error) {
-      // Model was disposed during execution, return empty array
-      console.warn('Failed to get weight matrices - model may have been disposed:', error);
+    } catch {
+      // Model was disposed during execution, return empty array silently
+      // This is expected during reinitialisation
       return [];
     }
   }
@@ -463,9 +479,9 @@ export class TFNeuralNet implements INeuralNetworkService {
       if (currentInput !== input) {
         currentInput.dispose();
       }
-    } catch (error) {
-      // Model was disposed during execution, return empty array
-      console.warn('Failed to get layer activations - model may have been disposed:', error);
+    } catch {
+      // Model was disposed during execution, return empty array silently
+      // This is expected during reinitialisation
       return [];
     } finally {
       input.dispose();
@@ -494,6 +510,43 @@ export class TFNeuralNet implements INeuralNetworkService {
     activations.push(this.numClasses === 2 ? 'sigmoid' : 'softmax'); // Output layer
 
     return { layers, activations };
+  }
+
+  /**
+   * Generates a simulated dropout mask for visualization purposes.
+   * Returns which neurons would be "dropped" in each hidden layer.
+   * @param dropoutRate - The dropout rate (0-1)
+   * @returns Array of boolean arrays, one per hidden layer. true = active, false = dropped
+   */
+  generateDropoutMask(dropoutRate: number): boolean[][] {
+    if (!this.config || dropoutRate <= 0) return [];
+
+    const masks: boolean[][] = [];
+
+    for (const layerSize of this.config.layers) {
+      const mask: boolean[] = [];
+      for (let i = 0; i < layerSize; i++) {
+        // Each neuron has (1 - dropoutRate) probability of being active
+        mask.push(Math.random() > dropoutRate);
+      }
+      masks.push(mask);
+    }
+
+    return masks;
+  }
+
+  /**
+   * Gets the current configuration.
+   */
+  getConfig(): Hyperparameters | null {
+    return this.config;
+  }
+
+  /**
+   * Checks if the model is ready for use (initialised and not disposed).
+   */
+  isReady(): boolean {
+    return this.model !== null && !this.isDisposed;
   }
 
   /**
@@ -594,8 +647,9 @@ export class TFNeuralNet implements INeuralNetworkService {
       config.clipNorm ?? 0
     );
 
-    // Loss function depends on number of classes
-    const loss = numClasses === 2 ? 'binaryCrossentropy' : 'categoricalCrossentropy';
+    // Get loss function based on config
+    const lossType = config.lossFunction ?? DEFAULT_HYPERPARAMETERS.lossFunction;
+    const loss = this.getLossFunction(lossType, numClasses);
 
     model.compile({
       optimizer,
@@ -604,6 +658,22 @@ export class TFNeuralNet implements INeuralNetworkService {
     });
 
     return model;
+  }
+
+  /**
+   * Maps LossType to TensorFlow.js loss function string.
+   */
+  private getLossFunction(lossType: LossType, numClasses: number): string {
+    switch (lossType) {
+      case 'crossEntropy':
+        return numClasses === 2 ? 'binaryCrossentropy' : 'categoricalCrossentropy';
+      case 'mse':
+        return 'meanSquaredError';
+      case 'hinge':
+        return numClasses === 2 ? 'hinge' : 'categoricalHinge';
+      default:
+        return numClasses === 2 ? 'binaryCrossentropy' : 'categoricalCrossentropy';
+    }
   }
 
   /**
