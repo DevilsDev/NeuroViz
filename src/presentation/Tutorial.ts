@@ -329,8 +329,12 @@ export class TutorialManager {
     const target = step.target ? document.querySelector(step.target) : null;
     const position = step.position ?? 'bottom';
 
+    // Reset transform from any previous centering
+    this.tooltip.style.transform = 'none';
+
     if (target) {
       const rect = target.getBoundingClientRect();
+      // Get tooltip dimensions after content update
       const tooltipRect = this.tooltip.getBoundingClientRect();
       const padding = 16;
 
@@ -356,14 +360,17 @@ export class TutorialManager {
           break;
       }
 
-      // Keep within viewport
-      top = Math.max(padding, Math.min(window.innerHeight - tooltipRect.height - padding, top));
-      left = Math.max(padding, Math.min(window.innerWidth - tooltipRect.width - padding, left));
+      // Keep within viewport with better bounds checking
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      top = Math.max(padding, Math.min(viewportHeight - tooltipRect.height - padding, top));
+      left = Math.max(padding, Math.min(viewportWidth - tooltipRect.width - padding, left));
 
       this.tooltip.style.top = `${top}px`;
       this.tooltip.style.left = `${left}px`;
     } else {
-      // Center on screen
+      // Center on screen using transform
       this.tooltip.style.top = '50%';
       this.tooltip.style.left = '50%';
       this.tooltip.style.transform = 'translate(-50%, -50%)';

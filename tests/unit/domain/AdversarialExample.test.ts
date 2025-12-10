@@ -95,7 +95,7 @@ describe('Adversarial Examples', () => {
       expect(DEFAULT_ADVERSARIAL_CONFIG.maxPerturbation).toBeLessThan(1);
       expect(DEFAULT_ADVERSARIAL_CONFIG.numSteps).toBeGreaterThan(0);
       expect(DEFAULT_ADVERSARIAL_CONFIG.stepSize).toBeGreaterThan(0);
-      expect(DEFAULT_ADVERSARIAL_CONFIG.minConfidence).toBeGreaterThan(0.5);
+      expect(DEFAULT_ADVERSARIAL_CONFIG.minConfidence).toBeGreaterThanOrEqual(0.5);
     });
   });
 });

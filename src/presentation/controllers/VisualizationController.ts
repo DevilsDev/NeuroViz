@@ -266,7 +266,11 @@ export class VisualizationController {
         if (this.elements.inputShowGradients.checked) {
             this.elements.gradientFlowContainer.classList.remove('hidden');
             if (!this.gradientFlow) {
-                this.gradientFlow = new D3GradientFlow(this.elements.gradientFlowContainer);
+                // Use the inner chart div, not the outer container with title
+                const chartElement = this.elements.gradientFlowChart;
+                if (chartElement) {
+                    this.gradientFlow = new D3GradientFlow(chartElement);
+                }
             }
             // Store current weights as baseline (guard against disposed model)
             if (this.neuralNetService.isReady()) {

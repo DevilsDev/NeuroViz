@@ -181,8 +181,8 @@ html:not(.dark) {
     /* ===== TABS - Segmented Control ===== */
 
     .sidebar-tabs {
-        @apply flex p-1 bg-navy-900/50 rounded-lg mb-4 border;
-        gap: 2px border-navy-700/50;
+        @apply flex p-1 bg-navy-900/50 rounded-lg mb-4 border border-navy-700/50;
+        gap: 2px;
     }
 
     .sidebar-tab {

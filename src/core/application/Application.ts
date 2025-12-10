@@ -156,6 +156,9 @@ export class Application {
         appContainer.classList.add('loaded');
       }
 
+      // Set initial UI state (buttons disabled until network initialized)
+      this.controllers.training.updateUI(this.services.session.getState());
+
       // Setup speed comparison buttons
       this.setupSpeedComparison();
 

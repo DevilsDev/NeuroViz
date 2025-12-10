@@ -302,7 +302,7 @@ describe('TrainingSession', () => {
       const csv = session.exportHistory('csv');
       const lines = csv.split('\n');
 
-      expect(lines[0]).toBe('epoch,loss,accuracy,val_loss,val_accuracy,timestamp');
+      expect(lines[0]).toBe('epoch,loss,accuracy,val_loss,val_accuracy,learning_rate,timestamp');
       expect(lines).toHaveLength(3); // header + 2 data rows
     });
   });

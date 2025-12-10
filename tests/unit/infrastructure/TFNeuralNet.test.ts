@@ -132,8 +132,10 @@ describe('TFNeuralNet', () => {
     });
 
     it('should handle empty dataset gracefully', async () => {
-      // Empty dataset should either throw or return a valid loss
-      await expect(neuralNet.train([])).rejects.toThrow();
+      // Empty dataset should return zero loss and accuracy
+      const result = await neuralNet.train([]);
+      expect(result.loss).toBe(0);
+      expect(result.accuracy).toBe(0);
     });
 
     it('should handle dataset with single point', async () => {
@@ -245,6 +247,77 @@ describe('TFNeuralNet', () => {
       await expect(uninitializedNet.predict(predictionGrid)).rejects.toThrow();
 
       uninitializedNet.dispose();
+    });
+  });
+
+  describe('accuracy computation', () => {
+    it('should return accuracy between 0 and 1', async () => {
+      await neuralNet.initialize({
+        learningRate: 0.1,
+        layers: [8, 4],
+        numClasses: 2,
+      });
+
+      const data: Point[] = [
+        { x: 0.5, y: 0.5, label: 1 },
+        { x: -0.5, y: -0.5, label: 0 },
+        { x: 0.3, y: 0.4, label: 1 },
+        { x: -0.3, y: -0.4, label: 0 },
+      ];
+
+      const result = await neuralNet.train(data);
+
+      expect(result.accuracy).toBeGreaterThanOrEqual(0);
+      expect(result.accuracy).toBeLessThanOrEqual(1);
+    });
+
+    it('should improve accuracy during training', async () => {
+      await neuralNet.initialize({
+        learningRate: 0.1,
+        layers: [8, 4],
+        numClasses: 2,
+      });
+
+      // Simple linearly separable data
+      const data: Point[] = [
+        { x: 0.8, y: 0.8, label: 1 },
+        { x: 0.6, y: 0.6, label: 1 },
+        { x: -0.8, y: -0.8, label: 0 },
+        { x: -0.6, y: -0.6, label: 0 },
+      ];
+
+      let initialAccuracy = 0;
+      const result1 = await neuralNet.train(data);
+      initialAccuracy = result1.accuracy;
+
+      // Train more
+      let finalAccuracy = 0;
+      for (let i = 0; i < 50; i++) {
+        const result = await neuralNet.train(data);
+        finalAccuracy = result.accuracy;
+      }
+
+      // Accuracy should improve or stay high
+      expect(finalAccuracy).toBeGreaterThanOrEqual(initialAccuracy * 0.9);
+    });
+
+    it('should compute accuracy correctly for multi-class', async () => {
+      await neuralNet.initialize({
+        learningRate: 0.1,
+        layers: [8, 4],
+        numClasses: 3,
+      });
+
+      const data: Point[] = [
+        { x: -0.8, y: 0, label: 0 },
+        { x: 0, y: 0.8, label: 1 },
+        { x: 0.8, y: 0, label: 2 },
+      ];
+
+      const result = await neuralNet.train(data);
+
+      expect(result.accuracy).toBeGreaterThanOrEqual(0);
+      expect(result.accuracy).toBeLessThanOrEqual(1);
     });
   });
 

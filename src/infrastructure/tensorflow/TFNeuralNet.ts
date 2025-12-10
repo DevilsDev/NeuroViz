@@ -121,25 +121,21 @@ export class TFNeuralNet implements INeuralNetworkService {
     const ys = this.createLabelTensor(data);
 
     try {
-      // trainOnBatch returns [loss, accuracy] when metrics are configured
+      // trainOnBatch returns loss (metrics are not computed for trainOnBatch)
       const result = await model.trainOnBatch(xs, ys);
 
-      // Extract loss and accuracy values
-      let loss: number;
-      let accuracy: number;
-
-      if (Array.isArray(result)) {
-        loss = result[0] ?? 0;
-        accuracy = result[1] ?? 0;
-      } else {
-        loss = result;
-        accuracy = 0;
-      }
+      // Extract loss value
+      const loss = Array.isArray(result) ? (result[0] ?? 0) : result;
 
       // Check for gradient explosion
       if (Number.isNaN(loss)) {
         throw new GradientExplosionError();
       }
+
+      // Compute accuracy manually since trainOnBatch doesn't compute metrics
+      const predictions = model.predict(xs) as tf.Tensor;
+      const accuracy = await this.computeAccuracy(predictions, ys, data);
+      predictions.dispose();
 
       return { loss, accuracy };
     } finally {
@@ -690,6 +686,43 @@ export class TFNeuralNet implements INeuralNetworkService {
         this.numClasses
       );
     }
+  }
+
+  /**
+   * Computes accuracy by comparing predictions to actual labels.
+   */
+  private async computeAccuracy(predictions: tf.Tensor, labels: tf.Tensor, data: Point[]): Promise<number> {
+    const predData = await predictions.data();
+    
+    let correct = 0;
+    const total = data.length;
+    
+    if (this.numClasses === 2) {
+      // Binary classification: sigmoid output
+      for (let i = 0; i < total; i++) {
+        const predicted = (predData[i] ?? 0) >= 0.5 ? 1 : 0;
+        const actual = data[i]?.label ?? 0;
+        if (predicted === actual) correct++;
+      }
+    } else {
+      // Multi-class: softmax output
+      for (let i = 0; i < total; i++) {
+        const startIdx = i * this.numClasses;
+        let maxProb = 0;
+        let predicted = 0;
+        for (let c = 0; c < this.numClasses; c++) {
+          const prob = predData[startIdx + c] ?? 0;
+          if (prob > maxProb) {
+            maxProb = prob;
+            predicted = c;
+          }
+        }
+        const actual = data[i]?.label ?? 0;
+        if (predicted === actual) correct++;
+      }
+    }
+    
+    return total > 0 ? correct / total : 0;
   }
 
   /**
