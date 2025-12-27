@@ -57,7 +57,7 @@ export class TooltipService {
     // Also attach to elements with data-tooltip attribute
     const dataTooltipElements = document.querySelectorAll('[data-tooltip]');
     dataTooltipElements.forEach(el => {
-      const target = `#${el.id}` || el.getAttribute('data-tooltip');
+      const target = el.id ? `#${el.id}` : el.getAttribute('data-tooltip');
       if (target) {
         const tooltip = getTooltipForTarget(target);
         if (tooltip) {
@@ -77,11 +77,10 @@ export class TooltipService {
     // Add accessibility attributes
     element.setAttribute('aria-describedby', 'neuroviz-tooltip');
     element.setAttribute('tabindex', element.getAttribute('tabindex') ?? '0');
-
-    const enter = () => this.scheduleShow(element, definition);
-    const leave = () => this.scheduleHide();
-    const focus = () => this.show(element, definition);
-    const blur = () => this.hide();
+    const enter = (): void => this.scheduleShow(element, definition);
+    const leave = (): void => this.scheduleHide();
+    const focus = (): void => this.show(element, definition);
+    const blur = (): void => this.hide();
 
     element.addEventListener('mouseenter', enter);
     element.addEventListener('mouseleave', leave);
@@ -263,7 +262,7 @@ export class TooltipService {
       // Determine best position based on available space
       const spaceAbove = targetRect.top;
       const spaceBelow = window.innerHeight - targetRect.bottom;
-      const spaceLeft = targetRect.left;
+      const _spaceLeft = targetRect.left;
       const spaceRight = window.innerWidth - targetRect.right;
 
       if (spaceBelow >= tooltipRect.height + padding) {

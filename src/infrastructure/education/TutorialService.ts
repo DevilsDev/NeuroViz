@@ -13,6 +13,7 @@ import {
   getTutorial,
   TUTORIALS,
 } from '../../core/domain/Tutorial';
+import { escapeHTML } from '../security/htmlSanitizer';
 
 type StateChangeCallback = (progress: TutorialProgress | null) => void;
 
@@ -416,7 +417,8 @@ export class TutorialService {
   }
 
   private renderMarkdown(text: string): string {
-    return text
+    const escaped = escapeHTML(text);
+    return escaped
       .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       .replace(/\n/g, '<br>');

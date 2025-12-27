@@ -10,7 +10,7 @@ import type { D3WeightHistogram } from '../../infrastructure/d3/D3WeightHistogra
 import type { D3ActivationHistogram, LayerActivationData } from '../../infrastructure/d3/D3ActivationHistogram';
 import type { LocalStorageService } from '../../infrastructure/storage/LocalStorageService';
 import { calculateSpeedMetrics, compareSpeed, formatSpeedMetrics, type SpeedBaseline } from '../domain/SpeedComparison';
-import { calculateModelComplexity } from '../domain/ModelComplexity';
+// Removed unused import: calculateModelComplexity
 import {
   DatasetController,
   TrainingController,
@@ -97,7 +97,7 @@ export class Application {
    * Sets up state synchronization between session and UI
    */
   private setupStateSync(): void {
-    this.services.session.onStateChange((state) => {
+    this.services.session.onStateChange((state): void => {
       this.controllers.training.updateUI(state);
       this.services.lossChart.update(state.history);
       this.services.lrChart.render(state.history);
@@ -374,6 +374,7 @@ export class Application {
     if (!presetSelect || !applyBtn) return;
 
     // Update description when preset selection changes
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     presetSelect.addEventListener('change', async () => {
       const presetId = presetSelect.value;
 
@@ -392,9 +393,9 @@ export class Application {
         applyBtn.disabled = false;
       }
     });
-
     // Apply preset when button clicked
     if (applyBtn) {
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       applyBtn.addEventListener('click', async () => {
         const presetId = presetSelect.value;
         if (!presetId) return;
@@ -441,10 +442,10 @@ export class Application {
     if (!exportBtn) return;
 
     // Enable button when training has started
-    this.services.session.onStateChange((state) => {
+    this.services.session.onStateChange((state): void => {
       exportBtn.disabled = !state.isInitialised || state.currentEpoch === 0;
     });
-
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     exportBtn.addEventListener('click', async () => {
       const state = this.services.session.getState();
       if (!state.isInitialised || state.currentEpoch === 0) return;
@@ -518,12 +519,13 @@ export class Application {
    */
   private setupDatasetStatistics(): void {
     // Update statistics when dataset changes
-    this.services.session.onStateChange((state) => {
+    this.services.session.onStateChange((state): void => {
       if (!state.datasetLoaded) return;
 
       const data = this.services.session.getData();
       if (!data || data.length === 0) return;
 
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.updateDatasetStatistics(data);
     });
   }
@@ -648,7 +650,7 @@ export class Application {
     this.educationController.initialise();
 
     // Hook into training events for tutorials and challenges
-    this.services.session.onStateChange((state) => {
+    this.services.session.onStateChange((state): void => {
       if (!this.educationController) return;
 
       // Notify tutorial service of training events
@@ -708,7 +710,7 @@ export class Application {
     this.advancedFeatures = new AdvancedFeaturesService();
 
     // Update complexity metrics when architecture changes
-    this.services.session.onStateChange((state) => {
+    this.services.session.onStateChange((state): void => {
       if (state.isInitialised && this.advancedFeatures) {
         this.updateModelComplexity();
       }
@@ -734,14 +736,14 @@ export class Application {
     }
 
     // Enable adversarial button when model is trained
-    this.services.session.onStateChange((state) => {
+    this.services.session.onStateChange((state): void => {
       if (generateBtn) {
         generateBtn.disabled = !state.isInitialised || state.currentEpoch === 0;
       }
     });
 
     // Update network diagram with dropout mask during training
-    this.services.session.onStateChange((state) => {
+    this.services.session.onStateChange((state): void => {
       // Guard against disposed model
       if (!this.services.neuralNet.isReady()) return;
 

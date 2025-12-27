@@ -652,9 +652,14 @@ export class D3Chart implements IVisualizerService {
       // Download PNG
       const pngUrl = canvas.toDataURL('image/png');
       const link = document.createElement('a');
-      link.download = `${filename}.png`;
+      const sanitizedFilename = filename.replace(/[^a-zA-Z0-9-_]/g, '_');
+      link.download = `${sanitizedFilename}.png`;
       link.href = pngUrl;
       link.click();
+    };
+    img.onerror = () => {
+      console.error('Failed to load SVG for export');
+      URL.revokeObjectURL(url);
     };
     img.src = url;
   }

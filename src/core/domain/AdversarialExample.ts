@@ -113,7 +113,7 @@ export function perturbPoint(
  */
 export function findBoundaryPoints(
   predictions: Prediction[],
-  gridSize: number
+  _gridSize: number
 ): Point[] {
   const boundaryPoints: Point[] = [];
 

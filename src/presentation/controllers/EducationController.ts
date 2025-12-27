@@ -7,9 +7,9 @@
 
 import { TutorialService } from '../../infrastructure/education/TutorialService';
 import { TooltipService } from '../../infrastructure/education/TooltipService';
-import { ChallengeService, ChallengeState } from '../../infrastructure/education/ChallengeService';
+import { ChallengeService } from '../../infrastructure/education/ChallengeService';
 import { TUTORIALS } from '../../core/domain/Tutorial';
-import { CHALLENGES, Challenge } from '../../core/domain/Challenge';
+import { CHALLENGES } from '../../core/domain/Challenge';
 import type { Hyperparameters } from '../../core/domain/Hyperparameters';
 import type { TrainingHistory } from '../../core/domain/TrainingHistory';
 
@@ -40,7 +40,7 @@ export class EducationController {
     this.updateCompletionBadge();
 
     // Listen for tutorial start events from tooltips
-    const tutorialHandler = (e: Event) => {
+    const tutorialHandler = (e: Event): void => {
       const customEvent = e as CustomEvent<{ tutorialId: string }>;
       this.tutorialService.start(customEvent.detail.tutorialId);
     };

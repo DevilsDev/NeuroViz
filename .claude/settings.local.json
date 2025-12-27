@@ -18,7 +18,12 @@
       "Bash(npx playwright test:*)",
       "Bash(lsof:*)",
       "Bash(grep:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(node fix-eslint.cjs:*)",
+      "Bash(git checkout:*)",
+      "Bash(node fix-async.cjs:*)",
+      "Bash(ls:*)",
+      "Bash(wc:*)"
     ],
     "deny": [],
     "ask": []

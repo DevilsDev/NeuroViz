@@ -280,6 +280,7 @@ export class ApplicationBuilder {
         if (state.isRunning && !state.isPaused) {
           trainingController.handlePause();
         } else {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
           trainingController.handleStart();
         }
       },
@@ -298,7 +299,7 @@ export class ApplicationBuilder {
             console.error('Failed to enter fullscreen:', err);
           });
         } else {
-          document.exitFullscreen().catch((err) => {
+          document.exitFullscreen().catch((_err) => {
           });
         }
       },

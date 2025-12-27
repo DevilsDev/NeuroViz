@@ -229,7 +229,7 @@ export class DatasetController {
       `;
       
       // Track listener for cleanup
-      const handler = () => this.handleDrawClassSelect(i);
+      const handler = (): void => this.handleDrawClassSelect(i);
       button.addEventListener('click', handler);
       this.drawButtonCleanup.push(() => button.removeEventListener('click', handler));
       

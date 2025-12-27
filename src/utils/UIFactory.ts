@@ -8,7 +8,6 @@
  * getElementById calls across different getters (Training, Export, Session, etc.).
  */
 
-import { safeGetElement, getRequiredElement } from './dom';
 import type {
   DatasetElements,
   TrainingElements,
@@ -359,6 +358,6 @@ export function getResearchElements(): ResearchElements {
 if (import.meta.hot) {
   import.meta.hot.accept(() => {
     clearElementCache();
-    console.log('[HMR] Element cache cleared');
+    console.warn('[HMR] Element cache cleared');
   });
 }

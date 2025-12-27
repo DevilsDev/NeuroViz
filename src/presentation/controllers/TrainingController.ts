@@ -1,6 +1,6 @@
 import { TrainingSession } from '../../core/application/TrainingSession';
 import { toast } from '../toast';
-import { OptimizerType, ActivationType, LRScheduleType } from '../../core/domain';
+import type { ActivationType } from '../../core/domain';
 import { TrainingState } from '../../core/application/ITrainingSession';
 import { resetSuggestionsDismissal } from '../SuggestedFixes';
 import {
@@ -274,7 +274,7 @@ export class TrainingController {
      * Builds training configuration from UI inputs.
      * Uses runtime validation for enum-like values.
      */
-    private buildTrainingConfig() {
+    private buildTrainingConfig(): UpdateTrainingConfigCommand['config'] {
         const batchSize = parseInt(this.elements.inputBatchSize.value, 10) || 0;
         const maxEpochs = parseInt(this.elements.inputMaxEpochs.value, 10) || 0;
         const targetFps = parseInt(this.elements.inputFps.value, 10) || 60;

@@ -1,4 +1,4 @@
-import { LRScheduleConfig, LRScheduleType } from '../../domain';
+import { LRScheduleConfig } from '../../domain';
 
 /**
  * Learning Rate Scheduler

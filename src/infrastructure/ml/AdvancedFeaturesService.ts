@@ -5,7 +5,7 @@
  * and dropout visualization coordination.
  */
 
-import type { Point, Prediction, Hyperparameters } from '../../core/domain';
+import type { Point, Prediction } from '../../core/domain';
 import {
   calculateModelComplexity,
   formatBytes,
@@ -14,11 +14,11 @@ import {
   type ModelComplexityMetrics,
 } from '../../core/domain/ModelComplexity';
 import {
-  generateSimpleAdversarial,
   type AdversarialExample,
   type AdversarialConfig,
   DEFAULT_ADVERSARIAL_CONFIG,
 } from '../../core/domain/AdversarialExample';
+import { safeHTML } from '../security/htmlSanitizer';
 
 /**
  * Service for advanced ML features
@@ -83,12 +83,6 @@ export class AdvancedFeaturesService {
       const point = data[i];
       if (point) sampledPoints.push(point);
     }
-
-    // Create synchronous predict wrapper for the generation function
-    const syncPredict = (p: Point): Prediction | null => {
-      // We'll use a cached prediction approach
-      return null; // Will be handled differently
-    };
 
     // For each sampled point, try to generate an adversarial
     for (const point of sampledPoints) {
@@ -178,14 +172,12 @@ export class AdvancedFeaturesService {
     const resultsEl = document.getElementById('adversarial-results');
     const countEl = document.getElementById('adversarial-count');
     const listEl = document.getElementById('adversarial-list');
-    const generateBtn = document.getElementById('btn-generate-adversarial') as HTMLButtonElement | null;
-
     if (this.adversarialExamples.length > 0) {
       resultsEl?.classList.remove('hidden');
       if (countEl) countEl.textContent = this.adversarialExamples.length.toString();
 
       if (listEl) {
-        listEl.innerHTML = this.adversarialExamples.slice(0, 10).map((ex, i) => `
+        listEl.innerHTML = this.adversarialExamples.slice(0, 10).map((ex, i) => safeHTML`
           <div class="p-1.5 bg-navy-900/50 rounded border-l-2 border-amber-500">
             <div class="text-amber-400 font-medium">#${i + 1}</div>
             <div class="text-slate-400">${ex.explanation}</div>

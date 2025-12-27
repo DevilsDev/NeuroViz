@@ -183,8 +183,10 @@ export class TrainingSession implements ITrainingSession {
     const wasTraining = this.isTraining && !this.isPaused;
     if (wasTraining) {
       this.pause();
-      // Wait for current step to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Wait for current step to actually complete
+      while (this.isProcessingStep) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
     }
 
     await this.neuralNet.initialize(config);
