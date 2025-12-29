@@ -19,6 +19,12 @@ export class StartTrainingCommand implements ICommand<void> {
       return ValidationResult.error('Dataset must be loaded before training');
     }
 
+    // Check if training data is empty (validation split might be 100%)
+    const trainingData = this.session.getTrainingData();
+    if (trainingData.length === 0) {
+      return ValidationResult.error('No training data available. Validation split might be set to 100%. Reduce it to create a training set.');
+    }
+
     if (state.isRunning && !state.isPaused) {
       return ValidationResult.error('Training is already running');
     }

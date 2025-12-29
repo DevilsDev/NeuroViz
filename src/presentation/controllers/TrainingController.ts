@@ -176,8 +176,11 @@ export class TrainingController {
      * Business logic and validation have been moved to the command
      */
     public async handleInitialise(): Promise<void> {
+        console.log('[TrainingController] handleInitialise called');
+
         // Build configuration from UI inputs
         const config = this.buildInitializeNetworkConfig();
+        console.log('[TrainingController] Config built:', config);
 
         // Create and execute command
         const command = new InitializeNetworkCommand(
@@ -191,11 +194,18 @@ export class TrainingController {
 
         try {
             const result = await this.commandExecutor.execute(command);
+            console.log('[TrainingController] Initialize result:', result);
 
             if (!result.success) {
                 if (result.validationResult) {
+                    console.log('[TrainingController] Validation errors:', {
+                        message: result.validationResult.message,
+                        errors: result.validationResult.errors,
+                        isValid: result.validationResult.isValid
+                    });
                     toast.warning(result.validationResult.message);
                 } else if (result.error) {
+                    console.error('[TrainingController] Execution error:', result.error);
                     toast.error(`Failed to initialise: ${result.error.message}`);
                 }
                 return;
@@ -206,6 +216,7 @@ export class TrainingController {
 
             const optimizer = this.elements.inputOptimizer.value.toUpperCase();
             toast.success(`Network initialized with ${optimizer} optimizer!`);
+            console.log('[TrainingController] Initialization completed successfully');
         } catch (error) {
             console.error('Unexpected error during initialization:', error);
             toast.error('An unexpected error occurred during initialization');
@@ -364,10 +375,12 @@ export class TrainingController {
      * Handles training start using StartTrainingCommand
      */
     public async handleStart(): Promise<void> {
+        console.log('[TrainingController] handleStart called');
         resetSuggestionsDismissal('suggestions-panel');
 
         const command = new StartTrainingCommand(this.session);
         const result = await this.commandExecutor.execute(command);
+        console.log('[TrainingController] Start result:', result);
 
         if (!result.success) {
             if (result.validationResult) {
@@ -375,10 +388,13 @@ export class TrainingController {
             } else if (result.error) {
                 toast.error(`Failed to start: ${result.error.message}`);
             }
+        } else {
+            console.log('[TrainingController] Training started successfully');
         }
     }
 
     public handlePause(): void {
+        console.log('[TrainingController] handlePause called');
         this.session.pause();
     }
 
@@ -422,11 +438,33 @@ export class TrainingController {
     }
 
     public updateUI(state: TrainingState): void {
+        console.log('[TrainingController] updateUI called with state:', {
+            epoch: state.currentEpoch,
+            loss: state.currentLoss,
+            accuracy: state.currentAccuracy,
+            isRunning: state.isRunning,
+            isPaused: state.isPaused,
+            isInitialised: state.isInitialised,
+            datasetLoaded: state.datasetLoaded
+        });
+
+        console.log('[TrainingController] Elements check:', {
+            epochValue: this.elements.epochValue,
+            lossValue: this.elements.lossValue,
+            accuracyValue: this.elements.accuracyValue
+        });
+
         this.elements.epochValue.textContent = state.currentEpoch.toString();
         this.elements.lossValue.textContent = state.currentLoss !== null ? state.currentLoss.toFixed(4) : '—';
         this.elements.accuracyValue.textContent = state.currentAccuracy !== null ? `${(state.currentAccuracy * 100).toFixed(1)}%` : '—';
         this.elements.valLossValue.textContent = state.currentValLoss !== null ? state.currentValLoss.toFixed(4) : '—';
         this.elements.valAccuracyValue.textContent = state.currentValAccuracy !== null ? `${(state.currentValAccuracy * 100).toFixed(1)}%` : '—';
+
+        console.log('[TrainingController] UI elements updated:', {
+            epochText: this.elements.epochValue.textContent,
+            lossText: this.elements.lossValue.textContent,
+            accuracyText: this.elements.accuracyValue.textContent
+        });
 
         // Update status display text
         let statusText = 'Idle';

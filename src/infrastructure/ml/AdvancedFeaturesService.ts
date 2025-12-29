@@ -17,8 +17,27 @@ import {
   type AdversarialExample,
   type AdversarialConfig,
   DEFAULT_ADVERSARIAL_CONFIG,
+  generateSimpleAdversarial,
 } from '../../core/domain/AdversarialExample';
 import { safeHTML } from '../security/htmlSanitizer';
+import { generateAdversarialFGSM, type FGSMConfig } from '../../core/research/AdversarialExamples';
+import type { INeuralNetworkService } from '../../core/ports';
+
+export type AdversarialMethod = 'simple' | 'fgsm';
+
+export interface AdversarialGenerationConfig {
+  method: AdversarialMethod;
+  sampleSize: number;
+  simpleConfig?: AdversarialConfig;
+  fgsmConfig?: FGSMConfig;
+}
+
+export const DEFAULT_GENERATION_CONFIG: AdversarialGenerationConfig = {
+  method: 'simple',
+  sampleSize: 20,
+  simpleConfig: DEFAULT_ADVERSARIAL_CONFIG,
+  fgsmConfig: { epsilon: 0.3, gradientStep: 0.01, targetClass: null, maxIterations: 10 },
+};
 
 /**
  * Service for advanced ML features
@@ -26,6 +45,21 @@ import { safeHTML } from '../security/htmlSanitizer';
 export class AdvancedFeaturesService {
   private adversarialExamples: AdversarialExample[] = [];
   private currentDropoutMask: boolean[][] = [];
+  private generationConfig: AdversarialGenerationConfig = { ...DEFAULT_GENERATION_CONFIG };
+
+  /**
+   * Sets the adversarial generation configuration
+   */
+  setGenerationConfig(config: Partial<AdversarialGenerationConfig>): void {
+    this.generationConfig = { ...this.generationConfig, ...config };
+  }
+
+  /**
+   * Gets the current generation configuration
+   */
+  getGenerationConfig(): AdversarialGenerationConfig {
+    return { ...this.generationConfig };
+  }
 
   /**
    * Calculates and returns model complexity metrics
@@ -69,36 +103,73 @@ export class AdvancedFeaturesService {
    */
   async generateAdversarialExamples(
     data: readonly Point[],
-    predictFn: (point: Point) => Promise<Prediction | null>,
-    config: AdversarialConfig = DEFAULT_ADVERSARIAL_CONFIG
+    model: INeuralNetworkService,
+    onProgress?: (current: number, total: number, status: string) => void
   ): Promise<AdversarialExample[]> {
     this.adversarialExamples = [];
 
-    // Sample points to try (limit to avoid performance issues)
-    const sampleSize = Math.min(20, data.length);
-    const step = Math.max(1, Math.floor(data.length / sampleSize));
+    const { method, sampleSize, simpleConfig, fgsmConfig } = this.generationConfig;
+
+    // Sample points to try
+    const actualSampleSize = Math.min(sampleSize, data.length);
+    const step = Math.max(1, Math.floor(data.length / actualSampleSize));
     const sampledPoints: Point[] = [];
 
-    for (let i = 0; i < data.length && sampledPoints.length < sampleSize; i += step) {
+    for (let i = 0; i < data.length && sampledPoints.length < actualSampleSize; i += step) {
       const point = data[i];
       if (point) sampledPoints.push(point);
     }
 
-    // For each sampled point, try to generate an adversarial
-    for (const point of sampledPoints) {
-      const adversarial = await this.generateSingleAdversarial(point, predictFn, config);
-      if (adversarial) {
-        this.adversarialExamples.push(adversarial);
-      }
-    }
+    onProgress?.(0, sampledPoints.length, 'Starting generation...');
 
-    return this.adversarialExamples;
+    if (method === 'fgsm') {
+      // Use FGSM gradient-based approach
+      return this.generateWithFGSM(sampledPoints, model, fgsmConfig!, onProgress);
+    } else {
+      // Use simple gradient-free approach
+      return this.generateWithSimple(sampledPoints, model, simpleConfig!, onProgress);
+    }
   }
 
   /**
-   * Generates a single adversarial example using async prediction
+   * Generates adversarial examples using simple gradient-free approach
    */
-  private async generateSingleAdversarial(
+  private async generateWithSimple(
+    points: Point[],
+    model: INeuralNetworkService,
+    config: AdversarialConfig,
+    onProgress?: (current: number, total: number, status: string) => void
+  ): Promise<AdversarialExample[]> {
+    const examples: AdversarialExample[] = [];
+
+    for (let i = 0; i < points.length; i++) {
+      const point = points[i];
+      if (!point) continue;
+
+      onProgress?.(i, points.length, `Testing point ${i + 1}/${points.length}...`);
+
+      // Create async predict function wrapper
+      const predictFn = async (p: Point): Promise<Prediction | null> => {
+        if (!model.isReady()) return null;
+        const predictions = await model.predict([p]);
+        return predictions[0] ?? null;
+      };
+
+      const adversarial = await this.generateSingleSimpleAdversarial(point, predictFn, config);
+      if (adversarial) {
+        examples.push(adversarial);
+      }
+    }
+
+    this.adversarialExamples = examples;
+    onProgress?.(points.length, points.length, `Found ${examples.length} adversarial examples`);
+    return examples;
+  }
+
+  /**
+   * Generates a single adversarial example using spiral search (async version)
+   */
+  private async generateSingleSimpleAdversarial(
     point: Point,
     predictFn: (point: Point) => Promise<Prediction | null>,
     config: AdversarialConfig
@@ -130,7 +201,6 @@ export class AdvancedFeaturesService {
         if (perturbedPred.predictedClass !== originalClass &&
             perturbedPred.confidence >= config.minConfidence) {
           const magnitude = Math.sqrt(dx * dx + dy * dy);
-
           const actualLabel = `Class ${point.label}`;
           const predictedLabel = `Class ${perturbedPred.predictedClass}`;
           const confidencePercent = Math.round(perturbedPred.confidence * 100);
@@ -149,6 +219,53 @@ export class AdvancedFeaturesService {
     }
 
     return null;
+  }
+
+  /**
+   * Generates adversarial examples using FGSM gradient-based approach
+   */
+  private async generateWithFGSM(
+    points: Point[],
+    model: INeuralNetworkService,
+    config: FGSMConfig,
+    onProgress?: (current: number, total: number, status: string) => void
+  ): Promise<AdversarialExample[]> {
+    const examples: AdversarialExample[] = [];
+
+    for (let i = 0; i < points.length; i++) {
+      const point = points[i];
+      if (!point) continue;
+
+      onProgress?.(i, points.length, `FGSM attack ${i + 1}/${points.length}...`);
+
+      try {
+        const result = await generateAdversarialFGSM(model, point, config);
+
+        if (result.success) {
+          // Convert FGSM result to AdversarialExample format
+          const magnitude = Math.sqrt(result.perturbation.dx ** 2 + result.perturbation.dy ** 2);
+          const actualLabel = `Class ${point.label}`;
+          const predictedLabel = `Class ${result.adversarialPrediction.predictedClass}`;
+          const confidencePercent = Math.round(result.adversarialPrediction.confidence * 100);
+
+          examples.push({
+            point: result.adversarial,
+            originalPoint: result.original,
+            predictedClass: result.adversarialPrediction.predictedClass,
+            confidence: result.adversarialPrediction.confidence,
+            actualClass: point.label,
+            perturbationMagnitude: magnitude,
+            explanation: `Should be ${actualLabel}, but model predicts ${predictedLabel} with ${confidencePercent}% confidence (FGSM).`,
+          });
+        }
+      } catch (error) {
+        console.error(`FGSM failed for point ${i}:`, error);
+      }
+    }
+
+    this.adversarialExamples = examples;
+    onProgress?.(points.length, points.length, `Found ${examples.length} adversarial examples (FGSM)`);
+    return examples;
   }
 
   /**

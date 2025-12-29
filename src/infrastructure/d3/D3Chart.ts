@@ -45,7 +45,7 @@ export class D3Chart implements IVisualizerService {
   private voronoiEnabled = false;
 
   // Adversarial points
-  private adversarialPoints: Array<Point & { isAdversarial: boolean }> = [];
+  private adversarialPoints: Array<Point & { isAdversarial: boolean; originalPoint?: Point }> = [];
 
   /**
    * @param containerId - DOM element ID where the chart will be rendered
@@ -842,18 +842,71 @@ export class D3Chart implements IVisualizerService {
   /**
    * Renders adversarial example points on the chart.
    * These are displayed with a distinctive style (diamond shape, amber color).
+   * If originalPoint is provided, draws perturbation vectors.
    */
-  renderAdversarialPoints(points: Array<Point & { isAdversarial: boolean }>): void {
+  renderAdversarialPoints(points: Array<Point & { isAdversarial: boolean; originalPoint?: Point }>): void {
     this.adversarialPoints = points;
 
-    // Remove existing adversarial points
+    // Remove existing adversarial points and vectors
+    this.chartGroup.selectAll('.adversarial-points').remove();
     this.chartGroup.selectAll('.adversarial-point').remove();
+    this.chartGroup.selectAll('.perturbation-vector').remove();
 
     if (points.length === 0) return;
 
-    // Render adversarial points as diamonds
     const adversarialGroup = this.chartGroup.append('g').attr('class', 'adversarial-points');
 
+    // Render perturbation vectors (arrows from original to adversarial)
+    const vectorsData = points.filter(p => p.originalPoint);
+    if (vectorsData.length > 0) {
+      adversarialGroup.selectAll('.perturbation-vector')
+        .data(vectorsData)
+        .enter()
+        .append('line')
+        .attr('class', 'perturbation-vector')
+        .attr('x1', d => this.xScale(d.originalPoint!.x))
+        .attr('y1', d => this.yScale(d.originalPoint!.y))
+        .attr('x2', d => this.xScale(d.x))
+        .attr('y2', d => this.yScale(d.y))
+        .attr('stroke', '#f59e0b')
+        .attr('stroke-width', 1.5)
+        .attr('stroke-dasharray', '3,3')
+        .attr('opacity', 0.6)
+        .attr('marker-end', 'url(#arrow-adversarial)');
+
+      // Add arrow marker definition if not exists
+      const defs = this.svg.select('defs');
+      if (defs.select('#arrow-adversarial').empty()) {
+        defs.append('marker')
+          .attr('id', 'arrow-adversarial')
+          .attr('viewBox', '0 0 10 10')
+          .attr('refX', 8)
+          .attr('refY', 5)
+          .attr('markerWidth', 6)
+          .attr('markerHeight', 6)
+          .attr('orient', 'auto')
+          .append('path')
+          .attr('d', 'M 0 0 L 10 5 L 0 10 z')
+          .attr('fill', '#f59e0b')
+          .attr('opacity', 0.8);
+      }
+
+      // Render original points as small circles
+      adversarialGroup.selectAll('.original-point')
+        .data(vectorsData)
+        .enter()
+        .append('circle')
+        .attr('class', 'original-point')
+        .attr('cx', d => this.xScale(d.originalPoint!.x))
+        .attr('cy', d => this.yScale(d.originalPoint!.y))
+        .attr('r', 3)
+        .attr('fill', '#64748b')
+        .attr('stroke', '#94a3b8')
+        .attr('stroke-width', 1)
+        .attr('opacity', 0.7);
+    }
+
+    // Render adversarial points as diamonds
     adversarialGroup.selectAll('.adversarial-point')
       .data(points)
       .enter()
@@ -882,13 +935,18 @@ export class D3Chart implements IVisualizerService {
             .style('border', '1px solid rgba(245, 158, 11, 0.5)');
         }
 
+        const perturbMag = d.originalPoint
+          ? Math.sqrt(Math.pow(d.x - d.originalPoint.x, 2) + Math.pow(d.y - d.originalPoint.y, 2))
+          : null;
+
         this.tooltip
           .style('display', 'block')
           .html(`
             <div class="font-bold text-amber-400">⚠ Adversarial Example</div>
             <div>Position: (${d.x.toFixed(2)}, ${d.y.toFixed(2)})</div>
             <div>True class: ${d.label}</div>
-            <div class="text-xs text-slate-400 mt-1">This point fools the model</div>
+            ${perturbMag !== null ? `<div class="text-xs text-slate-400 mt-1">Perturbation: ${perturbMag.toFixed(3)}</div>` : ''}
+            <div class="text-xs text-slate-400">This point fools the model</div>
           `)
           .style('left', `${event.pageX + 10}px`)
           .style('top', `${event.pageY - 10}px`);
@@ -918,5 +976,7 @@ export class D3Chart implements IVisualizerService {
     this.adversarialPoints = [];
     this.chartGroup.selectAll('.adversarial-points').remove();
     this.chartGroup.selectAll('.adversarial-point').remove();
+    this.chartGroup.selectAll('.perturbation-vector').remove();
+    this.chartGroup.selectAll('.original-point').remove();
   }
 }

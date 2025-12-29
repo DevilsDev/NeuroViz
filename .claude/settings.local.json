@@ -23,7 +23,11 @@
       "Bash(git checkout:*)",
       "Bash(node fix-async.cjs:*)",
       "Bash(ls:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(npm run test:*)",
+      "Bash(npm run test:coverage:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run preview:*)"
     ],
     "deny": [],
     "ask": []

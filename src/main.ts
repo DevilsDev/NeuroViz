@@ -1,5 +1,6 @@
 import './style.css';
 import { ApplicationBuilder } from './core/application/ApplicationBuilder';
+import { clearElementCache } from './utils/UIFactory';
 
 /**
  * Main entry point for the NeuroViz application
@@ -12,6 +13,11 @@ import { ApplicationBuilder } from './core/application/ApplicationBuilder';
  * - Clarity: Reduced complexity from 324 lines to ~20 lines
  */
 
+// Clear any cached DOM elements from previous loads
+clearElementCache();
+
+console.log('[NeuroViz] Starting application initialization...');
+
 // Build and initialize the application
 const app = new ApplicationBuilder({
   vizContainerId: 'viz-container',
@@ -21,8 +27,12 @@ const app = new ApplicationBuilder({
   weightHistogramId: 'weight-histogram',
 }).build();
 
+console.log('[NeuroViz] Application built successfully');
+
 // Initialize the application (sets up event listeners and state synchronization)
 app.initialize();
+
+console.log('[NeuroViz] Application initialized and ready');
 
 // Expose app globally for debugging and E2E testing
 declare global {

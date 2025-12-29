@@ -317,6 +317,9 @@ export class ApplicationBuilder {
       },
     });
 
+    // Initialize header button controls
+    this.initializeHeaderButtons();
+
     return { keyboardShortcuts, datasetGallery };
 
   }
@@ -352,5 +355,44 @@ export class ApplicationBuilder {
         panel.classList.toggle('active', panel.getAttribute('data-tab-content') === targetId);
       });
     });
+  }
+
+  /**
+   * Initializes header button controls (fullscreen only - theme is handled by SessionController)
+   */
+  private initializeHeaderButtons(): void {
+    // Fullscreen toggle
+    const fullscreenBtn = document.getElementById('btn-fullscreen');
+    const expandIcon = document.getElementById('icon-expand');
+    const compressIcon = document.getElementById('icon-compress');
+
+    if (fullscreenBtn && expandIcon && compressIcon) {
+      fullscreenBtn.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch((err) => {
+            console.error('Failed to enter fullscreen:', err);
+          });
+        } else {
+          document.exitFullscreen().catch((err) => {
+            console.error('Failed to exit fullscreen:', err);
+          });
+        }
+      });
+
+      // Listen for fullscreen changes to update icon
+      document.addEventListener('fullscreenchange', () => {
+        if (document.fullscreenElement) {
+          // In fullscreen - show compress icon
+          expandIcon.classList.add('hidden');
+          compressIcon.classList.remove('hidden');
+        } else {
+          // Not in fullscreen - show expand icon
+          expandIcon.classList.remove('hidden');
+          compressIcon.classList.add('hidden');
+        }
+      });
+    }
+
+    // Note: Theme toggle is handled by SessionController - no need to duplicate here
   }
 }

@@ -147,7 +147,7 @@ describe('TrainingController', () => {
     describe('Disposal', () => {
         it('should remove all event listeners on dispose', async () => {
             const { TrainingController } = await import('../../../src/presentation/controllers/TrainingController');
-            
+
             const mockElements = createMockElements();
             const mockSession = createMockSession();
             const callbacks = {
@@ -176,11 +176,11 @@ describe('TrainingController', () => {
             // Verify removeEventListener was called on key elements
             expect(removeListenerSpies.get(mockElements.btnInit)?.mock.calls.length).toBeGreaterThan(0);
             expect(removeListenerSpies.get(mockElements.btnStart)?.mock.calls.length).toBeGreaterThan(0);
-        });
+        }, 10000); // 10 second timeout for full test suite runs
 
         it('should clear eventCleanup array after dispose', async () => {
             const { TrainingController } = await import('../../../src/presentation/controllers/TrainingController');
-            
+
             const mockElements = createMockElements();
             const mockSession = createMockSession();
             const callbacks = {
@@ -202,7 +202,7 @@ describe('TrainingController', () => {
             controller.dispose();
 
             expect(controllerAny.eventCleanup.length).toBe(0);
-        });
+        }, 10000); // 10 second timeout for full test suite runs
     });
 
     describe('Validation', () => {

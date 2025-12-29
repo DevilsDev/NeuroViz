@@ -562,13 +562,24 @@
                 <option value="battery">Battery Saver (15 FPS)</option>
               </select>
             </label>
-            <label class="block">
+            <label class="block mb-2">
               <span class="input-label">LR Schedule</span>
               <select id="input-lr-schedule" class="select-field text-xs">
                 <option value="none" selected>None (Constant)</option>
                 <option value="step">Step Decay</option>
                 <option value="exponential">Exponential Decay</option>
                 <option value="cosine">Cosine Annealing</option>
+              </select>
+            </label>
+            <label class="block">
+              <span class="input-label">Validation Split</span>
+              <select id="input-val-split" class="select-field text-xs">
+                <option value="0">0% (No Validation)</option>
+                <option value="10">10%</option>
+                <option value="20" selected>20%</option>
+                <option value="30">30%</option>
+                <option value="40">40%</option>
+                <option value="50">50%</option>
               </select>
             </label>
           </div>
@@ -681,9 +692,45 @@
               </summary>
               <div class="mt-2 space-y-2">
                 <p class="text-[10px] text-slate-500">Generate points that fool the model - small perturbations that cause misclassification.</p>
+
+                <!-- Method Selection -->
+                <div>
+                  <label class="text-[10px] text-slate-400 block mb-1">Attack Method:</label>
+                  <select id="adversarial-method" class="w-full px-2 py-1 text-xs bg-navy-900 border border-navy-700 rounded text-slate-200">
+                    <option value="simple">Simple (Gradient-Free)</option>
+                    <option value="fgsm">FGSM (Gradient-Based)</option>
+                  </select>
+                  <p class="text-[9px] text-slate-500 mt-0.5" id="adversarial-method-desc">Spiral search pattern, fast but less accurate</p>
+                </div>
+
+                <!-- Sample Size -->
+                <div>
+                  <label class="text-[10px] text-slate-400 block mb-1">
+                    Sample Size: <span id="adversarial-sample-value" class="text-emerald-400 font-mono">20</span>
+                  </label>
+                  <input type="range" id="adversarial-sample-size" min="5" max="100" value="20" step="5"
+                         class="w-full h-1 bg-navy-700 rounded-lg appearance-none cursor-pointer">
+                  <div class="flex justify-between text-[9px] text-slate-500">
+                    <span>5</span>
+                    <span>100</span>
+                  </div>
+                </div>
+
+                <!-- Progress Indicator -->
+                <div id="adversarial-progress" class="hidden">
+                  <div class="flex justify-between text-[10px] mb-1">
+                    <span class="text-slate-400" id="adversarial-progress-text">Generating...</span>
+                    <span id="adversarial-progress-count" class="text-emerald-400 font-mono">0/0</span>
+                  </div>
+                  <div class="w-full bg-navy-700 rounded-full h-1.5">
+                    <div id="adversarial-progress-bar" class="bg-gradient-to-r from-amber-500 to-orange-500 h-1.5 rounded-full transition-all" style="width: 0%"></div>
+                  </div>
+                </div>
+
                 <button id="btn-generate-adversarial" class="btn-secondary w-full text-xs py-1.5" disabled>
                   Generate Adversarial Examples
                 </button>
+
                 <div id="adversarial-results" class="hidden">
                   <div class="flex justify-between text-[10px] mb-1">
                     <span class="text-slate-400">Found:</span>

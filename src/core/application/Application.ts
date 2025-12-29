@@ -716,16 +716,46 @@ export class Application {
       }
     });
 
-    // Setup adversarial example generation button
+    // Setup adversarial example generation controls
     const generateBtn = document.getElementById('btn-generate-adversarial') as HTMLButtonElement | null;
     const clearBtn = document.getElementById('btn-clear-adversarial');
+    const methodSelect = document.getElementById('adversarial-method') as HTMLSelectElement | null;
+    const methodDesc = document.getElementById('adversarial-method-desc');
+    const sampleSizeSlider = document.getElementById('adversarial-sample-size') as HTMLInputElement | null;
+    const sampleSizeValue = document.getElementById('adversarial-sample-value');
 
+    // Method selection handler
+    if (methodSelect) {
+      methodSelect.addEventListener('change', () => {
+        const method = methodSelect.value as 'simple' | 'fgsm';
+        this.advancedFeatures?.setGenerationConfig({ method });
+
+        // Update description
+        if (methodDesc) {
+          methodDesc.textContent = method === 'simple'
+            ? 'Spiral search pattern, fast but less accurate'
+            : 'Gradient-based attack, slower but more accurate';
+        }
+      });
+    }
+
+    // Sample size slider handler
+    if (sampleSizeSlider && sampleSizeValue) {
+      sampleSizeSlider.addEventListener('input', () => {
+        const sampleSize = parseInt(sampleSizeSlider.value);
+        sampleSizeValue.textContent = sampleSize.toString();
+        this.advancedFeatures?.setGenerationConfig({ sampleSize });
+      });
+    }
+
+    // Generate button handler
     if (generateBtn) {
       generateBtn.addEventListener('click', () => {
         void this.generateAdversarialExamples();
       });
     }
 
+    // Clear button handler
     if (clearBtn) {
       clearBtn.addEventListener('click', () => {
         this.advancedFeatures?.clearAdversarialExamples();
@@ -804,9 +834,19 @@ export class Application {
     if (!data?.length) return;
 
     const generateBtn = document.getElementById('btn-generate-adversarial') as HTMLButtonElement | null;
+    const progressDiv = document.getElementById('adversarial-progress');
+    const progressText = document.getElementById('adversarial-progress-text');
+    const progressCount = document.getElementById('adversarial-progress-count');
+    const progressBar = document.getElementById('adversarial-progress-bar');
+
     if (generateBtn) {
       generateBtn.disabled = true;
       generateBtn.textContent = 'Generating...';
+    }
+
+    // Show progress indicator
+    if (progressDiv) {
+      progressDiv.classList.remove('hidden');
     }
 
     try {
@@ -816,21 +856,30 @@ export class Application {
         throw new Error('Model not ready');
       }
 
-      // Create prediction function
-      const predictFn = async (point: import('../domain/Point').Point) => {
-        if (!this.services.neuralNet.isReady()) return null;
-        const predictions = await this.services.neuralNet.predict([point]);
-        return predictions[0] ?? null;
+      // Progress callback
+      const onProgress = (current: number, total: number, status: string): void => {
+        if (progressText) progressText.textContent = status;
+        if (progressCount) progressCount.textContent = `${current}/${total}`;
+        if (progressBar) {
+          const percentage = total > 0 ? (current / total) * 100 : 0;
+          progressBar.style.width = `${percentage}%`;
+        }
       };
 
-      const examples = await this.advancedFeatures.generateAdversarialExamples(data, predictFn);
+      const examples = await this.advancedFeatures.generateAdversarialExamples(
+        data,
+        this.services.neuralNet,
+        onProgress
+      );
+
       this.advancedFeatures.updateAdversarialDisplay();
 
-      // Add adversarial points to visualisation
+      // Add adversarial points to visualisation with perturbation vectors
       if (examples.length > 0) {
         const adversarialPoints = examples.map(ex => ({
           ...ex.point,
           isAdversarial: true,
+          originalPoint: ex.originalPoint,
         }));
         this.services.visualizer.renderAdversarialPoints?.(adversarialPoints);
       }
@@ -841,6 +890,13 @@ export class Application {
         generateBtn.disabled = false;
         generateBtn.textContent = 'Generate Adversarial Examples';
       }
+
+      // Hide progress indicator after a brief delay
+      setTimeout(() => {
+        if (progressDiv) {
+          progressDiv.classList.add('hidden');
+        }
+      }, 1500);
     }
   }
 
@@ -878,8 +934,8 @@ export class Application {
 
     // Dispose all controllers (single iteration - no duplicates)
     Object.values(this.controllers).forEach(controller => {
-      if (controller && typeof (controller as any).dispose === 'function') {
-        (controller as any).dispose();
+      if (controller && 'dispose' in controller && typeof controller.dispose === 'function') {
+        controller.dispose();
       }
     });
 

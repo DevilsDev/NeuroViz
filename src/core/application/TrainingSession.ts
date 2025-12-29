@@ -783,6 +783,14 @@ export class TrainingSession implements ITrainingSession {
   }
 
   /**
+   * Returns the training data (after train/validation split).
+   * Useful for checking if training set is empty (e.g., when validation split is 100%).
+   */
+  getTrainingData(): Point[] {
+    return this.trainingData;
+  }
+
+  /**
    * Returns the current training history.
    */
   getHistory(): TrainingHistory {

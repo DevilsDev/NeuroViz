@@ -288,8 +288,15 @@ export class VisualizationController {
         if (!this.neuralNetService.isReady()) return;
 
         const currentWeights = this.neuralNetService.getWeightMatrices();
-        if (this.previousWeights.length === 0 || currentWeights.length === 0) {
+        if (currentWeights.length === 0) return;
+
+        // Initialize previousWeights if empty
+        if (this.previousWeights.length === 0) {
             this.previousWeights = currentWeights;
+            // Render zero gradients as initial state
+            const learningRate = this.session.getCurrentLearningRate();
+            const zeroGradients = estimateGradients(currentWeights, currentWeights, learningRate);
+            this.gradientFlow.render(zeroGradients);
             return;
         }
 
@@ -298,13 +305,9 @@ export class VisualizationController {
         const learningRate = this.session.getCurrentLearningRate();
         const gradients = estimateGradients(this.previousWeights, currentWeights, learningRate);
 
-        // Only update if there are actual weight changes (training is active)
-        // This preserves the last gradient visualization when training stops
-        const hasChanges = gradients.maxGradient > 0.0001;
-        if (hasChanges) {
-            this.gradientFlow.render(gradients);
-            this.previousWeights = currentWeights;
-        }
+        // Always render to show gradient flow (even if small)
+        this.gradientFlow.render(gradients);
+        this.previousWeights = currentWeights;
     }
 
     private handleActivationToggle(): void {

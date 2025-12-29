@@ -12,7 +12,9 @@ export class DatasetGallery {
   private cards: NodeListOf<Element>;
   private dropdown: HTMLSelectElement;
   private toggleButton: HTMLElement | null;
+  private loadDataButton: HTMLButtonElement | null;
   private selectedDataset: string = 'circle';
+  private isInitializing: boolean = true;
 
   // Event cleanup tracking for proper disposal
   private eventCleanup: Array<{ element: Element; event: string; handler: EventListener }> = [];
@@ -21,6 +23,7 @@ export class DatasetGallery {
     this.cards = document.querySelectorAll('.dataset-preview-card');
     this.dropdown = document.getElementById('dataset-select') as HTMLSelectElement;
     this.toggleButton = document.getElementById('toggle-dataset-view');
+    this.loadDataButton = document.getElementById('btn-load-data') as HTMLButtonElement;
 
     this.init();
   }
@@ -60,12 +63,13 @@ export class DatasetGallery {
       this.selectDataset(this.dropdown.value);
     });
 
-    // Set initial selection
+    // Set initial selection (without auto-loading)
     this.selectDataset(this.dropdown.value || 'circle');
+    this.isInitializing = false;
   }
 
   /**
-   * Select a dataset in both gallery and dropdown
+   * Select a dataset in both gallery and dropdown, and auto-load the data
    */
   public selectDataset(dataset: string): void {
     this.selectedDataset = dataset;
@@ -84,6 +88,14 @@ export class DatasetGallery {
       this.dropdown.value = dataset;
       // Trigger change event to notify other components
       this.dropdown.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    // Auto-load the dataset when a card is clicked for better UX
+    // This eliminates the need for users to manually click "Load Data"
+    // Skip auto-loading during initialization to avoid loading on page load
+    if (!this.isInitializing && this.loadDataButton && !this.loadDataButton.disabled) {
+      console.log('[DatasetGallery] Auto-loading dataset:', dataset);
+      this.loadDataButton.click();
     }
   }
 

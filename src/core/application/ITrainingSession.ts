@@ -118,6 +118,12 @@ export interface ITrainingSession {
   getData(): Point[];
 
   /**
+   * Returns the training data (after train/validation split).
+   * Useful for checking if training set is empty (e.g., when validation split is 100%).
+   */
+  getTrainingData(): Point[];
+
+  /**
    * Registers a callback for state changes.
    * @returns Unsubscribe function
    */

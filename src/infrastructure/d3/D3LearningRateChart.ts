@@ -146,7 +146,7 @@ export class D3LearningRateChart {
     this.xAxisGroup
       .transition()
       .duration(300)
-      .call(xAxis as any)
+      .call(xAxis as d3.Axis<d3.NumberValue>)
       .selectAll('text')
       .attr('fill', '#94a3b8') // Slate-400
       .style('font-size', '10px');
@@ -154,7 +154,7 @@ export class D3LearningRateChart {
     this.yAxisGroup
       .transition()
       .duration(300)
-      .call(yAxis as any)
+      .call(yAxis as d3.Axis<d3.NumberValue>)
       .selectAll('text')
       .attr('fill', '#10b981') // Emerald-500
       .style('font-size', '10px');
