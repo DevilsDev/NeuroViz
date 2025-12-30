@@ -17,7 +17,6 @@ import {
   type AdversarialExample,
   type AdversarialConfig,
   DEFAULT_ADVERSARIAL_CONFIG,
-  generateSimpleAdversarial,
 } from '../../core/domain/AdversarialExample';
 import { safeHTML } from '../security/htmlSanitizer';
 import { generateAdversarialFGSM, type FGSMConfig } from '../../core/research/AdversarialExamples';

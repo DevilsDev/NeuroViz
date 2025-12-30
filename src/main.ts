@@ -1,6 +1,7 @@
 import './style.css';
 import { ApplicationBuilder } from './core/application/ApplicationBuilder';
 import { clearElementCache } from './utils/UIFactory';
+import { logger } from './infrastructure/logging/Logger';
 
 /**
  * Main entry point for the NeuroViz application
@@ -16,7 +17,7 @@ import { clearElementCache } from './utils/UIFactory';
 // Clear any cached DOM elements from previous loads
 clearElementCache();
 
-console.log('[NeuroViz] Starting application initialization...');
+logger.info('Starting application initialization', { component: 'NeuroViz' });
 
 // Build and initialize the application
 const app = new ApplicationBuilder({
@@ -27,12 +28,12 @@ const app = new ApplicationBuilder({
   weightHistogramId: 'weight-histogram',
 }).build();
 
-console.log('[NeuroViz] Application built successfully');
+logger.info('Application built successfully', { component: 'NeuroViz' });
 
 // Initialize the application (sets up event listeners and state synchronization)
 app.initialize();
 
-console.log('[NeuroViz] Application initialized and ready');
+logger.info('Application initialized and ready', { component: 'NeuroViz' });
 
 // Expose app globally for debugging and E2E testing
 declare global {
@@ -42,3 +43,12 @@ declare global {
 }
 
 window.app = app;
+
+// ===== HOT MODULE REPLACEMENT (HMR) =====
+// Properly dispose application resources during HMR to prevent memory leaks
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    console.warn('[HMR] Disposing application resources...');
+    app.dispose();
+  });
+}

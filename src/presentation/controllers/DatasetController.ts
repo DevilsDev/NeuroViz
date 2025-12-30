@@ -1,4 +1,5 @@
 import { TrainingSession } from '../../core/application/TrainingSession';
+import { logger } from '../../infrastructure/logging/Logger';
 import { D3Chart } from '../../infrastructure/d3/D3Chart';
 import { toast } from '../toast';
 import { Point, MULTI_CLASS_COLOURS } from '../../core/domain';
@@ -90,7 +91,7 @@ export class DatasetController {
 
   public async handleLoadData(): Promise<void> {
     const datasetType = this.elements.datasetSelect.value;
-    console.log('[DatasetController] handleLoadData called for dataset:', datasetType);
+    logger.debug(`[DatasetController] handleLoadData called for dataset: ${datasetType}`);
 
     // Handle custom dataset differently
     if (datasetType === 'custom') {
@@ -101,7 +102,7 @@ export class DatasetController {
       this.elements.datasetOptions.classList.add('hidden');
       this.updateDrawClassButtons();
       this.enableDrawMode();
-      console.log('[DatasetController] Custom draw mode enabled');
+      logger.debug('[DatasetController] Custom draw mode enabled');
       return;
     }
 
@@ -118,7 +119,7 @@ export class DatasetController {
     const classBalance = (parseInt(this.elements.inputBalance.value, 10) || 50) / 100;
     const preprocessing = this.elements.inputPreprocessing.value as PreprocessingType;
 
-    console.log('[DatasetController] Loading dataset with options:', {
+    logger.debug('[DatasetController] Loading dataset with options', {
       datasetType,
       samples,
       noise,
@@ -129,13 +130,13 @@ export class DatasetController {
 
     try {
       await this.session.loadData(datasetType, { samples, noise, numClasses, classBalance, preprocessing });
-      console.log('[DatasetController] session.loadData completed');
+      logger.debug('[DatasetController] session.loadData completed');
 
       // Get the actual number of classes detected in the data
       const detectedClasses = this.session.getDetectedNumClasses();
       const loadedData = this.session.getData();
 
-      console.log('[DatasetController] Data loaded successfully:', {
+      logger.debug('[DatasetController] Data loaded successfully', {
         detectedClasses,
         dataPoints: loadedData.length,
         datasetLoaded: this.session.getState().datasetLoaded
@@ -150,15 +151,15 @@ export class DatasetController {
           ? 'Iris (150 samples, 3 classes)'
           : 'Wine (178 samples, 3 classes)';
         toast.success(`${datasetInfo} loaded`);
-        console.log('[DatasetController] Toast shown:', datasetInfo);
+        logger.debug(`[DatasetController] Toast shown: ${datasetInfo}`);
       } else {
         toast.success(`Dataset "${datasetType}" loaded (${samples} samples, ${detectedClasses} classes)`);
-        console.log('[DatasetController] Toast shown: Dataset loaded with', samples, 'samples');
+        logger.debug(`[DatasetController] Toast shown: Dataset loaded with ${samples} samples`);
       }
 
       // Update visualization
       this.visualizerService.renderData(loadedData);
-      console.log('[DatasetController] Visualization updated with', loadedData.length, 'points');
+      logger.debug(`[DatasetController] Visualization updated with ${loadedData.length} points`);
 
       // Disable draw mode
       this.visualizerService.disableDrawMode();
@@ -170,7 +171,7 @@ export class DatasetController {
     } finally {
       this.showLoading(false);
       this.elements.btnLoadData.disabled = false;
-      console.log('[DatasetController] handleLoadData finished');
+      logger.debug('[DatasetController] handleLoadData finished');
     }
   }
 

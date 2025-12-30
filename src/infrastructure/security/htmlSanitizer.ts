@@ -120,7 +120,8 @@ export function sanitizeURL(url: string): string {
  * ```
  */
 export function stripHTML(html: string): string {
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  return div.textContent || div.innerText || '';
+  // Use DOMParser which does not execute scripts
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  return doc.body.textContent || ''; 
 }

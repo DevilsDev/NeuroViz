@@ -1,3 +1,5 @@
+import { logger } from '../infrastructure/logging/Logger';
+
 /**
  * DatasetGallery - Visual dataset selector with preview cards
  *
@@ -94,7 +96,7 @@ export class DatasetGallery {
     // This eliminates the need for users to manually click "Load Data"
     // Skip auto-loading during initialization to avoid loading on page load
     if (!this.isInitializing && this.loadDataButton && !this.loadDataButton.disabled) {
-      console.log('[DatasetGallery] Auto-loading dataset:', dataset);
+      logger.debug(`[DatasetGallery] Auto-loading dataset: ${dataset}`);
       this.loadDataButton.click();
     }
   }
