@@ -73,7 +73,7 @@ jobs:
       # Upload node_modules as artifact for jobs that need it
       # -----------------------------------------------------------------------
       - name: Upload node_modules
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: node-modules
           path: node_modules/
@@ -135,7 +135,7 @@ jobs:
       # Upload Coverage (optional, for PR comments)
       # -----------------------------------------------------------------------
       - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: coverage-report
           path: coverage/
@@ -200,7 +200,7 @@ jobs:
       # Upload build artifact for subsequent jobs
       # -----------------------------------------------------------------------
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: dist
           path: dist/
@@ -272,7 +272,7 @@ jobs:
       # Upload test artifacts on failure
       # -----------------------------------------------------------------------
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: playwright-report
@@ -280,7 +280,7 @@ jobs:
           retention-days: 7
 
       - name: Upload Playwright traces
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: playwright-traces
