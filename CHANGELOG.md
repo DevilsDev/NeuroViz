@@ -1,3 +1,9 @@
+## [2.23.0](https://github.com/DevilsDev/NeuroViz/compare/v2.22.0...v2.23.0) (2026-01-04)
+
+### Features
+
+* add NeuroViz student guide explaining neural networks and tool usage ([e63df7e](https://github.com/DevilsDev/NeuroViz/commit/e63df7e46852f5d054f606e3ea2728fa0c6a8d3a))
+
 ## [2.22.0](https://github.com/DevilsDev/NeuroViz/compare/v2.21.1...v2.22.0) (2025-12-08)
 
 ### Features
