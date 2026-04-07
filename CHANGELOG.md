@@ -1,3 +1,9 @@
+## [2.23.2](https://github.com/DevilsDev/NeuroViz/compare/v2.23.1...v2.23.2) (2026-04-07)
+
+### Bug Fixes
+
+* **tests:** stabilize flaky CI tests that blocked deployment ([ca5a2aa](https://github.com/DevilsDev/NeuroViz/commit/ca5a2aabe1499431e599aa9aaef4b888168df591))
+
 ## [2.23.1](https://github.com/DevilsDev/NeuroViz/compare/v2.23.0...v2.23.1) (2026-04-07)
 
 ### Documentation
