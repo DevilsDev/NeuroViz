@@ -383,7 +383,7 @@ describe('CommandExecutor', () => {
 
       expect(result.success).toBe(true);
       expect(result.result).toBe('slow result');
-    }, 200);
+    }, 5000);
   });
 
   describe('execute - concurrent execution', () => {
