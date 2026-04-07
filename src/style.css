@@ -542,6 +542,11 @@ html:not(.dark) {
         @apply focus:outline-none focus:ring-2 focus:ring-cyan/50 focus:ring-offset-2 focus:ring-offset-navy-950;
     }
 
+    /* Global focus-visible indicator for keyboard navigation */
+    *:focus-visible {
+        @apply outline-2 outline-offset-2 outline-cyan;
+    }
+
     /* Loading state */
     .loading {
         @apply opacity-50 cursor-wait pointer-events-none;
@@ -790,6 +795,14 @@ html:not(.dark) {
 .dataset-preview-card.selected {
     @apply bg-navy-800 border-cyan ring-2 ring-cyan/20;
     box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
+}
+
+.dataset-preview-card.selected .dataset-preview-label {
+    @apply font-semibold text-cyan;
+}
+
+.dataset-preview-card:focus-visible {
+    @apply ring-2 ring-cyan outline-none;
 }
 
 .dataset-preview-icon {

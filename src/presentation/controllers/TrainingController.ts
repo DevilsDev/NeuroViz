@@ -379,6 +379,17 @@ export class TrainingController {
         logger.debug('[TrainingController] handleStart called');
         resetSuggestionsDismissal('suggestions-panel');
 
+        // Auto-initialize if network hasn't been set up yet
+        const state = this.session.getState();
+        if (!state.isInitialised) {
+            logger.debug('[TrainingController] Auto-initializing network before training');
+            await this.handleInitialise();
+            // Re-check — initialization may have failed
+            if (!this.session.getState().isInitialised) {
+                return;
+            }
+        }
+
         const command = new StartTrainingCommand(this.session);
         const result = await this.commandExecutor.execute(command);
         logger.debug('[TrainingController] Start result', result as unknown as LogContext);

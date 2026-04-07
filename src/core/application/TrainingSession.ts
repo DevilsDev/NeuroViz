@@ -17,7 +17,7 @@ export interface TrainingSessionConfig {
 }
 
 const DEFAULT_CONFIG: TrainingSessionConfig = {
-  renderInterval: 10,
+  renderInterval: 5,
   gridSize: 50,
 };
 
@@ -459,7 +459,7 @@ export class TrainingSession implements ITrainingSession {
       });
 
       // Render boundary at intervals
-      if (this.currentEpoch % this.config.renderInterval === 0) {
+      if (this.currentEpoch === 1 || this.currentEpoch % this.config.renderInterval === 0) {
         await this.updateVisualisation();
       }
 
@@ -599,7 +599,7 @@ export class TrainingSession implements ITrainingSession {
       }
 
       // Update visualisation at intervals (decouples rendering from training)
-      if (this.currentEpoch % this.config.renderInterval === 0) {
+      if (this.currentEpoch === 1 || this.currentEpoch % this.config.renderInterval === 0) {
         await this.updateVisualisation();
       }
 

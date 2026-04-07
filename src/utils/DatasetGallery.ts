@@ -93,9 +93,8 @@ export class DatasetGallery {
     }
 
     // Auto-load the dataset when a card is clicked for better UX
-    // This eliminates the need for users to manually click "Load Data"
     // Skip auto-loading during initialization to avoid loading on page load
-    if (!this.isInitializing && this.loadDataButton && !this.loadDataButton.disabled) {
+    if (!this.isInitializing && this.loadDataButton) {
       logger.debug(`[DatasetGallery] Auto-loading dataset: ${dataset}`);
       this.loadDataButton.click();
     }

@@ -384,35 +384,39 @@ describe('TrainingSession', () => {
       await session.loadData('test');
     });
 
-    it('should NOT call renderBoundary() when epoch % 10 != 0', async () => {
-      // Steps 1-9 should not trigger boundary render
-      for (let i = 0; i < 9; i++) {
-        await session.step();
+    it('should NOT call renderBoundary() between epoch 1 and the next render interval', async () => {
+      // Epoch 1 always renders (initial boundary). Steps 2-9 should not.
+      await session.step(); // epoch 1 — renders
+      neuralNet.predict.mockClear();
+      visualizer.renderBoundary.mockClear();
+
+      for (let i = 0; i < 8; i++) {
+        await session.step(); // epochs 2-9
       }
 
-      expect(neuralNet.predict).not.toHaveBeenCalled();
       expect(visualizer.renderBoundary).not.toHaveBeenCalled();
     });
 
-    it('should call renderBoundary() ONLY when epoch % 10 == 0', async () => {
+    it('should render boundary at epoch 1 and at renderInterval milestones', async () => {
       // Execute 10 steps to reach epoch 10
       for (let i = 0; i < 10; i++) {
         await session.step();
       }
 
-      // predict is called twice per render: once for grid, once for point predictions
-      expect(neuralNet.predict).toHaveBeenCalledTimes(2);
-      expect(visualizer.renderBoundary).toHaveBeenCalledTimes(1);
+      // Renders at epoch 1 (initial) + epoch 10 (interval) = 2 renders
+      // predict is called twice per render (grid + points) = 4 calls
+      expect(neuralNet.predict).toHaveBeenCalledTimes(4);
+      expect(visualizer.renderBoundary).toHaveBeenCalledTimes(2);
     });
 
-    it('should call renderBoundary() at epochs 10, 20, 30...', async () => {
+    it('should call renderBoundary() at epochs 1, 10, 20, 30...', async () => {
       // Execute 30 steps
       for (let i = 0; i < 30; i++) {
         await session.step();
       }
 
-      // Should render at epochs 10, 20, 30
-      expect(visualizer.renderBoundary).toHaveBeenCalledTimes(3);
+      // Should render at epochs 1, 10, 20, 30 = 4 renders
+      expect(visualizer.renderBoundary).toHaveBeenCalledTimes(4);
     });
 
     it('should call predict() before renderBoundary()', async () => {
@@ -427,9 +431,8 @@ describe('TrainingSession', () => {
         callOrder.push('renderBoundary');
       });
 
-      for (let i = 0; i < 10; i++) {
-        await session.step();
-      }
+      // Just step once — epoch 1 always renders
+      await session.step();
 
       // predict is called twice (grid + points), then renderBoundary
       expect(callOrder).toEqual(['predict', 'predict', 'renderBoundary']);
