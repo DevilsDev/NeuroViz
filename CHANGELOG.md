@@ -1,3 +1,13 @@
+## [2.23.1](https://github.com/DevilsDev/NeuroViz/compare/v2.23.0...v2.23.1) (2026-04-07)
+
+### Documentation
+
+* Add NeuroViz codebase review document. ([0187205](https://github.com/DevilsDev/NeuroViz/commit/018720500d99e5be6a4411c7cab21e9fb9d57f8d))
+
+### Code Refactoring
+
+* architectural audit — fix hexagonal boundary violations, improve performance and error handling ([90b282b](https://github.com/DevilsDev/NeuroViz/commit/90b282b78d387685be75d77a5b8dbe4dbd61b0a8))
+
 ## [2.23.0](https://github.com/DevilsDev/NeuroViz/compare/v2.22.0...v2.23.0) (2026-01-04)
 
 ### Features
