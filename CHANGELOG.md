@@ -1,3 +1,9 @@
+## [2.23.3](https://github.com/DevilsDev/NeuroViz/compare/v2.23.2...v2.23.3) (2026-04-07)
+
+### Bug Fixes
+
+* **tests:** stabilize remaining flaky integration tests for CI ([51c8a47](https://github.com/DevilsDev/NeuroViz/commit/51c8a47613ef254dc5cf2c7e3f88013ed0314d4a))
+
 ## [2.23.2](https://github.com/DevilsDev/NeuroViz/compare/v2.23.1...v2.23.2) (2026-04-07)
 
 ### Bug Fixes
