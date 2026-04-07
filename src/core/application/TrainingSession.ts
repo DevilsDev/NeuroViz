@@ -1,5 +1,5 @@
 import type { Hyperparameters, Point, Prediction, TrainingConfig, TrainingHistory, ExportFormat } from '../domain';
-import { DEFAULT_TRAINING_CONFIG, DEFAULT_LR_SCHEDULE, createEmptyHistory, addHistoryRecord, exportHistory } from '../domain';
+import { DEFAULT_TRAINING_CONFIG, DEFAULT_LR_SCHEDULE, createEmptyHistory, addHistoryRecord, exportHistory, isModelDisposedError } from '../domain';
 import type { INeuralNetworkService, IVisualizerService, IDatasetRepository, DatasetOptions } from '../ports';
 import type { ITrainingSession, TrainingState } from './ITrainingSession';
 import { logger } from '../../infrastructure/logging/Logger';
@@ -125,6 +125,7 @@ export class TrainingSession implements ITrainingSession {
    */
   getState(): TrainingState {
     return {
+      eventType: this.lastEventType,
       currentEpoch: this.currentEpoch,
       currentLoss: this.currentLoss,
       currentAccuracy: this.currentAccuracy,
@@ -175,7 +176,7 @@ export class TrainingSession implements ITrainingSession {
       this.splitData();
     }
 
-    this.notifyListeners();
+    this.notifyListeners('configChanged');
   }
 
   async setHyperparameters(config: Hyperparameters, skipHistory: boolean = false): Promise<void> {
@@ -210,7 +211,7 @@ export class TrainingSession implements ITrainingSession {
       this.configHistory.push(config, 'Configuration updated');
     }
 
-    this.notifyListeners();
+    this.notifyListeners('initialized');
   }
 
   /**
@@ -230,7 +231,7 @@ export class TrainingSession implements ITrainingSession {
     this.detectedNumClasses = this.detectNumClasses(this.allData);
     
     this.visualizer.renderData(this.allData);
-    this.notifyListeners();
+    this.notifyListeners('dataLoaded');
   }
 
   /**
@@ -256,15 +257,16 @@ export class TrainingSession implements ITrainingSession {
       return data;
     }
 
-    const xs = data.map(p => p.x);
-    const ys = data.map(p => p.y);
-
     if (method === 'normalize') {
       // Min-max normalization to [-1, 1]
-      const xMin = Math.min(...xs);
-      const xMax = Math.max(...xs);
-      const yMin = Math.min(...ys);
-      const yMax = Math.max(...ys);
+      // Use loop-based min/max to avoid stack overflow with Math.min(...spread) on large arrays
+      let xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
+      for (const p of data) {
+        if (p.x < xMin) xMin = p.x;
+        if (p.x > xMax) xMax = p.x;
+        if (p.y < yMin) yMin = p.y;
+        if (p.y > yMax) yMax = p.y;
+      }
 
       const xRange = xMax - xMin || 1;
       const yRange = yMax - yMin || 1;
@@ -277,12 +279,23 @@ export class TrainingSession implements ITrainingSession {
     }
 
     if (method === 'standardize') {
-      // Z-score standardization
-      const xMean = xs.reduce((a, b) => a + b, 0) / xs.length;
-      const yMean = ys.reduce((a, b) => a + b, 0) / ys.length;
+      // Z-score standardization — single-pass for mean, second pass for variance
+      let xSum = 0, ySum = 0;
+      for (const p of data) {
+        xSum += p.x;
+        ySum += p.y;
+      }
+      const n = data.length;
+      const xMean = xSum / n;
+      const yMean = ySum / n;
 
-      const xStd = Math.sqrt(xs.reduce((sum, x) => sum + (x - xMean) ** 2, 0) / xs.length) || 1;
-      const yStd = Math.sqrt(ys.reduce((sum, y) => sum + (y - yMean) ** 2, 0) / ys.length) || 1;
+      let xVariance = 0, yVariance = 0;
+      for (const p of data) {
+        xVariance += (p.x - xMean) ** 2;
+        yVariance += (p.y - yMean) ** 2;
+      }
+      const xStd = Math.sqrt(xVariance / n) || 1;
+      const yStd = Math.sqrt(yVariance / n) || 1;
 
       return data.map(p => ({
         x: (p.x - xMean) / xStd,
@@ -322,7 +335,7 @@ export class TrainingSession implements ITrainingSession {
 
     this.isTraining = true;
     this.isPaused = false;
-    this.notifyListeners();
+    this.notifyListeners('started');
 
     // Kick off the guard-rail loop
     void this.loop();
@@ -338,7 +351,7 @@ export class TrainingSession implements ITrainingSession {
     }
 
     this.isPaused = true;
-    this.notifyListeners();
+    this.notifyListeners('paused');
   }
 
   /**
@@ -366,7 +379,7 @@ export class TrainingSession implements ITrainingSession {
       this.visualizer.renderData(this.allData);
     }
 
-    this.notifyListeners();
+    this.notifyListeners('reset');
   }
 
   /**
@@ -397,7 +410,7 @@ export class TrainingSession implements ITrainingSession {
     // Clear visualisation
     this.visualizer.clear();
 
-    this.notifyListeners();
+    this.notifyListeners('reset');
   }
 
   /**
@@ -450,7 +463,7 @@ export class TrainingSession implements ITrainingSession {
         await this.updateVisualisation();
       }
 
-      this.notifyListeners();
+      this.notifyListeners('trainingStep');
     } finally {
       this.isProcessingStep = false;
     }
@@ -499,7 +512,7 @@ export class TrainingSession implements ITrainingSession {
     const { maxEpochs } = this.trainingConfig;
     if (maxEpochs > 0 && this.currentEpoch >= maxEpochs) {
       this.isTraining = false;
-      this.notifyListeners();
+      this.notifyListeners('stopped');
       this.onCompleteCallback?.('maxEpochs');
       return;
     }
@@ -527,7 +540,7 @@ export class TrainingSession implements ITrainingSession {
       if (!this.neuralNet.isReady()) {
         this.isTraining = false;
         this.isProcessingStep = false;
-        this.notifyListeners();
+        this.notifyListeners('stopped');
         return;
       }
 
@@ -573,7 +586,7 @@ export class TrainingSession implements ITrainingSession {
       // Check early stopping using strategy service
       if (this.earlyStoppingStrategy.shouldStop(valLoss)) {
         this.isTraining = false;
-        this.notifyListeners();
+        this.notifyListeners('stopped');
         this.onCompleteCallback?.('earlyStopping');
         logger.info(`Early stopping triggered at epoch ${this.currentEpoch}`, {
           component: 'TrainingSession',
@@ -598,20 +611,17 @@ export class TrainingSession implements ITrainingSession {
         });
       }
 
-      this.notifyListeners();
+      this.notifyListeners('trainingStep');
     } catch (error) {
       // Stop training on error (e.g., GradientExplosionError)
       this.isTraining = false;
-      this.notifyListeners();
-      
+      this.notifyListeners('stopped');
+
       // Silently handle disposed model errors (expected during reinitialisation)
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (errorMessage.includes('disposed')) {
-        // Model was disposed during training - this is expected when reinitialising
+      if (isModelDisposedError(error)) {
         return;
       }
-      
-      console.error('Training loop error:', error);
+
       logger.error(
         'Training loop crashed',
         error instanceof Error ? error : new Error(String(error)),
@@ -626,7 +636,7 @@ export class TrainingSession implements ITrainingSession {
       this.isProcessingStep = false;
       // Notify if we're stopping or pausing so UI knows processing is done
       if (!this.isTraining || this.isPaused) {
-        this.notifyListeners();
+        this.notifyListeners('stopped');
       }
     }
 
@@ -638,7 +648,7 @@ export class TrainingSession implements ITrainingSession {
       } else {
         // Reached epoch limit
         this.isTraining = false;
-        this.notifyListeners();
+        this.notifyListeners('stopped');
         this.onCompleteCallback?.('maxEpochs');
       }
     }
@@ -735,7 +745,10 @@ export class TrainingSession implements ITrainingSession {
     }
   }
 
-  private notifyListeners(): void {
+  private lastEventType: import('./ITrainingSession').TrainingEventType | undefined;
+
+  private notifyListeners(eventType?: import('./ITrainingSession').TrainingEventType): void {
+    this.lastEventType = eventType;
     const state = this.getState();
     for (const listener of this.stateListeners) {
       listener(state);
@@ -771,7 +784,7 @@ export class TrainingSession implements ITrainingSession {
       this.validationData = [];
     }
 
-    this.notifyListeners();
+    this.notifyListeners('configChanged');
   }
 
   /**

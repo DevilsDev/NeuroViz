@@ -52,12 +52,20 @@ export function createEmptyHistory(): TrainingHistory {
 
 /**
  * Adds a record to the training history and updates best metrics.
+ *
+ * Uses push() on the underlying array for O(1) amortized insertion
+ * instead of spread-copy which is O(n) per epoch. The records array
+ * is cast to readonly in the returned interface to maintain the
+ * immutable contract for consumers.
  */
 export function addHistoryRecord(
   history: TrainingHistory,
   record: TrainingRecord
 ): TrainingHistory {
-  const records = [...history.records, record];
+  // Mutate the existing array in-place for O(1) amortized performance.
+  // This is safe because TrainingSession is the sole owner of the history
+  // object and consumers only read the records array via the readonly type.
+  (history.records as TrainingRecord[]).push(record);
 
   const isBestLoss = history.bestLoss === null || record.loss < history.bestLoss;
   const isBestValLoss =
@@ -65,7 +73,7 @@ export function addHistoryRecord(
     (history.bestValLoss === null || record.valLoss < history.bestValLoss);
 
   return {
-    records,
+    records: history.records,
     bestLoss: isBestLoss ? record.loss : history.bestLoss,
     bestEpoch: isBestLoss ? record.epoch : history.bestEpoch,
     bestValLoss: isBestValLoss ? record.valLoss : history.bestValLoss,

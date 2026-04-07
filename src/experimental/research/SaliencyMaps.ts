@@ -5,8 +5,8 @@
  * most strongly influence the model's predictions.
  */
 
-import type { Point } from '../domain';
-import type { INeuralNetworkService } from '../ports';
+import type { Point } from '../../core/domain';
+import type { INeuralNetworkService } from '../../core/ports';
 
 export interface SaliencyResult {
   /** Grid of saliency values */

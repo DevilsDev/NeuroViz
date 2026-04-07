@@ -2,10 +2,26 @@ import type { Hyperparameters, TrainingConfig, TrainingHistory, ExportFormat, Po
 import type { DatasetOptions } from '../ports';
 
 /**
+ * Event types that cause state changes.
+ * Listeners can filter on this to avoid unnecessary work.
+ */
+export type TrainingEventType =
+  | 'initialized'
+  | 'dataLoaded'
+  | 'trainingStep'
+  | 'started'
+  | 'paused'
+  | 'stopped'
+  | 'reset'
+  | 'configChanged';
+
+/**
  * Training session state exposed to the UI layer.
  * Immutable snapshot of current training progress.
  */
 export interface TrainingState {
+  /** What caused this state update — allows listeners to filter efficiently */
+  readonly eventType?: TrainingEventType;
   readonly currentEpoch: number;
   readonly currentLoss: number | null;
   /** Current training accuracy (0-1) */

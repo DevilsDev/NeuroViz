@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { runNAS, formatNASResultHTML, type NASConfig } from '../../../../src/core/research/NeuralArchitectureSearch';
+import { runNAS, formatNASResultHTML, type NASConfig } from '../../../../src/experimental/research/NeuralArchitectureSearch';
 import type { INeuralNetworkService } from '../../../../src/core/ports';
 import type { Point } from '../../../../src/core/domain';
 

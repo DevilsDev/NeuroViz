@@ -6,8 +6,8 @@
  * to the local neighborhood of a point.
  */
 
-import type { Point } from '../domain';
-import type { INeuralNetworkService } from '../ports';
+import type { Point } from '../../core/domain';
+import type { INeuralNetworkService } from '../../core/ports';
 
 export interface LIMEExplanation {
   /** The point being explained */

@@ -105,4 +105,32 @@ export interface INeuralNetworkService {
    * @returns true if the model can be used, false otherwise
    */
   isReady(): boolean;
+
+  /**
+   * Disposes the model and releases resources (e.g., GPU memory).
+   */
+  dispose(): void;
+
+  /**
+   * Returns the current hyperparameters configuration, or null if not initialised.
+   */
+  getConfig(): Hyperparameters | null;
+
+  /**
+   * Gets all weights as a flat array for histogram visualization.
+   */
+  getWeights(): number[];
+
+  /**
+   * Generates a dropout mask for visualizing which neurons are dropped.
+   *
+   * @param dropoutRate - Probability of dropping each neuron (0-1)
+   * @returns 2D boolean array [layer][neuron] where true = dropped
+   */
+  generateDropoutMask(dropoutRate: number): boolean[][];
+
+  /**
+   * Exports the trained model as JSON and weights blobs.
+   */
+  exportModel(): Promise<{ modelJson: Blob; weightsBlob: Blob }>;
 }

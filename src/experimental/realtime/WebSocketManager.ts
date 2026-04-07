@@ -5,7 +5,7 @@
  * multiple NeuroViz instances or external tools.
  */
 
-import { logger } from '../logging/Logger';
+import { logger } from '../../infrastructure/logging/Logger';
 
 export interface WebSocketConfig {
   url: string;

@@ -5,8 +5,8 @@
  * from browser console, bookmarklets, or external tools via postMessage.
  */
 
-import type { Point } from '../../core/domain';
-import { logger } from '../logging/Logger';
+import type { Point } from '../core/domain';
+import { logger } from '../infrastructure/logging/Logger';
 
 export interface APIResponse<T = unknown> {
   success: boolean;

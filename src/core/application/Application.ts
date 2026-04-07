@@ -1,16 +1,19 @@
 import { TrainingSession } from './TrainingSession';
 import type { IDatasetRepository } from '../ports/IDatasetRepository';
-import type { TFNeuralNet } from '../../infrastructure/tensorflow/TFNeuralNet';
-import type { D3Chart } from '../../infrastructure/d3/D3Chart';
-import type { D3LossChart } from '../../infrastructure/d3/D3LossChart';
-import type { D3LearningRateChart } from '../../infrastructure/d3/D3LearningRateChart';
-import type { D3NetworkDiagram } from '../../infrastructure/d3/D3NetworkDiagram';
-import type { D3ConfusionMatrix } from '../../infrastructure/d3/D3ConfusionMatrix';
-import type { D3WeightHistogram } from '../../infrastructure/d3/D3WeightHistogram';
-import type { D3ActivationHistogram, LayerActivationData } from '../../infrastructure/d3/D3ActivationHistogram';
+import type { INeuralNetworkService } from '../ports/INeuralNetworkService';
+import type { IVisualizerService } from '../ports/IVisualizerService';
+// NOTE: LocalStorageService doesn't implement IStorageService (API mismatch: setItem/getItem vs save/load).
+// This is technical debt — the service should be aligned with the port interface.
 import type { LocalStorageService } from '../../infrastructure/storage/LocalStorageService';
-import { calculateSpeedMetrics, compareSpeed, formatSpeedMetrics, type SpeedBaseline } from '../domain/SpeedComparison';
-// Removed unused import: calculateModelComplexity
+import type {
+  ILossChartService,
+  ILearningRateChartService,
+  INetworkDiagramService,
+  IConfusionMatrixService,
+  IWeightHistogramService,
+  IActivationHistogramService,
+} from '../ports/IChartService';
+import type { Hyperparameters, ActivationType } from '../domain/Hyperparameters';
 import {
   DatasetController,
   TrainingController,
@@ -19,12 +22,13 @@ import {
   SessionController,
   ComparisonController,
   ResearchController,
+  MetricsController,
 } from '../../presentation/controllers';
 import { EducationController } from '../../presentation/controllers/EducationController';
 import { KeyboardShortcuts } from '../../utils/KeyboardShortcuts';
 import { DatasetGallery } from '../../utils/DatasetGallery';
 import { AdvancedFeaturesService } from '../../infrastructure/ml/AdvancedFeaturesService';
-
+import { logger } from '../../infrastructure/logging/Logger';
 
 
 /**
@@ -36,26 +40,23 @@ export interface Disposable {
 
 /**
  * Core services used by the application.
- * Uses concrete types to match controller expectations.
- * Controllers depend on port interfaces internally where appropriate.
+ * All fields use port interfaces — no concrete infrastructure types.
  */
 export interface Services {
   dataRepo: IDatasetRepository;
-  neuralNet: TFNeuralNet;
-  visualizer: D3Chart;
+  neuralNet: INeuralNetworkService;
+  visualizer: IVisualizerService;
   session: TrainingSession;
-  lossChart: D3LossChart;
-  lrChart: D3LearningRateChart;
-  networkDiagram: D3NetworkDiagram;
-  confusionMatrix: D3ConfusionMatrix;
-  weightHistogram: D3WeightHistogram;
-  activationHistogram: D3ActivationHistogram;
+  lossChart: ILossChartService;
+  lrChart: ILearningRateChartService;
+  networkDiagram: INetworkDiagramService;
+  confusionMatrix: IConfusionMatrixService;
+  weightHistogram: IWeightHistogramService;
+  activationHistogram: IActivationHistogramService;
   storage: LocalStorageService;
   keyboardShortcuts?: KeyboardShortcuts;
   datasetGallery?: DatasetGallery;
 }
-
-
 
 /**
  * Controllers that orchestrate UI interactions
@@ -68,13 +69,16 @@ export interface Controllers {
   session: SessionController;
   comparison: ComparisonController;
   research: ResearchController;
+  metrics: MetricsController;
 }
 
 /**
- * Main application class that encapsulates all services and controllers
+ * Main application class that coordinates services and controllers.
+ *
+ * This class is a thin coordinator — all DOM manipulation is delegated
+ * to controllers in the presentation layer.
  */
 export class Application {
-  private speedBaseline: SpeedBaseline | null = null;
   private educationController: EducationController | null = null;
   private advancedFeatures: AdvancedFeaturesService | null = null;
 
@@ -87,7 +91,6 @@ export class Application {
    * Initializes the application
    */
   initialize(): void {
-    // Setup global event listeners and state synchronization
     this.setupStateSync();
     this.setupUIInitialization();
     this.setupCleanup();
@@ -103,45 +106,80 @@ export class Application {
       this.services.lrChart.render(state.history);
       this.controllers.comparison.updateComparisonDisplay();
 
-      // Guard against disposed model - skip neural net operations if model is not ready
+      // Guard against disposed model
       if (!this.services.neuralNet.isReady()) {
         return;
       }
 
       this.controllers.visualization.updateGradientFlow();
 
-      // Update speed metrics
-      this.updateSpeedMetrics(state.history);
-
-      // Update 3D view periodically during training (every 5 epochs to avoid performance issues)
+      // Update 3D view periodically during training
       if (state.currentEpoch % 5 === 0 && state.isRunning) {
         void this.controllers.visualization.update3dView();
       }
 
       // Update network diagram and weight histogram periodically
       if (state.currentEpoch % 5 === 0 && state.isRunning && this.services.neuralNet.isReady()) {
-        const structure = this.services.neuralNet.getStructure();
-        if (structure) {
-          this.services.networkDiagram.render(
-            structure.layers,
-            structure.activations,
-            this.services.neuralNet.getWeightMatrices()
-          );
+        this.updateNetworkVisualizations();
+      }
+    });
+  }
 
-          // Update weight histogram with flattened weights
-          const weights = this.services.neuralNet.getWeightMatrices().flat().flat();
-          this.services.weightHistogram.update(weights);
+  /**
+   * Updates network diagram, weight histogram, and activation histogram.
+   */
+  private updateNetworkVisualizations(): void {
+    const structure = this.services.neuralNet.getStructure();
+    if (!structure) return;
 
-          // Update activation histogram with sample activations
-          this.updateActivationHistogram();
+    this.services.networkDiagram.render(
+      structure.layers,
+      structure.activations,
+      this.services.neuralNet.getWeightMatrices()
+    );
+
+    const weights = this.services.neuralNet.getWeightMatrices().flat().flat();
+    this.services.weightHistogram.update(weights);
+
+    this.updateActivationHistogram(structure);
+  }
+
+  /**
+   * Updates activation histogram with sample points from the dataset.
+   */
+  private updateActivationHistogram(structure: { layers: number[]; activations: string[] }): void {
+    const data = this.services.session.getData();
+    if (!data?.length) return;
+
+    try {
+      const sampleSize = Math.min(100, data.length);
+      const sampledPoints: typeof data = [];
+      const step = Math.max(1, Math.floor(data.length / sampleSize));
+      for (let i = 0; i < data.length && sampledPoints.length < sampleSize; i += step) {
+        const point = data[i];
+        if (point) {
+          sampledPoints.push(point);
         }
       }
 
-      // Update confusion matrix and classification metrics when training completes or pauses
-      if (state.isInitialised && state.datasetLoaded && state.currentEpoch > 0 && !state.isRunning) {
-        void this.updateClassificationMetrics();
+      const layerActivations: number[][] = Array(structure.layers.length).fill(null).map(() => []);
+      for (const point of sampledPoints) {
+        const activations = this.services.neuralNet.getLayerActivations(point);
+        activations.forEach((layerVals, layerIdx) => {
+          layerActivations[layerIdx]?.push(...layerVals);
+        });
       }
-    });
+
+      const layersData = structure.layers.map((_, idx) => ({
+        layerIndex: idx,
+        layerName: idx === 0 ? 'Input' : idx === structure.layers.length - 1 ? 'Output' : `Layer ${idx}`,
+        activations: layerActivations[idx] ?? []
+      }));
+
+      this.services.activationHistogram.update(layersData);
+    } catch (error) {
+      logger.error('Failed to update activation histogram', error instanceof Error ? error : undefined);
+    }
   }
 
   /**
@@ -149,38 +187,19 @@ export class Application {
    */
   private setupUIInitialization(): void {
     window.addEventListener('load', () => {
-      // App starts empty - user must select a dataset first
-      // Show app
       const appContainer = document.querySelector('.app-container');
       if (appContainer) {
         appContainer.classList.add('loaded');
       }
 
-      // Set initial UI state (buttons disabled until network initialized)
       this.controllers.training.updateUI(this.services.session.getState());
-
-      // Setup speed comparison buttons
-      this.setupSpeedComparison();
-
-      // Setup undo/redo buttons
+      this.controllers.metrics.initialize();
       this.setupUndoRedo();
-
-      // Setup help modal close button
       this.setupHelpModal();
-
-      // Setup training presets
       this.setupPresets();
-
-      // Setup report export
       this.setupReportExport();
-
-      // Setup dataset statistics
       this.setupDatasetStatistics();
-
-      // Setup education features (tutorials, tooltips, challenges)
       this.setupEducation();
-
-      // Setup advanced ML features (complexity, adversarial, dropout viz)
       this.setupAdvancedFeatures();
     });
   }
@@ -195,142 +214,11 @@ export class Application {
 
   private boundCleanup: () => void = () => { };
 
-
-  /**
-   * Updates classification metrics (confusion matrix, precision, recall, F1)
-   */
-  private async updateClassificationMetrics(): Promise<void> {
-    const data = this.services.session.getData();
-    if (!data?.length) return;
-
-    // Guard against disposed model
-    if (!this.services.neuralNet.isReady()) return;
-
-    try {
-      // Double-check model is still ready after async operation
-      if (!this.services.neuralNet.isReady()) return;
-      
-      const predictions = await this.services.neuralNet.predict(data);
-      
-      // Check again after await in case model was disposed during prediction
-      if (!this.services.neuralNet.isReady()) return;
-      
-      const labels = data.map(d => d.label ?? 0);
-      const numClasses = Math.max(...labels) + 1;
-
-      // Build confusion matrix
-      const matrix: number[][] = Array(numClasses).fill(null).map(() => Array(numClasses).fill(0) as number[]);
-      for (let i = 0; i < predictions.length; i++) {
-        const predicted = predictions[i]?.predictedClass ?? 0;
-        const actual = labels[i] ?? 0;
-        if (matrix[actual]) {
-          matrix[actual][predicted] = (matrix[actual][predicted] ?? 0) + 1;
-        }
-      }
-
-      // Render confusion matrix
-      const classLabels = numClasses === 2 ? ['Class 0', 'Class 1'] : Array.from({ length: numClasses }, (_, i) => `Class ${i}`);
-      this.services.confusionMatrix.render({
-        matrix,
-        labels: classLabels,
-        total: predictions.length
-      });
-
-      // Calculate and display classification metrics (imported from D3ConfusionMatrix)
-      const { calculateClassMetrics, calculateMacroMetrics } = await import('../../infrastructure/d3/D3ConfusionMatrix');
-      const classMetrics = calculateClassMetrics(matrix);
-      const macroMetrics = calculateMacroMetrics(classMetrics);
-
-      // Update DOM elements
-      const precisionEl = document.getElementById('metric-precision');
-      const recallEl = document.getElementById('metric-recall');
-      const f1El = document.getElementById('metric-f1');
-
-      if (precisionEl) precisionEl.textContent = (macroMetrics.precision * 100).toFixed(1) + '%';
-      if (recallEl) recallEl.textContent = (macroMetrics.recall * 100).toFixed(1) + '%';
-      if (f1El) f1El.textContent = (macroMetrics.f1 * 100).toFixed(1) + '%';
-
-      // Hide empty state
-      const emptyState = document.getElementById('confusion-matrix-empty');
-      if (emptyState) emptyState.classList.add('hidden');
-
-    } catch (error) {
-      // Silently ignore disposed model errors (expected during reinitialisation)
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (!errorMessage.includes('disposed')) {
-        console.error('Failed to update classification metrics:', error);
-      }
-    }
-  }
-
   /**
    * Clears classification metrics display (called on reset).
    */
   clearClassificationMetrics(): void {
-    const precisionEl = document.getElementById('metric-precision');
-    const recallEl = document.getElementById('metric-recall');
-    const f1El = document.getElementById('metric-f1');
-
-    if (precisionEl) precisionEl.textContent = '—';
-    if (recallEl) recallEl.textContent = '—';
-    if (f1El) f1El.textContent = '—';
-  }
-
-  /**
-   * Updates speed metrics display
-   */
-  private updateSpeedMetrics(history: import('../domain/TrainingHistory').TrainingHistory): void {
-    const metrics = calculateSpeedMetrics(history);
-    if (!metrics) return;
-
-    const currentEl = document.getElementById('speed-current');
-    if (currentEl) {
-      currentEl.textContent = formatSpeedMetrics(metrics);
-    }
-
-    // Show comparison if baseline exists
-    if (this.speedBaseline) {
-      const comparison = compareSpeed(metrics, this.speedBaseline.metrics);
-      const comparisonContainer = document.getElementById('speed-comparison-container');
-      const baselineEl = document.getElementById('speed-baseline');
-      const resultEl = document.getElementById('speed-comparison-result');
-
-      if (comparisonContainer) comparisonContainer.classList.remove('hidden');
-      if (baselineEl) baselineEl.textContent = formatSpeedMetrics(this.speedBaseline.metrics);
-      if (resultEl) resultEl.textContent = comparison.description;
-    }
-  }
-
-  /**
-   * Sets up speed comparison UI handlers
-   */
-  private setupSpeedComparison(): void {
-    const saveBtn = document.getElementById('btn-save-speed-baseline');
-    const clearBtn = document.getElementById('btn-clear-speed-baseline');
-
-    if (saveBtn) {
-      saveBtn.addEventListener('click', () => {
-        const state = this.services.session.getState();
-        const metrics = calculateSpeedMetrics(state.history);
-        if (metrics) {
-          this.speedBaseline = {
-            name: 'Baseline',
-            metrics,
-            timestamp: Date.now(),
-          };
-          if (clearBtn) clearBtn.classList.remove('hidden');
-        }
-      });
-    }
-
-    if (clearBtn) {
-      clearBtn.addEventListener('click', () => {
-        this.speedBaseline = null;
-        const comparisonContainer = document.getElementById('speed-comparison-container');
-        if (comparisonContainer) comparisonContainer.classList.add('hidden');
-        clearBtn.classList.add('hidden');
-      });
-    }
+    this.controllers.metrics.clearClassificationMetrics();
   }
 
   /**
@@ -352,14 +240,9 @@ export class Application {
       });
     }
 
-    // Update button states on every state change
     this.services.session.onStateChange(() => {
-      if (undoBtn) {
-        undoBtn.disabled = !this.services.session.canUndo();
-      }
-      if (redoBtn) {
-        redoBtn.disabled = !this.services.session.canRedo();
-      }
+      if (undoBtn) undoBtn.disabled = !this.services.session.canUndo();
+      if (redoBtn) redoBtn.disabled = !this.services.session.canRedo();
     });
   }
 
@@ -373,120 +256,85 @@ export class Application {
 
     if (!presetSelect || !applyBtn) return;
 
-    // Update description when preset selection changes
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    presetSelect.addEventListener('change', async () => {
+    presetSelect.addEventListener('change', () => {
       const presetId = presetSelect.value;
-
       if (!presetId) {
         applyBtn.disabled = true;
         if (descriptionEl) descriptionEl.textContent = '';
         return;
       }
 
-      // Dynamic import to avoid circular dependencies
-      const { getPreset } = await import('../domain/TrainingPresets');
-      const preset = getPreset(presetId);
-
-      if (preset && descriptionEl) {
-        descriptionEl.textContent = preset.description;
-        applyBtn.disabled = false;
-      }
-    });
-    // Apply preset when button clicked
-    if (applyBtn) {
-      // eslint-disable-next-line @typescript-eslint/no-misused-promises
-      applyBtn.addEventListener('click', async () => {
-        const presetId = presetSelect.value;
-        if (!presetId) return;
-
-        const { getPreset } = await import('../domain/TrainingPresets');
+      void import('../domain/TrainingPresets').then(({ getPreset }) => {
         const preset = getPreset(presetId);
+        if (preset && descriptionEl) {
+          descriptionEl.textContent = preset.description;
+          applyBtn.disabled = false;
+        }
+      }).catch((error: unknown) => {
+        logger.error('Failed to load preset', error instanceof Error ? error : undefined);
+      });
+    });
 
+    applyBtn.addEventListener('click', () => {
+      const presetId = presetSelect.value;
+      if (!presetId) return;
+
+      void import('../domain/TrainingPresets').then(async ({ getPreset }) => {
+        const preset = getPreset(presetId);
         if (!preset) return;
 
-        try {
-          // Set dataset dropdown value and trigger load
-          const datasetSelect = document.getElementById('dataset-select') as HTMLSelectElement | null;
-          if (datasetSelect) {
-            datasetSelect.value = preset.datasetType;
-            await this.controllers.dataset.handleLoadData();
-          }
-
-          // Apply hyperparameters (this will trigger config history)
-          await this.services.session.setHyperparameters(preset.hyperparameters);
-
-          // Update epoch input if available
-          const epochInput = document.getElementById('input-epochs') as HTMLInputElement | null;
-          if (epochInput) {
-            epochInput.value = preset.recommendedEpochs.toString();
-          }
-
-          // Reset selection
-          presetSelect.value = '';
-          applyBtn.disabled = true;
-          if (descriptionEl) descriptionEl.textContent = '';
-
-        } catch (error) {
-          console.error('Failed to apply preset:', error);
+        const datasetSelect = document.getElementById('dataset-select') as HTMLSelectElement | null;
+        if (datasetSelect) {
+          datasetSelect.value = preset.datasetType;
+          await this.controllers.dataset.handleLoadData();
         }
+
+        await this.services.session.setHyperparameters(preset.hyperparameters);
+
+        const epochInput = document.getElementById('input-epochs') as HTMLInputElement | null;
+        if (epochInput) {
+          epochInput.value = preset.recommendedEpochs.toString();
+        }
+
+        presetSelect.value = '';
+        applyBtn.disabled = true;
+        if (descriptionEl) descriptionEl.textContent = '';
+      }).catch((error: unknown) => {
+        logger.error('Failed to apply preset', error instanceof Error ? error : undefined);
       });
-    }
+    });
   }
 
   /**
-   * Sets up training report export
+   * Sets up training report export.
+   * Uses MetricsController for computed metrics instead of scraping the DOM.
    */
   private setupReportExport(): void {
     const exportBtn = document.getElementById('btn-export-report') as HTMLButtonElement | null;
     if (!exportBtn) return;
 
-    // Enable button when training has started
     this.services.session.onStateChange((state): void => {
       exportBtn.disabled = !state.isInitialised || state.currentEpoch === 0;
     });
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    exportBtn.addEventListener('click', async () => {
+
+    exportBtn.addEventListener('click', () => {
       const state = this.services.session.getState();
       if (!state.isInitialised || state.currentEpoch === 0) return;
 
-      try {
-        const { generateHTMLReport, downloadHTMLReport } = await import('../../infrastructure/export/TrainingReport');
+      void import('../../infrastructure/export/TrainingReport').then(({ generateHTMLReport, downloadHTMLReport }) => {
+        // Get classification metrics from MetricsController (not DOM)
+        const classMetrics = this.controllers.metrics.getClassificationMetrics() ?? undefined;
 
-        // Collect classification metrics if available
-        let classMetrics;
-        const precisionEl = document.getElementById('metric-precision');
-        const recallEl = document.getElementById('metric-recall');
-        const f1El = document.getElementById('metric-f1');
-
-        if (precisionEl && recallEl && f1El) {
-          const precisionText = precisionEl.textContent?.replace('%', '') || '0';
-          const recallText = recallEl.textContent?.replace('%', '') || '0';
-          const f1Text = f1El.textContent?.replace('%', '') || '0';
-
-          if (precisionText !== '—' && recallText !== '—' && f1Text !== '—') {
-            classMetrics = {
-              precision: parseFloat(precisionText) / 100,
-              recall: parseFloat(recallText) / 100,
-              f1: parseFloat(f1Text) / 100,
-            };
-          }
-        }
-
-        // Get dataset info
         const data = this.services.session.getData();
         const datasetName = (document.getElementById('dataset-select') as HTMLSelectElement)?.value || 'Unknown';
 
-        // Get current hyperparameters from neural net structure
         const structure = this.services.neuralNet.getStructure();
-        const config: import('../../core/domain/Hyperparameters').Hyperparameters = {
+        const config: Hyperparameters = {
           learningRate: state.history.records[state.history.records.length - 1]?.learningRate ?? 0.03,
           layers: structure?.layers.slice(1, -1) ?? [],
         };
 
-        // Get final metrics from last record
         const lastRecord = state.history.records[state.history.records.length - 1];
-
         const reportData = {
           config,
           history: state.history,
@@ -507,10 +355,9 @@ export class Application {
         const html = generateHTMLReport(reportData);
         const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
         downloadHTMLReport(html, `neuroviz-report-${timestamp}.html`);
-
-      } catch (error) {
-        console.error('Failed to generate report:', error);
-      }
+      }).catch((error: unknown) => {
+        logger.error('Failed to generate report', error instanceof Error ? error : undefined);
+      });
     });
   }
 
@@ -518,15 +365,15 @@ export class Application {
    * Sets up dataset statistics display
    */
   private setupDatasetStatistics(): void {
-    // Update statistics when dataset changes
     this.services.session.onStateChange((state): void => {
       if (!state.datasetLoaded) return;
 
       const data = this.services.session.getData();
       if (!data || data.length === 0) return;
 
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      this.updateDatasetStatistics(data);
+      void this.updateDatasetStatistics(data).catch((error: unknown) => {
+        logger.error('Failed to update dataset statistics', error instanceof Error ? error : undefined);
+      });
     });
   }
 
@@ -537,15 +384,12 @@ export class Application {
     const { calculateDatasetStatistics } = await import('../domain/DatasetStatistics');
     const stats = calculateDatasetStatistics(Array.from(data));
 
-    // Show panel
     const panel = document.getElementById('dataset-stats-panel');
     if (panel) panel.classList.remove('hidden');
 
-    // Update total samples
     const totalEl = document.getElementById('stats-total');
     if (totalEl) totalEl.textContent = stats.totalSamples.toString();
 
-    // Update class distribution
     const classesEl = document.getElementById('stats-classes');
     if (classesEl) {
       classesEl.innerHTML = '';
@@ -563,7 +407,6 @@ export class Application {
       }
     }
 
-    // Update outliers
     const outliersEl = document.getElementById('stats-outliers');
     const outliersCountEl = document.getElementById('stats-outliers-count');
     if (outliersEl && outliersCountEl) {
@@ -589,7 +432,6 @@ export class Application {
       });
     }
 
-    // Close on Esc or clicking backdrop
     if (helpModal) {
       helpModal.addEventListener('click', (e) => {
         if (e.target === helpModal) {
@@ -600,60 +442,15 @@ export class Application {
   }
 
   /**
-   * Updates activation histogram with sample points from the dataset.
-   */
-  private updateActivationHistogram(): void {
-    const data = this.services.session.getData();
-    const structure = this.services.neuralNet.getStructure();
-    if (!data?.length || !structure) return;
-
-    try {
-      // Sample up to 100 random points to get activation distributions
-      const sampleSize = Math.min(100, data.length);
-      const sampledPoints: typeof data = [];
-      const step = Math.max(1, Math.floor(data.length / sampleSize));
-      for (let i = 0; i < data.length && sampledPoints.length < sampleSize; i += step) {
-        const point = data[i];
-        if (point) {
-          sampledPoints.push(point);
-        }
-      }
-
-      // Collect all activations per layer
-      const layerActivations: number[][] = Array(structure.layers.length).fill(null).map(() => []);
-
-      for (const point of sampledPoints) {
-        const activations = this.services.neuralNet.getLayerActivations(point);
-        activations.forEach((layerVals, layerIdx) => {
-          layerActivations[layerIdx]?.push(...layerVals);
-        });
-      }
-
-      // Convert to LayerActivationData format
-      const layersData: LayerActivationData[] = structure.layers.map((layerSize, idx) => ({
-        layerIndex: idx,
-        layerName: idx === 0 ? 'Input' : idx === structure.layers.length - 1 ? 'Output' : `Layer ${idx}`,
-        activations: layerActivations[idx] ?? []
-      }));
-
-      this.services.activationHistogram.update(layersData);
-    } catch (error) {
-      console.error('Failed to update activation histogram:', error);
-    }
-  }
-
-  /**
    * Sets up education features (tutorials, tooltips, challenges)
    */
   private setupEducation(): void {
     this.educationController = new EducationController();
     this.educationController.initialise();
 
-    // Hook into training events for tutorials and challenges
     this.services.session.onStateChange((state): void => {
       if (!this.educationController) return;
 
-      // Notify tutorial service of training events
       if (state.isRunning && state.currentEpoch === 1) {
         this.educationController.notifyTrainingEvent('start');
       }
@@ -664,7 +461,6 @@ export class Application {
         this.educationController.notifyTrainingEvent('complete');
       }
 
-      // Validate active challenge
       const challengeState = this.educationController.getChallengeService().getState();
       if (challengeState.isActive && !challengeState.isComplete) {
         const datasetSelect = document.getElementById('dataset-select') as HTMLSelectElement | null;
@@ -676,7 +472,6 @@ export class Application {
       }
     });
 
-    // Listen for dataset load events from challenges
     window.addEventListener('load-dataset', ((e: CustomEvent<{ dataset: string }>) => {
       const datasetSelect = document.getElementById('dataset-select') as HTMLSelectElement | null;
       if (datasetSelect) {
@@ -689,7 +484,7 @@ export class Application {
   /**
    * Gets current hyperparameters configuration
    */
-  private getCurrentConfig(): import('../domain/Hyperparameters').Hyperparameters | null {
+  private getCurrentConfig(): Hyperparameters | null {
     const structure = this.services.neuralNet.getStructure();
     if (!structure) return null;
 
@@ -698,8 +493,8 @@ export class Application {
 
     return {
       learningRate: lastRecord?.learningRate ?? 0.03,
-      layers: structure.layers.slice(1, -1), // Hidden layers only
-      activation: structure.activations[0] as import('../domain/Hyperparameters').ActivationType,
+      layers: structure.layers.slice(1, -1),
+      activation: structure.activations[0] as ActivationType,
     };
   }
 
@@ -709,14 +504,12 @@ export class Application {
   private setupAdvancedFeatures(): void {
     this.advancedFeatures = new AdvancedFeaturesService();
 
-    // Update complexity metrics when architecture changes
     this.services.session.onStateChange((state): void => {
       if (state.isInitialised && this.advancedFeatures) {
         this.updateModelComplexity();
       }
     });
 
-    // Setup adversarial example generation controls
     const generateBtn = document.getElementById('btn-generate-adversarial') as HTMLButtonElement | null;
     const clearBtn = document.getElementById('btn-clear-adversarial');
     const methodSelect = document.getElementById('adversarial-method') as HTMLSelectElement | null;
@@ -724,13 +517,10 @@ export class Application {
     const sampleSizeSlider = document.getElementById('adversarial-sample-size') as HTMLInputElement | null;
     const sampleSizeValue = document.getElementById('adversarial-sample-value');
 
-    // Method selection handler
     if (methodSelect) {
       methodSelect.addEventListener('change', () => {
         const method = methodSelect.value as 'simple' | 'fgsm';
         this.advancedFeatures?.setGenerationConfig({ method });
-
-        // Update description
         if (methodDesc) {
           methodDesc.textContent = method === 'simple'
             ? 'Spiral search pattern, fast but less accurate'
@@ -739,7 +529,6 @@ export class Application {
       });
     }
 
-    // Sample size slider handler
     if (sampleSizeSlider && sampleSizeValue) {
       sampleSizeSlider.addEventListener('input', () => {
         const sampleSize = parseInt(sampleSizeSlider.value);
@@ -748,85 +537,68 @@ export class Application {
       });
     }
 
-    // Generate button handler
     if (generateBtn) {
       generateBtn.addEventListener('click', () => {
-        void this.generateAdversarialExamples();
+        void this.generateAdversarialExamples().catch((error: unknown) => {
+          logger.error('Failed to generate adversarial examples', error instanceof Error ? error : undefined);
+        });
       });
     }
 
-    // Clear button handler
     if (clearBtn) {
       clearBtn.addEventListener('click', () => {
         this.advancedFeatures?.clearAdversarialExamples();
         this.advancedFeatures?.updateAdversarialDisplay();
-        // Clear from visualisation
         this.services.visualizer.clearAdversarialPoints?.();
       });
     }
 
-    // Enable adversarial button when model is trained
     this.services.session.onStateChange((state): void => {
       if (generateBtn) {
         generateBtn.disabled = !state.isInitialised || state.currentEpoch === 0;
       }
     });
 
-    // Update network diagram with dropout mask during training
     this.services.session.onStateChange((state): void => {
-      // Guard against disposed model
       if (!this.services.neuralNet.isReady()) return;
 
       if (state.isRunning && this.advancedFeatures) {
         const config = this.services.neuralNet.getConfig();
         const dropoutRate = config?.dropoutRate ?? 0;
 
-        if (dropoutRate > 0) {
-          // Generate new dropout mask every few epochs
-          if (state.currentEpoch % 3 === 0) {
-            const structure = this.services.neuralNet.getStructure();
-            if (structure) {
-              const mask = this.advancedFeatures.generateDropoutMask(
-                structure.layers.slice(1, -1), // Hidden layers only
-                dropoutRate
-              );
-
-              // Update network diagram with dropout mask
-              this.services.networkDiagram.render(
-                structure.layers,
-                structure.activations,
-                this.services.neuralNet.getWeightMatrices(),
-                mask
-              );
-            }
+        if (dropoutRate > 0 && state.currentEpoch % 3 === 0) {
+          const structure = this.services.neuralNet.getStructure();
+          if (structure) {
+            const mask = this.advancedFeatures.generateDropoutMask(
+              structure.layers.slice(1, -1),
+              dropoutRate
+            );
+            this.services.networkDiagram.render(
+              structure.layers,
+              structure.activations,
+              this.services.neuralNet.getWeightMatrices(),
+              mask
+            );
           }
         }
       }
     });
   }
 
-  /**
-   * Updates model complexity display
-   */
   private updateModelComplexity(): void {
     const structure = this.services.neuralNet.getStructure();
     const config = this.services.neuralNet.getConfig();
-
     if (!structure || !config || !this.advancedFeatures) return;
 
     const metrics = this.advancedFeatures.calculateComplexity(
-      structure.layers.slice(1, -1), // Hidden layers
-      structure.layers[structure.layers.length - 1] ?? 2, // Output size
+      structure.layers.slice(1, -1),
+      structure.layers[structure.layers.length - 1] ?? 2,
       config.batchNorm ?? false,
       config.dropoutRate ?? 0
     );
-
     this.advancedFeatures.updateComplexityDisplay(metrics);
   }
 
-  /**
-   * Generates adversarial examples for the current model
-   */
   private async generateAdversarialExamples(): Promise<void> {
     if (!this.advancedFeatures) return;
 
@@ -843,26 +615,18 @@ export class Application {
       generateBtn.disabled = true;
       generateBtn.textContent = 'Generating...';
     }
-
-    // Show progress indicator
-    if (progressDiv) {
-      progressDiv.classList.remove('hidden');
-    }
+    if (progressDiv) progressDiv.classList.remove('hidden');
 
     try {
-      // Guard: ensure model is ready
       if (!this.services.neuralNet.isReady()) {
-        console.warn('Cannot generate adversarial examples: model not ready');
         throw new Error('Model not ready');
       }
 
-      // Progress callback
       const onProgress = (current: number, total: number, status: string): void => {
         if (progressText) progressText.textContent = status;
         if (progressCount) progressCount.textContent = `${current}/${total}`;
         if (progressBar) {
-          const percentage = total > 0 ? (current / total) * 100 : 0;
-          progressBar.style.width = `${percentage}%`;
+          progressBar.style.width = `${total > 0 ? (current / total) * 100 : 0}%`;
         }
       };
 
@@ -874,7 +638,6 @@ export class Application {
 
       this.advancedFeatures.updateAdversarialDisplay();
 
-      // Add adversarial points to visualisation with perturbation vectors
       if (examples.length > 0) {
         const adversarialPoints = examples.map(ex => ({
           ...ex.point,
@@ -883,39 +646,27 @@ export class Application {
         }));
         this.services.visualizer.renderAdversarialPoints?.(adversarialPoints);
       }
-    } catch (error) {
-      console.error('Failed to generate adversarial examples:', error);
     } finally {
       if (generateBtn) {
         generateBtn.disabled = false;
         generateBtn.textContent = 'Generate Adversarial Examples';
       }
-
-      // Hide progress indicator after a brief delay
       setTimeout(() => {
-        if (progressDiv) {
-          progressDiv.classList.add('hidden');
-        }
+        if (progressDiv) progressDiv.classList.add('hidden');
       }, 1500);
     }
   }
 
   /**
    * Disposes the application and cleans up all resources.
-   * Call this method before re-instantiating or during hot reload.
    */
   dispose(): void {
-    // Dispose TensorFlow.js neural network to release GPU memory
-    if (this.services.neuralNet && typeof this.services.neuralNet.dispose === 'function') {
-      this.services.neuralNet.dispose();
-    }
+    this.services.neuralNet.dispose();
 
-    // Dispose services with dispose methods
-    if (this.services.visualizer && typeof this.services.visualizer.dispose === 'function') {
+    if ('dispose' in this.services.visualizer && typeof this.services.visualizer.dispose === 'function') {
       this.services.visualizer.dispose();
     }
 
-    // Dispose D3 visualizations (calls clear() internally and cleans up observers)
     this.services.lossChart.dispose();
     this.services.lrChart.dispose();
     this.services.networkDiagram.dispose();
@@ -923,7 +674,6 @@ export class Application {
     this.services.weightHistogram.dispose();
     this.services.activationHistogram.dispose();
 
-    // Dispose keyboard listener
     if (this.services.keyboardShortcuts) {
       this.services.keyboardShortcuts.dispose();
     }
@@ -932,22 +682,16 @@ export class Application {
       this.services.datasetGallery.dispose();
     }
 
-    // Dispose all controllers (single iteration - no duplicates)
     Object.values(this.controllers).forEach(controller => {
       if (controller && 'dispose' in controller && typeof controller.dispose === 'function') {
-        controller.dispose();
+        (controller as Disposable).dispose();
       }
     });
 
-    // Dispose education controller
     if (this.educationController) {
       this.educationController.dispose();
     }
 
-    // Remove window listeners
     window.removeEventListener('beforeunload', this.boundCleanup);
   }
-
-
 }
-

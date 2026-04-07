@@ -1,4 +1,15 @@
 export type { Point } from './Point';
+
+// Domain errors
+export {
+  NeuroVizError,
+  ModelDisposedError,
+  GradientExplosionError,
+  ModelNotInitialisedError,
+  DatasetError,
+  ConfigurationError,
+  isModelDisposedError,
+} from './errors';
 export type { Prediction } from './Prediction';
 export type {
   Hyperparameters,

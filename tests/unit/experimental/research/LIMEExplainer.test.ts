@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { explainPrediction, formatLIMEExplanationHTML, type LIMEConfig } from '../../../../src/core/research/LIMEExplainer';
+import { explainPrediction, formatLIMEExplanationHTML, type LIMEConfig } from '../../../../src/experimental/research/LIMEExplainer';
 import type { INeuralNetworkService } from '../../../../src/core/ports';
 import type { Point, Prediction } from '../../../../src/core/domain';
 

@@ -1,3 +1,4 @@
 export { MockDataRepository } from './MockDataRepository';
-export { RestAPI, restAPI } from './RestAPI';
-export type { APIResponse, TrainingStatus, ModelConfig, DatasetInfo } from './RestAPI';
+
+// NOTE: RestAPI has been moved to src/experimental/RestAPI.ts
+// as it is not currently used by the application.

@@ -22,3 +22,6 @@ export type { ComparisonElements } from './ComparisonController';
 
 export { ResearchController } from './ResearchController';
 export type { ResearchElements } from './ResearchController';
+
+export { MetricsController } from './MetricsController';
+export type { MetricsElements, ClassificationMetrics } from './MetricsController';

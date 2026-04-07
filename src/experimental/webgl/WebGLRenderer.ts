@@ -5,7 +5,7 @@
  * Falls back to Canvas 2D if WebGL is not available.
  */
 
-import { logger } from '../logging/Logger';
+import { logger } from '../../infrastructure/logging/Logger';
 
 export interface WebGLRendererConfig {
   width: number;

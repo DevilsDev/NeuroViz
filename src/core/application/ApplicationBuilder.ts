@@ -1,5 +1,6 @@
 import * as tf from '@tensorflow/tfjs';
-import { Application, Services, Controllers } from './Application';
+import { Application } from './Application';
+import type { Services, Controllers } from './Application';
 import { TrainingSession } from './TrainingSession';
 import { TFNeuralNet } from '../../infrastructure/tensorflow/TFNeuralNet';
 import { D3Chart } from '../../infrastructure/d3/D3Chart';
@@ -22,6 +23,7 @@ import {
   SessionController,
   ComparisonController,
   ResearchController,
+  MetricsController,
 } from '../../presentation/controllers';
 import {
   getDatasetElements,
@@ -54,7 +56,30 @@ export interface ApplicationConfig {
 }
 
 /**
- * Builder class for constructing the application with all dependencies
+ * Internal concrete-typed services used during builder assembly.
+ * Controllers may depend on concrete types for framework-specific features.
+ * The Application class only sees the port-typed Services interface.
+ */
+interface ConcreteServices {
+  dataRepo: MockDataRepository;
+  neuralNet: TFNeuralNet;
+  visualizer: D3Chart;
+  session: TrainingSession;
+  lossChart: D3LossChart;
+  lrChart: D3LearningRateChart;
+  networkDiagram: D3NetworkDiagram;
+  confusionMatrix: D3ConfusionMatrix;
+  weightHistogram: D3WeightHistogram;
+  activationHistogram: D3ActivationHistogram;
+  storage: LocalStorageService;
+  keyboardShortcuts?: KeyboardShortcuts;
+  datasetGallery?: DatasetGallery;
+}
+
+/**
+ * Builder class for constructing the application with all dependencies.
+ * This is the composition root — it rightfully knows about concrete types.
+ * The Application class only depends on port interfaces via the Services type.
  */
 export class ApplicationBuilder {
   private config: ApplicationConfig;
@@ -75,22 +100,18 @@ export class ApplicationBuilder {
    * Builds and returns the fully initialized application
    */
   build(): Application {
-    // Initialize infrastructure services
     this.initializeInfrastructure();
 
-    // Build core services
-    const services = this.buildServices();
+    // Build with concrete types for controller wiring
+    const concreteServices = this.buildConcreteServices();
+    const controllers = this.buildControllers(concreteServices);
 
-    // Build controllers
-    const controllers = this.buildControllers(services);
+    const uiComponents = this.initializeUIComponents(concreteServices.session, controllers.training);
+    concreteServices.keyboardShortcuts = uiComponents.keyboardShortcuts;
+    concreteServices.datasetGallery = uiComponents.datasetGallery;
 
-
-    // Initialize UI components
-    const uiComponents = this.initializeUIComponents(services.session, controllers.training);
-    services.keyboardShortcuts = uiComponents.keyboardShortcuts;
-    services.datasetGallery = uiComponents.datasetGallery;
-
-    return new Application(services, controllers);
+    // Upcast to port-typed Services for Application (concrete types implement all ports)
+    return new Application(concreteServices as Services, controllers);
   }
 
 
@@ -99,8 +120,10 @@ export class ApplicationBuilder {
    * Initializes infrastructure-level services
    */
   private initializeInfrastructure(): void {
-    // Expose TensorFlow.js globally for E2E tests
-    (window as typeof window & { tf: typeof tf }).tf = tf;
+    // Expose TensorFlow.js globally for E2E tests (dev/test only)
+    if (import.meta.env.DEV || import.meta.env.MODE === 'test') {
+      (window as typeof window & { tf: typeof tf }).tf = tf;
+    }
 
     // Initialize Error Boundary
     const errorBoundary = new ErrorBoundary();
@@ -113,7 +136,7 @@ export class ApplicationBuilder {
   /**
    * Builds all core services
    */
-  private buildServices(): Services {
+  private buildConcreteServices(): ConcreteServices {
     const dataRepo = new MockDataRepository();
     const neuralNet = new TFNeuralNet();
     const visualizer = new D3Chart(this.config.vizContainerId!);
@@ -150,11 +173,30 @@ export class ApplicationBuilder {
   /**
    * Builds all controllers with their dependencies
    */
-  private buildControllers(services: Services): Controllers {
+  private buildControllers(services: ConcreteServices): Controllers {
     const datasetController = new DatasetController(
       services.session,
       services.visualizer,
       getDatasetElements()
+    );
+
+    // Build MetricsController first so it can be used by clear callback
+    const metricsController = new MetricsController(
+      services.session,
+      services.neuralNet,
+      services.confusionMatrix,
+      {
+        precisionEl: document.getElementById('metric-precision'),
+        recallEl: document.getElementById('metric-recall'),
+        f1El: document.getElementById('metric-f1'),
+        confusionMatrixEmpty: document.getElementById('confusion-matrix-empty'),
+        speedCurrent: document.getElementById('speed-current'),
+        speedComparisonContainer: document.getElementById('speed-comparison-container'),
+        speedBaseline: document.getElementById('speed-baseline'),
+        speedComparisonResult: document.getElementById('speed-comparison-result'),
+        saveSpeedBaselineBtn: document.getElementById('btn-save-speed-baseline'),
+        clearSpeedBaselineBtn: document.getElementById('btn-clear-speed-baseline'),
+      }
     );
 
     const trainingController = new TrainingController(
@@ -178,16 +220,8 @@ export class ApplicationBuilder {
           services.weightHistogram.clear();
           services.activationHistogram.clear();
           services.visualizer.clear();
-          // Clear visualization controller state (set after controller creation)
           visualizationControllerRef?.clear();
-          
-          // Clear classification metrics display
-          const precisionEl = document.getElementById('metric-precision');
-          const recallEl = document.getElementById('metric-recall');
-          const f1El = document.getElementById('metric-f1');
-          if (precisionEl) precisionEl.textContent = '—';
-          if (recallEl) recallEl.textContent = '—';
-          if (f1El) f1El.textContent = '—';
+          metricsController.clearClassificationMetrics();
         },
         onDismissSuggestions: () => dismissSuggestions('suggestions-panel'),
       }
@@ -210,7 +244,6 @@ export class ApplicationBuilder {
       getExportElements(),
       {
         onModelLoaded: () => {
-          // Refresh UI after loading model
           const structure = services.neuralNet.getStructure();
           if (structure) {
             services.networkDiagram.render(
@@ -231,7 +264,6 @@ export class ApplicationBuilder {
       getSessionElements(),
       {
         onConfigLoaded: () => {
-          // Refresh UI
           void datasetController.handleLoadData().catch((error) => {
             console.error('Failed to load data after config loaded:', error);
           });
@@ -254,6 +286,7 @@ export class ApplicationBuilder {
       session: sessionController,
       comparison: comparisonController,
       research: researchController,
+      metrics: metricsController,
     };
   }
 

@@ -5,8 +5,8 @@
  * Uses dropout at inference time to approximate Bayesian inference.
  */
 
-import type { Point, Prediction } from '../domain';
-import type { INeuralNetworkService } from '../ports';
+import type { Point, Prediction } from '../../core/domain';
+import type { INeuralNetworkService } from '../../core/ports';
 
 export interface UncertaintyResult {
   /** Point being evaluated */

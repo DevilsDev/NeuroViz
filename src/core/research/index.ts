@@ -2,22 +2,13 @@
 export { calculateFeatureImportance, formatFeatureImportanceHTML } from './FeatureImportance';
 export type { FeatureImportanceResult, FeatureImportanceConfig } from './FeatureImportance';
 
-// LIME Explanations
-export { explainPrediction, formatLIMEExplanationHTML } from './LIMEExplainer';
-export type { LIMEExplanation, FeatureContribution, LIMEConfig } from './LIMEExplainer';
-
-// Saliency Maps
-export { computeSaliencyMap, saliencyToColors, formatSaliencyStatsHTML } from './SaliencyMaps';
-export type { SaliencyResult, SaliencyCell, SaliencyConfig } from './SaliencyMaps';
-
 // Adversarial Examples
 export { generateAdversarialFGSM, generateAdversarialBatch, calculateRobustnessMetrics, formatAdversarialResultHTML } from './AdversarialExamples';
 export type { AdversarialResult, FGSMConfig } from './AdversarialExamples';
 
-// Bayesian Neural Networks
-export { estimateUncertainty, computeUncertaintyMap, formatUncertaintyHTML } from './BayesianNN';
-export type { UncertaintyResult, UncertaintyMapResult, UncertaintyCell, MCDropoutConfig } from './BayesianNN';
-
-// Neural Architecture Search
-export { runNAS, formatNASResultHTML } from './NeuralArchitectureSearch';
-export type { ArchitectureCandidate, ArchitectureResult, NASConfig, NASResult } from './NeuralArchitectureSearch';
+// NOTE: The following modules have been moved to src/experimental/research/
+// as they are not currently wired into the application:
+// - LIMEExplainer (Local Interpretable Model-agnostic Explanations)
+// - SaliencyMaps (Gradient-based visualization)
+// - BayesianNN (MC Dropout uncertainty estimation)
+// - NeuralArchitectureSearch (Automated architecture optimization)

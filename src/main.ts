@@ -35,14 +35,16 @@ app.initialize();
 
 logger.info('Application initialized and ready', { component: 'NeuroViz' });
 
-// Expose app globally for debugging and E2E testing
+// Expose app globally for debugging and E2E testing (stripped in production builds)
 declare global {
   interface Window {
     app: typeof app;
   }
 }
 
-window.app = app;
+if (import.meta.env.DEV || import.meta.env.MODE === 'test') {
+  window.app = app;
+}
 
 // ===== HOT MODULE REPLACEMENT (HMR) =====
 // Properly dispose application resources during HMR to prevent memory leaks

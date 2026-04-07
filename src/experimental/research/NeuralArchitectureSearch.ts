@@ -5,8 +5,8 @@
  * to find optimal network architectures for a given dataset.
  */
 
-import type { Point, Hyperparameters, ActivationType, OptimizerType } from '../domain';
-import type { INeuralNetworkService } from '../ports';
+import type { Point, Hyperparameters, ActivationType, OptimizerType } from '../../core/domain';
+import type { INeuralNetworkService } from '../../core/ports';
 
 export interface ArchitectureCandidate {
   /** Unique ID */

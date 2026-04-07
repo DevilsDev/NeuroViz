@@ -112,4 +112,15 @@ export interface IVisualizerService {
    * @param predictions - Predictions for each data point
    */
   setPointPredictions(predictions: Prediction[]): void;
+
+  /**
+   * Renders adversarial example points with perturbation vectors.
+   * @param points - Adversarial points with their original counterparts
+   */
+  renderAdversarialPoints?(points: Array<Point & { isAdversarial: boolean; originalPoint?: Point }>): void;
+
+  /**
+   * Clears adversarial example points from the visualization.
+   */
+  clearAdversarialPoints?(): void;
 }

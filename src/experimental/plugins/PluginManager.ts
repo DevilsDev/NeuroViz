@@ -5,7 +5,7 @@
  * Plugins can add new datasets, visualizations, export formats, and more.
  */
 
-import { logger } from '../logging/Logger';
+import { logger } from '../../infrastructure/logging/Logger';
 
 export interface PluginMetadata {
   id: string;
