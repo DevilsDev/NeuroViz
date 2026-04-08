@@ -1,3 +1,9 @@
+## [2.27.1](https://github.com/DevilsDev/NeuroViz/compare/v2.27.0...v2.27.1) (2026-04-08)
+
+### Bug Fixes
+
+* **ui:** align range sliders with Colab-style design ([c743bf2](https://github.com/DevilsDev/NeuroViz/commit/c743bf215e63400ce590409f250578b31b057565))
+
 ## [2.27.0](https://github.com/DevilsDev/NeuroViz/compare/v2.26.0...v2.27.0) (2026-04-08)
 
 ### Features
