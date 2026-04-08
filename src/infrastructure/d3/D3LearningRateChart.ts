@@ -127,25 +127,28 @@ export class D3LearningRateChart {
     // Axes with clean formatting
     const xAxis = d3.axisBottom(this.xScale)
       .ticks(Math.min(5, maxEpoch))
-      .tickFormat(d3.format('d'));
+      .tickFormat(d3.format('d'))
+      .tickSize(3);
 
     const yAxis = d3.axisLeft(this.yScale)
       .ticks(3)
-      .tickFormat(v => this.formatLR(v));
+      .tickFormat(v => this.formatLR(v))
+      .tickSize(3);
 
+    // Apply with consistent styling across all charts
     this.xAxisGroup
       .transition().duration(200)
-      .call(xAxis as d3.Axis<d3.NumberValue>)
-      .selectAll('text')
-      .attr('fill', '#94a3b8')
-      .style('font-size', '9px');
+      .call(xAxis as d3.Axis<d3.NumberValue>);
+    this.xAxisGroup.selectAll('text').attr('fill', '#94a3b8').style('font-size', '9px');
+    this.xAxisGroup.selectAll('line').attr('stroke', '#475569');
+    this.xAxisGroup.select('.domain').attr('stroke', '#334155');
 
     this.yAxisGroup
       .transition().duration(200)
-      .call(yAxis as d3.Axis<d3.NumberValue>)
-      .selectAll('text')
-      .attr('fill', '#10b981')
-      .style('font-size', '9px');
+      .call(yAxis as d3.Axis<d3.NumberValue>);
+    this.yAxisGroup.selectAll('text').attr('fill', '#10b981').style('font-size', '9px');
+    this.yAxisGroup.selectAll('line').attr('stroke', '#475569');
+    this.yAxisGroup.select('.domain').attr('stroke', '#334155');
 
     // Update line
     this.lrPath

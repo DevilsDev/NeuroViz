@@ -20,7 +20,8 @@ export class D3Chart implements IVisualizerService {
   private readonly chartGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
   private width: number;
   private height: number;
-  private readonly margin = { top: 8, right: 8, bottom: 28, left: 32 };
+  // Margins: right increased to prevent last x-tick clipping
+  private readonly margin = { top: 6, right: 16, bottom: 24, left: 32 };
 
   private xScale: d3.ScaleLinear<number, number>;
   private yScale: d3.ScaleLinear<number, number>;
@@ -132,13 +133,19 @@ export class D3Chart implements IVisualizerService {
     this.xScale.range([0, this.width]);
     this.yScale.range([this.height, 0]);
 
-    // Update axes
-    this.svg.select<SVGGElement>('.x-axis')
+    // Update axes with consistent styling
+    const xAxis = this.svg.select<SVGGElement>('.x-axis')
       .attr('transform', `translate(0,${this.height})`)
-      .call(d3.axisBottom(this.xScale).ticks(5));
+      .call(d3.axisBottom(this.xScale).ticks(5).tickSize(4));
+    xAxis.selectAll('text').attr('fill', '#94a3b8').style('font-size', '9px');
+    xAxis.selectAll('line').attr('stroke', '#475569');
+    xAxis.select('.domain').attr('stroke', '#334155');
 
-    this.svg.select<SVGGElement>('.y-axis')
-      .call(d3.axisLeft(this.yScale).ticks(5));
+    const yAxis = this.svg.select<SVGGElement>('.y-axis')
+      .call(d3.axisLeft(this.yScale).ticks(5).tickSize(4));
+    yAxis.selectAll('text').attr('fill', '#94a3b8').style('font-size', '9px');
+    yAxis.selectAll('line').attr('stroke', '#475569');
+    yAxis.select('.domain').attr('stroke', '#334155');
 
     // Re-render content
     if (this.cachedPoints.length > 0) {
@@ -213,10 +220,10 @@ export class D3Chart implements IVisualizerService {
       .attr('cy', (d) => this.yScale(d.y))
       .attr('r', this.config.pointRadius)
       .attr('fill', (d) => getColour(d.label))
-      .attr('stroke', (d) => d.isValidation ? '#fbbf24' : '#fff')
-      .attr('stroke-width', (d) => d.isValidation ? 2.5 : 1.5)
+      .attr('stroke', (d) => d.isValidation ? '#fbbf24' : 'rgba(255,255,255,0.7)')
+      .attr('stroke-width', (d) => d.isValidation ? 2 : 1)
       .attr('stroke-dasharray', (d) => d.isValidation ? '3,2' : 'none')
-      .attr('opacity', 0.9);
+      .attr('opacity', 0.85);
 
     // Add tooltip handlers if enabled
     if (this.config.tooltipsEnabled && this.tooltip) {
@@ -561,15 +568,34 @@ export class D3Chart implements IVisualizerService {
       .attr('class', 'axes')
       .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
 
-    // X axis
-    axesGroup
+    // X axis — reduced tick count, lighter styling
+    const xAxisGroup = axesGroup
       .append('g')
       .attr('class', 'x-axis axis')
       .attr('transform', `translate(0,${this.height})`)
-      .call(d3.axisBottom(this.xScale).ticks(5));
+      .call(d3.axisBottom(this.xScale).ticks(5).tickSize(4));
 
-    // Y axis
-    axesGroup.append('g').attr('class', 'y-axis axis').call(d3.axisLeft(this.yScale).ticks(5));
+    xAxisGroup.selectAll('text')
+      .attr('fill', '#94a3b8')
+      .style('font-size', '9px');
+    xAxisGroup.selectAll('line')
+      .attr('stroke', '#475569');
+    xAxisGroup.select('.domain')
+      .attr('stroke', '#334155');
+
+    // Y axis — matching style
+    const yAxisGroup = axesGroup
+      .append('g')
+      .attr('class', 'y-axis axis')
+      .call(d3.axisLeft(this.yScale).ticks(5).tickSize(4));
+
+    yAxisGroup.selectAll('text')
+      .attr('fill', '#94a3b8')
+      .style('font-size', '9px');
+    yAxisGroup.selectAll('line')
+      .attr('stroke', '#475569');
+    yAxisGroup.select('.domain')
+      .attr('stroke', '#334155');
   }
 
   private setupZoom(): void {

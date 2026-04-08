@@ -158,16 +158,19 @@ export class D3LossChart {
 
     this.updateGrid();
 
-    this.svg.select<SVGGElement>('.x-axis')
+    const rxA = this.svg.select<SVGGElement>('.x-axis')
       .attr('transform', `translate(0,${this.height})`)
-      .call(d3.axisBottom(this.xScale).ticks(5).tickFormat(d3.format('d')));
+      .call(d3.axisBottom(this.xScale).ticks(5).tickFormat(d3.format('d')).tickSize(3));
+    rxA.selectAll('text').attr('fill', '#94a3b8').style('font-size', '9px');
 
-    this.svg.select<SVGGElement>('.y-axis-loss')
-      .call(d3.axisLeft(this.yScaleLoss).ticks(4).tickFormat(d3.format('.2f')));
+    const ryL = this.svg.select<SVGGElement>('.y-axis-loss')
+      .call(d3.axisLeft(this.yScaleLoss).ticks(4).tickFormat(d3.format('.2f')).tickSize(3));
+    ryL.selectAll('text').attr('fill', '#00D9FF').style('font-size', '9px');
 
-    this.svg.select<SVGGElement>('.y-axis-accuracy')
+    const ryA = this.svg.select<SVGGElement>('.y-axis-accuracy')
       .attr('transform', `translate(${this.width},0)`)
-      .call(d3.axisRight(this.yScaleAccuracy).ticks(4).tickFormat(d3.format('.0%')));
+      .call(d3.axisRight(this.yScaleAccuracy).ticks(4).tickFormat(d3.format('.0%')).tickSize(3));
+    ryA.selectAll('text').attr('fill', '#10B981').style('font-size', '9px');
 
     // Re-render lines if data exists
     const currentData = this.lossPath.datum() as TrainingRecord[];
@@ -186,9 +189,10 @@ export class D3LossChart {
       return;
     }
 
-    // Show axes
+    // Show axes and legend
     this.svg.selectAll('.axis').style('opacity', 1);
     this.svg.selectAll('.grid-lines').style('opacity', 1);
+    this.svg.selectAll('.legend').style('opacity', 1);
 
     // Update scales
     const maxEpoch = d3.max(records, d => d.epoch) ?? 1;
@@ -201,18 +205,27 @@ export class D3LossChart {
 
     this.updateGrid();
 
-    // Update axes with reduced tick counts for compact chart
-    this.xAxisGroup.call(
-      d3.axisBottom(this.xScale).ticks(Math.min(maxEpoch, 8)).tickFormat(d3.format('d'))
+    // Update axes — consistent styling across all charts
+    const xAxis = this.xAxisGroup.call(
+      d3.axisBottom(this.xScale).ticks(Math.min(maxEpoch, 8)).tickFormat(d3.format('d')).tickSize(3)
     );
+    xAxis.selectAll('text').attr('fill', '#94a3b8').style('font-size', '9px');
+    xAxis.selectAll('line').attr('stroke', '#475569');
+    xAxis.select('.domain').attr('stroke', '#334155');
 
-    this.yAxisLossGroup.call(
-      d3.axisLeft(this.yScaleLoss).ticks(4).tickFormat(d3.format('.2f'))
+    const yLoss = this.yAxisLossGroup.call(
+      d3.axisLeft(this.yScaleLoss).ticks(4).tickFormat(d3.format('.2f')).tickSize(3)
     );
+    yLoss.selectAll('text').attr('fill', '#00D9FF').style('font-size', '9px');
+    yLoss.selectAll('line').attr('stroke', '#475569');
+    yLoss.select('.domain').attr('stroke', '#334155');
 
-    this.yAxisAccuracyGroup.call(
-      d3.axisRight(this.yScaleAccuracy).ticks(4).tickFormat(d3.format('.0%'))
+    const yAcc = this.yAxisAccuracyGroup.call(
+      d3.axisRight(this.yScaleAccuracy).ticks(4).tickFormat(d3.format('.0%')).tickSize(3)
     );
+    yAcc.selectAll('text').attr('fill', '#10B981').style('font-size', '9px');
+    yAcc.selectAll('line').attr('stroke', '#475569');
+    yAcc.select('.domain').attr('stroke', '#334155');
 
     // Update lines
     this.lossPath.datum(records).attr('d', this.lossLine);
@@ -226,6 +239,7 @@ export class D3LossChart {
     this.accuracyPath.attr('d', null);
     this.svg.selectAll('.axis').style('opacity', 0);
     this.svg.selectAll('.grid-lines').style('opacity', 0);
+    this.svg.selectAll('.legend').style('opacity', 0);
   }
 
   dispose(): void {
@@ -260,7 +274,7 @@ export class D3LossChart {
   private addLegend(): void {
     const legend = this.svg.append('g')
       .attr('class', 'legend')
-      .attr('transform', 'translate(4, 2)'); // top-left inside plot
+      .attr('transform', 'translate(4, -2)'); // top-left, slightly above plot area for breathing room
 
     const items = [
       { color: '#00D9FF', label: 'Loss', dash: '' },
