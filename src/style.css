@@ -494,11 +494,11 @@ html:not(.dark) {
 
     /* ===== COMPACT CHARTS ROW ===== */
 
-    /* Chart row — Colab output cells: tight, minimal framing */
+    /* Chart row — Colab output cells: tight, room for D3 annotations */
     .charts-row {
         @apply grid gap-1 mt-1;
         grid-template-columns: 1fr 1fr;
-        height: 110px;
+        height: 130px;
     }
 
     /* ===== FORM ELEMENTS ===== */
