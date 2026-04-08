@@ -1,3 +1,9 @@
+## [2.24.1](https://github.com/DevilsDev/NeuroViz/compare/v2.24.0...v2.24.1) (2026-04-08)
+
+### Bug Fixes
+
+* **ui:** show dataset chips in header (remove hidden class) ([7b99bcc](https://github.com/DevilsDev/NeuroViz/commit/7b99bcc9e1e2bcde18e393c82562ee2c89e5dc12))
+
 ## [2.24.0](https://github.com/DevilsDev/NeuroViz/compare/v2.23.5...v2.24.0) (2026-04-08)
 
 ### Features
