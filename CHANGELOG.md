@@ -1,3 +1,9 @@
+## [2.25.0](https://github.com/DevilsDev/NeuroViz/compare/v2.24.5...v2.25.0) (2026-04-08)
+
+### Features
+
+* **ui:** Phase 4 — Learn/Experiment/Advanced mode system ([2520a8c](https://github.com/DevilsDev/NeuroViz/commit/2520a8c9865b1434ace6ec1e6038cbcd78f90436))
+
 ## [2.24.5](https://github.com/DevilsDev/NeuroViz/compare/v2.24.4...v2.24.5) (2026-04-08)
 
 ### Code Refactoring
