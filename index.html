@@ -49,10 +49,10 @@
     }
   </style>
 
-  <script type="module" crossorigin src="/NeuroViz/assets/index-Cdt5XL-l.js"></script>
+  <script type="module" crossorigin src="/NeuroViz/assets/index-9iYCI_92.js"></script>
   <link rel="modulepreload" crossorigin href="/NeuroViz/assets/vendor-tensorflow-C7gZW83r.js">
   <link rel="modulepreload" crossorigin href="/NeuroViz/assets/vendor-d3-BgXWCMks.js">
-  <link rel="stylesheet" crossorigin href="/NeuroViz/assets/index-D62BwwVn.css">
+  <link rel="stylesheet" crossorigin href="/NeuroViz/assets/index-DDACD5JG.css">
 </head>
 
 <body>
@@ -285,30 +285,21 @@
           </div>
         </section>
 
-        <!-- Charts Row — matched card styling with viz panel -->
+        <!-- Charts — Colab-style: no titles, charts are the content -->
         <div class="charts-row">
-          <!-- Learning Rate -->
           <div class="viz-card">
-            <div class="viz-card-header">
-              <h3 class="viz-card-title">Learning Rate</h3>
-            </div>
             <div id="lr-chart-container" class="flex-1 w-full relative"></div>
           </div>
-          <!-- Loss & Accuracy -->
           <div class="viz-card">
-            <div class="viz-card-header">
-              <h3 class="viz-card-title">Loss / Accuracy</h3>
-              <div class="flex gap-3 text-[9px]" style="color: var(--color-text-secondary);">
-                <span>Best: <span id="stat-best-loss" class="text-orange-400 font-mono">—</span></span>
-                <span>Acc: <span id="stat-best-accuracy" class="text-emerald-400 font-mono">—</span></span>
-                <span id="stat-improvement" class="hidden">—</span>
-              </div>
-            </div>
-            <div id="loss-chart-container" class="flex-1 w-full min-h-0 overflow-hidden">
+            <div id="loss-chart-container" class="flex-1 w-full min-h-0 overflow-hidden relative">
               <div id="loss-chart-empty" class="absolute inset-0 flex items-center justify-center text-[10px]" style="color: var(--color-text-secondary);">
-                No data yet
+                Training history will appear here
               </div>
             </div>
+            <!-- Stats preserved for JS but shown inline -->
+            <span id="stat-best-loss" class="hidden">—</span>
+            <span id="stat-best-accuracy" class="hidden">—</span>
+            <span id="stat-improvement" class="hidden">—</span>
           </div>
         </div>
 
