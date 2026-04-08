@@ -1,3 +1,9 @@
+## [2.23.5](https://github.com/DevilsDev/NeuroViz/compare/v2.23.4...v2.23.5) (2026-04-08)
+
+### Bug Fixes
+
+* **ux:** enable Start Training button when dataset loaded (auto-init) ([beecf0c](https://github.com/DevilsDev/NeuroViz/commit/beecf0cf1e5c553a1f07b8f264b9538251dc5146))
+
 ## [2.23.4](https://github.com/DevilsDev/NeuroViz/compare/v2.23.3...v2.23.4) (2026-04-08)
 
 ### Bug Fixes
