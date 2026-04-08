@@ -49,10 +49,10 @@
     }
   </style>
 
-  <script type="module" crossorigin src="/NeuroViz/assets/index-7H8SNp9D.js"></script>
+  <script type="module" crossorigin src="/NeuroViz/assets/index-B3lAtb6x.js"></script>
   <link rel="modulepreload" crossorigin href="/NeuroViz/assets/vendor-tensorflow-C7gZW83r.js">
   <link rel="modulepreload" crossorigin href="/NeuroViz/assets/vendor-d3-BgXWCMks.js">
-  <link rel="stylesheet" crossorigin href="/NeuroViz/assets/index-BoAx4VxR.css">
+  <link rel="stylesheet" crossorigin href="/NeuroViz/assets/index-CAipj0sS.css">
 </head>
 
 <body>
@@ -177,28 +177,28 @@
             <!-- Compact Dataset Grid -->
             <div class="grid grid-cols-2 gap-2 mb-3 dataset-gallery-grid">
               <!-- Simplified Cards (kept IDs related to JS logic if any, though JS mostly uses data attributes) -->
-              <div class="dataset-preview-card p-2" data-dataset="circle" title="Circle">
+              <div class="dataset-preview-card p-2" data-dataset="circle" title="Circle" tabindex="0" role="button" aria-label="Select Circle dataset">
                 <div class="dataset-preview-label text-center text-xs">Circle</div>
               </div>
-              <div class="dataset-preview-card p-2" data-dataset="xor" title="XOR">
+              <div class="dataset-preview-card p-2" data-dataset="xor" title="XOR" tabindex="0" role="button" aria-label="Select XOR dataset">
                 <div class="dataset-preview-label text-center text-xs">XOR</div>
               </div>
-              <div class="dataset-preview-card p-2" data-dataset="spiral" title="Spiral">
+              <div class="dataset-preview-card p-2" data-dataset="spiral" title="Spiral" tabindex="0" role="button" aria-label="Select Spiral dataset">
                 <div class="dataset-preview-label text-center text-xs">Spiral</div>
               </div>
-              <div class="dataset-preview-card p-2" data-dataset="gaussian" title="Gaussian">
+              <div class="dataset-preview-card p-2" data-dataset="gaussian" title="Gaussian" tabindex="0" role="button" aria-label="Select Gaussian dataset">
                 <div class="dataset-preview-label text-center text-xs">Gaussian</div>
               </div>
-              <div class="dataset-preview-card p-2" data-dataset="clusters" title="Clusters">
+              <div class="dataset-preview-card p-2" data-dataset="clusters" title="Clusters" tabindex="0" role="button" aria-label="Select Clusters dataset">
                 <div class="dataset-preview-label text-center text-xs">Clusters</div>
               </div>
-              <div class="dataset-preview-card p-2" data-dataset="iris" title="Iris">
+              <div class="dataset-preview-card p-2" data-dataset="iris" title="Iris" tabindex="0" role="button" aria-label="Select Iris dataset">
                 <div class="dataset-preview-label text-center text-xs">Iris</div>
               </div>
-              <div class="dataset-preview-card p-2" data-dataset="wine" title="Wine">
+              <div class="dataset-preview-card p-2" data-dataset="wine" title="Wine" tabindex="0" role="button" aria-label="Select Wine dataset">
                 <div class="dataset-preview-label text-center text-xs">Wine</div>
               </div>
-              <div class="dataset-preview-card p-2" data-dataset="custom" title="Custom">
+              <div class="dataset-preview-card p-2" data-dataset="custom" title="Custom" tabindex="0" role="button" aria-label="Select custom drawing mode">
                 <div class="dataset-preview-label text-center text-xs">Draw</div>
               </div>
             </div>
@@ -220,19 +220,19 @@
             <div id="dataset-options" class="space-y-2 mb-3">
               <label class="block">
                 <span class="input-label">Samples: <span id="samples-value">200</span></span>
-                <input type="range" id="input-samples"
+                <input type="range" id="input-samples" aria-label="Number of data samples"
                   class="w-full h-2 bg-navy-700 rounded-lg appearance-none cursor-pointer accent-accent-500" value="200"
                   min="50" max="500" step="50" />
               </label>
               <label class="block">
                 <span class="input-label">Noise: <span id="noise-value">0.1</span></span>
-                <input type="range" id="input-noise"
+                <input type="range" id="input-noise" aria-label="Data noise level"
                   class="w-full h-2 bg-navy-700 rounded-lg appearance-none cursor-pointer accent-accent-500" value="10"
                   min="0" max="50" step="5" />
               </label>
               <label class="block">
                 <span class="input-label">Class Balance: <span id="balance-value">50%</span></span>
-                <input type="range" id="input-balance"
+                <input type="range" id="input-balance" aria-label="Class balance percentage"
                   class="w-full h-2 bg-navy-700 rounded-lg appearance-none cursor-pointer accent-accent-500" value="50"
                   min="10" max="90" step="5" />
               </label>
@@ -247,7 +247,7 @@
             </div>
 
             <div class="flex gap-2">
-              <button id="btn-load-data" class="btn-secondary flex-1 text-xs">Fetch</button>
+              <button id="btn-load-data" class="btn-secondary flex-1 text-xs" aria-label="Load selected dataset">Load Dataset</button>
               <label class="btn-secondary flex-1 cursor-pointer text-center text-xs pt-1">
                 CSV <input type="file" id="input-csv-upload" accept=".csv" class="hidden" />
               </label>
@@ -317,6 +317,10 @@
               <div id="status-accuracy" class="text-xl font-mono font-bold text-emerald-400 tabular-nums leading-none">—
               </div>
             </div>
+            <div>
+              <span class="text-[10px] text-slate-500 uppercase">Val Loss</span>
+              <div id="status-val-loss" class="text-xl font-mono font-bold text-red-400 tabular-nums leading-none">—</div>
+            </div>
           </div>
           <!-- Playback Controls -->
           <div class="flex gap-2">
@@ -330,7 +334,7 @@
               Start Over
             </button>
             <button id="btn-step" class="p-2 rounded hover:bg-navy-700 text-slate-300 transition-colors"
-              title="Step (S)" disabled>
+              title="Step (S)" aria-label="Step one epoch" disabled>
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
               </svg>
@@ -353,13 +357,13 @@
             </button>
             <div class="flex gap-1 ml-auto">
               <button id="btn-undo-config" class="p-2 rounded hover:bg-navy-700 text-slate-400 hover:text-slate-300 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                title="Undo Config (Ctrl+Z)" disabled>
+                title="Undo Config (Ctrl+Z)" aria-label="Undo configuration change" disabled>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                 </svg>
               </button>
               <button id="btn-redo-config" class="p-2 rounded hover:bg-navy-700 text-slate-400 hover:text-slate-300 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                title="Redo Config (Ctrl+Y)" disabled>
+                title="Redo Config (Ctrl+Y)" aria-label="Redo configuration change" disabled>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" />
                 </svg>
@@ -374,10 +378,10 @@
           <div id="viz-container" role="img" class="flex-1 w-full h-full min-h-0"
             aria-label="Neural network decision boundary visualization">
             <!-- D3 chart renders here -->
-            <div id="viz-empty-state"
+            <div id="viz-empty-state" role="status"
               class="empty-state-cta absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
-              <div class="text-slate-500 mb-2">Ready to Initialize</div>
-              <div class="text-xs text-slate-600">Select data and config to begin</div>
+              <div class="text-slate-400 mb-2 text-lg">&larr; Select a dataset to get started</div>
+              <div class="text-xs text-slate-500">Choose a dataset from the left panel, then click Start Training</div>
             </div>
           </div>
 
@@ -391,32 +395,25 @@
           <div id="three-container" class="absolute inset-0 hidden z-10"></div>
           
           <!-- Footer Controls for Viz (z-30 to be above 3D view, bottom-10 to clear X-axis) -->
-          <div class="absolute bottom-10 left-4 right-4 flex justify-between pointer-events-none z-30">
-            <!-- Left: Metric Cards Overlay -->
-            <div class="flex gap-2 pointer-events-auto">
-              <div class="bg-navy-900/80 backdrop-blur p-2 rounded border border-white/10 text-xs shadow-lg">
-                <span class="text-slate-500 block">Val Loss</span>
-                <span id="status-val-loss" class="text-red-400 font-mono font-bold">—</span>
-              </div>
-            </div>
-            <!-- Right: View Controls (Toggle Switches) -->
+          <div class="absolute bottom-10 left-4 right-4 flex justify-end pointer-events-none z-30">
+            <!-- View Controls (Toggle Switches) -->
             <div
               class="flex gap-4 pointer-events-auto bg-navy-900/80 backdrop-blur p-2 rounded-lg border border-white/10 shadow-lg items-center">
               <label
-                class="flex items-center gap-2 text-[10px] text-slate-300 cursor-pointer hover:text-white transition-colors group">
-                <input type="checkbox" id="input-show-gradients" class="toggle-switch" />
+                class="flex items-center gap-2 text-[10px] text-slate-100 cursor-pointer hover:text-white transition-colors group">
+                <input type="checkbox" id="input-show-gradients" class="toggle-switch" aria-label="Toggle weight visualization" />
                 <span class="font-medium group-hover:text-cyan transition-colors">Weights</span>
               </label>
               <div class="w-px h-4 bg-white/10"></div>
               <label
-                class="flex items-center gap-2 text-[10px] text-slate-300 cursor-pointer hover:text-white transition-colors group">
-                <input type="checkbox" id="input-voronoi" class="toggle-switch" />
+                class="flex items-center gap-2 text-[10px] text-slate-100 cursor-pointer hover:text-white transition-colors group">
+                <input type="checkbox" id="input-voronoi" class="toggle-switch" aria-label="Toggle Voronoi overlay" />
                 <span class="font-medium group-hover:text-cyan transition-colors">Voronoi</span>
               </label>
               <div class="w-px h-4 bg-white/10"></div>
               <label
-                class="flex items-center gap-2 text-[10px] text-slate-300 cursor-pointer hover:text-white transition-colors group">
-                <input type="checkbox" id="input-3d-view" class="toggle-switch" />
+                class="flex items-center gap-2 text-[10px] text-slate-100 cursor-pointer hover:text-white transition-colors group">
+                <input type="checkbox" id="input-3d-view" class="toggle-switch" aria-label="Toggle 3D visualization mode" />
                 <span class="font-medium group-hover:text-cyan transition-colors">3D Mode</span>
               </label>
             </div>
@@ -484,7 +481,7 @@
                 <label class="block">
                   <span class="input-label">Learning Rate</span>
                   <input type="number" id="input-lr" class="input-field text-xs" value="0.03" min="0.001" max="1"
-                    step="0.001" />
+                    step="0.001" aria-label="Learning rate" />
                 </label>
                 <label class="block">
                   <span class="input-label">Optimizer</span>
@@ -505,14 +502,14 @@
                   </select>
                 </label>
                 <label class="flex items-center gap-2 mt-4">
-                  <input type="checkbox" id="input-batch-norm" class="w-4 h-4 rounded border-slate-600 bg-navy-900 text-cyan-500 focus:ring-cyan-500" />
+                  <input type="checkbox" id="input-batch-norm" class="w-4 h-4 rounded border-slate-600 bg-navy-900 text-cyan-500 focus:ring-cyan-500" aria-label="Enable batch normalization" />
                   <span class="input-label">Batch Norm</span>
                 </label>
               </div>
               <label class="block">
                 <span class="input-label">Hidden Layers</span>
                 <input type="text" id="input-layers" class="input-field text-xs" value="8, 4"
-                  placeholder="e.g., 8, 4" />
+                  placeholder="e.g., 8, 4" aria-label="Hidden layer sizes, comma separated" />
               </label>
               <div class="grid grid-cols-2 gap-2">
                 <label class="block">
@@ -537,26 +534,29 @@
             </div>
           </div>
 
-          <!-- Training Config -->
-          <div class="p-4 bg-navy-800/30 rounded-xl mb-4">
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Training Config</h3>
+          <!-- Training Config (collapsible) -->
+          <details class="bg-navy-800/30 rounded-xl mb-4 group" open>
+            <summary class="p-4 pb-0 text-xs font-bold text-slate-400 uppercase tracking-wider cursor-pointer list-none flex justify-between items-center select-none">
+              Training Config <span class="group-open:rotate-180 transition-transform text-slate-500">&#9660;</span>
+            </summary>
+            <div class="p-4 pt-3 space-y-2">
             <div class="grid grid-cols-2 gap-2 mb-2">
               <label class="block">
                 <span class="input-label">Batch Size</span>
-                <input type="number" id="input-batch-size" class="input-field text-xs" value="10" />
+                <input type="number" id="input-batch-size" class="input-field text-xs" value="10" aria-label="Training batch size" />
               </label>
               <label class="block">
                 <span class="input-label">Max Epochs</span>
-                <input type="number" id="input-max-epochs" class="input-field text-xs" value="100" />
+                <input type="number" id="input-max-epochs" class="input-field text-xs" value="100" aria-label="Maximum training epochs" />
               </label>
             </div>
             <label class="flex items-center gap-2 mb-2">
-              <input type="checkbox" id="input-batch-norm" class="checkbox-field" />
+              <input type="checkbox" id="input-batch-norm-training" class="checkbox-field" aria-label="Enable batch normalization during training" />
               <span class="text-xs text-slate-400">Batch Normalization</span>
             </label>
             <label class="block mb-2">
               <span class="input-label">Speed (FPS): <span id="fps-value">60</span></span>
-              <input type="range" id="input-fps" class="w-full h-1 accent-accent-500" value="60" min="1" max="60" />
+              <input type="range" id="input-fps" class="w-full h-1 accent-accent-500" value="60" min="1" max="60" aria-label="Training speed in frames per second" />
             </label>
             <label class="block mb-2">
               <span class="input-label">Performance Mode</span>
@@ -586,7 +586,8 @@
                 <option value="50">50%</option>
               </select>
             </label>
-          </div>
+            </div>
+          </details>
 
           <!-- Advanced/Research Accordion -->
           <div class="space-y-2">
