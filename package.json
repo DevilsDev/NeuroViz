@@ -1,6 +1,6 @@
 {
   "name": "neuroviz",
-  "version": "2.27.3",
+  "version": "2.27.4",
   "description": "Interactive Neural Network Decision Boundary Visualiser - Hexagonal Architecture Demo",
   "type": "module",
   "scripts": {

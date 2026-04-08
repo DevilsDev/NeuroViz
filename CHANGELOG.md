@@ -1,3 +1,9 @@
+## [2.27.4](https://github.com/DevilsDev/NeuroViz/compare/v2.27.3...v2.27.4) (2026-04-08)
+
+### Bug Fixes
+
+* **theme:** complete light theme system — surfaces, charts, controls ([db9ed1b](https://github.com/DevilsDev/NeuroViz/commit/db9ed1bb91f99a710a76f87882c3656187f78ec1)), closes [#EFF1F5](https://github.com/DevilsDev/NeuroViz/issues/EFF1F5) [#E6E9EF](https://github.com/DevilsDev/NeuroViz/issues/E6E9EF) [#DCE0E8](https://github.com/DevilsDev/NeuroViz/issues/DCE0E8)
+
 ## [2.27.3](https://github.com/DevilsDev/NeuroViz/compare/v2.27.2...v2.27.3) (2026-04-08)
 
 ### Bug Fixes
