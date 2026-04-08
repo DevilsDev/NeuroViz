@@ -118,7 +118,7 @@ html:not(.dark) {
 
     .panel-center {
         grid-area: center;
-        @apply relative flex flex-col overflow-hidden p-5;
+        @apply relative flex flex-col overflow-hidden px-4 py-3;
         background: var(--surface-1);
     }
 
@@ -134,24 +134,29 @@ html:not(.dark) {
         @apply overflow-y-auto flex-1 px-4 py-3 custom-scrollbar;
     }
 
-    /* Sidebar section cards — single component class for all sidebar panels */
+    /* Sidebar sections — Colab-style: no cards, use spacing + subtle separators */
     .sidebar-section,
     .panel-scroll .bg-navy-800\/30 {
-        background: var(--surface-1);
-        border: 1px solid var(--border-subtle);
-        border-radius: 12px;
-        margin-bottom: 12px;
-        padding: 16px;
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid var(--border-subtle);
+        border-radius: 0;
+        margin-bottom: 0;
+        padding: 12px 0;
+    }
+
+    .panel-scroll .bg-navy-800\/30:last-child {
+        border-bottom: none;
     }
 
     .sidebar-section h3,
     .panel-scroll .bg-navy-800\/30 h3 {
         font-size: 11px;
-        font-weight: 700;
+        font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.06em;
         color: var(--color-text-secondary);
-        margin-bottom: 12px;
+        margin-bottom: 8px;
     }
 
     .panel-fixed {
@@ -183,14 +188,9 @@ html:not(.dark) {
     }
 
     .panel-glow {
-        @apply rounded-xl overflow-hidden relative transition-all duration-300;
+        @apply rounded-lg overflow-hidden relative;
         background: var(--surface-2);
         border: 1px solid var(--border-subtle);
-        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
-    }
-
-    .panel-glow:hover {
-        border-color: var(--border-hover);
     }
 
     .panel-glow.training {
@@ -233,10 +233,10 @@ html:not(.dark) {
     }
 
     /* ===== TOOLBAR (Material Design) ===== */
+    /* Toolbar — Colab-style: no card, just inline with subtle bottom border */
     .toolbar {
-        @apply flex items-center gap-2 mb-3 px-3 py-2 rounded-xl;
-        background: var(--surface-2);
-        border: 1px solid var(--border-subtle);
+        @apply flex items-center gap-2 mb-3 px-1 py-2;
+        border-bottom: 1px solid var(--border-subtle);
     }
 
     .toolbar-group {
@@ -248,29 +248,30 @@ html:not(.dark) {
         background: var(--border-subtle);
     }
 
+    /* Toolbar metrics — Colab-style: compact inline, no boxing */
     .toolbar-metric {
-        @apply flex flex-col items-center px-3;
+        @apply flex items-baseline gap-1 px-2;
     }
 
     .toolbar-metric-label {
-        @apply text-[9px] font-semibold uppercase tracking-widest leading-none;
+        @apply text-[9px] font-medium uppercase tracking-wider;
         color: var(--color-text-secondary);
     }
 
     .toolbar-metric-value {
-        @apply text-sm font-mono font-bold tabular-nums leading-tight;
+        @apply text-xs font-mono font-semibold tabular-nums;
     }
 
     /* ===== MODE SELECTOR (Google-style segmented control) ===== */
 
+    /* Mode selector — Colab-style: subtle segmented control */
     .mode-selector {
-        @apply flex rounded-lg overflow-hidden;
-        background: var(--surface-2);
+        @apply flex rounded-md overflow-hidden;
         border: 1px solid var(--border-subtle);
     }
 
     .mode-btn {
-        @apply px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider cursor-pointer transition-all duration-150;
+        @apply px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider cursor-pointer transition-all duration-150;
         color: var(--color-text-secondary);
         border: none;
         background: transparent;
@@ -278,12 +279,11 @@ html:not(.dark) {
 
     .mode-btn:hover {
         color: var(--color-text-primary);
-        background: rgba(var(--color-cyan-rgb), 0.06);
     }
 
     .mode-btn.active {
-        background: rgb(var(--color-cyan-rgb));
-        color: var(--surface-0);
+        background: rgba(var(--color-cyan-rgb), 0.15);
+        color: rgb(var(--color-cyan-rgb));
     }
 
     /* ===== MODE VISIBILITY RULES ===== */
@@ -369,6 +369,7 @@ html:not(.dark) {
 
     /* ===== TABS - Segmented Control ===== */
 
+    /* Sidebar tabs — Colab-style: compact, understated */
     .sidebar-tabs {
         @apply flex sticky top-0 z-10;
         background: var(--surface-0);
@@ -376,9 +377,9 @@ html:not(.dark) {
     }
 
     .sidebar-tab {
-        @apply flex-1 flex items-center justify-center py-2.5 px-1 text-[11px] font-semibold uppercase tracking-wider focus:outline-none cursor-pointer border-b-2 border-transparent;
+        @apply flex-1 flex items-center justify-center py-2 px-1 text-[10px] font-semibold uppercase tracking-wider focus:outline-none cursor-pointer border-b-2 border-transparent;
         color: var(--color-text-secondary);
-        transition: all 200ms ease;
+        transition: color 150ms ease;
     }
 
     .sidebar-tab:hover {
@@ -392,33 +393,29 @@ html:not(.dark) {
 
     /* ===== BUTTONS ===== */
 
+    /* Buttons — Colab-style: compact, flat, minimal shadow */
     .btn-primary {
-        @apply flex items-center justify-center gap-2 px-4 text-sm font-semibold rounded-xl disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-cyan/40;
-        padding-top: 10px;
-        padding-bottom: 10px;
-        min-height: 40px;
+        @apply inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-cyan/40;
         background: rgb(var(--color-cyan-rgb));
         color: var(--surface-0);
-        box-shadow: 0 2px 8px rgb(var(--color-cyan-rgb) / 0.25);
-        transition: all 200ms ease;
+        transition: all 150ms ease;
     }
 
     .btn-primary:hover:not(:disabled) {
-        box-shadow: 0 4px 16px rgb(var(--color-cyan-rgb) / 0.35);
-        transform: translateY(-1px);
+        filter: brightness(1.1);
     }
 
     .btn-secondary {
-        @apply flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.97] focus:outline-none focus:ring-2 focus:ring-cyan/30;
-        background: var(--surface-2);
+        @apply inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none;
+        background: transparent;
         color: var(--color-text-secondary);
         border: 1px solid var(--border-subtle);
     }
 
     .btn-secondary:hover:not(:disabled) {
         color: var(--color-text-primary);
-        border-color: var(--border-hover);
-        background: rgba(137, 180, 250, 0.08);
+        background: rgba(var(--color-cyan-rgb), 0.06);
+        border-color: rgba(var(--color-cyan-rgb), 0.2);
     }
 
     .btn-danger {
@@ -440,24 +437,23 @@ html:not(.dark) {
         display: none;
     }
 
+    /* Dataset chips — Colab-style: compact, subtle */
     .dataset-chip {
-        @apply px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap cursor-pointer transition-all duration-150;
-        background: var(--surface-2);
-        border: 1px solid var(--border-subtle);
+        @apply px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap cursor-pointer transition-all duration-150;
         color: var(--color-text-secondary);
+        border: 1px solid transparent;
     }
 
     .dataset-chip:hover {
         color: var(--color-text-primary);
-        border-color: var(--border-hover);
+        background: rgba(var(--color-cyan-rgb), 0.06);
     }
 
     .dataset-chip.selected {
-        background: rgb(var(--color-cyan-rgb));
-        color: var(--surface-0);
-        border-color: rgb(var(--color-cyan-rgb));
+        background: rgba(var(--color-cyan-rgb), 0.12);
+        color: rgb(var(--color-cyan-rgb));
+        border-color: rgba(var(--color-cyan-rgb), 0.3);
         font-weight: 600;
-        box-shadow: 0 2px 8px rgb(var(--color-cyan-rgb) / 0.3);
     }
 
     /* ===== METRIC TILES (Google Analytics style) ===== */
@@ -481,20 +477,16 @@ html:not(.dark) {
     /* ===== UNIFIED VIZ CARDS ===== */
     /* All visual panels (main viz + charts) share the same card language */
 
+    /* Viz cards — Colab-style: subtle, no heavy borders */
     .viz-card {
-        @apply rounded-xl relative flex flex-col overflow-hidden;
+        @apply rounded-lg relative flex flex-col overflow-hidden;
         background: var(--surface-2);
         border: 1px solid var(--border-subtle);
-        transition: border-color 200ms ease;
-    }
-
-    .viz-card:hover {
-        border-color: var(--border-hover);
     }
 
     .viz-card-header {
-        @apply flex items-center justify-between px-3 py-1.5 shrink-0;
-        border-bottom: 1px solid var(--border-subtle);
+        @apply flex items-center justify-between px-3 py-1 shrink-0;
+        background: rgba(var(--color-bg-primary-rgb), 0.3);
     }
 
     .viz-card-title {
@@ -504,23 +496,25 @@ html:not(.dark) {
 
     /* ===== COMPACT CHARTS ROW ===== */
 
+    /* Chart row — Colab: compact, less visual weight */
     .charts-row {
-        @apply grid gap-3 mt-3;
+        @apply grid gap-2 mt-2;
         grid-template-columns: 1fr 1fr;
-        height: 140px;
+        height: 120px;
     }
 
     /* ===== FORM ELEMENTS ===== */
 
+    /* Form labels — Colab: compact, readable */
     .input-label {
-        @apply block text-[10px] font-semibold mb-1.5 uppercase tracking-widest;
+        @apply block text-[10px] font-medium mb-1 uppercase tracking-wider;
         color: var(--color-text-secondary);
-        letter-spacing: 0.08em;
     }
 
+    /* Inputs — Colab: compact, subtle border, no heavy background */
     .input-field,
     .select-field {
-        @apply w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-all duration-200;
+        @apply w-full rounded-md px-2.5 py-1.5 text-xs focus:outline-none transition-all duration-150;
         background: var(--surface-0);
         border: 1px solid var(--border-subtle);
         color: var(--color-text-primary);
@@ -529,7 +523,7 @@ html:not(.dark) {
     .input-field:focus,
     .select-field:focus {
         border-color: rgb(var(--color-cyan-rgb));
-        box-shadow: 0 0 0 3px rgb(var(--color-cyan-rgb) / 0.12);
+        box-shadow: 0 0 0 2px rgb(var(--color-cyan-rgb) / 0.1);
     }
 
     .input-field:disabled,
@@ -600,28 +594,24 @@ html:not(.dark) {
         @apply transform translate-x-4;
     }
 
-    /* Sliders — polished custom track + thumb */
+    /* Sliders — Colab-style: thin track, small thumb, minimal glow */
     input[type="range"] {
-        @apply w-full h-1.5 rounded-full appearance-none cursor-pointer;
+        @apply w-full h-1 rounded-full appearance-none cursor-pointer;
         background: var(--surface-2);
     }
 
     input[type="range"]::-webkit-slider-thumb {
-        @apply appearance-none w-4 h-4 rounded-full cursor-pointer;
+        @apply appearance-none w-3 h-3 rounded-full cursor-pointer;
         background: rgb(var(--color-cyan-rgb));
-        box-shadow: 0 1px 4px rgb(var(--color-cyan-rgb) / 0.4);
-        transition: box-shadow 150ms ease;
     }
 
     input[type="range"]::-moz-range-thumb {
-        @apply w-4 h-4 rounded-full cursor-pointer border-0;
+        @apply w-3 h-3 rounded-full cursor-pointer border-0;
         background: rgb(var(--color-cyan-rgb));
-        box-shadow: 0 1px 4px rgb(var(--color-cyan-rgb) / 0.4);
     }
 
     input[type="range"]:hover::-webkit-slider-thumb {
-        box-shadow: 0 2px 8px rgb(var(--color-cyan-rgb) / 0.6);
-        transform: scale(1.15);
+        transform: scale(1.2);
     }
 
     /* ===== CARDS ===== */
