@@ -450,6 +450,8 @@ export class ApplicationBuilder {
         const isActive = btn.getAttribute('data-mode') === mode;
         btn.classList.toggle('active', isActive);
         btn.setAttribute('aria-checked', isActive ? 'true' : 'false');
+        // Roving tabindex: only active mode button is in tab order
+        btn.setAttribute('tabindex', isActive ? '0' : '-1');
       });
       localStorage.setItem(STORAGE_KEY, mode);
     };
@@ -457,11 +459,37 @@ export class ApplicationBuilder {
     // Apply saved mode on load
     applyMode(savedMode);
 
+    const modes = ['learn', 'experiment', 'advanced'];
+
     // Bind click handlers
     modeButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         const mode = btn.getAttribute('data-mode');
         if (mode) applyMode(mode);
+      });
+
+      // Keyboard navigation: arrow keys cycle between modes
+      btn.addEventListener('keydown', (e: Event) => {
+        const keyEvent = e as KeyboardEvent;
+        const currentMode = btn.getAttribute('data-mode') || '';
+        const idx = modes.indexOf(currentMode);
+        let nextIdx = -1;
+
+        if (keyEvent.key === 'ArrowRight' || keyEvent.key === 'ArrowDown') {
+          nextIdx = (idx + 1) % modes.length;
+        } else if (keyEvent.key === 'ArrowLeft' || keyEvent.key === 'ArrowUp') {
+          nextIdx = (idx - 1 + modes.length) % modes.length;
+        }
+
+        if (nextIdx >= 0) {
+          keyEvent.preventDefault();
+          const nextMode = modes[nextIdx];
+          if (nextMode) {
+            applyMode(nextMode);
+            const nextBtn = document.querySelector(`.mode-btn[data-mode="${nextMode}"]`) as HTMLElement;
+            nextBtn?.focus();
+          }
+        }
       });
     });
   }

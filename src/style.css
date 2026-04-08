@@ -302,6 +302,24 @@ html:not(.dark) {
 
     /* Advanced mode: show everything (no hiding rules) */
 
+    /* ===== TAB TRANSITIONS ===== */
+
+    .tab-content.active {
+        animation: tab-fade-in 200ms ease-out;
+    }
+
+    @keyframes tab-fade-in {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== EMPTY STATE ===== */
+
+    .empty-state {
+        @apply flex flex-col items-center justify-center;
+        user-select: none;
+    }
+
     /* ===== PROGRESSIVE DISCLOSURE — smooth details/accordion ===== */
 
     details.group > summary {
