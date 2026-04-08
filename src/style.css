@@ -6,32 +6,33 @@
 @tailwind utilities;
 
 /* ===== CSS VARIABLES FOR THEMING ===== */
+/* Warm data viz palette — inspired by Observable/Figma */
 :root {
-    /* Primary colors (RGB values for flexible opacity) */
-    --color-bg-primary-rgb: 10, 14, 26;
-    /* #0A0E1A */
-    --color-bg-secondary-rgb: 26, 31, 46;
-    /* #1A1F2E */
-    --color-text-primary-rgb: 241, 245, 249;
-    /* #F1F5F9 (slate-100) */
-    --color-text-secondary-rgb: 148, 163, 184;
-    /* #94A3B8 (slate-400) */
+    /* Primary colors — warm charcoal instead of cold navy */
+    --color-bg-primary-rgb: 24, 24, 37;
+    /* #181825 — rich dark indigo */
+    --color-bg-secondary-rgb: 30, 30, 46;
+    /* #1E1E2E — slightly lighter surface */
+    --color-text-primary-rgb: 205, 214, 244;
+    /* #CDD6F4 — warm white (not blue-white) */
+    --color-text-secondary-rgb: 147, 153, 178;
+    /* #9399B2 — warm gray */
 
-    /* Accent colors */
-    --color-cyan-rgb: 0, 217, 255;
-    /* #00D9FF */
-    --color-magenta-rgb: 255, 0, 170;
-    /* #FF00AA */
-    --color-orange-rgb: 251, 146, 60;
-    /* #FB923C */
+    /* Accent colors — warmer, more vibrant */
+    --color-cyan-rgb: 137, 180, 250;
+    /* #89B4FA — soft blue (Catppuccin blue) */
+    --color-magenta-rgb: 245, 194, 231;
+    /* #F5C2E7 — soft pink */
+    --color-orange-rgb: 250, 179, 135;
+    /* #FAB387 — peach */
 
-    /* Semantic colors */
-    --color-success-rgb: 16, 185, 129;
-    /* #10B981 */
-    --color-warning-rgb: 245, 158, 11;
-    /* #F59E0B */
-    --color-danger-rgb: 239, 68, 68;
-    /* #EF4444 */
+    /* Semantic colors — softer, warmer */
+    --color-success-rgb: 166, 227, 161;
+    /* #A6E3A1 — soft green */
+    --color-warning-rgb: 249, 226, 175;
+    /* #F9E2AF — warm yellow */
+    --color-danger-rgb: 243, 139, 168;
+    /* #F38BA8 — soft red */
 
     /* Computed color values */
     --color-bg-primary: rgb(var(--color-bg-primary-rgb));
@@ -39,15 +40,22 @@
     --color-text-primary: rgb(var(--color-text-primary-rgb));
     --color-text-secondary: rgb(var(--color-text-secondary-rgb));
     --color-cyan: rgb(var(--color-cyan-rgb));
-    --color-cyan-glow: rgb(var(--color-cyan-rgb) / 0.3);
+    --color-cyan-glow: rgb(var(--color-cyan-rgb) / 0.2);
     --color-magenta: rgb(var(--color-magenta-rgb));
     --color-orange: rgb(var(--color-orange-rgb));
+
+    /* Surface layers for depth hierarchy */
+    --surface-0: #181825;
+    --surface-1: #1e1e2e;
+    --surface-2: #313244;
+    --border-subtle: rgba(147, 153, 178, 0.12);
+    --border-hover: rgba(137, 180, 250, 0.25);
 }
 
-/* Light mode overrides */
+/* Light mode overrides — warm light palette */
 html:not(.dark) {
-    --color-bg-primary-rgb: 248, 250, 252;
-    /* #F8FAFC (slate-50) */
+    --color-bg-primary-rgb: 239, 241, 245;
+    /* #EFF1F5 — latte base */
     --color-bg-secondary-rgb: 241, 245, 249;
     /* #F1F5F9 (slate-100) */
     --color-text-primary-rgb: 15, 23, 42;
@@ -110,13 +118,16 @@ html:not(.dark) {
 
     .panel-center {
         grid-area: center;
-        @apply relative flex flex-col overflow-hidden p-4;
+        @apply relative flex flex-col overflow-hidden p-5;
+        background: var(--surface-1);
     }
 
     .panel-right,
     .panel-sidebar {
         grid-area: sidebar;
-        @apply border-l border-white/5 bg-navy-900/50 flex flex-col overflow-hidden;
+        @apply flex flex-col overflow-hidden;
+        background: var(--surface-0);
+        border-left: 1px solid var(--border-subtle);
     }
 
     .panel-scroll {
@@ -137,7 +148,12 @@ html:not(.dark) {
     }
 
     .custom-scrollbar::-webkit-scrollbar-thumb {
-        @apply bg-slate-700/50 rounded-full hover:bg-slate-600;
+        @apply rounded-full;
+        background: var(--surface-2);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgb(var(--color-cyan-rgb) / 0.3);
     }
 
     /* Legacy class kept for safe removal later if referenced elsewhere */
@@ -147,7 +163,13 @@ html:not(.dark) {
     }
 
     .panel-glow {
-        @apply bg-navy-900/30 rounded-xl border border-white/5 shadow-xl backdrop-blur-sm transition-all duration-300 hover:border-white/10 overflow-hidden relative;
+        @apply rounded-xl shadow-xl overflow-hidden relative transition-all duration-300;
+        background: var(--surface-2);
+        border: 1px solid var(--border-subtle);
+    }
+
+    .panel-glow:hover {
+        border-color: var(--border-hover);
     }
 
     .panel-glow.training {
@@ -158,13 +180,13 @@ html:not(.dark) {
 
         0%,
         100% {
-            border-color: rgba(255, 255, 255, 0.05);
-            box-shadow: 0 0 20px rgba(0, 217, 255, 0.1);
+            border-color: var(--border-subtle);
+            box-shadow: 0 0 20px rgb(var(--color-cyan-rgb) / 0.08);
         }
 
         50% {
-            border-color: rgba(0, 217, 255, 0.3);
-            box-shadow: 0 0 40px rgba(0, 217, 255, 0.2);
+            border-color: rgb(var(--color-cyan-rgb) / 0.3);
+            box-shadow: 0 0 30px rgb(var(--color-cyan-rgb) / 0.15);
         }
     }
 
@@ -177,36 +199,63 @@ html:not(.dark) {
 
     /* Header */
     .app-header {
-        @apply sticky top-0 z-50 bg-navy-900/95 backdrop-blur-md border-b border-white/10 px-6 py-4;
+        @apply sticky top-0 z-50 backdrop-blur-md px-6 py-4;
+        background: rgba(var(--color-bg-primary-rgb), 0.92);
+        border-bottom: 1px solid var(--border-subtle);
     }
 
     /* ===== TABS - Segmented Control ===== */
 
     .sidebar-tabs {
-        @apply flex border-b border-navy-700 bg-navy-900/80 sticky top-0 z-10;
+        @apply flex sticky top-0 z-10;
+        background: var(--surface-0);
+        border-bottom: 1px solid var(--border-subtle);
     }
 
     .sidebar-tab {
-        @apply flex-1 flex items-center justify-center py-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500 hover:text-slate-200 focus:outline-none cursor-pointer border-b-2 border-transparent;
+        @apply flex-1 flex items-center justify-center py-2.5 px-1 text-[11px] font-semibold uppercase tracking-wider focus:outline-none cursor-pointer border-b-2 border-transparent;
+        color: var(--color-text-secondary);
         transition: all 200ms ease;
     }
 
+    .sidebar-tab:hover {
+        color: var(--color-text-primary);
+    }
+
     .sidebar-tab.active {
-        @apply text-cyan border-b-cyan;
+        color: rgb(var(--color-cyan-rgb));
+        border-bottom-color: rgb(var(--color-cyan-rgb));
     }
 
     /* ===== BUTTONS ===== */
 
     .btn-primary {
-        @apply flex items-center justify-center gap-2 px-4 text-white text-sm font-semibold rounded-lg bg-gradient-cyan shadow-glow-cyan hover:shadow-glow-lg disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-cyan/50;
-        padding-top: 12px;
-        padding-bottom: 12px;
-        min-height: 48px;
-        transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+        @apply flex items-center justify-center gap-2 px-4 text-sm font-semibold rounded-xl disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-cyan/40;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        min-height: 40px;
+        background: rgb(var(--color-cyan-rgb));
+        color: var(--surface-0);
+        box-shadow: 0 2px 8px rgb(var(--color-cyan-rgb) / 0.25);
+        transition: all 200ms ease;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+        box-shadow: 0 4px 16px rgb(var(--color-cyan-rgb) / 0.35);
+        transform: translateY(-1px);
     }
 
     .btn-secondary {
-        @apply flex items-center justify-center gap-2 px-3 py-2 bg-navy-800 hover:bg-navy-700 text-slate-300 hover:text-white text-sm font-medium rounded-lg border border-navy-700 hover:border-navy-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 focus:outline-none focus:ring-2 focus:ring-cyan/50;
+        @apply flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.97] focus:outline-none focus:ring-2 focus:ring-cyan/30;
+        background: var(--surface-2);
+        color: var(--color-text-secondary);
+        border: 1px solid var(--border-subtle);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+        color: var(--color-text-primary);
+        border-color: var(--border-hover);
+        background: rgba(137, 180, 250, 0.08);
     }
 
     .btn-danger {
@@ -229,12 +278,23 @@ html:not(.dark) {
     }
 
     .dataset-chip {
-        @apply px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap cursor-pointer transition-all duration-150;
-        @apply bg-navy-800 border border-navy-700 text-slate-400 hover:text-slate-200 hover:border-navy-600;
+        @apply px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap cursor-pointer transition-all duration-150;
+        background: var(--surface-2);
+        border: 1px solid var(--border-subtle);
+        color: var(--color-text-secondary);
+    }
+
+    .dataset-chip:hover {
+        color: var(--color-text-primary);
+        border-color: var(--border-hover);
     }
 
     .dataset-chip.selected {
-        @apply bg-cyan text-navy-950 border-cyan font-semibold;
+        background: rgb(var(--color-cyan-rgb));
+        color: var(--surface-0);
+        border-color: rgb(var(--color-cyan-rgb));
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgb(var(--color-cyan-rgb) / 0.3);
     }
 
     /* ===== COMPACT CHARTS ROW ===== */
@@ -248,12 +308,23 @@ html:not(.dark) {
     /* ===== FORM ELEMENTS ===== */
 
     .input-label {
-        @apply block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wide;
+        @apply block text-[10px] font-semibold mb-1.5 uppercase tracking-widest;
+        color: var(--color-text-secondary);
+        letter-spacing: 0.08em;
     }
 
     .input-field,
     .select-field {
-        @apply w-full bg-navy-900/50 border border-navy-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-cyan focus:ring-2 focus:ring-cyan/20 focus:outline-none transition-all duration-200 placeholder-slate-600;
+        @apply w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition-all duration-200;
+        background: var(--surface-0);
+        border: 1px solid var(--border-subtle);
+        color: var(--color-text-primary);
+    }
+
+    .input-field:focus,
+    .select-field:focus {
+        border-color: rgb(var(--color-cyan-rgb));
+        box-shadow: 0 0 0 3px rgb(var(--color-cyan-rgb) / 0.12);
     }
 
     .input-field:disabled,
@@ -307,11 +378,12 @@ html:not(.dark) {
 
     /* Input-based Toggle Switch override */
     input.toggle-switch {
-        @apply appearance-none bg-navy-700 w-9 h-5 rounded-full relative cursor-pointer border-0;
+        @apply appearance-none w-9 h-5 rounded-full relative cursor-pointer border-0;
+        background: var(--surface-2);
     }
 
     input.toggle-switch:checked {
-        @apply bg-cyan;
+        background: rgb(var(--color-cyan-rgb));
     }
 
     input.toggle-switch::after {
@@ -323,29 +395,36 @@ html:not(.dark) {
         @apply transform translate-x-4;
     }
 
-    /* Sliders */
+    /* Sliders — polished custom track + thumb */
     input[type="range"] {
-        @apply w-full h-1 bg-navy-700 rounded-lg appearance-none cursor-pointer;
+        @apply w-full h-1.5 rounded-full appearance-none cursor-pointer;
+        background: var(--surface-2);
     }
 
     input[type="range"]::-webkit-slider-thumb {
-        @apply appearance-none w-4 h-4 bg-cyan rounded-full cursor-pointer;
-        box-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+        @apply appearance-none w-4 h-4 rounded-full cursor-pointer;
+        background: rgb(var(--color-cyan-rgb));
+        box-shadow: 0 1px 4px rgb(var(--color-cyan-rgb) / 0.4);
+        transition: box-shadow 150ms ease;
     }
 
     input[type="range"]::-moz-range-thumb {
-        @apply w-4 h-4 bg-cyan rounded-full cursor-pointer border-0;
-        box-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+        @apply w-4 h-4 rounded-full cursor-pointer border-0;
+        background: rgb(var(--color-cyan-rgb));
+        box-shadow: 0 1px 4px rgb(var(--color-cyan-rgb) / 0.4);
     }
 
-    input[type="range"]:focus::-webkit-slider-thumb {
-        box-shadow: 0 0 15px rgba(0, 217, 255, 0.8);
+    input[type="range"]:hover::-webkit-slider-thumb {
+        box-shadow: 0 2px 8px rgb(var(--color-cyan-rgb) / 0.6);
+        transform: scale(1.15);
     }
 
     /* ===== CARDS ===== */
 
     .card {
-        @apply bg-navy-800 rounded-md border border-navy-700/50 p-4 transition-all duration-200;
+        @apply rounded-xl p-4 transition-all duration-200;
+        background: var(--surface-1);
+        border: 1px solid var(--border-subtle);
     }
 
 
