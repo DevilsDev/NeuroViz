@@ -49,10 +49,10 @@
     }
   </style>
 
-  <script type="module" crossorigin src="/NeuroViz/assets/index-BkqMxltI.js"></script>
+  <script type="module" crossorigin src="/NeuroViz/assets/index-CsJOgoX6.js"></script>
   <link rel="modulepreload" crossorigin href="/NeuroViz/assets/vendor-tensorflow-C7gZW83r.js">
   <link rel="modulepreload" crossorigin href="/NeuroViz/assets/vendor-d3-BgXWCMks.js">
-  <link rel="stylesheet" crossorigin href="/NeuroViz/assets/index-b1fwP8hs.css">
+  <link rel="stylesheet" crossorigin href="/NeuroViz/assets/index-BA5rNtk_.css">
 </head>
 
 <body>
@@ -91,9 +91,9 @@
 
         <!-- Mode Selector — controls UI complexity level -->
         <div class="mode-selector" role="radiogroup" aria-label="Interface mode">
-          <button class="mode-btn active" data-mode="learn" role="radio" aria-checked="true" title="Simplified interface with guided hints">Learn</button>
-          <button class="mode-btn" data-mode="experiment" role="radio" aria-checked="false" title="Common controls visible, reduced friction">Experiment</button>
-          <button class="mode-btn" data-mode="advanced" role="radio" aria-checked="false" title="Full control panels and diagnostics">Advanced</button>
+          <button class="mode-btn active" data-mode="learn" role="radio" aria-checked="true" tabindex="0" title="Simplified interface with guided hints">Learn</button>
+          <button class="mode-btn" data-mode="experiment" role="radio" aria-checked="false" tabindex="-1" title="Common controls visible, reduced friction">Experiment</button>
+          <button class="mode-btn" data-mode="advanced" role="radio" aria-checked="false" tabindex="-1" title="Full control panels and diagnostics">Advanced</button>
         </div>
 
         <!-- Actions (low emphasis) -->
@@ -193,11 +193,11 @@
         <div class="toolbar">
           <!-- Primary: Playback Controls -->
           <div class="toolbar-group">
-            <button id="btn-start" class="btn-primary text-xs" title="Start/Pause (Space)">
+            <button id="btn-start" class="btn-primary text-xs" title="Start training (Space)">
               <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-              Start Training
+              Train
             </button>
-            <button id="btn-pause" class="btn-secondary text-xs hidden" title="Start/Pause (Space)">
+            <button id="btn-pause" class="btn-secondary text-xs hidden" title="Pause training (Space)">
               <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" /></svg>
               Pause
             </button>
@@ -253,9 +253,12 @@
             aria-label="Neural network decision boundary visualization">
             <!-- D3 chart renders here -->
             <div id="viz-empty-state" role="status"
-              class="empty-state-cta absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
-              <div class="text-lg mb-2" style="color: var(--color-text-secondary);">&uarr; Pick a dataset above, then press Start Training</div>
-              <div class="text-xs" style="color: var(--color-text-secondary); opacity: 0.6;">Or use the Data tab on the right for advanced options</div>
+              class="empty-state absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
+              <svg class="w-12 h-12 mb-4" style="color: var(--color-text-secondary); opacity: 0.3;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <div class="text-base font-medium mb-1" style="color: var(--color-text-secondary);">Choose a dataset to get started</div>
+              <div class="text-xs" style="color: var(--color-text-secondary); opacity: 0.5;">Select one above, then click Start Training to see the model learn.</div>
             </div>
           </div>
 
@@ -327,7 +330,7 @@
           <div class="tab-content active" data-tab-content="tab-data" role="tabpanel" id="tab-data">
             <!-- Dataset Options (moved from left panel) -->
             <div class="p-4 bg-navy-800/30 rounded-xl mb-4">
-              <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Dataset Options</h3>
+              <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Data Settings</h3>
               <div id="dataset-options" class="space-y-2 mb-3">
                 <label class="block">
                   <span class="input-label">Samples: <span id="samples-value">200</span></span>
@@ -389,7 +392,7 @@
                 <option value="overfitDemo">Overfit Demo</option>
               </select>
               <div id="preset-description" class="text-[10px] text-slate-400 mb-2 min-h-[1rem] italic"></div>
-              <button id="btn-apply-preset" class="btn-primary w-full text-xs py-2" disabled>Apply Preset</button>
+              <button id="btn-apply-preset" class="btn-primary w-full text-xs py-2" disabled>Apply</button>
             </div>
 
             <!-- Session Management -->
@@ -466,7 +469,7 @@
                 </label>
               </div>
 
-              <button id="btn-init" class="btn-primary w-full text-xs">Initialise Network</button>
+              <button id="btn-init" class="btn-primary w-full text-xs">Build Model</button>
             </div>
           </div>
           </div><!-- /tab-model -->
