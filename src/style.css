@@ -83,31 +83,29 @@ html:not(.dark) {
 
     .dashboard-grid {
         @apply grid h-screen w-full overflow-hidden bg-bg-primary;
-        grid-template-columns: minmax(280px, 20%) 1fr minmax(320px, 25%);
+        grid-template-columns: 1fr minmax(320px, 340px);
         grid-template-rows: auto 1fr;
         grid-template-areas:
-            "header header header"
-            "left center right";
+            "header header"
+            "center sidebar";
     }
 
     /* Mobile Responsiveness: Stack columns vertically */
     @media (max-width: 1024px) {
         .dashboard-grid {
             grid-template-columns: 1fr;
-            grid-template-rows: auto auto 1fr auto;
+            grid-template-rows: auto 1fr auto;
             grid-template-areas:
                 "header"
                 "center"
-                "right"
-                "left";
+                "sidebar";
             height: auto;
             overflow-y: auto;
         }
     }
 
     .panel-left {
-        grid-area: left;
-        @apply border-r border-white/5 bg-navy-900/50 flex flex-col overflow-hidden;
+        display: none; /* Removed: content moved to tabbed sidebar */
     }
 
     .panel-center {
@@ -115,8 +113,9 @@ html:not(.dark) {
         @apply relative flex flex-col overflow-hidden p-4;
     }
 
-    .panel-right {
-        grid-area: right;
+    .panel-right,
+    .panel-sidebar {
+        grid-area: sidebar;
         @apply border-l border-white/5 bg-navy-900/50 flex flex-col overflow-hidden;
     }
 
@@ -184,19 +183,16 @@ html:not(.dark) {
     /* ===== TABS - Segmented Control ===== */
 
     .sidebar-tabs {
-        @apply flex p-1 bg-navy-900/50 rounded-lg mb-4 border border-navy-700/50;
-        gap: 2px;
+        @apply flex border-b border-navy-700 bg-navy-900/80 sticky top-0 z-10;
     }
 
     .sidebar-tab {
-        @apply flex-1 flex items-center justify-center gap-2 py-2 px-3 text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-navy-800/50 focus:outline-none focus:ring-2 focus:ring-cyan/50 cursor-pointer;
-        border-radius: 8px;
-        transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+        @apply flex-1 flex items-center justify-center py-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500 hover:text-slate-200 focus:outline-none cursor-pointer border-b-2 border-transparent;
+        transition: all 200ms ease;
     }
 
     .sidebar-tab.active {
-        @apply bg-navy-700 text-white shadow-sm ring-1 ring-cyan/20;
-        box-shadow: 0 0 20px rgba(0, 217, 255, 0.15);
+        @apply text-cyan border-b-cyan;
     }
 
     /* ===== BUTTONS ===== */
@@ -219,6 +215,34 @@ html:not(.dark) {
 
     .btn-icon {
         @apply flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 hover:bg-white/5 active:scale-95 focus:outline-none focus:ring-2 focus:ring-cyan/50;
+    }
+
+    /* ===== DATASET CHIPS (Header inline dataset selector) ===== */
+
+    .dataset-chips {
+        @apply flex gap-1 items-center overflow-x-auto;
+        scrollbar-width: none;
+    }
+
+    .dataset-chips::-webkit-scrollbar {
+        display: none;
+    }
+
+    .dataset-chip {
+        @apply px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap cursor-pointer transition-all duration-150;
+        @apply bg-navy-800 border border-navy-700 text-slate-400 hover:text-slate-200 hover:border-navy-600;
+    }
+
+    .dataset-chip.selected {
+        @apply bg-cyan text-navy-950 border-cyan font-semibold;
+    }
+
+    /* ===== COMPACT CHARTS ROW ===== */
+
+    .charts-row {
+        @apply grid gap-2 mt-2;
+        grid-template-columns: 1fr 1fr;
+        height: 100px;
     }
 
     /* ===== FORM ELEMENTS ===== */
