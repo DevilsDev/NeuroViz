@@ -4,19 +4,23 @@ import type { TrainingHistory, TrainingRecord } from '../../core/domain';
 /**
  * D3.js line chart for visualizing learning rate changes over epochs.
  *
- * @remarks
- * - Shows LR evolution during training
- * - Supports static and scheduled learning rates
- * - Auto-scaling based on LR range
- * - Responsive to container size
- * - Compact design for dashboard integration
+ * Layout structure (margin convention):
+ *   - Left margin (45px): LR tick labels
+ *   - Right margin (10px): minimal breathing room
+ *   - Top margin (8px): breathing room
+ *   - Bottom margin (20px): epoch axis ticks
+ *
+ * Tick formatting uses dynamic precision based on the LR data range:
+ *   - Large range (>0.01): 3 significant digits (e.g., 0.03, 0.1)
+ *   - Small range: up to 4 digits, but trims trailing zeros
+ *   - Uses d3.format('~g') for clean automatic formatting
  */
 export class D3LearningRateChart {
   private readonly container: d3.Selection<HTMLElement, unknown, null, undefined>;
   private readonly svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
   private width: number;
   private height: number;
-  private readonly margin = { top: 15, right: 15, bottom: 25, left: 55 };
+  private readonly margin = { top: 8, right: 10, bottom: 20, left: 45 };
 
   private xScale: d3.ScaleLinear<number, number>;
   private yScale: d3.ScaleLinear<number, number>;
@@ -26,9 +30,6 @@ export class D3LearningRateChart {
   private xAxisGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
   private yAxisGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
 
-  /**
-   * @param containerId - DOM element ID where the chart will be rendered
-   */
   constructor(containerId: string) {
     const element = document.getElementById(containerId);
     if (!element) {
@@ -37,7 +38,6 @@ export class D3LearningRateChart {
 
     this.container = d3.select(element);
 
-    // Get actual container dimensions with minimum bounds
     const rect = element.getBoundingClientRect();
     const containerWidth = Math.max(rect.width || 400, this.margin.left + this.margin.right + 50);
     const containerHeight = Math.max(rect.height || 120, this.margin.top + this.margin.bottom + 20);
@@ -45,10 +45,8 @@ export class D3LearningRateChart {
     this.width = Math.max(0, containerWidth - this.margin.left - this.margin.right);
     this.height = Math.max(0, containerHeight - this.margin.top - this.margin.bottom);
 
-    // Clear any existing content
     this.container.selectAll('*').remove();
 
-    // Create responsive SVG that fills container
     const svgElement = this.container
       .append('svg')
       .attr('width', '100%')
@@ -60,67 +58,56 @@ export class D3LearningRateChart {
     this.svg = svgElement
       .append('g')
       .attr('transform', `translate(${this.margin.left},${this.margin.top})`) as unknown as d3.Selection<
-        SVGSVGElement,
-        unknown,
-        null,
-        undefined
+        SVGSVGElement, unknown, null, undefined
       >;
 
-    // Initialize scales
+    // Scales
     this.xScale = d3.scaleLinear().range([0, this.width]);
     this.yScale = d3.scaleLinear().range([this.height, 0]);
 
-    // Initialize line generator
-    this.lrLine = d3
-      .line<TrainingRecord>()
-      .x((d) => this.xScale(d.epoch))
-      .y((d) => this.yScale(d.learningRate))
+    // Line generator
+    this.lrLine = d3.line<TrainingRecord>()
+      .x(d => this.xScale(d.epoch))
+      .y(d => this.yScale(d.learningRate))
       .curve(d3.curveMonotoneX);
 
-    // Create axis groups
-    this.xAxisGroup = this.svg
-      .append('g')
+    // Axis groups
+    this.xAxisGroup = this.svg.append('g')
       .attr('transform', `translate(0,${this.height})`)
       .attr('class', 'x-axis');
 
-    this.yAxisGroup = this.svg
-      .append('g')
+    this.yAxisGroup = this.svg.append('g')
       .attr('class', 'y-axis');
 
-    // Create path for learning rate line
-    this.lrPath = this.svg
-      .append('path')
+    // LR line
+    this.lrPath = this.svg.append('path')
       .attr('class', 'lr-line')
       .attr('fill', 'none')
-      .attr('stroke', '#10b981') // Emerald-500 for LR
-      .attr('stroke-width', 2);
+      .attr('stroke', '#10b981')
+      .attr('stroke-width', 1.5);
 
-    // Add axis labels
-    this.svg
-      .append('text')
-      .attr('class', 'axis-label')
-      .attr('x', this.width / 2)
-      .attr('y', this.height + this.margin.bottom - 2)
-      .attr('text-anchor', 'middle')
-      .attr('fill', '#94a3b8') // Slate-400
-      .style('font-size', '10px')
-      .text('Epoch');
-
-    this.svg
-      .append('text')
-      .attr('class', 'axis-label')
-      .attr('transform', 'rotate(-90)')
-      .attr('x', -this.height / 2)
-      .attr('y', -this.margin.left + 12)
-      .attr('text-anchor', 'middle')
-      .attr('fill', '#10b981') // Emerald-500
-      .style('font-size', '10px')
-      .text('Learning Rate');
+    // Compact label: "LR" top-left inside plot area (replaces verbose rotated axis label)
+    this.svg.append('text')
+      .attr('class', 'chart-label')
+      .attr('x', 4)
+      .attr('y', 10)
+      .attr('fill', '#10b981')
+      .style('font-size', '9px')
+      .style('font-weight', '600')
+      .text('LR');
   }
 
   /**
-   * Updates the chart with new training history.
+   * Formats LR tick values with dynamic precision.
+   * Avoids over-precise values like 0.0400 — uses ~g for clean output.
    */
+  private formatLR(value: d3.NumberValue): string {
+    const v = +value;
+    if (v === 0) return '0';
+    // Use ~g to auto-trim trailing zeros. 3 significant digits is clean.
+    return d3.format('.3~g')(v);
+  }
+
   render(history: TrainingHistory): void {
     const records = history.records;
 
@@ -129,56 +116,50 @@ export class D3LearningRateChart {
       return;
     }
 
-    // Update x scale domain
-    const maxEpoch = d3.max(records, (d) => d.epoch) ?? 1;
+    const maxEpoch = d3.max(records, d => d.epoch) ?? 1;
     this.xScale.domain([0, maxEpoch]);
 
-    // Update y scale domain with padding
-    const minLR = d3.min(records, (d) => d.learningRate) ?? 0;
-    const maxLR = d3.max(records, (d) => d.learningRate) ?? 0.1;
-    const lrPadding = (maxLR - minLR) * 0.1 || 0.01;
+    const minLR = d3.min(records, d => d.learningRate) ?? 0;
+    const maxLR = d3.max(records, d => d.learningRate) ?? 0.1;
+    const lrPadding = (maxLR - minLR) * 0.1 || 0.005;
     this.yScale.domain([Math.max(0, minLR - lrPadding), maxLR + lrPadding]);
 
-    // Update axes
-    const xAxis = d3.axisBottom(this.xScale).ticks(Math.min(5, maxEpoch)).tickFormat(d3.format('d'));
-    const yAxis = d3.axisLeft(this.yScale).ticks(4).tickFormat(d3.format('.4f'));
+    // Axes with clean formatting
+    const xAxis = d3.axisBottom(this.xScale)
+      .ticks(Math.min(5, maxEpoch))
+      .tickFormat(d3.format('d'));
+
+    const yAxis = d3.axisLeft(this.yScale)
+      .ticks(3)
+      .tickFormat(v => this.formatLR(v));
 
     this.xAxisGroup
-      .transition()
-      .duration(300)
+      .transition().duration(200)
       .call(xAxis as d3.Axis<d3.NumberValue>)
       .selectAll('text')
-      .attr('fill', '#94a3b8') // Slate-400
-      .style('font-size', '10px');
+      .attr('fill', '#94a3b8')
+      .style('font-size', '9px');
 
     this.yAxisGroup
-      .transition()
-      .duration(300)
+      .transition().duration(200)
       .call(yAxis as d3.Axis<d3.NumberValue>)
       .selectAll('text')
-      .attr('fill', '#10b981') // Emerald-500
-      .style('font-size', '10px');
+      .attr('fill', '#10b981')
+      .style('font-size', '9px');
 
-    // Update learning rate line
+    // Update line
     this.lrPath
       .datum(records)
-      .transition()
-      .duration(300)
+      .transition().duration(200)
       .attr('d', this.lrLine);
   }
 
-  /**
-   * Clears all rendered content.
-   */
   clear(): void {
     this.lrPath.attr('d', null);
     this.xAxisGroup.selectAll('*').remove();
     this.yAxisGroup.selectAll('*').remove();
   }
 
-  /**
-   * Disposes of the chart and cleans up resources.
-   */
   dispose(): void {
     this.container.selectAll('*').remove();
   }
