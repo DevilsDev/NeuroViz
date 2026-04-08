@@ -1,3 +1,9 @@
+## [2.24.0](https://github.com/DevilsDev/NeuroViz/compare/v2.23.5...v2.24.0) (2026-04-08)
+
+### Features
+
+* **ui:** complete UI makeover — 2-column layout with tabbed sidebar ([d27d6f6](https://github.com/DevilsDev/NeuroViz/commit/d27d6f670898e9b30d24910a5d73c63027060fa5))
+
 ## [2.23.5](https://github.com/DevilsDev/NeuroViz/compare/v2.23.4...v2.23.5) (2026-04-08)
 
 ### Bug Fixes
