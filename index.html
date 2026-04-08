@@ -49,10 +49,10 @@
     }
   </style>
 
-  <script type="module" crossorigin src="/NeuroViz/assets/index-DS1yAAaj.js"></script>
+  <script type="module" crossorigin src="/NeuroViz/assets/index-BkqMxltI.js"></script>
   <link rel="modulepreload" crossorigin href="/NeuroViz/assets/vendor-tensorflow-C7gZW83r.js">
   <link rel="modulepreload" crossorigin href="/NeuroViz/assets/vendor-d3-BgXWCMks.js">
-  <link rel="stylesheet" crossorigin href="/NeuroViz/assets/index-C5vPaqQX.css">
+  <link rel="stylesheet" crossorigin href="/NeuroViz/assets/index-b1fwP8hs.css">
 </head>
 
 <body>
@@ -494,34 +494,42 @@
               <span class="input-label">Speed (FPS): <span id="fps-value">60</span></span>
               <input type="range" id="input-fps" class="w-full h-1 accent-accent-500" value="60" min="1" max="60" aria-label="Training speed in frames per second" />
             </label>
-            <label class="block mb-2">
-              <span class="input-label">Performance Mode</span>
-              <select id="input-perf-mode" class="select-field text-xs">
-                <option value="full" selected>Full Speed (60 FPS)</option>
-                <option value="balanced">Balanced (30 FPS)</option>
-                <option value="battery">Battery Saver (15 FPS)</option>
-              </select>
-            </label>
-            <label class="block mb-2">
-              <span class="input-label">LR Schedule</span>
-              <select id="input-lr-schedule" class="select-field text-xs">
-                <option value="none" selected>None (Constant)</option>
-                <option value="step">Step Decay</option>
-                <option value="exponential">Exponential Decay</option>
-                <option value="cosine">Cosine Annealing</option>
-              </select>
-            </label>
-            <label class="block">
-              <span class="input-label">Validation Split</span>
-              <select id="input-val-split" class="select-field text-xs">
-                <option value="0">0% (No Validation)</option>
-                <option value="10">10%</option>
-                <option value="20" selected>20%</option>
-                <option value="30">30%</option>
-                <option value="40">40%</option>
-                <option value="50">50%</option>
-              </select>
-            </label>
+            <!-- Advanced training settings — collapsed by default -->
+            <details class="group mt-3">
+              <summary class="show-more-link list-none flex items-center gap-1 cursor-pointer">
+                Advanced training settings <span class="group-open:rotate-180 transition-transform text-[10px]">&#9660;</span>
+              </summary>
+              <div class="space-y-2 mt-2">
+                <label class="block">
+                  <span class="input-label">Performance Mode</span>
+                  <select id="input-perf-mode" class="select-field text-xs">
+                    <option value="full" selected>Full Speed (60 FPS)</option>
+                    <option value="balanced">Balanced (30 FPS)</option>
+                    <option value="battery">Battery Saver (15 FPS)</option>
+                  </select>
+                </label>
+                <label class="block">
+                  <span class="input-label">LR Schedule</span>
+                  <select id="input-lr-schedule" class="select-field text-xs">
+                    <option value="none" selected>None (Constant)</option>
+                    <option value="step">Step Decay</option>
+                    <option value="exponential">Exponential Decay</option>
+                    <option value="cosine">Cosine Annealing</option>
+                  </select>
+                </label>
+                <label class="block">
+                  <span class="input-label">Validation Split</span>
+                  <select id="input-val-split" class="select-field text-xs">
+                    <option value="0">0% (No Validation)</option>
+                    <option value="10">10%</option>
+                    <option value="20" selected>20%</option>
+                    <option value="30">30%</option>
+                    <option value="40">40%</option>
+                    <option value="50">50%</option>
+                  </select>
+                </label>
+              </div>
+            </details>
             </div>
           </div>
 
@@ -598,7 +606,7 @@
             </details>
 
             <!-- Model Complexity Metrics -->
-            <details class="group bg-navy-800/30 rounded-lg p-2" open data-min-mode="advanced">
+            <details class="group bg-navy-800/30 rounded-lg p-2" data-min-mode="advanced">
               <summary class="text-xs font-bold text-slate-400 cursor-pointer list-none flex justify-between">
                 Model Complexity <span class="group-open:rotate-180 transition-transform">▼</span>
               </summary>
