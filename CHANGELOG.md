@@ -1,3 +1,9 @@
+## [2.24.5](https://github.com/DevilsDev/NeuroViz/compare/v2.24.4...v2.24.5) (2026-04-08)
+
+### Code Refactoring
+
+* **css:** Phase 3 — unified design system, eliminate color conflicts ([752f415](https://github.com/DevilsDev/NeuroViz/commit/752f41528d976e24cb530907e73429665ec4ec87)), closes [14b8a6/#0d9488](https://github.com/14b8a6/NeuroViz/issues/0d9488)
+
 ## [2.24.4](https://github.com/DevilsDev/NeuroViz/compare/v2.24.3...v2.24.4) (2026-04-08)
 
 ### Code Refactoring
