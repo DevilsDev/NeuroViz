@@ -1,3 +1,9 @@
+## [2.27.2](https://github.com/DevilsDev/NeuroViz/compare/v2.27.1...v2.27.2) (2026-04-08)
+
+### Bug Fixes
+
+* **ui:** transparent slider base — let track pseudo-element handle visuals ([de0dea9](https://github.com/DevilsDev/NeuroViz/commit/de0dea9be03f4a891a3ea22a5e6bcdd83cdee88f))
+
 ## [2.27.1](https://github.com/DevilsDev/NeuroViz/compare/v2.27.0...v2.27.1) (2026-04-08)
 
 ### Bug Fixes
