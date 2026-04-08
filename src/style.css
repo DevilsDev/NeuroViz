@@ -302,6 +302,42 @@ html:not(.dark) {
 
     /* Advanced mode: show everything (no hiding rules) */
 
+    /* ===== PROGRESSIVE DISCLOSURE — smooth details/accordion ===== */
+
+    details.group > summary {
+        @apply select-none;
+        transition: color 150ms ease;
+    }
+
+    details.group > summary:hover {
+        color: var(--color-text-primary);
+    }
+
+    details.group > summary + * {
+        animation: slide-down 200ms ease-out;
+    }
+
+    @keyframes slide-down {
+        from {
+            opacity: 0;
+            transform: translateY(-4px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* "Show more" link style for progressive disclosure */
+    .show-more-link {
+        @apply text-[11px] font-medium cursor-pointer transition-colors duration-150;
+        color: rgb(var(--color-cyan-rgb));
+    }
+
+    .show-more-link:hover {
+        color: var(--color-text-primary);
+    }
+
     /* Small icon button — tertiary emphasis */
     .btn-icon-sm {
         @apply flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed;
