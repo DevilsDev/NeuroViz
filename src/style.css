@@ -50,18 +50,108 @@
     --surface-2: #313244;
     --border-subtle: rgba(147, 153, 178, 0.12);
     --border-hover: rgba(137, 180, 250, 0.25);
+
+    /* D3 chart theme tokens */
+    --chart-tick-text: #94a3b8;
+    --chart-tick-line: #475569;
+    --chart-domain: #334155;
+    --chart-grid: rgba(255, 255, 255, 0.05);
 }
 
-/* Light mode overrides — warm light palette */
+/* Light mode overrides — Catppuccin Latte inspired */
 html:not(.dark) {
+    /* Text */
     --color-bg-primary-rgb: 239, 241, 245;
-    /* #EFF1F5 — latte base */
-    --color-bg-secondary-rgb: 241, 245, 249;
-    /* #F1F5F9 (slate-100) */
-    --color-text-primary-rgb: 15, 23, 42;
-    /* #0F172A (slate-900) */
-    --color-text-secondary-rgb: 71, 85, 105;
-    /* #475569 (slate-600) */
+    /* #EFF1F5 — page background */
+    --color-bg-secondary-rgb: 230, 233, 239;
+    /* #E6E9EF — secondary surface */
+    --color-text-primary-rgb: 76, 79, 105;
+    /* #4C4F69 — primary text */
+    --color-text-secondary-rgb: 108, 111, 133;
+    /* #6C6F85 — secondary text */
+
+    /* Accent — slightly deeper blue for light backgrounds */
+    --color-cyan-rgb: 30, 102, 245;
+    /* #1E66F5 — Catppuccin Latte blue */
+    --color-orange-rgb: 254, 100, 11;
+    /* #FE640B — peach */
+    --color-success-rgb: 64, 160, 43;
+    /* #40A02B — green */
+    --color-warning-rgb: 223, 142, 29;
+    /* #DF8E1D — yellow */
+    --color-danger-rgb: 210, 15, 57;
+    /* #D20F39 — red */
+    --color-magenta-rgb: 234, 118, 203;
+    /* #EA76CB — pink */
+
+    /* Surface layers — light depth hierarchy */
+    --surface-0: #EFF1F5;
+    /* page background */
+    --surface-1: #E6E9EF;
+    /* primary surface (panels) */
+    --surface-2: #DCE0E8;
+    /* elevated surface (cards, inputs) */
+
+    /* Borders — visible on light backgrounds */
+    --border-subtle: rgba(76, 79, 105, 0.12);
+    --border-hover: rgba(30, 102, 245, 0.3);
+
+    /* Semantic computed values */
+    --color-cyan: rgb(var(--color-cyan-rgb));
+    --color-cyan-glow: rgb(var(--color-cyan-rgb) / 0.15);
+
+    /* D3 chart theme tokens — read by chart classes */
+    --chart-tick-text: #6C6F85;
+    --chart-tick-line: #BCC0CC;
+    --chart-domain: #ACB0BE;
+    --chart-grid: rgba(76, 79, 105, 0.08);
+}
+
+/* Light mode overrides for Tailwind dark utility classes used in HTML */
+html:not(.dark) .bg-navy-900\/80,
+html:not(.dark) .bg-navy-900\/95,
+html:not(.dark) .bg-navy-900\/50,
+html:not(.dark) .bg-navy-900\/30 {
+    background-color: var(--surface-1) !important;
+}
+
+html:not(.dark) .bg-navy-800,
+html:not(.dark) .bg-navy-800\/80,
+html:not(.dark) .bg-navy-800\/30 {
+    background-color: var(--surface-2) !important;
+}
+
+html:not(.dark) .bg-navy-700 {
+    background-color: var(--surface-2) !important;
+}
+
+html:not(.dark) .border-navy-600,
+html:not(.dark) .border-navy-700,
+html:not(.dark) .border-navy-700\/50 {
+    border-color: var(--border-subtle) !important;
+}
+
+html:not(.dark) .border-white\/5,
+html:not(.dark) .border-white\/10 {
+    border-color: var(--border-subtle) !important;
+}
+
+html:not(.dark) .text-slate-300,
+html:not(.dark) .text-slate-200 {
+    color: var(--color-text-primary) !important;
+}
+
+html:not(.dark) .text-slate-400,
+html:not(.dark) .text-slate-500 {
+    color: var(--color-text-secondary) !important;
+}
+
+html:not(.dark) .bg-red-900\/20 {
+    background-color: rgba(var(--color-danger-rgb), 0.1) !important;
+}
+
+html:not(.dark) .text-red-400 {
+    color: rgb(var(--color-danger-rgb)) !important;
 }
 
 @layer base {

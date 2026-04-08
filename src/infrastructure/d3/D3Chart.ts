@@ -14,6 +14,11 @@ import { D3VoronoiOverlay } from './D3VoronoiOverlay';
  * - Manages its own SVG lifecycle within the provided container
  * - Supports zoom/pan, tooltips, and configurable appearance
  */
+/** Reads a CSS custom property from the document root. */
+function themeColor(prop: string, fallback: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(prop).trim() || fallback;
+}
+
 export class D3Chart implements IVisualizerService {
   private readonly container: d3.Selection<HTMLElement, unknown, null, undefined>;
   private readonly svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
@@ -134,18 +139,22 @@ export class D3Chart implements IVisualizerService {
     this.yScale.range([this.height, 0]);
 
     // Update axes with consistent styling
+    const tt = themeColor('--chart-tick-text', '#94a3b8');
+    const tl = themeColor('--chart-tick-line', '#475569');
+    const dc = themeColor('--chart-domain', '#334155');
+
     const xAxis = this.svg.select<SVGGElement>('.x-axis')
       .attr('transform', `translate(0,${this.height})`)
       .call(d3.axisBottom(this.xScale).ticks(5).tickSize(4));
-    xAxis.selectAll('text').attr('fill', '#94a3b8').style('font-size', '9px');
-    xAxis.selectAll('line').attr('stroke', '#475569');
-    xAxis.select('.domain').attr('stroke', '#334155');
+    xAxis.selectAll('text').attr('fill', tt).style('font-size', '9px');
+    xAxis.selectAll('line').attr('stroke', tl);
+    xAxis.select('.domain').attr('stroke', dc);
 
     const yAxis = this.svg.select<SVGGElement>('.y-axis')
       .call(d3.axisLeft(this.yScale).ticks(5).tickSize(4));
-    yAxis.selectAll('text').attr('fill', '#94a3b8').style('font-size', '9px');
-    yAxis.selectAll('line').attr('stroke', '#475569');
-    yAxis.select('.domain').attr('stroke', '#334155');
+    yAxis.selectAll('text').attr('fill', tt).style('font-size', '9px');
+    yAxis.selectAll('line').attr('stroke', tl);
+    yAxis.select('.domain').attr('stroke', dc);
 
     // Re-render content
     if (this.cachedPoints.length > 0) {
@@ -576,12 +585,12 @@ export class D3Chart implements IVisualizerService {
       .call(d3.axisBottom(this.xScale).ticks(5).tickSize(4));
 
     xAxisGroup.selectAll('text')
-      .attr('fill', '#94a3b8')
+      .attr('fill', themeColor('--chart-tick-text', '#94a3b8'))
       .style('font-size', '9px');
     xAxisGroup.selectAll('line')
-      .attr('stroke', '#475569');
+      .attr('stroke', themeColor('--chart-tick-line', '#475569'));
     xAxisGroup.select('.domain')
-      .attr('stroke', '#334155');
+      .attr('stroke', themeColor('--chart-domain', '#334155'));
 
     // Y axis — matching style
     const yAxisGroup = axesGroup
@@ -590,12 +599,12 @@ export class D3Chart implements IVisualizerService {
       .call(d3.axisLeft(this.yScale).ticks(5).tickSize(4));
 
     yAxisGroup.selectAll('text')
-      .attr('fill', '#94a3b8')
+      .attr('fill', themeColor('--chart-tick-text', '#94a3b8'))
       .style('font-size', '9px');
     yAxisGroup.selectAll('line')
-      .attr('stroke', '#475569');
+      .attr('stroke', themeColor('--chart-tick-line', '#475569'));
     yAxisGroup.select('.domain')
-      .attr('stroke', '#334155');
+      .attr('stroke', themeColor('--chart-domain', '#334155'));
   }
 
   private setupZoom(): void {

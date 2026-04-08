@@ -15,6 +15,11 @@ import type { TrainingHistory, TrainingRecord } from '../../core/domain';
  *   - Small range: up to 4 digits, but trims trailing zeros
  *   - Uses d3.format('~g') for clean automatic formatting
  */
+/** Reads a CSS custom property from the document root. */
+function themeColor(prop: string, fallback: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(prop).trim() || fallback;
+}
+
 export class D3LearningRateChart {
   private readonly container: d3.Selection<HTMLElement, unknown, null, undefined>;
   private readonly svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
@@ -135,20 +140,24 @@ export class D3LearningRateChart {
       .tickFormat(v => this.formatLR(v))
       .tickSize(3);
 
-    // Apply with consistent styling across all charts
+    // Apply with theme-aware styling
+    const tickText = themeColor('--chart-tick-text', '#94a3b8');
+    const tickLine = themeColor('--chart-tick-line', '#475569');
+    const domainColor = themeColor('--chart-domain', '#334155');
+
     this.xAxisGroup
       .transition().duration(200)
       .call(xAxis as d3.Axis<d3.NumberValue>);
-    this.xAxisGroup.selectAll('text').attr('fill', '#94a3b8').style('font-size', '9px');
-    this.xAxisGroup.selectAll('line').attr('stroke', '#475569');
-    this.xAxisGroup.select('.domain').attr('stroke', '#334155');
+    this.xAxisGroup.selectAll('text').attr('fill', tickText).style('font-size', '9px');
+    this.xAxisGroup.selectAll('line').attr('stroke', tickLine);
+    this.xAxisGroup.select('.domain').attr('stroke', domainColor);
 
     this.yAxisGroup
       .transition().duration(200)
       .call(yAxis as d3.Axis<d3.NumberValue>);
     this.yAxisGroup.selectAll('text').attr('fill', '#10b981').style('font-size', '9px');
-    this.yAxisGroup.selectAll('line').attr('stroke', '#475569');
-    this.yAxisGroup.select('.domain').attr('stroke', '#334155');
+    this.yAxisGroup.selectAll('line').attr('stroke', tickLine);
+    this.yAxisGroup.select('.domain').attr('stroke', domainColor);
 
     // Update line
     this.lrPath

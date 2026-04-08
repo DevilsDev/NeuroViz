@@ -14,6 +14,11 @@ import type { TrainingHistory, TrainingRecord } from '../../core/domain';
  * The right "Accuracy" rotated label is removed — the legend and
  * color-coded ticks provide sufficient context without overlap.
  */
+/** Reads a CSS custom property from the document root. */
+function themeColor(prop: string, fallback: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(prop).trim() || fallback;
+}
+
 export class D3LossChart {
   private readonly container: d3.Selection<HTMLElement, unknown, null, undefined>;
   private readonly svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
@@ -158,19 +163,25 @@ export class D3LossChart {
 
     this.updateGrid();
 
+    const tt = themeColor('--chart-tick-text', '#94a3b8');
+    const tl = themeColor('--chart-tick-line', '#475569');
+
     const rxA = this.svg.select<SVGGElement>('.x-axis')
       .attr('transform', `translate(0,${this.height})`)
       .call(d3.axisBottom(this.xScale).ticks(5).tickFormat(d3.format('d')).tickSize(3));
-    rxA.selectAll('text').attr('fill', '#94a3b8').style('font-size', '9px');
+    rxA.selectAll('text').attr('fill', tt).style('font-size', '9px');
+    rxA.selectAll('line').attr('stroke', tl);
 
     const ryL = this.svg.select<SVGGElement>('.y-axis-loss')
       .call(d3.axisLeft(this.yScaleLoss).ticks(4).tickFormat(d3.format('.2f')).tickSize(3));
     ryL.selectAll('text').attr('fill', '#00D9FF').style('font-size', '9px');
+    ryL.selectAll('line').attr('stroke', tl);
 
     const ryA = this.svg.select<SVGGElement>('.y-axis-accuracy')
       .attr('transform', `translate(${this.width},0)`)
       .call(d3.axisRight(this.yScaleAccuracy).ticks(4).tickFormat(d3.format('.0%')).tickSize(3));
     ryA.selectAll('text').attr('fill', '#10B981').style('font-size', '9px');
+    ryA.selectAll('line').attr('stroke', tl);
 
     // Re-render lines if data exists
     const currentData = this.lossPath.datum() as TrainingRecord[];
@@ -205,27 +216,31 @@ export class D3LossChart {
 
     this.updateGrid();
 
-    // Update axes — consistent styling across all charts
+    // Update axes — theme-aware styling
+    const tickText = themeColor('--chart-tick-text', '#94a3b8');
+    const tickLine = themeColor('--chart-tick-line', '#475569');
+    const domain = themeColor('--chart-domain', '#334155');
+
     const xAxis = this.xAxisGroup.call(
       d3.axisBottom(this.xScale).ticks(Math.min(maxEpoch, 8)).tickFormat(d3.format('d')).tickSize(3)
     );
-    xAxis.selectAll('text').attr('fill', '#94a3b8').style('font-size', '9px');
-    xAxis.selectAll('line').attr('stroke', '#475569');
-    xAxis.select('.domain').attr('stroke', '#334155');
+    xAxis.selectAll('text').attr('fill', tickText).style('font-size', '9px');
+    xAxis.selectAll('line').attr('stroke', tickLine);
+    xAxis.select('.domain').attr('stroke', domain);
 
     const yLoss = this.yAxisLossGroup.call(
       d3.axisLeft(this.yScaleLoss).ticks(4).tickFormat(d3.format('.2f')).tickSize(3)
     );
     yLoss.selectAll('text').attr('fill', '#00D9FF').style('font-size', '9px');
-    yLoss.selectAll('line').attr('stroke', '#475569');
-    yLoss.select('.domain').attr('stroke', '#334155');
+    yLoss.selectAll('line').attr('stroke', tickLine);
+    yLoss.select('.domain').attr('stroke', domain);
 
     const yAcc = this.yAxisAccuracyGroup.call(
       d3.axisRight(this.yScaleAccuracy).ticks(4).tickFormat(d3.format('.0%')).tickSize(3)
     );
     yAcc.selectAll('text').attr('fill', '#10B981').style('font-size', '9px');
-    yAcc.selectAll('line').attr('stroke', '#475569');
-    yAcc.select('.domain').attr('stroke', '#334155');
+    yAcc.selectAll('line').attr('stroke', tickLine);
+    yAcc.select('.domain').attr('stroke', domain);
 
     // Update lines
     this.lossPath.datum(records).attr('d', this.lossLine);
@@ -261,7 +276,7 @@ export class D3LossChart {
     );
 
     gridContext.selectAll('.tick line')
-      .attr('stroke', 'rgba(255, 255, 255, 0.05)')
+      .attr('stroke', themeColor('--chart-grid', 'rgba(255, 255, 255, 0.05)'))
       .attr('stroke-dasharray', '2,2');
     gridContext.select('.domain').remove();
   }
@@ -295,7 +310,7 @@ export class D3LossChart {
 
       g.append('text')
         .attr('x', 17).attr('y', 3)
-        .attr('fill', '#94a3b8')
+        .attr('fill', themeColor('--chart-tick-text', '#94a3b8'))
         .style('font-size', '9px')
         .text(item.label);
     });
