@@ -261,6 +261,47 @@ html:not(.dark) {
         @apply text-sm font-mono font-bold tabular-nums leading-tight;
     }
 
+    /* ===== MODE SELECTOR (Google-style segmented control) ===== */
+
+    .mode-selector {
+        @apply flex rounded-lg overflow-hidden;
+        background: var(--surface-2);
+        border: 1px solid var(--border-subtle);
+    }
+
+    .mode-btn {
+        @apply px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider cursor-pointer transition-all duration-150;
+        color: var(--color-text-secondary);
+        border: none;
+        background: transparent;
+    }
+
+    .mode-btn:hover {
+        color: var(--color-text-primary);
+        background: rgba(var(--color-cyan-rgb), 0.06);
+    }
+
+    .mode-btn.active {
+        background: rgb(var(--color-cyan-rgb));
+        color: var(--surface-0);
+    }
+
+    /* ===== MODE VISIBILITY RULES ===== */
+    /* Elements with data-min-mode are hidden when mode is below their threshold */
+
+    /* Learn mode (default): hide experiment+ and advanced+ elements */
+    .app-container[data-mode="learn"] [data-min-mode="experiment"],
+    .app-container[data-mode="learn"] [data-min-mode="advanced"] {
+        display: none !important;
+    }
+
+    /* Experiment mode: hide advanced+ elements only */
+    .app-container[data-mode="experiment"] [data-min-mode="advanced"] {
+        display: none !important;
+    }
+
+    /* Advanced mode: show everything (no hiding rules) */
+
     /* Small icon button — tertiary emphasis */
     .btn-icon-sm {
         @apply flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed;

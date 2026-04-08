@@ -297,6 +297,9 @@ export class ApplicationBuilder {
     // Initialize sidebar tabs
     this.initializeSidebarTabs();
 
+    // Initialize mode selector (Learn/Experiment/Advanced)
+    this.initializeModeSelector();
+
     // Initialize touch gestures and bottom sheet
     setupTouchGestures();
     setupBottomSheet();
@@ -427,5 +430,39 @@ export class ApplicationBuilder {
     }
 
     // Note: Theme toggle is handled by SessionController - no need to duplicate here
+  }
+
+  /**
+   * Initializes the Learn/Experiment/Advanced mode selector.
+   * Persists mode in localStorage and applies data-mode attribute to app container.
+   */
+  private initializeModeSelector(): void {
+    const modeButtons = document.querySelectorAll('.mode-btn');
+    const appContainer = document.querySelector('.app-container');
+    if (!modeButtons.length || !appContainer) return;
+
+    const STORAGE_KEY = 'neuroviz-ui-mode';
+    const savedMode = localStorage.getItem(STORAGE_KEY) || 'learn';
+
+    const applyMode = (mode: string): void => {
+      appContainer.setAttribute('data-mode', mode);
+      modeButtons.forEach(btn => {
+        const isActive = btn.getAttribute('data-mode') === mode;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-checked', isActive ? 'true' : 'false');
+      });
+      localStorage.setItem(STORAGE_KEY, mode);
+    };
+
+    // Apply saved mode on load
+    applyMode(savedMode);
+
+    // Bind click handlers
+    modeButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mode = btn.getAttribute('data-mode');
+        if (mode) applyMode(mode);
+      });
+    });
   }
 }

@@ -85,6 +85,13 @@
         <!-- Spacer -->
         <div class="flex-1"></div>
 
+        <!-- Mode Selector — controls UI complexity level -->
+        <div class="mode-selector" role="radiogroup" aria-label="Interface mode">
+          <button class="mode-btn active" data-mode="learn" role="radio" aria-checked="true" title="Simplified interface with guided hints">Learn</button>
+          <button class="mode-btn" data-mode="experiment" role="radio" aria-checked="false" title="Common controls visible, reduced friction">Experiment</button>
+          <button class="mode-btn" data-mode="advanced" role="radio" aria-checked="false" title="Full control panels and diagnostics">Advanced</button>
+        </div>
+
         <!-- Actions (low emphasis) -->
         <div class="flex items-center gap-1">
           <button id="btn-help" class="p-2 rounded-lg bg-navy-800 hover:bg-navy-700 transition-colors"
@@ -336,7 +343,7 @@
                     class="w-full h-2 bg-navy-700 rounded-lg appearance-none cursor-pointer accent-accent-500" value="50"
                     min="10" max="90" step="5" />
                 </label>
-                <label class="block">
+                <label class="block" data-min-mode="experiment">
                   <span class="input-label">Preprocessing</span>
                   <select id="input-preprocessing" class="select-field text-xs" aria-label="Data preprocessing method">
                     <option value="none" selected>None</option>
@@ -344,7 +351,7 @@
                     <option value="standardize">Standardize</option>
                   </select>
                 </label>
-                <label class="block">
+                <label class="block" data-min-mode="experiment">
                   <span class="input-label">Output Classes</span>
                   <select id="input-num-classes" class="select-field text-xs" aria-label="Number of output classes">
                     <option value="2">Binary</option>
@@ -355,7 +362,7 @@
               </div>
               <div class="flex gap-2">
                 <button id="btn-load-data" class="btn-secondary flex-1 text-xs" aria-label="Load selected dataset">Load Dataset</button>
-                <label class="btn-secondary flex-1 cursor-pointer text-center text-xs pt-1">
+                <label class="btn-secondary flex-1 cursor-pointer text-center text-xs pt-1" data-min-mode="experiment">
                   CSV <input type="file" id="input-csv-upload" accept=".csv" class="hidden" />
                 </label>
               </div>
@@ -382,7 +389,7 @@
             </div>
 
             <!-- Session Management -->
-            <div class="p-4 bg-navy-800/30 rounded-xl mb-4">
+            <div class="p-4 bg-navy-800/30 rounded-xl mb-4" data-min-mode="experiment">
               <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Session</h3>
               <div class="grid grid-cols-2 gap-2">
                 <button id="btn-save-session" class="btn-secondary text-xs" aria-label="Save session">Save</button>
@@ -515,7 +522,7 @@
           </div>
 
           <!-- Regularization (in Train tab) -->
-          <div class="space-y-2 mt-4">
+          <div class="space-y-2 mt-4" data-min-mode="experiment">
             <!-- Regularization -->
             <details class="group bg-navy-800/30 rounded-lg p-2">
               <summary class="text-xs font-bold text-slate-400 cursor-pointer list-none flex justify-between">
@@ -587,7 +594,7 @@
             </details>
 
             <!-- Model Complexity Metrics -->
-            <details class="group bg-navy-800/30 rounded-lg p-2" open>
+            <details class="group bg-navy-800/30 rounded-lg p-2" open data-min-mode="advanced">
               <summary class="text-xs font-bold text-slate-400 cursor-pointer list-none flex justify-between">
                 Model Complexity <span class="group-open:rotate-180 transition-transform">▼</span>
               </summary>
@@ -621,7 +628,7 @@
             </details>
 
             <!-- Adversarial Examples -->
-            <details class="group bg-navy-800/30 rounded-lg p-2">
+            <details class="group bg-navy-800/30 rounded-lg p-2" data-min-mode="advanced">
               <summary class="text-xs font-bold text-slate-400 cursor-pointer list-none flex justify-between">
                 Adversarial Examples <span class="group-open:rotate-180 transition-transform">▼</span>
               </summary>
@@ -682,7 +689,7 @@
             </details>
 
             <!-- Speed Comparison -->
-            <details class="group bg-navy-800/30 rounded-lg p-2">
+            <details class="group bg-navy-800/30 rounded-lg p-2" data-min-mode="advanced">
               <summary class="text-xs font-bold text-slate-400 cursor-pointer list-none flex justify-between">
                 Training Speed <span class="group-open:rotate-180 transition-transform">▼</span>
               </summary>
