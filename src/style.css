@@ -56,6 +56,10 @@
     --chart-tick-line: #475569;
     --chart-domain: #334155;
     --chart-grid: rgba(255, 255, 255, 0.05);
+
+    /* Training animation glow — dark mode */
+    --glow-color: rgba(137, 180, 250, 0.08);
+    --glow-border: rgba(137, 180, 250, 0.3);
 }
 
 /* Light mode overrides — Catppuccin Latte inspired */
@@ -105,6 +109,10 @@ html:not(.dark) {
     --chart-tick-line: #BCC0CC;
     --chart-domain: #ACB0BE;
     --chart-grid: rgba(76, 79, 105, 0.08);
+
+    /* Training animation glow — light mode (subtle, no pink) */
+    --glow-color: rgba(30, 102, 245, 0.05);
+    --glow-border: rgba(30, 102, 245, 0.2);
 }
 
 /* Light mode overrides for Tailwind dark utility classes used in HTML */
@@ -288,16 +296,13 @@ html:not(.dark) .text-red-400 {
     }
 
     @keyframes viz-glow-pulse {
-
-        0%,
-        100% {
+        0%, 100% {
             border-color: var(--border-subtle);
-            box-shadow: 0 0 20px rgb(var(--color-cyan-rgb) / 0.08);
+            box-shadow: 0 0 12px var(--glow-color);
         }
-
         50% {
-            border-color: rgb(var(--color-cyan-rgb) / 0.3);
-            box-shadow: 0 0 30px rgb(var(--color-cyan-rgb) / 0.15);
+            border-color: var(--glow-border);
+            box-shadow: 0 0 20px var(--glow-color);
         }
     }
 
