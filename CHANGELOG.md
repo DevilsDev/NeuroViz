@@ -1,3 +1,9 @@
+## [2.27.5](https://github.com/DevilsDev/NeuroViz/compare/v2.27.4...v2.27.5) (2026-04-08)
+
+### Bug Fixes
+
+* **theme:** theme-aware training glow animation, fix light mode bleed ([eb690fc](https://github.com/DevilsDev/NeuroViz/commit/eb690fcd2ea0e3a424d1e5982b57d3330ba2ffec))
+
 ## [2.27.4](https://github.com/DevilsDev/NeuroViz/compare/v2.27.3...v2.27.4) (2026-04-08)
 
 ### Bug Fixes
