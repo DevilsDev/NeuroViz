@@ -1,3 +1,9 @@
+## [2.24.3](https://github.com/DevilsDev/NeuroViz/compare/v2.24.2...v2.24.3) (2026-04-08)
+
+### Code Refactoring
+
+* **ui:** Phase 2 — Material Design app shell with structured toolbar ([bb0954f](https://github.com/DevilsDev/NeuroViz/commit/bb0954f1a41d3ae28f63aaf5d2aa1c0afd6248e1))
+
 ## [2.24.2](https://github.com/DevilsDev/NeuroViz/compare/v2.24.1...v2.24.2) (2026-04-08)
 
 ### Code Refactoring
