@@ -49,10 +49,10 @@
     }
   </style>
 
-  <script type="module" crossorigin src="/NeuroViz/assets/index-D3VwIKGP.js"></script>
+  <script type="module" crossorigin src="/NeuroViz/assets/index-DZSnRU74.js"></script>
   <link rel="modulepreload" crossorigin href="/NeuroViz/assets/vendor-tensorflow-C7gZW83r.js">
   <link rel="modulepreload" crossorigin href="/NeuroViz/assets/vendor-d3-BgXWCMks.js">
-  <link rel="stylesheet" crossorigin href="/NeuroViz/assets/index-DaLvUL8t.css">
+  <link rel="stylesheet" crossorigin href="/NeuroViz/assets/index-DsHgs6Wc.css">
 </head>
 
 <body>
@@ -64,25 +64,33 @@
     <!-- DASHBOARD GRID LAYOUT -->
     <div class="dashboard-grid">
 
-      <!-- HEADER (Row 1, Spans All) -->
+      <!-- TOP APP BAR — Material Design structure: Brand | Datasets | Actions -->
       <header style="grid-area: header;"
-        class="flex items-center justify-between py-2 px-4 bg-navy-900/80 backdrop-blur-md z-50 border-b border-white/5"
+        class="app-top-bar flex items-center gap-4 py-2 px-5"
         role="banner">
-        <div class="flex items-center gap-3">
-          <h1 class="text-lg font-bold text-gradient glow-accent">NeuroViz</h1>
-          <!-- Inline dataset chips — click to select + auto-load -->
-          <div class="dataset-chips flex" role="radiogroup" aria-label="Select dataset">
-            <button class="dataset-chip dataset-preview-card selected" data-dataset="circle" role="radio" aria-checked="true" aria-label="Circle dataset">Circle</button>
-            <button class="dataset-chip dataset-preview-card" data-dataset="xor" role="radio" aria-checked="false" aria-label="XOR dataset">XOR</button>
-            <button class="dataset-chip dataset-preview-card" data-dataset="spiral" role="radio" aria-checked="false" aria-label="Spiral dataset">Spiral</button>
-            <button class="dataset-chip dataset-preview-card" data-dataset="gaussian" role="radio" aria-checked="false" aria-label="Gaussian dataset">Gaussian</button>
-            <button class="dataset-chip dataset-preview-card" data-dataset="clusters" role="radio" aria-checked="false" aria-label="Clusters dataset">Clusters</button>
-            <button class="dataset-chip dataset-preview-card" data-dataset="iris" role="radio" aria-checked="false" aria-label="Iris dataset">Iris</button>
-            <button class="dataset-chip dataset-preview-card" data-dataset="wine" role="radio" aria-checked="false" aria-label="Wine dataset">Wine</button>
-            <button class="dataset-chip dataset-preview-card" data-dataset="custom" role="radio" aria-checked="false" aria-label="Custom draw mode">Draw</button>
-          </div>
+        <!-- Brand -->
+        <h1 class="text-lg font-bold text-gradient glow-accent whitespace-nowrap">NeuroViz</h1>
+
+        <!-- Divider -->
+        <div class="w-px h-6 bg-white/10"></div>
+
+        <!-- Dataset Chips -->
+        <div class="dataset-chips flex" role="radiogroup" aria-label="Select dataset">
+          <button class="dataset-chip dataset-preview-card selected" data-dataset="circle" role="radio" aria-checked="true" aria-label="Circle dataset">Circle</button>
+          <button class="dataset-chip dataset-preview-card" data-dataset="xor" role="radio" aria-checked="false" aria-label="XOR dataset">XOR</button>
+          <button class="dataset-chip dataset-preview-card" data-dataset="spiral" role="radio" aria-checked="false" aria-label="Spiral dataset">Spiral</button>
+          <button class="dataset-chip dataset-preview-card" data-dataset="gaussian" role="radio" aria-checked="false" aria-label="Gaussian dataset">Gaussian</button>
+          <button class="dataset-chip dataset-preview-card" data-dataset="clusters" role="radio" aria-checked="false" aria-label="Clusters dataset">Clusters</button>
+          <button class="dataset-chip dataset-preview-card" data-dataset="iris" role="radio" aria-checked="false" aria-label="Iris dataset">Iris</button>
+          <button class="dataset-chip dataset-preview-card" data-dataset="wine" role="radio" aria-checked="false" aria-label="Wine dataset">Wine</button>
+          <button class="dataset-chip dataset-preview-card" data-dataset="custom" role="radio" aria-checked="false" aria-label="Custom draw mode">Draw</button>
         </div>
-        <div class="flex items-center gap-1 sm:gap-2">
+
+        <!-- Spacer -->
+        <div class="flex-1"></div>
+
+        <!-- Actions (low emphasis) -->
+        <div class="flex items-center gap-1">
           <button id="btn-help" class="p-2 rounded-lg bg-navy-800 hover:bg-navy-700 transition-colors"
             aria-label="Help & Tutorials" title="Help & Tutorials">
             <svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -174,73 +182,61 @@
 
       <!-- CENTER PANEL (Viz & History) -->
       <main class="panel-center">
-        <!-- Metrics + Controls Bar -->
-        <div class="flex items-center gap-3 mb-3">
-          <!-- Metric Tiles -->
-          <div class="metric-tile">
-            <span class="metric-tile-label">Epoch</span>
-            <span id="status-epoch" class="metric-tile-value text-blue-400">0</span>
-          </div>
-          <div class="metric-tile">
-            <span class="metric-tile-label">Loss</span>
-            <span id="status-loss" class="metric-tile-value text-orange-400">—</span>
-          </div>
-          <div class="metric-tile">
-            <span class="metric-tile-label">Accuracy</span>
-            <span id="status-accuracy" class="metric-tile-value text-emerald-400">—</span>
-          </div>
-          <div class="metric-tile">
-            <span class="metric-tile-label">Val Loss</span>
-            <span id="status-val-loss" class="metric-tile-value text-pink-400">—</span>
-          </div>
-          <div class="flex-1"></div>
-          <!-- Playback Controls -->
-          <div class="flex gap-2">
-            <button id="btn-reset"
-              class="px-3 py-2 rounded bg-red-900/20 hover:bg-red-900/40 border border-red-900/30 hover:border-red-900/50 text-red-400 hover:text-red-300 font-medium text-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              title="Reset Training (R)" disabled>
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Start Over
-            </button>
-            <button id="btn-step" class="p-2 rounded hover:bg-navy-700 text-slate-300 transition-colors"
-              title="Step (S)" aria-label="Step one epoch" disabled>
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-              </svg>
-            </button>
-            <button id="btn-start"
-              class="px-4 py-2 rounded bg-gradient-cyan hover:shadow-glow-cyan text-white font-semibold text-xs flex items-center gap-2 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Start/Pause (Space)" disabled>
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z" />
-              </svg>
+        <!-- TOOLBAR — Material Design: Playback | Metrics | Secondary Actions -->
+        <div class="toolbar">
+          <!-- Primary: Playback Controls -->
+          <div class="toolbar-group">
+            <button id="btn-start" class="btn-primary text-xs" title="Start/Pause (Space)">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
               Start Training
             </button>
-            <button id="btn-pause"
-              class="px-4 py-2 rounded bg-navy-700 hover:bg-navy-600 text-slate-300 font-medium text-xs hidden flex items-center gap-2 transition-colors"
-              title="Start/Pause (Space)">
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-              </svg>
+            <button id="btn-pause" class="btn-secondary text-xs hidden" title="Start/Pause (Space)">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" /></svg>
               Pause
             </button>
-            <div class="flex gap-1 ml-auto">
-              <button id="btn-undo-config" class="p-2 rounded hover:bg-navy-700 text-slate-400 hover:text-slate-300 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                title="Undo Config (Ctrl+Z)" aria-label="Undo configuration change" disabled>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                </svg>
-              </button>
-              <button id="btn-redo-config" class="p-2 rounded hover:bg-navy-700 text-slate-400 hover:text-slate-300 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                title="Redo Config (Ctrl+Y)" aria-label="Redo configuration change" disabled>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" />
-                </svg>
-              </button>
+            <button id="btn-step" class="btn-icon-sm" title="Step (S)" aria-label="Step one epoch" disabled>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
+            </button>
+            <button id="btn-reset" class="btn-icon-sm text-red-400" title="Reset Training (R)" aria-label="Reset training" disabled>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+            </button>
+          </div>
+
+          <!-- Divider -->
+          <div class="toolbar-divider"></div>
+
+          <!-- Metrics -->
+          <div class="toolbar-group">
+            <div class="toolbar-metric">
+              <span class="toolbar-metric-label">Epoch</span>
+              <span id="status-epoch" class="toolbar-metric-value" style="color: rgb(var(--color-cyan-rgb))">0</span>
             </div>
+            <div class="toolbar-metric">
+              <span class="toolbar-metric-label">Loss</span>
+              <span id="status-loss" class="toolbar-metric-value" style="color: rgb(var(--color-orange-rgb))">—</span>
+            </div>
+            <div class="toolbar-metric">
+              <span class="toolbar-metric-label">Acc</span>
+              <span id="status-accuracy" class="toolbar-metric-value" style="color: rgb(var(--color-success-rgb))">—</span>
+            </div>
+            <div class="toolbar-metric">
+              <span class="toolbar-metric-label">Val</span>
+              <span id="status-val-loss" class="toolbar-metric-value" style="color: rgb(var(--color-danger-rgb))">—</span>
+            </div>
+          </div>
+
+          <!-- Spacer -->
+          <div class="flex-1"></div>
+
+          <!-- Secondary: Undo/Redo -->
+          <div class="toolbar-group">
+            <button id="btn-undo-config" class="btn-icon-sm" title="Undo (Ctrl+Z)" aria-label="Undo configuration change" disabled>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+            </button>
+            <button id="btn-redo-config" class="btn-icon-sm" title="Redo (Ctrl+Y)" aria-label="Redo configuration change" disabled>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" /></svg>
+            </button>
+          </div>
           </div>
         </div>
 
@@ -266,29 +262,11 @@
           <!-- 3D View Container (hidden by default) -->
           <div id="three-container" class="absolute inset-0 hidden z-10"></div>
           
-          <!-- Footer Controls for Viz (z-30 to be above 3D view, bottom-10 to clear X-axis) -->
-          <div class="absolute bottom-10 left-4 right-4 flex justify-end pointer-events-none z-30">
-            <!-- View Controls (Toggle Switches) -->
-            <div
-              class="flex gap-4 pointer-events-auto bg-navy-900/80 backdrop-blur p-2 rounded-lg border border-white/10 shadow-lg items-center">
-              <label
-                class="flex items-center gap-2 text-[10px] text-slate-100 cursor-pointer hover:text-white transition-colors group">
-                <input type="checkbox" id="input-show-gradients" class="toggle-switch" aria-label="Toggle weight visualization" />
-                <span class="font-medium group-hover:text-cyan transition-colors">Weights</span>
-              </label>
-              <div class="w-px h-4 bg-white/10"></div>
-              <label
-                class="flex items-center gap-2 text-[10px] text-slate-100 cursor-pointer hover:text-white transition-colors group">
-                <input type="checkbox" id="input-voronoi" class="toggle-switch" aria-label="Toggle Voronoi overlay" />
-                <span class="font-medium group-hover:text-cyan transition-colors">Voronoi</span>
-              </label>
-              <div class="w-px h-4 bg-white/10"></div>
-              <label
-                class="flex items-center gap-2 text-[10px] text-slate-100 cursor-pointer hover:text-white transition-colors group">
-                <input type="checkbox" id="input-3d-view" class="toggle-switch" aria-label="Toggle 3D visualization mode" />
-                <span class="font-medium group-hover:text-cyan transition-colors">3D Mode</span>
-              </label>
-            </div>
+          <!-- View toggles moved to toolbar — hidden inputs preserved for JS -->
+          <div class="hidden">
+            <input type="checkbox" id="input-show-gradients" aria-label="Toggle weight visualization" />
+            <input type="checkbox" id="input-voronoi" aria-label="Toggle Voronoi overlay" />
+            <input type="checkbox" id="input-3d-view" aria-label="Toggle 3D visualization mode" />
           </div>
           
           <!-- Gradient Flow Container (hidden by default) -->
