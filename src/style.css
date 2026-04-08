@@ -131,7 +131,15 @@ html:not(.dark) {
     }
 
     .panel-scroll {
-        @apply overflow-y-auto flex-1 p-4 custom-scrollbar;
+        @apply overflow-y-auto flex-1 px-4 py-3 custom-scrollbar;
+    }
+
+    /* Sidebar section cards — consistent Material surfaces */
+    .panel-scroll .bg-navy-800\/30 {
+        background: var(--surface-1);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        margin-bottom: 12px;
     }
 
     .panel-fixed {
@@ -198,11 +206,58 @@ html:not(.dark) {
         overflow: hidden;
     }
 
-    /* Header */
+    /* ===== TOP APP BAR (Material Design) ===== */
+    .app-top-bar {
+        @apply sticky top-0 z-50 backdrop-blur-md;
+        background: rgba(var(--color-bg-primary-rgb), 0.95);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    /* Legacy alias */
     .app-header {
         @apply sticky top-0 z-50 backdrop-blur-md px-6 py-4;
         background: rgba(var(--color-bg-primary-rgb), 0.92);
         border-bottom: 1px solid var(--border-subtle);
+    }
+
+    /* ===== TOOLBAR (Material Design) ===== */
+    .toolbar {
+        @apply flex items-center gap-2 mb-3 px-3 py-2 rounded-xl;
+        background: var(--surface-2);
+        border: 1px solid var(--border-subtle);
+    }
+
+    .toolbar-group {
+        @apply flex items-center gap-1.5;
+    }
+
+    .toolbar-divider {
+        @apply w-px h-6 mx-1;
+        background: var(--border-subtle);
+    }
+
+    .toolbar-metric {
+        @apply flex flex-col items-center px-3;
+    }
+
+    .toolbar-metric-label {
+        @apply text-[9px] font-semibold uppercase tracking-widest leading-none;
+        color: var(--color-text-secondary);
+    }
+
+    .toolbar-metric-value {
+        @apply text-sm font-mono font-bold tabular-nums leading-tight;
+    }
+
+    /* Small icon button — tertiary emphasis */
+    .btn-icon-sm {
+        @apply flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed;
+        color: var(--color-text-secondary);
+    }
+
+    .btn-icon-sm:hover:not(:disabled) {
+        background: rgba(var(--color-cyan-rgb), 0.08);
+        color: var(--color-text-primary);
     }
 
     /* ===== TABS - Segmented Control ===== */
