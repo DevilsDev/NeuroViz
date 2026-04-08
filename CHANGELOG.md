@@ -1,3 +1,9 @@
+## [2.23.4](https://github.com/DevilsDev/NeuroViz/compare/v2.23.3...v2.23.4) (2026-04-08)
+
+### Bug Fixes
+
+* **ux:** resolve 12 UI/UX issues from usability review ([3150d35](https://github.com/DevilsDev/NeuroViz/commit/3150d3502f6bc58463536d88dc189281b51035ba))
+
 ## [2.23.3](https://github.com/DevilsDev/NeuroViz/compare/v2.23.2...v2.23.3) (2026-04-07)
 
 ### Bug Fixes
