@@ -1,3 +1,9 @@
+## [2.26.0](https://github.com/DevilsDev/NeuroViz/compare/v2.25.0...v2.26.0) (2026-04-08)
+
+### Features
+
+* **ui:** Phase 5 — progressive disclosure with smooth animations ([cfdc157](https://github.com/DevilsDev/NeuroViz/commit/cfdc157c7b31a5d416d121bd5fd56d2fff9acd96))
+
 ## [2.25.0](https://github.com/DevilsDev/NeuroViz/compare/v2.24.5...v2.25.0) (2026-04-08)
 
 ### Features
