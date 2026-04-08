@@ -163,9 +163,10 @@ html:not(.dark) {
     }
 
     .panel-glow {
-        @apply rounded-xl shadow-xl overflow-hidden relative transition-all duration-300;
+        @apply rounded-xl overflow-hidden relative transition-all duration-300;
         background: var(--surface-2);
         border: 1px solid var(--border-subtle);
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
     }
 
     .panel-glow:hover {
@@ -297,12 +298,54 @@ html:not(.dark) {
         box-shadow: 0 2px 8px rgb(var(--color-cyan-rgb) / 0.3);
     }
 
+    /* ===== METRIC TILES (Google Analytics style) ===== */
+
+    .metric-tile {
+        @apply flex flex-col items-center px-4 py-2 rounded-xl;
+        background: var(--surface-2);
+        border: 1px solid var(--border-subtle);
+        min-width: 80px;
+    }
+
+    .metric-tile-label {
+        @apply text-[9px] font-semibold uppercase tracking-widest;
+        color: var(--color-text-secondary);
+    }
+
+    .metric-tile-value {
+        @apply text-lg font-mono font-bold tabular-nums leading-tight;
+    }
+
+    /* ===== UNIFIED VIZ CARDS ===== */
+    /* All visual panels (main viz + charts) share the same card language */
+
+    .viz-card {
+        @apply rounded-xl relative flex flex-col overflow-hidden;
+        background: var(--surface-2);
+        border: 1px solid var(--border-subtle);
+        transition: border-color 200ms ease;
+    }
+
+    .viz-card:hover {
+        border-color: var(--border-hover);
+    }
+
+    .viz-card-header {
+        @apply flex items-center justify-between px-3 py-1.5 shrink-0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .viz-card-title {
+        @apply text-[10px] font-semibold uppercase tracking-widest;
+        color: var(--color-text-secondary);
+    }
+
     /* ===== COMPACT CHARTS ROW ===== */
 
     .charts-row {
-        @apply grid gap-2 mt-2;
+        @apply grid gap-3 mt-3;
         grid-template-columns: 1fr 1fr;
-        height: 100px;
+        height: 140px;
     }
 
     /* ===== FORM ELEMENTS ===== */

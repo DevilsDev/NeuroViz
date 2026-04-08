@@ -306,28 +306,26 @@
 
       <!-- CENTER PANEL (Viz & History) -->
       <main class="panel-center">
-        <!-- Status Header -->
-        <div class="flex items-center justify-between mb-4 bg-navy-900/50 p-2 rounded-lg border border-white/5">
-          <div class="flex gap-4">
-            <div>
-              <span class="text-[10px] text-slate-500 uppercase">Epoch</span>
-              <div id="status-epoch" class="text-xl font-bold text-accent-400 tabular-nums leading-none">0</div>
-            </div>
-            <div>
-              <span class="text-[10px] text-slate-500 uppercase">Loss</span>
-              <div id="status-loss" class="text-xl font-mono font-bold text-orange-400 tabular-nums leading-none">—
-              </div>
-            </div>
-            <div>
-              <span class="text-[10px] text-slate-500 uppercase">Accuracy</span>
-              <div id="status-accuracy" class="text-xl font-mono font-bold text-emerald-400 tabular-nums leading-none">—
-              </div>
-            </div>
-            <div>
-              <span class="text-[10px] text-slate-500 uppercase">Val Loss</span>
-              <div id="status-val-loss" class="text-xl font-mono font-bold text-red-400 tabular-nums leading-none">—</div>
-            </div>
+        <!-- Metrics + Controls Bar -->
+        <div class="flex items-center gap-3 mb-3">
+          <!-- Metric Tiles -->
+          <div class="metric-tile">
+            <span class="metric-tile-label">Epoch</span>
+            <span id="status-epoch" class="metric-tile-value text-blue-400">0</span>
           </div>
+          <div class="metric-tile">
+            <span class="metric-tile-label">Loss</span>
+            <span id="status-loss" class="metric-tile-value text-orange-400">—</span>
+          </div>
+          <div class="metric-tile">
+            <span class="metric-tile-label">Accuracy</span>
+            <span id="status-accuracy" class="metric-tile-value text-emerald-400">—</span>
+          </div>
+          <div class="metric-tile">
+            <span class="metric-tile-label">Val Loss</span>
+            <span id="status-val-loss" class="metric-tile-value text-pink-400">—</span>
+          </div>
+          <div class="flex-1"></div>
           <!-- Playback Controls -->
           <div class="flex gap-2">
             <button id="btn-reset"
@@ -386,8 +384,8 @@
             <!-- D3 chart renders here -->
             <div id="viz-empty-state" role="status"
               class="empty-state-cta absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
-              <div class="text-slate-400 mb-2 text-lg">&larr; Select a dataset to get started</div>
-              <div class="text-xs text-slate-500">Choose a dataset from the left panel, then click Start Training</div>
+              <div class="text-lg mb-2" style="color: var(--color-text-secondary);">&uarr; Pick a dataset above, then press Start Training</div>
+              <div class="text-xs" style="color: var(--color-text-secondary); opacity: 0.6;">Or use the Data tab on the right for advanced options</div>
             </div>
           </div>
 
@@ -432,27 +430,27 @@
           </div>
         </section>
 
-        <!-- Compact Charts Row -->
+        <!-- Charts Row — matched card styling with viz panel -->
         <div class="charts-row">
           <!-- Learning Rate -->
-          <div class="bg-navy-900/30 rounded-lg border border-white/5 relative flex flex-col overflow-hidden">
-            <div class="flex items-center px-2 py-1 border-b border-white/5 bg-navy-900/40 shrink-0">
-              <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">LR</h3>
+          <div class="viz-card">
+            <div class="viz-card-header">
+              <h3 class="viz-card-title">Learning Rate</h3>
             </div>
             <div id="lr-chart-container" class="flex-1 w-full relative"></div>
           </div>
           <!-- Loss & Accuracy -->
-          <div class="bg-navy-900/30 rounded-lg border border-white/5 relative flex flex-col overflow-hidden">
-            <div class="flex items-center justify-between px-2 py-1 border-b border-white/5 bg-navy-900/40 shrink-0">
-              <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Loss / Acc</h3>
-              <div class="flex gap-2 text-[9px] text-slate-600">
+          <div class="viz-card">
+            <div class="viz-card-header">
+              <h3 class="viz-card-title">Loss / Accuracy</h3>
+              <div class="flex gap-3 text-[9px]" style="color: var(--color-text-secondary);">
                 <span>Best: <span id="stat-best-loss" class="text-orange-400 font-mono">—</span></span>
                 <span>Acc: <span id="stat-best-accuracy" class="text-emerald-400 font-mono">—</span></span>
                 <span id="stat-improvement" class="hidden">—</span>
               </div>
             </div>
             <div id="loss-chart-container" class="flex-1 w-full min-h-0 overflow-hidden">
-              <div id="loss-chart-empty" class="absolute inset-0 flex items-center justify-center text-slate-700 text-[10px]">
+              <div id="loss-chart-empty" class="absolute inset-0 flex items-center justify-center text-[10px]" style="color: var(--color-text-secondary);">
                 No data yet
               </div>
             </div>
