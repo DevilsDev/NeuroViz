@@ -187,9 +187,9 @@ html:not(.dark) {
         width: 100%;
     }
 
+    /* Main viz — Colab output cell: minimal border, no heavy framing */
     .panel-glow {
-        @apply rounded-lg overflow-hidden relative;
-        background: var(--surface-2);
+        @apply rounded overflow-hidden relative;
         border: 1px solid var(--border-subtle);
     }
 
@@ -477,16 +477,14 @@ html:not(.dark) {
     /* ===== UNIFIED VIZ CARDS ===== */
     /* All visual panels (main viz + charts) share the same card language */
 
-    /* Viz cards — Colab-style: subtle, no heavy borders */
+    /* Viz cards — Colab output cells: borderless, flow into page */
     .viz-card {
-        @apply rounded-lg relative flex flex-col overflow-hidden;
-        background: var(--surface-2);
+        @apply rounded relative flex flex-col overflow-hidden;
         border: 1px solid var(--border-subtle);
     }
 
     .viz-card-header {
-        @apply flex items-center justify-between px-3 py-1 shrink-0;
-        background: rgba(var(--color-bg-primary-rgb), 0.3);
+        @apply flex items-center justify-between px-2 py-0.5 shrink-0;
     }
 
     .viz-card-title {
@@ -496,11 +494,11 @@ html:not(.dark) {
 
     /* ===== COMPACT CHARTS ROW ===== */
 
-    /* Chart row — Colab: compact, less visual weight */
+    /* Chart row — Colab output cells: tight, minimal framing */
     .charts-row {
-        @apply grid gap-2 mt-2;
+        @apply grid gap-1 mt-1;
         grid-template-columns: 1fr 1fr;
-        height: 120px;
+        height: 110px;
     }
 
     /* ===== FORM ELEMENTS ===== */
