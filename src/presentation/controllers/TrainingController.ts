@@ -490,7 +490,8 @@ export class TrainingController {
         this.elements.stateDisplay.textContent = statusText;
 
         // Determine if training can be started (or resumed from pause)
-        const canStart = state.isInitialised && state.datasetLoaded && (!state.isRunning || state.isPaused);
+        // Allow start when dataset is loaded even if not yet initialized — handleStart() will auto-init
+        const canStart = state.datasetLoaded && (!state.isRunning || state.isPaused);
 
         // Update button states using standardised DOM helpers
         const isTraining = state.isRunning && !state.isPaused;
