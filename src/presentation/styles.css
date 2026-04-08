@@ -1,68 +1,33 @@
 /* =============================================================================
-   NeuroViz - Tailwind CSS + Custom Styles
-   Modern Dark Theme with Electric Teal Accent
+   NeuroViz - Presentation Layer Styles
+   Component styles for controllers, toasts, modals, and overlays.
+
+   NOTE: Theme variables are defined ONCE in src/style.css.
+   This file references them — it does NOT redefine them.
+   The canonical color system uses:
+     --surface-0, --surface-1, --surface-2  (depth layers)
+     --border-subtle, --border-hover         (borders)
+     --color-bg-primary-rgb, --color-cyan-rgb, etc. (semantic)
    ============================================================================= */
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* =============================================================================
-   Theme Variables
-   ============================================================================= */
+/* Legacy variable aliases — maps old names to canonical system */
 :root {
-  /* Dark theme (default) */
-  --bg-primary: #0a0f1a;
-  --bg-secondary: #0f172a;
-  --bg-tertiary: #1e293b;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --border-color: #334155;
-  --accent-color: #14b8a6;
-
-  /* Navy color overrides for light mode */
-  --navy-950: #0a0e1a;
-  --navy-900: #0f172a;
-  --navy-800: #1a2332;  /* Lightened from #1e293b to #1a2332 for better contrast (DESIGN_AUDIT_360 #4) */
-  --navy-700: #334155;
-  --navy-600: #475569;
-}
-
-/* Light mode - redefine navy colors to light equivalents */
-html:not(.dark) {
-  --bg-primary: #f8fafc;
-  --bg-secondary: #f1f5f9;
-  --bg-tertiary: #e2e8f0;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #64748b;
-  --border-color: #cbd5e1;
-  --accent-color: #0d9488;
-  
-  /* Override navy to light colors */
-  --navy-950: #f8fafc;
-  --navy-900: #f1f5f9;
-  --navy-800: #e2e8f0;
-  --navy-700: #cbd5e1;
-  --navy-600: #94a3b8;
-  
-  color-scheme: light;
+  --bg-primary: var(--surface-0);
+  --bg-secondary: var(--surface-1);
+  --bg-tertiary: var(--surface-2);
+  --text-primary: var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
+  --text-muted: var(--color-text-secondary);
+  --border-color: var(--border-subtle);
+  --accent-color: rgb(var(--color-cyan-rgb));
 }
 
 html.dark {
   color-scheme: dark;
 }
 
-[data-theme="light"] {
-  --bg-primary: #f8fafc;
-  --bg-secondary: #f1f5f9;
-  --bg-tertiary: #e2e8f0;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #64748b;
-  --border-color: #cbd5e1;
-  --accent-color: #0d9488;
+html:not(.dark) {
+  color-scheme: light;
 }
 
 /* =============================================================================
@@ -511,18 +476,17 @@ body[data-theme="light"] {
 
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2;
-    @apply px-4 py-2 rounded-lg;
-    @apply text-sm font-medium;
+    @apply px-4 py-2 rounded-xl;
+    @apply text-sm font-semibold;
     @apply transition-all duration-200;
     @apply disabled:opacity-40 disabled:cursor-not-allowed;
-    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
-    color: white;
-    box-shadow: 0 2px 8px rgba(20, 184, 166, 0.3);
+    background: rgb(var(--color-cyan-rgb));
+    color: var(--surface-0);
+    box-shadow: 0 2px 8px rgb(var(--color-cyan-rgb) / 0.25);
   }
 
   .btn-primary:hover:not(:disabled) {
-    background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 100%);
-    box-shadow: 0 4px 12px rgba(20, 184, 166, 0.4);
+    box-shadow: 0 4px 16px rgb(var(--color-cyan-rgb) / 0.35);
     transform: translateY(-1px);
   }
 
@@ -532,22 +496,23 @@ body[data-theme="light"] {
 
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2;
-    @apply px-4 py-2 rounded-lg;
+    @apply px-4 py-2 rounded-xl;
     @apply text-sm font-medium;
     @apply transition-all duration-200;
     @apply disabled:opacity-40 disabled:cursor-not-allowed;
-    background: rgba(51, 65, 85, 0.5);
-    color: #cbd5e1;
-    border: 1px solid rgba(71, 85, 105, 0.4);
+    background: var(--surface-2);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--border-subtle);
   }
 
   .btn-secondary:hover:not(:disabled) {
-    background: rgba(71, 85, 105, 0.5);
-    border-color: rgba(100, 116, 139, 0.5);
+    color: var(--color-text-primary);
+    border-color: var(--border-hover);
+    background: rgba(var(--color-cyan-rgb), 0.08);
   }
 
   .btn-secondary:active:not(:disabled) {
-    background: rgba(51, 65, 85, 0.7);
+    transform: scale(0.97);
   }
 
   /* Small button variant - still meets touch target */
@@ -1027,7 +992,7 @@ body[data-theme="light"] {
   font-size: 0.75rem;
   font-weight: 500;
   color: white;
-  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+  background: var(--accent-color);
   border: none;
   border-radius: 0.5rem;
   cursor: pointer;
@@ -1074,7 +1039,7 @@ body[data-theme="light"] {
 }
 
 .fab-primary {
-  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+  background: var(--accent-color);
   color: white;
 }
 
@@ -1236,7 +1201,7 @@ body[data-theme="light"] {
   font-size: 0.75rem;
   font-weight: 600;
   color: white;
-  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+  background: var(--accent-color);
   border: none;
   border-radius: 0.5rem;
   cursor: pointer;
@@ -1675,7 +1640,7 @@ html:not(.dark) .input-label {
 }
 
 html:not(.dark) .btn-primary {
-  background: linear-gradient(to right, #0d9488, #0f766e) !important;
+  background: var(--accent-color) !important;
 }
 
 html:not(.dark) .btn-secondary {
@@ -1884,7 +1849,7 @@ html:not(.dark) .shadow-black\/20 {
 
 /* Gradient backgrounds - keep teal for primary buttons */
 html:not(.dark) .btn-primary {
-  background: linear-gradient(to right, #0d9488, #0f766e) !important;
+  background: var(--accent-color) !important;
 }
 
 /* Hover states */
@@ -2475,7 +2440,7 @@ html:not(.dark) .explain-moment-tip-text {
   font-size: 0.8125rem;
   font-weight: 500;
   color: white;
-  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+  background: var(--accent-color);
   border: none;
   border-radius: 0.5rem;
   cursor: pointer;
@@ -2498,7 +2463,7 @@ html:not(.dark) .explain-moment-tip-text {
 }
 
 html:not(.dark) .btn-explain-moment {
-  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+  background: var(--accent-color);
 }
 
 /* =============================================================================
@@ -2532,7 +2497,7 @@ input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   width: 24px;
   height: 24px;
-  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+  background: var(--accent-color);
   border-radius: 50%;
   cursor: pointer;
   margin-top: -8px;  /* Center on track */
@@ -2543,7 +2508,7 @@ input[type="range"]::-webkit-slider-thumb {
 input[type="range"]::-moz-range-thumb {
   width: 24px;
   height: 24px;
-  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+  background: var(--accent-color);
   border-radius: 50%;
   cursor: pointer;
   border: none;
@@ -2576,7 +2541,7 @@ input[type="checkbox"] {
   width: 20px;
   height: 20px;
   cursor: pointer;
-  accent-color: #14b8a6;
+  accent-color: var(--accent-color);
 }
 
 /* Ensure checkbox labels have adequate touch target */
@@ -2621,17 +2586,17 @@ html:not(.dark) input[type="range"]::-moz-range-track {
 }
 
 html:not(.dark) input[type="range"]::-webkit-slider-thumb {
-  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+  background: var(--accent-color);
   box-shadow: 0 2px 8px rgba(13, 148, 136, 0.4);
 }
 
 html:not(.dark) input[type="range"]::-moz-range-thumb {
-  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+  background: var(--accent-color);
   box-shadow: 0 2px 8px rgba(13, 148, 136, 0.4);
 }
 
 html:not(.dark) input[type="checkbox"] {
-  accent-color: #0d9488;
+  accent-color: var(--accent-color);
 }
 /* =============================================================================
    Comprehensive Responsive Design System
