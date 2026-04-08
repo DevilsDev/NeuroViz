@@ -1,3 +1,9 @@
+## [2.27.3](https://github.com/DevilsDev/NeuroViz/compare/v2.27.2...v2.27.3) (2026-04-08)
+
+### Bug Fixes
+
+* **d3:** rewrite chart annotation layout — fix overlaps, improve formatting ([399b2b0](https://github.com/DevilsDev/NeuroViz/commit/399b2b0137d29908905566fca9e05b764278d98a))
+
 ## [2.27.2](https://github.com/DevilsDev/NeuroViz/compare/v2.27.1...v2.27.2) (2026-04-08)
 
 ### Bug Fixes
