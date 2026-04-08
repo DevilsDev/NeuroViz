@@ -2471,68 +2471,67 @@ html:not(.dark) .btn-explain-moment {
    ============================================================================= */
 
 /* Range sliders - Increase touch target to 44px minimum */
+/* Range sliders — Colab-style: thin track, small thumb, no glow */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
-  height: 44px;  /* Total touch target height */
-  padding: 18px 0;  /* Invisible padding for touch */
+  height: 28px;  /* Touch target */
+  padding: 12px 0;
   background: transparent;
   cursor: pointer;
 }
 
 input[type="range"]::-webkit-slider-runnable-track {
-  height: 8px;
-  background: rgba(51, 65, 85, 0.5);
-  border-radius: 4px;
+  height: 4px;
+  background: var(--surface-2);
+  border-radius: 2px;
 }
 
 input[type="range"]::-moz-range-track {
-  height: 8px;
-  background: rgba(51, 65, 85, 0.5);
-  border-radius: 4px;
+  height: 4px;
+  background: var(--surface-2);
+  border-radius: 2px;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 24px;
-  height: 24px;
-  background: var(--accent-color);
+  width: 14px;
+  height: 14px;
+  background: rgb(var(--color-cyan-rgb));
   border-radius: 50%;
   cursor: pointer;
-  margin-top: -8px;  /* Center on track */
-  box-shadow: 0 2px 8px rgba(20, 184, 166, 0.4);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin-top: -5px;
+  transition: transform 0.15s ease;
 }
 
 input[type="range"]::-moz-range-thumb {
-  width: 24px;
-  height: 24px;
-  background: var(--accent-color);
+  width: 14px;
+  height: 14px;
+  background: rgb(var(--color-cyan-rgb));
   border-radius: 50%;
   cursor: pointer;
+  border: none;
   border: none;
   box-shadow: 0 2px 8px rgba(20, 184, 166, 0.4);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(20, 184, 166, 0.6);
+  transform: scale(1.2);
 }
 
 input[type="range"]::-moz-range-thumb:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(20, 184, 166, 0.6);
+  transform: scale(1.2);
 }
 
 input[type="range"]:focus-visible::-webkit-slider-thumb {
-  outline: 2px solid #14b8a6;
+  outline: 2px solid rgb(var(--color-cyan-rgb));
   outline-offset: 2px;
 }
 
 input[type="range"]:focus-visible::-moz-range-thumb {
-  outline: 2px solid #14b8a6;
+  outline: 2px solid rgb(var(--color-cyan-rgb));
   outline-offset: 2px;
 }
 
@@ -2587,12 +2586,10 @@ html:not(.dark) input[type="range"]::-moz-range-track {
 
 html:not(.dark) input[type="range"]::-webkit-slider-thumb {
   background: var(--accent-color);
-  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.4);
 }
 
 html:not(.dark) input[type="range"]::-moz-range-thumb {
   background: var(--accent-color);
-  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.4);
 }
 
 html:not(.dark) input[type="checkbox"] {
