@@ -1,3 +1,9 @@
+## [2.24.2](https://github.com/DevilsDev/NeuroViz/compare/v2.24.1...v2.24.2) (2026-04-08)
+
+### Code Refactoring
+
+* **ui:** Phase 1 — nuclear cleanup of duplicate controls and dead code ([dc329b5](https://github.com/DevilsDev/NeuroViz/commit/dc329b557a256e39112acfce557349d241cb5d16))
+
 ## [2.24.1](https://github.com/DevilsDev/NeuroViz/compare/v2.24.0...v2.24.1) (2026-04-08)
 
 ### Bug Fixes
