@@ -594,24 +594,12 @@ html:not(.dark) {
         @apply transform translate-x-4;
     }
 
-    /* Sliders — Colab-style: thin track, small thumb, minimal glow */
+    /* Sliders — Colab-style: thin track via pseudo-element, transparent base */
     input[type="range"] {
-        @apply w-full h-1 rounded-full appearance-none cursor-pointer;
-        background: var(--surface-2);
-    }
-
-    input[type="range"]::-webkit-slider-thumb {
-        @apply appearance-none w-3 h-3 rounded-full cursor-pointer;
-        background: rgb(var(--color-cyan-rgb));
-    }
-
-    input[type="range"]::-moz-range-thumb {
-        @apply w-3 h-3 rounded-full cursor-pointer border-0;
-        background: rgb(var(--color-cyan-rgb));
-    }
-
-    input[type="range"]:hover::-webkit-slider-thumb {
-        transform: scale(1.2);
+        @apply w-full appearance-none cursor-pointer;
+        background: transparent;
+        height: 28px;
+        padding: 12px 0;
     }
 
     /* ===== CARDS ===== */
