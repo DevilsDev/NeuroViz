@@ -1,3 +1,9 @@
+## [2.27.9](https://github.com/DevilsDev/NeuroViz/compare/v2.27.8...v2.27.9) (2026-04-09)
+
+### Bug Fixes
+
+* sidebar overflow-hidden → overflow-y-auto to fix dropdown stacking ([293fcb8](https://github.com/DevilsDev/NeuroViz/commit/293fcb8c4f7c329f0f95e7f31cf1bc93f0c36acc))
+
 ## [2.27.8](https://github.com/DevilsDev/NeuroViz/compare/v2.27.7...v2.27.8) (2026-04-09)
 
 ### Bug Fixes
