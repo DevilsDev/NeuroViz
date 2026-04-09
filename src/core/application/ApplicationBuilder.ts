@@ -300,6 +300,9 @@ export class ApplicationBuilder {
     // Initialize mode selector (Learn/Experiment/Advanced)
     this.initializeModeSelector();
 
+    // Fix Learn dropdown positioning (uses fixed position to escape grid stacking)
+    this.fixLearnDropdownPosition();
+
     // Initialize touch gestures and bottom sheet
     setupTouchGestures();
     setupBottomSheet();
@@ -492,5 +495,27 @@ export class ApplicationBuilder {
         }
       });
     });
+  }
+
+  /**
+   * Fixes Learn dropdown positioning.
+   * The dropdown uses position:fixed (to escape grid stacking context),
+   * so we must manually position it below the trigger button.
+   */
+  private fixLearnDropdownPosition(): void {
+    const btn = document.getElementById('btn-learn-menu');
+    const dropdown = document.getElementById('learn-menu-dropdown');
+    if (!btn || !dropdown) return;
+
+    const observer = new MutationObserver(() => {
+      if (!dropdown.classList.contains('hidden')) {
+        const rect = btn.getBoundingClientRect();
+        dropdown.style.top = `${rect.bottom + 4}px`;
+        dropdown.style.right = `${window.innerWidth - rect.right}px`;
+        dropdown.style.left = 'auto';
+      }
+    });
+
+    observer.observe(dropdown, { attributes: true, attributeFilter: ['class'] });
   }
 }

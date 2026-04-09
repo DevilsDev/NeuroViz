@@ -208,7 +208,11 @@ html:not(.dark) .select-field:focus {
     border-color: rgb(var(--color-cyan-rgb)) !important;
 }
 
-/* Dropdown: nothing needed here, handled by panel z-index */
+/* Learn dropdown: fixed position to escape grid stacking context */
+#learn-menu-dropdown {
+    position: fixed !important;
+    z-index: 9999 !important;
+}
 
 /* Light mode: dropdown menus need white bg + shadow to stand out */
 html:not(.dark) #learn-menu-dropdown {
