@@ -208,6 +208,11 @@ html:not(.dark) .select-field:focus {
     border-color: rgb(var(--color-cyan-rgb)) !important;
 }
 
+/* Dropdown menus: ensure they paint above the sidebar panel */
+#learn-menu-dropdown {
+    z-index: 100 !important;
+}
+
 /* Light mode: dropdown menus need white bg + shadow to stand out */
 html:not(.dark) #learn-menu-dropdown {
     background: white !important;
@@ -409,8 +414,10 @@ html:not(.dark) .text-red-400 {
     }
 
     /* ===== TOP APP BAR (Material Design) ===== */
+    /* z-index 100 ensures dropdown menus paint above the sidebar */
     .app-top-bar {
-        @apply sticky top-0 z-50 backdrop-blur-md;
+        @apply sticky top-0 backdrop-blur-md;
+        z-index: 100;
         background: rgba(var(--color-bg-primary-rgb), 0.95);
         border-bottom: 1px solid var(--border-subtle);
     }
