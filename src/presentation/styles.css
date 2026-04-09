@@ -49,17 +49,15 @@ html:not(.dark) {
 
 /* Dark theme (default - when html has 'dark' class) */
 html.dark body {
-  background: linear-gradient(135deg, #0a0f1a 0%, #0f172a 50%, #0a0f1a 100%) !important;
-  background-attachment: fixed !important;
-  color: #f1f5f9 !important;
+  background: var(--surface-0) !important;
+  color: rgb(var(--color-text-primary-rgb)) !important;
 }
 
 /* Light theme (when html does NOT have 'dark' class) */
 html:not(.dark) body,
 body[data-theme="light"] {
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f8fafc 100%) !important;
-  background-attachment: fixed !important;
-  color: #0f172a !important;
+  background: var(--surface-0) !important;
+  color: rgb(var(--color-text-primary-rgb)) !important;
 }
 
 @layer base {
@@ -126,50 +124,16 @@ body[data-theme="light"] {
   /* ---------------------------------------------------------------------------
      Layout Components - Mobile First
      --------------------------------------------------------------------------- */
+  /* Full-bleed wrapper — dashboard-grid inside handles all internal layout */
   .app-container {
-    @apply flex flex-col min-h-screen max-w-7xl mx-auto;
-    @apply px-3 py-3;
-    @apply sm:px-4 sm:py-4;
-    @apply lg:px-6;
-    width: 100%;
+    @apply flex flex-col min-h-screen w-full;
     box-sizing: border-box;
-  }
-
-  /* Responsive app container padding */
-  @media (max-width: 480px) {
-    .app-container {
-      padding: 0.5rem;
-    }
-  }
-
-  @media (min-width: 481px) and (max-width: 767px) {
-    .app-container {
-      padding: 0.75rem;
-    }
-  }
-
-  @media (min-width: 768px) and (max-width: 1023px) {
-    .app-container {
-      padding: 1rem;
-    }
-  }
-
-  @media (min-width: 1024px) and (max-width: 1439px) {
-    .app-container {
-      padding: 1.25rem;
-    }
-  }
-
-  @media (min-width: 1440px) {
-    .app-container {
-      padding: 1.5rem;
-    }
   }
 
   /* Fullscreen mode styles */
   .app-container:fullscreen {
-    @apply max-w-none w-full h-full overflow-auto;
-    @apply bg-navy-950 p-6;
+    @apply w-full h-full overflow-auto;
+    background: var(--surface-0);
   }
 
   .app-container:fullscreen .main-grid {
@@ -725,7 +689,7 @@ body[data-theme="light"] {
     @apply flex flex-col items-center justify-center gap-3;
     @apply backdrop-blur-sm rounded-xl;
     @apply text-slate-400 text-sm;
-    background-color: rgba(10, 14, 26, 0.95);
+    background-color: rgba(24, 24, 37, 0.95);
   }
   
   html:not(.dark) .loading-overlay {
@@ -1721,11 +1685,6 @@ html:not(.dark) #btn-fullscreen svg {
   color: #475569 !important;
 }
 
-/* Fullscreen mode in light theme */
-html:not(.dark) .app-container:fullscreen {
-  background-color: #f8fafc !important;
-}
-
 /* Draw buttons in light mode */
 html:not(.dark) .btn-draw {
   background-color: #f1f5f9 !important;
@@ -1825,11 +1784,6 @@ html:not(.dark) .text-slate-500 {
   color: #64748b !important;
 }
 
-/* App container background */
-html:not(.dark) .app-container {
-  background-color: #f8fafc !important;
-}
-
 /* Viz container in light mode */
 html:not(.dark) #viz-container {
   background-color: #ffffff !important;
@@ -1903,25 +1857,16 @@ html:not(.dark) .border-navy-700\/50 {
   border-color: #e2e8f0 !important;
 }
 
-/* Ensure body and app container have light background */
-html:not(.dark) {
-  background-color: #f8fafc !important;
-}
-
-html:not(.dark) .app-container {
-  background-color: #f8fafc !important;
-}
-
 /* =============================================================================
    Light Theme - Navy colors now use CSS variables, so they auto-switch.
    These are fallback overrides for any edge cases.
    ============================================================================= */
 
-/* Ensure light background on body */
+/* Ensure light background on body (Catppuccin Latte --surface-0) */
 html:not(.dark),
 html:not(.dark) body {
-  background-color: #f8fafc !important;
-  color: #0f172a !important;
+  background: var(--surface-0) !important;
+  color: rgb(var(--color-text-primary-rgb)) !important;
   color-scheme: light !important;
 }
 

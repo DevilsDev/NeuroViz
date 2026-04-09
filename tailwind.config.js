@@ -5,18 +5,24 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Wireframe color palette - Background
-        'bg-primary': '#0A0E1A',     // Deep navy
-        'bg-secondary': '#1A1F2E',   // Slate
-        'bg-tertiary': '#141824',    // Darker slate
+        // Theme-aware Catppuccin surfaces — resolve via CSS variables defined in src/style.css.
+        // Dark mode: Mocha (#181825 / #1E1E2E / #313244).
+        // Light mode: Latte (#EFF1F5 / #E6E9EF / #DCE0E8).
+        // Note: CSS variables hold comma-separated rgb triplets for legacy rgba() usage, so we
+        // reference the pre-computed --color-bg-* wrappers here rather than using Tailwind's
+        // <alpha-value> syntax (which requires space-separated values).
+        'bg-primary': 'var(--color-bg-primary)',
+        'bg-secondary': 'var(--color-bg-secondary)',
+        'bg-tertiary': 'var(--surface-2)',
 
-        // Navy scale (updated for wireframe)
+        // Legacy navy scale — remapped to Catppuccin surfaces so old classes stay visually consistent.
+        // These stay hardcoded to Mocha because the navy-* utility was designed for dark mode.
         navy: {
-          950: '#0A0E1A',  // Primary background
-          900: '#141824',  // Secondary panels
-          800: '#1A1F2E',  // Cards
-          700: '#2C3444',  // Borders/surfaces
-          600: '#3D4758',  // Lighter borders
+          950: '#181825',  // surface-0 — primary background
+          900: '#1E1E2E',  // surface-1 — secondary panels
+          800: '#313244',  // surface-2 — cards
+          700: '#45475A',  // overlay-0 — borders/surfaces
+          600: '#585B70',  // overlay-1 — lighter borders
         },
 
         // Wireframe accent colors
