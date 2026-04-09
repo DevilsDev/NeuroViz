@@ -1,3 +1,9 @@
+## [2.27.14](https://github.com/DevilsDev/NeuroViz/compare/v2.27.13...v2.27.14) (2026-04-09)
+
+### Bug Fixes
+
+* toast z-index 200 — renders above header (z-100) and dropdowns ([2f672fb](https://github.com/DevilsDev/NeuroViz/commit/2f672fb4d027d59e173167f4edb2deebcae1a1a0))
+
 ## [2.27.13](https://github.com/DevilsDev/NeuroViz/compare/v2.27.12...v2.27.13) (2026-04-09)
 
 ### Bug Fixes
