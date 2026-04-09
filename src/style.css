@@ -1291,62 +1291,17 @@ html:not(.dark) .text-red-400 {
     @apply font-mono text-slate-200;
 }
 
-/* Visual Dataset Gallery */
-.dataset-gallery {
-    @apply w-full;
-}
-
-.dataset-gallery-grid {
-    @apply grid grid-cols-3 gap-2;
-}
-
-.dataset-preview-card {
-    @apply relative flex flex-col items-center p-2;
-    @apply bg-navy-800/50 rounded-lg border border-navy-700/50;
-    @apply cursor-pointer transition-all duration-200;
-    @apply hover:bg-navy-800 hover:border-cyan/40 hover:-translate-y-0.5;
-}
-
-.dataset-preview-card.selected {
-    @apply bg-navy-800 border-cyan ring-2 ring-cyan/20;
-    box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
-}
-
-.dataset-preview-card.selected .dataset-preview-label {
-    @apply font-semibold text-cyan;
-}
-
+/*
+ * Visual Dataset Gallery (legacy): the large card grid was replaced by the inline
+ * .dataset-chip pill bar in the header. The .dataset-preview-card class is still
+ * carried on each chip as a JS hook for DatasetGallery.querySelectorAll(), but its
+ * visual rules (flex-col, p-2, bg-navy-800 hover, -translate-y) both conflicted with
+ * the pill layout and rendered dark-on-dark unreadable in light mode on hover.
+ * Only a focus-visible ring is kept for keyboard a11y. All other card/grid/badge/
+ * icon/label rules were dead code (no HTML references remaining).
+ */
 .dataset-preview-card:focus-visible {
     @apply ring-2 ring-cyan outline-none;
-}
-
-.dataset-preview-icon {
-    @apply w-16 h-16 mb-2;
-}
-
-.dataset-preview-label {
-    @apply text-xs font-medium text-slate-200 mb-0.5;
-}
-
-.dataset-preview-desc {
-    @apply text-[10px] text-slate-500;
-}
-
-.dataset-preview-badge {
-    @apply absolute top-1 right-1 text-[9px] font-bold px-1.5 py-0.5 rounded;
-    @apply bg-emerald-500/20 text-emerald-400 border border-emerald-500/30;
-}
-
-.dataset-preview-badge.badge-medium {
-    @apply bg-amber-500/20 text-amber-400 border border-amber-500/30;
-}
-
-.dataset-preview-badge.badge-hard {
-    @apply bg-red-500/20 text-red-400 border border-red-500/30;
-}
-
-.dataset-preview-badge.badge-custom {
-    @apply bg-cyan-500/20 text-cyan-400 border border-cyan-500/30;
 }
 
 /* ===== SVG THEMING CLASSES ===== */
