@@ -17,6 +17,7 @@ export class NeuroPage {
   readonly datasetSelect: Locator;
   readonly loadDataButton: Locator;
   readonly loadingOverlay: Locator;
+  readonly datasetGalleryFirstCard: Locator;
 
   // =========================================================================
   // Locators - Hyperparameter Controls
@@ -55,6 +56,11 @@ export class NeuroPage {
     this.datasetSelect = page.locator('#dataset-select');
     this.loadDataButton = page.locator('#btn-load-data');
     this.loadingOverlay = page.locator('#loading-overlay');
+    // DatasetGallery renders preview cards during initializeUIComponents(),
+    // which runs after ApplicationBuilder.build() resolves. Using the first
+    // card as the readiness probe guarantees the full init pipeline has
+    // completed before any test interacts with the app.
+    this.datasetGalleryFirstCard = page.locator('.dataset-preview-card').first();
 
     // Hyperparameter controls
     this.learningRateInput = page.locator('#input-lr');
@@ -94,47 +100,23 @@ export class NeuroPage {
   }
 
   /**
-   * Navigate to the application root.
-   * Automatically disables onboarding to prevent tutorial overlay from blocking tests.
+   * Navigate to the application root and wait until the app is fully initialised.
+   *
+   * Readiness contract: the first dataset-preview-card is rendered only after
+   * ApplicationBuilder.build() resolves and initializeUIComponents() runs, so
+   * waiting for it guarantees services, controllers, and the UI layer are all
+   * wired up. This is a black-box probe that works against production builds
+   * (unlike the previous window.tf / window.app globals, which are gated on
+   * import.meta.env.DEV and are therefore absent in production bundles).
    */
   async goto(): Promise<void> {
-    // Disable onboarding before navigation
     await this.disableOnboarding();
-    await this.page.goto('/');
+    // Absolute path so the test is resilient to baseURL trailing-slash quirks
+    // (Playwright resolves relative paths against baseURL via URL(), which
+    // collapses "/" to the server root rather than preserving "/NeuroViz/").
+    await this.page.goto('/NeuroViz/');
     await expect(this.vizContainer).toBeVisible();
-    // Wait for TensorFlow.js to be ready (check for tf global)
-    await this.waitForTensorFlowReady();
-    // Wait for window.app to be initialized
-    await this.waitForAppReady();
-  }
-
-  /**
-   * Wait for TensorFlow.js to be loaded and ready.
-   * This is critical for Firefox and WebKit compatibility.
-   */
-  async waitForTensorFlowReady(): Promise<void> {
-    await this.page.waitForFunction(
-      () => {
-        // Check if TensorFlow.js is loaded
-        return typeof (window as unknown as { tf?: unknown }).tf !== 'undefined';
-      },
-      { timeout: 30000 }
-    );
-  }
-
-  /**
-   * Wait for window.app to be initialized.
-   * This is required for white box tests that access internal state.
-   */
-  async waitForAppReady(): Promise<void> {
-    await this.page.waitForFunction(
-      () => {
-        // Check if app is defined with services and controllers
-        const app = (window as any).app;
-        return app && app.services && app.services.session && app.controllers;
-      },
-      { timeout: 10000 }
-    );
+    await expect(this.datasetGalleryFirstCard).toBeVisible({ timeout: 30000 });
   }
 
   // =========================================================================

@@ -137,3 +137,9 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Playwright artifacts (traces, screenshots, HTML report) — per-run output, never commit
+tests/results/
+tests/reports/
+playwright-report/
+test-results/

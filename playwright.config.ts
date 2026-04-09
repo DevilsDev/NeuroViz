@@ -14,22 +14,30 @@ export default defineConfig({
   /* Fail the build on CI if you accidentally left test.only in the source code */
   forbidOnly: !!process.env.CI,
 
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  /* Retry once on CI to absorb genuine flakes without tripling wall-clock on real failures */
+  retries: process.env.CI ? 1 : 0,
 
-  /* Opt out of parallel tests on CI */
-  workers: process.env.CI ? 1 : undefined,
+  /* Two workers on CI: TF.js + chromium fits in a 7 GB runner and halves wall-clock */
+  workers: process.env.CI ? 2 : undefined,
 
   /* Reporter to use */
-  reporter: [
-    ['html', { outputFolder: './tests/reports' }],
-    ['list'],
-  ],
+  reporter: process.env.CI
+    ? [
+        ['html', { outputFolder: './tests/reports', open: 'never' }],
+        ['github'],
+        ['dot'],
+      ]
+    : [
+        ['html', { outputFolder: './tests/reports' }],
+        ['list'],
+      ],
 
   /* Shared settings for all the projects below */
   use: {
-    /* Base URL to use in actions like `await page.goto('/')` */
-    baseURL: process.env.CI ? 'http://localhost:5173/NeuroViz' : 'http://localhost:3000',
+    /* Base URL. Trailing slash matters: Playwright resolves relative paths via
+       new URL(path, baseURL), so a missing slash collapses "/" to the server
+       root and loses the /NeuroViz/ sub-path. */
+    baseURL: process.env.CI ? 'http://localhost:5173/NeuroViz/' : 'http://localhost:3000/',
 
     /* Collect trace when retrying the failed test */
     trace: 'on-first-retry',
@@ -40,9 +48,9 @@ export default defineConfig({
     /* Record video on failure */
     video: 'on-first-retry',
 
-    /* Increase timeouts for TensorFlow.js initialization */
-    actionTimeout: 30000,
-    navigationTimeout: 30000,
+    /* Generous but bounded — TF.js init + D3 rendering must fit inside */
+    actionTimeout: 20000,
+    navigationTimeout: 20000,
   },
 
   /* Configure projects for major browsers */
@@ -75,8 +83,9 @@ export default defineConfig({
         },
       ],
 
-  /* Global timeout for each test - increased for TensorFlow.js initialization */
-  timeout: process.env.CI ? 90000 : 60000,
+  /* Per-test budget. 60s is ample for TF.js init + any multi-step test; any
+     test that legitimately needs more should opt in with test.setTimeout(). */
+  timeout: process.env.CI ? 60000 : 60000,
 
   /* Run local dev server before starting the tests */
   webServer: process.env.CI

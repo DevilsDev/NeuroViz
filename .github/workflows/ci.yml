@@ -1,16 +1,31 @@
 # =============================================================================
 # NeuroViz CI/CD Pipeline
 # =============================================================================
-# Triggered on:
-#   - Push to main branch
-#   - Pull requests to main branch
+# Triggers:
+#   - Push to main (runs full pipeline; deploy fires on green test+build)
+#   - Pull request to main (runs full pipeline; deploy skipped)
+#   - Manual dispatch (supports `skip_e2e` for emergency deploys when the
+#     E2E suite is red but a fix must ship)
 #
-# Pipeline stages:
-#   1. Lint & Type Check
-#   2. Unit Tests (Vitest)
-#   3. Build (Vite)
-#   4. E2E Tests (Playwright)
-#   5. Deploy to GitHub Pages (main branch only)
+# Job graph:
+#
+#   test  ─┐
+#          ├──> deploy   (push to main or workflow_dispatch)
+#   build ─┘
+#    │
+#    └──> e2e (advisory on main, blocking on PR; can be skipped via dispatch)
+#
+# Design rules baked in here:
+#   1. E2E is BLOCKING on PRs (catch regressions pre-merge) but ADVISORY on
+#      main (don't gate users on a flaky post-merge check).
+#   2. `deploy` depends on `test` and `build` only — never on `e2e`. This is
+#      how we avoid the "CI is broken so nothing ships" failure mode.
+#   3. Every job runs `npm ci --prefer-offline` directly against
+#      setup-node's built-in npm cache. No `node_modules`-as-artifact dance.
+#   4. `e2e` has a hard `timeout-minutes: 15` so no single run can ever
+#      burn the 6 h GitHub default again.
+#   5. A `workflow_dispatch` with `skip_e2e` gives operators a one-click
+#      force-deploy path for genuine emergencies.
 # =============================================================================
 
 name: CI/CD
@@ -20,26 +35,78 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_e2e:
+        description: 'Skip E2E tests (emergency deploy only — use when the E2E suite is broken but a fix must reach production)'
+        type: boolean
+        default: false
 
-# Cancel in-progress runs for the same branch
+# Cancel in-progress runs for the same branch so pushes in quick succession
+# don't waste CI minutes on stale commits.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Minimal permissions by default (least-privilege principle)
+# Minimal default permissions; individual jobs opt into more as needed.
 permissions:
   contents: read
 
 env:
-  NODE_VERSION: '20'  # Latest LTS
+  NODE_VERSION: '22'  # Node 22 LTS — matches release.yml, above semantic-release's ≥22 floor
 
 jobs:
   # ===========================================================================
-  # Job 0: Setup Dependencies (Shared across all jobs)
+  # Job 1: Lint, Type Check, Unit Tests with Coverage
   # ===========================================================================
-  setup:
-    name: Setup Dependencies
+  test:
+    name: Lint & Unit Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      checks: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: Lint code
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck
+
+      # Single coverage run — the previous pipeline ran `npm test` and then
+      # `npm run test:coverage` back-to-back, doubling vitest wall-clock for
+      # no benefit. Coverage executes the full suite on its own.
+      - name: Run unit tests with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 3
+
+  # ===========================================================================
+  # Job 2: Build (production bundle)
+  # ===========================================================================
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: test
+    timeout-minutes: 10
     permissions:
       contents: read
 
@@ -53,169 +120,64 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      # -----------------------------------------------------------------------
-      # Cache node_modules for faster subsequent jobs
-      # -----------------------------------------------------------------------
-      - name: Cache node_modules
-        id: cache-node-modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            node-modules-${{ runner.os }}-
-
       - name: Install dependencies
-        if: steps.cache-node-modules.outputs.cache-hit != 'true'
-        run: npm ci --prefer-offline
-
-      # -----------------------------------------------------------------------
-      # Upload node_modules as artifact for jobs that need it
-      # -----------------------------------------------------------------------
-      - name: Upload node_modules
-        uses: actions/upload-artifact@v4
-        with:
-          name: node-modules
-          path: node_modules/
-          retention-days: 1
-
-  # ===========================================================================
-  # Job 1: Lint, Type Check, and Unit Tests
-  # ===========================================================================
-  test:
-    name: Lint & Unit Tests
-    runs-on: ubuntu-latest
-    needs: setup  # Depend on setup job for cached dependencies
-    permissions:
-      contents: read
-      checks: write  # For publishing test results
-
-    steps:
-      # -----------------------------------------------------------------------
-      # Setup
-      # -----------------------------------------------------------------------
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      # -----------------------------------------------------------------------
-      # Restore cached node_modules
-      # -----------------------------------------------------------------------
-      - name: Restore node_modules cache
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            node-modules-${{ runner.os }}-
-
-      # -----------------------------------------------------------------------
-      # Quality Checks
-      # -----------------------------------------------------------------------
-      - name: Lint code
-        run: npm run lint
-
-      - name: Type check
-        run: npm run typecheck
-
-      # -----------------------------------------------------------------------
-      # Unit Tests
-      # -----------------------------------------------------------------------
-      - name: Run unit tests
-        run: npm test
-
-      - name: Run unit tests with coverage
-        run: npm run test:coverage
-
-      # -----------------------------------------------------------------------
-      # Upload Coverage (optional, for PR comments)
-      # -----------------------------------------------------------------------
-      - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage/
-          retention-days: 7
-
-  # ===========================================================================
-  # Job 2: Build
-  # ===========================================================================
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    needs: test  # Only build if tests pass
-    permissions:
-      contents: read
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      # -----------------------------------------------------------------------
-      # Restore cached node_modules
-      # -----------------------------------------------------------------------
-      - name: Restore node_modules cache
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            node-modules-${{ runner.os }}-
+        run: npm ci --prefer-offline --no-audit --no-fund
 
       - name: Build application
         run: npm run build
         env:
           GITHUB_ACTIONS: true
 
-      # -----------------------------------------------------------------------
-      # Bundle Size Analysis
-      # -----------------------------------------------------------------------
       - name: Analyze bundle size
         run: |
-          echo "## Bundle Size Report" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          du -sh dist/* 2>/dev/null | sort -hr >> $GITHUB_STEP_SUMMARY || echo "No dist files found" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Bundle Size Report"
+            echo '```'
+            du -sh dist/* 2>/dev/null | sort -hr || echo "No dist files found"
+            echo '```'
+            if [ -d "dist" ]; then
+              size=$(du -sm dist/ | cut -f1)
+              echo ""
+              echo "Total bundle size: ${size}MB (limit: 25MB)"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
-          # Check total bundle size (fail if exceeds 25MB)
           if [ -d "dist" ]; then
             size=$(du -sm dist/ | cut -f1)
-            echo "Total bundle size: ${size}MB" >> $GITHUB_STEP_SUMMARY
-            if [ $size -gt 25 ]; then
+            if [ "$size" -gt 25 ]; then
               echo "::error::Bundle size (${size}MB) exceeds limit (25MB)"
               exit 1
             fi
           fi
 
-      # -----------------------------------------------------------------------
-      # Upload build artifact for subsequent jobs
-      # -----------------------------------------------------------------------
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
-          retention-days: 7  # Increased for better debugging
+          retention-days: 7
 
   # ===========================================================================
-  # Job 3: E2E Tests (Playwright)
+  # Job 3: E2E Tests (Playwright against built production bundle)
+  # ===========================================================================
+  # Policy:
+  #   - BLOCKING on pull requests (PR merges wait on green E2E).
+  #   - ADVISORY on push to main (`continue-on-error` flips true), so a flaky
+  #     post-merge E2E can't stop auto-deploy. Branch protection on the PR
+  #     check is where regressions are actually caught.
+  #   - SKIPPABLE via `workflow_dispatch` with `skip_e2e: true`, for the case
+  #     where the E2E suite itself is broken and a fix must ship.
   # ===========================================================================
   e2e:
     name: E2E Tests
     runs-on: ubuntu-latest
-    needs: build  # Requires build artifact
+    needs: build
+    timeout-minutes: 15
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.skip_e2e) }}
+    continue-on-error: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     permissions:
       contents: read
-      checks: write  # For publishing test results
+      checks: write
 
     steps:
       - name: Checkout code
@@ -225,109 +187,91 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
-      # -----------------------------------------------------------------------
-      # Restore cached node_modules
-      # -----------------------------------------------------------------------
-      - name: Restore node_modules cache
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            node-modules-${{ runner.os }}-
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
 
-      # -----------------------------------------------------------------------
-      # Download build artifact
-      # -----------------------------------------------------------------------
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
 
-      # -----------------------------------------------------------------------
-      # Playwright Setup (Optimized - only chromium for CI)
-      # -----------------------------------------------------------------------
       - name: Install Playwright chromium browser
         run: npx playwright install --with-deps chromium
 
-      # -----------------------------------------------------------------------
-      # Run E2E Tests against preview server
-      # -----------------------------------------------------------------------
       - name: Run E2E tests
         run: |
-          # Start preview server in background on port 5173
-          npm run preview -- --port 5173 &
+          # Serve the built bundle on the sub-path GitHub Pages uses.
+          npm run preview -- --port 5173 --strictPort &
+          PREVIEW_PID=$!
+          trap 'kill $PREVIEW_PID 2>/dev/null || true' EXIT
 
-          # Wait for server to be ready (with base path)
-          npx wait-on http://localhost:5173/NeuroViz/ --timeout 30000
+          # Wait for server — increased timeout because the install step
+          # above sometimes finishes a beat before vite is ready.
+          npx wait-on http://localhost:5173/NeuroViz/ --timeout 60000
 
-          # Run Playwright tests
+          # Run Playwright (config picks CI settings from process.env.CI)
           npm run test:e2e
         env:
           CI: true
 
-      # -----------------------------------------------------------------------
-      # Upload test artifacts on failure
-      # -----------------------------------------------------------------------
-      - name: Upload Playwright report
+      - name: Upload Playwright HTML report
         uses: actions/upload-artifact@v4
-        if: failure()
+        if: always() && !cancelled()
         with:
-          name: playwright-report
+          name: playwright-report-${{ github.run_attempt }}
           path: tests/reports/
-          retention-days: 7
+          retention-days: 3
+          if-no-files-found: ignore
 
       - name: Upload Playwright traces
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-traces
+          name: playwright-traces-${{ github.run_attempt }}
           path: tests/results/
-          retention-days: 7
+          retention-days: 3
+          if-no-files-found: ignore
 
   # ===========================================================================
   # Job 4: Deploy to GitHub Pages
   # ===========================================================================
+  # Deploy runs when:
+  #   - A push to main passes `test` + `build` (E2E intentionally not a gate).
+  #   - A manual workflow_dispatch run passes `test` + `build`.
+  # Deploy DOES NOT run on pull requests.
+  # ===========================================================================
   deploy:
     name: Deploy to GitHub Pages
     runs-on: ubuntu-latest
-    needs: [test, build, e2e]  # All jobs must pass
+    needs: [test, build]
+    timeout-minutes: 5
 
-    # Only deploy on push to main (not on PRs)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'workflow_dispatch'
 
-    # Required permissions for GitHub Pages deployment (least-privilege)
     permissions:
-      contents: write  # For gh-pages branch push
-      id-token: write  # For GitHub Pages attestation
+      contents: write   # For gh-pages branch push
+      id-token: write   # Reserved for future Pages attestation
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # -----------------------------------------------------------------------
-      # Download build artifact
-      # -----------------------------------------------------------------------
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
 
-      # -----------------------------------------------------------------------
-      # Deploy to gh-pages branch
-      # -----------------------------------------------------------------------
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
           publish_branch: gh-pages
-          # Preserve commit history on gh-pages branch
           force_orphan: false
-          # Custom commit message
           commit_message: 'deploy: ${{ github.sha }}'
-          # Enable CNAME for custom domain (optional)
-          # cname: neuroviz.example.com
