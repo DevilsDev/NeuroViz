@@ -1,3 +1,9 @@
+## [2.27.10](https://github.com/DevilsDev/NeuroViz/compare/v2.27.9...v2.27.10) (2026-04-09)
+
+### Bug Fixes
+
+* Learn dropdown uses position:fixed + JS positioning to escape grid ([d95e723](https://github.com/DevilsDev/NeuroViz/commit/d95e723542321283c50e837553e774a111d3bc11))
+
 ## [2.27.9](https://github.com/DevilsDev/NeuroViz/compare/v2.27.8...v2.27.9) (2026-04-09)
 
 ### Bug Fixes
