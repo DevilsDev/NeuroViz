@@ -214,6 +214,37 @@ html:not(.dark) .select-field:focus {
     z-index: 9999 !important;
 }
 
+/* Challenge banner: centered over main content area, below toolbar */
+#challenge-banner {
+    /* Center horizontally over the main content (excluding sidebar 340px) */
+    left: calc((100vw - 340px) / 2) !important;
+    transform: translateX(-50%);
+}
+
+/* Light mode: challenge banner needs visible styling */
+html:not(.dark) #challenge-banner > div {
+    background: rgba(251, 191, 36, 0.12) !important;
+    border-color: rgba(251, 191, 36, 0.4) !important;
+    color: var(--color-text-primary) !important;
+}
+
+html:not(.dark) #challenge-banner .text-amber-300,
+html:not(.dark) #challenge-banner .text-amber-400 {
+    color: #B45309 !important;
+}
+
+html:not(.dark) #challenge-banner .text-white {
+    color: var(--color-text-primary) !important;
+}
+
+html:not(.dark) #challenge-banner .text-slate-300 {
+    color: var(--color-text-secondary) !important;
+}
+
+html:not(.dark) #challenge-banner .text-slate-400 {
+    color: var(--color-text-secondary) !important;
+}
+
 /* Light mode: dropdown menus need white bg + shadow to stand out */
 html:not(.dark) #learn-menu-dropdown {
     background: white !important;
