@@ -326,6 +326,9 @@ html:not(.dark) .text-red-400 {
         @apply flex flex-col overflow-hidden;
         background: var(--surface-0);
         border-left: 1px solid var(--border-subtle);
+        /* z-index lower than header (100) so dropdowns paint above sidebar */
+        z-index: 1;
+        position: relative;
     }
 
     .panel-scroll {
