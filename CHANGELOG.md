@@ -1,3 +1,9 @@
+## [2.27.13](https://github.com/DevilsDev/NeuroViz/compare/v2.27.12...v2.27.13) (2026-04-09)
+
+### Bug Fixes
+
+* challenge banner top 148px — clears toolbar bottom (141px) ([194ab79](https://github.com/DevilsDev/NeuroViz/commit/194ab792dfb8617242145f0fb057242320e1b685))
+
 ## [2.27.12](https://github.com/DevilsDev/NeuroViz/compare/v2.27.11...v2.27.12) (2026-04-09)
 
 ### Bug Fixes
