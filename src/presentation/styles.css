@@ -2043,7 +2043,6 @@ html:not(.dark) .loss-chart text,
 html:not(.dark) .weight-histogram text,
 html:not(.dark) .gradient-flow text,
 html:not(.dark) .network-diagram text,
-html:not(.dark) .roc-curve text,
 html:not(.dark) .lr-finder text,
 html:not(.dark) svg text {
   fill: #334155 !important;
@@ -2100,7 +2099,6 @@ html:not(.dark) #activations-container text {
   overflow: hidden;
 }
 
-#roc-curve-container,
 #lr-finder-container,
 #network-diagram-container,
 #activations-container {
@@ -2114,7 +2112,6 @@ html:not(.dark) #activations-container text {
 
 #weight-histogram-container svg,
 #gradient-flow-container svg,
-#roc-curve-container svg,
 #lr-finder-container svg,
 #network-diagram-container svg,
 #activations-container svg {

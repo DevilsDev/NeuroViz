@@ -2,60 +2,28 @@ import { TrainingSession } from '../../core/application/TrainingSession';
 import { TFNeuralNet } from '../../infrastructure/tensorflow/TFNeuralNet';
 import { D3Chart } from '../../infrastructure/d3/D3Chart';
 import { D3GradientFlow, estimateGradients } from '../../infrastructure/d3/D3GradientFlow';
-import { D3ActivationHeatmap } from '../../infrastructure/d3/D3ActivationHeatmap';
 import { toast } from '../toast';
-import { Point, ColourScheme } from '../../core/domain';
+import { Point } from '../../core/domain';
 import { APP_CONFIG } from '../../config/app.config';
 import type { ThreeVisualization, Prediction3D, Point3D } from '../../infrastructure/three';
 
 export interface VisualizationElements {
-    inputColourScheme: HTMLSelectElement;
-    inputPointSize: HTMLInputElement;
-    inputOpacity: HTMLInputElement;
-    opacityValue: HTMLSpanElement;
-    inputContours: HTMLInputElement;
-    contourValue: HTMLSpanElement;
-    inputZoom: HTMLInputElement;
-    inputTooltips: HTMLInputElement;
-    inputHighlightErrors: HTMLInputElement;
-    inputConfidenceCircles: HTMLInputElement;
-    inputNotifications: HTMLInputElement;
-    inputRecordEvolution: HTMLInputElement;
-    inputShowGrid: HTMLInputElement;
-    inputShowDiscretized: HTMLInputElement;
     inputVoronoi: HTMLInputElement;
-    inputMisclassified: HTMLInputElement;
-    inputConfidence: HTMLInputElement;
 
-    // Charts
+    // Gradient Flow chart host
     gradientFlowChart: HTMLDivElement;
-    // activationHeatmap: HTMLDivElement; // Removed duplicate
-    confusionMatrix: HTMLDivElement;
-    weightHistogram: HTMLDivElement;
-    rocCurve: HTMLDivElement;
 
-    // 3D View (Optional - if not present, 3D features disabled)
-    input3dView?: HTMLInputElement;
-    threeContainer?: HTMLDivElement;
-    btn3dReset?: HTMLButtonElement;
-    btn3dTop?: HTMLButtonElement;
-    btn3dSide?: HTMLButtonElement;
+    // 3D View
+    input3dView: HTMLInputElement;
+    threeContainer: HTMLDivElement;
 
-    // Gradient Flow (Optional)
-    inputShowGradients?: HTMLInputElement;
-    gradientFlowContainer?: HTMLDivElement;
-    inputLr?: HTMLInputElement;
-
-    // Activation Heatmap (Optional)
-    inputShowActivations?: HTMLInputElement;
-    activationHeatmap?: HTMLDivElement;
-    activationHint?: HTMLParagraphElement;
-    inputLayers?: HTMLInputElement;
+    // Gradient Flow
+    inputShowGradients: HTMLInputElement;
+    gradientFlowContainer: HTMLDivElement;
 }
 
 export class VisualizationController {
     private gradientFlow: D3GradientFlow | null = null;
-    private activationHeatmap: D3ActivationHeatmap | null = null;
     private threeViz: ThreeVisualization | null = null;
     private previousWeights: number[][][] = [];
 
@@ -80,38 +48,8 @@ export class VisualizationController {
     }
 
     private bindEvents(): void {
-        this.addTrackedListener(this.elements.inputColourScheme, 'change', () => this.handleColourSchemeChange());
-        this.addTrackedListener(this.elements.inputPointSize, 'change', () => this.handlePointSizeChange());
-        this.addTrackedListener(this.elements.inputOpacity, 'input', () => this.handleOpacityChange());
-        this.addTrackedListener(this.elements.inputContours, 'input', () => this.handleContourChange());
-        this.addTrackedListener(this.elements.inputZoom, 'change', () => this.handleZoomToggle());
-        this.addTrackedListener(this.elements.inputTooltips, 'change', () => this.handleTooltipsToggle());
-
-        // 3D View
-        if (this.elements.input3dView) {
-            this.addTrackedListener(this.elements.input3dView, 'change', () => void this.handle3dViewToggle());
-        }
-        if (this.elements.btn3dReset) {
-            this.addTrackedListener(this.elements.btn3dReset, 'click', () => this.threeViz?.resetCamera());
-        }
-        if (this.elements.btn3dTop) {
-            this.addTrackedListener(this.elements.btn3dTop, 'click', () => this.threeViz?.setTopView());
-        }
-        if (this.elements.btn3dSide) {
-            this.addTrackedListener(this.elements.btn3dSide, 'click', () => this.threeViz?.setSideView());
-        }
-
-        // Gradient Flow
-        if (this.elements.inputShowGradients) {
-            this.addTrackedListener(this.elements.inputShowGradients, 'change', () => this.handleGradientToggle());
-        }
-
-        // Activation Heatmap
-        if (this.elements.inputShowActivations) {
-            this.addTrackedListener(this.elements.inputShowActivations, 'change', () => this.handleActivationToggle());
-        }
-
-        // Voronoi Overlay
+        this.addTrackedListener(this.elements.input3dView, 'change', () => void this.handle3dViewToggle());
+        this.addTrackedListener(this.elements.inputShowGradients, 'change', () => this.handleGradientToggle());
         this.addTrackedListener(this.elements.inputVoronoi, 'change', () => this.handleVoronoiToggle());
     }
 
@@ -120,16 +58,8 @@ export class VisualizationController {
      * Call this on reset to clear displayed data while keeping the controller active.
      */
     public clear(): void {
-        // Clear 3D view
         this.threeViz?.clear();
-        
-        // Clear gradient flow
         this.gradientFlow?.clear();
-        
-        // Clear activation heatmap
-        this.activationHeatmap?.clear();
-        
-        // Reset previous weights baseline
         this.previousWeights = [];
     }
 
@@ -143,42 +73,9 @@ export class VisualizationController {
         }
         this.eventCleanup = [];
 
-        // Clean up visualization resources
         this.threeViz?.dispose();
         this.threeViz = null;
         this.gradientFlow = null;
-        this.activationHeatmap = null;
-    }
-
-
-    private handleColourSchemeChange(): void {
-        const scheme = this.elements.inputColourScheme.value as ColourScheme;
-        this.visualizerService.setConfig({ colourScheme: scheme });
-    }
-
-    private handlePointSizeChange(): void {
-        const size = parseInt(this.elements.inputPointSize.value, 10) || 5;
-        this.visualizerService.setConfig({ pointRadius: size });
-    }
-
-    private handleOpacityChange(): void {
-        const opacity = parseInt(this.elements.inputOpacity.value, 10) / 100;
-        this.elements.opacityValue.textContent = this.elements.inputOpacity.value;
-        this.visualizerService.setConfig({ boundaryOpacity: opacity });
-    }
-
-    private handleContourChange(): void {
-        const count = parseInt(this.elements.inputContours.value, 10);
-        this.elements.contourValue.textContent = this.elements.inputContours.value;
-        this.visualizerService.setConfig({ contourCount: count });
-    }
-
-    private handleZoomToggle(): void {
-        this.visualizerService.setConfig({ zoomEnabled: this.elements.inputZoom.checked });
-    }
-
-    private handleTooltipsToggle(): void {
-        this.visualizerService.setConfig({ tooltipsEnabled: this.elements.inputTooltips.checked });
     }
 
     private handleVoronoiToggle(): void {
@@ -186,8 +83,6 @@ export class VisualizationController {
     }
 
     public async handle3dViewToggle(): Promise<void> {
-        if (!this.elements.input3dView || !this.elements.threeContainer) return;
-
         if (this.elements.input3dView.checked) {
             this.elements.threeContainer.classList.remove('hidden');
 
@@ -214,7 +109,7 @@ export class VisualizationController {
     }
 
     public async update3dView(): Promise<void> {
-        if (!this.threeViz || !this.elements.input3dView?.checked) return;
+        if (!this.threeViz || !this.elements.input3dView.checked) return;
 
         const state = this.session.getState();
         if (!state.isInitialised || !state.datasetLoaded) return;
@@ -261,16 +156,10 @@ export class VisualizationController {
     }
 
     private handleGradientToggle(): void {
-        if (!this.elements.inputShowGradients || !this.elements.gradientFlowContainer) return;
-
         if (this.elements.inputShowGradients.checked) {
             this.elements.gradientFlowContainer.classList.remove('hidden');
             if (!this.gradientFlow) {
-                // Use the inner chart div, not the outer container with title
-                const chartElement = this.elements.gradientFlowChart;
-                if (chartElement) {
-                    this.gradientFlow = new D3GradientFlow(chartElement);
-                }
+                this.gradientFlow = new D3GradientFlow(this.elements.gradientFlowChart);
             }
             // Store current weights as baseline (guard against disposed model)
             if (this.neuralNetService.isReady()) {
@@ -282,7 +171,7 @@ export class VisualizationController {
     }
 
     public updateGradientFlow(): void {
-        if (!this.elements.inputShowGradients?.checked || !this.gradientFlow) return;
+        if (!this.elements.inputShowGradients.checked || !this.gradientFlow) return;
 
         // Guard against disposed model
         if (!this.neuralNetService.isReady()) return;
@@ -293,7 +182,6 @@ export class VisualizationController {
         // Initialize previousWeights if empty
         if (this.previousWeights.length === 0) {
             this.previousWeights = currentWeights;
-            // Render zero gradients as initial state
             const learningRate = this.session.getCurrentLearningRate();
             const zeroGradients = estimateGradients(currentWeights, currentWeights, learningRate);
             this.gradientFlow.render(zeroGradients);
@@ -301,64 +189,10 @@ export class VisualizationController {
         }
 
         // Estimate gradients based on weight changes (simplified)
-        // In a real app, we'd get gradients from the backend/TF.js
         const learningRate = this.session.getCurrentLearningRate();
         const gradients = estimateGradients(this.previousWeights, currentWeights, learningRate);
 
-        // Always render to show gradient flow (even if small)
         this.gradientFlow.render(gradients);
         this.previousWeights = currentWeights;
     }
-
-    private handleActivationToggle(): void {
-        if (!this.elements.inputShowActivations || !this.elements.activationHeatmap) return;
-
-        if (this.elements.inputShowActivations.checked) {
-            this.elements.activationHeatmap.classList.remove('hidden');
-            if (this.elements.activationHint) {
-                this.elements.activationHint.classList.remove('hidden');
-            }
-
-            if (!this.activationHeatmap) {
-                this.activationHeatmap = new D3ActivationHeatmap(this.elements.activationHeatmap);
-            }
-
-            this.updateActivationHeatmap();
-        } else {
-            this.elements.activationHeatmap.classList.add('hidden');
-            if (this.elements.activationHint) {
-                this.elements.activationHint.classList.add('hidden');
-            }
-        }
-    }
-
-    /**
-     * Updates the activation heatmap with real layer activations from the neural network.
-     * 
-     * @param inputPoint - Optional input point to compute activations for.
-     *                     If not provided, uses a default point at origin.
-     */
-    public updateActivationHeatmap(inputPoint?: Point): void {
-        if (!this.elements.inputShowActivations?.checked || !this.activationHeatmap) return;
-
-        const structure = this.neuralNetService.getStructure();
-        if (!structure) return;
-
-        // Use provided point or default to origin
-        const point = inputPoint ?? { x: 0, y: 0, label: 0 };
-
-        // Get real activations from the neural network service
-        const activations = this.neuralNetService.getLayerActivations(point);
-
-        // Guard against empty activations (model not initialised or disposed)
-        if (!activations || activations.length === 0) {
-            console.warn('[VisualizationController] No activations available from neural network');
-            return;
-        }
-
-        this.activationHeatmap.render(activations);
-    }
-
-
 }
-

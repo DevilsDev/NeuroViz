@@ -184,7 +184,7 @@ NeuroViz follows **Hexagonal Architecture** (Ports & Adapters), ensuring busines
 │                                                                 │
 │  Entities: Point │ Prediction │ Hyperparameters │ History      │
 │  Ports (Interfaces): INeuralNetworkService │ IVisualizerService│
-│                      IDatasetRepository │ IStorageService      │
+│                      IDatasetRepository │ IChartService        │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼

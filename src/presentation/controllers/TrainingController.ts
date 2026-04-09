@@ -1,9 +1,7 @@
 import { TrainingSession } from '../../core/application/TrainingSession';
 import { toast } from '../toast';
 import { logger, type LogContext } from '../../infrastructure/logging/Logger';
-import type { ActivationType } from '../../core/domain';
 import { TrainingState } from '../../core/application/ITrainingSession';
-import { resetSuggestionsDismissal } from '../SuggestedFixes';
 import {
     CommandExecutor,
     InitializeNetworkCommand,
@@ -21,24 +19,19 @@ import {
     performanceModeToFps,
     fpsToPerformanceMode,
 } from '../../utils/validation';
-import { setVisible, setEnabled, setActiveState } from '../../utils/dom';
+import { setVisible, setEnabled } from '../../utils/dom';
 
 export interface TrainingElements {
     inputLr: HTMLInputElement;
     inputLayers: HTMLInputElement;
     inputOptimizer: HTMLSelectElement;
-    inputMomentum: HTMLInputElement;
-    momentumValue: HTMLSpanElement;
-    momentumControl: HTMLDivElement;
     inputActivation: HTMLSelectElement;
     inputL1: HTMLInputElement;
     inputL2: HTMLInputElement;
     inputNumClasses: HTMLSelectElement;
     inputDropout: HTMLSelectElement;
-    inputClipNorm: HTMLSelectElement;
     inputBatchNorm: HTMLInputElement;
     inputLossFunction: HTMLSelectElement;
-    inputLayerActivations: HTMLInputElement;
     btnInit: HTMLButtonElement;
 
     inputBatchSize: HTMLInputElement;
@@ -46,11 +39,6 @@ export interface TrainingElements {
     inputFps: HTMLInputElement;
     fpsValue: HTMLSpanElement;
     inputLrSchedule: HTMLSelectElement;
-    inputWarmup: HTMLInputElement;
-    inputCycleLength: HTMLInputElement;
-    inputMinLr: HTMLInputElement;
-    inputEarlyStop: HTMLInputElement;
-    cyclicLrControls: HTMLDivElement;
     inputValSplit: HTMLSelectElement;
     inputTargetFps: HTMLSelectElement;
 
@@ -59,31 +47,11 @@ export interface TrainingElements {
     btnStep: HTMLButtonElement;
     btnReset: HTMLButtonElement;
 
-    // Mobile FAB
-    fabStart: HTMLButtonElement;
-    fabPause: HTMLButtonElement;
-
-    // UI Updates
+    // Toolbar metrics
     epochValue: HTMLElement;
     lossValue: HTMLElement;
     accuracyValue: HTMLElement;
     valLossValue: HTMLElement;
-    valAccuracyValue: HTMLElement;
-    stateDisplay: HTMLElement;
-    suggestionsPanel: HTMLDivElement;
-    suggestionsList: HTMLDivElement;
-
-    // Floating Metrics Bar
-    floatingMetricsBar: HTMLDivElement;
-    floatEpoch: HTMLElement;
-    floatLoss: HTMLElement;
-    floatAccuracy: HTMLElement;
-    floatLr: HTMLElement;
-    floatLossTrend: HTMLElement;
-    floatAccuracyTrend: HTMLElement;
-
-    // Visualization Panel (for training animation)
-    vizPanel: HTMLElement;
 }
 
 /**
@@ -96,8 +64,6 @@ export interface TrainingElements {
  * - Reduces controller complexity from 469 lines to ~430 lines
  */
 export class TrainingController {
-    private previousLoss: number | null = null;
-    private previousAccuracy: number | null = null;
     private commandExecutor: CommandExecutor;
 
     // Event cleanup tracking for proper disposal
@@ -109,7 +75,6 @@ export class TrainingController {
         private callbacks: {
             onNetworkUpdate: () => void;
             onClearVisualization: () => void;
-            onDismissSuggestions: () => void;
         }
     ) {
         this.commandExecutor = new CommandExecutor();
@@ -133,10 +98,6 @@ export class TrainingController {
         this.addTrackedListener(this.elements.btnStep, 'click', () => void this.handleStep());
         this.addTrackedListener(this.elements.btnReset, 'click', () => this.handleReset());
 
-        // Mobile FAB
-        this.addTrackedListener(this.elements.fabStart, 'click', () => void this.handleStart());
-        this.addTrackedListener(this.elements.fabPause, 'click', () => this.handlePause());
-
         // Config changes
         this.addTrackedListener(this.elements.inputLrSchedule, 'change', () => this.handleLrScheduleChange());
         this.addTrackedListener(this.elements.inputFps, 'input', () => this.handleFpsSliderChange());
@@ -144,20 +105,6 @@ export class TrainingController {
         this.addTrackedListener(this.elements.inputMaxEpochs, 'change', () => this.handleMaxEpochsChange());
         this.addTrackedListener(this.elements.inputValSplit, 'change', () => this.handleValSplitChange());
         this.addTrackedListener(this.elements.inputTargetFps, 'change', () => this.handlePerfModeChange());
-
-
-        // Optimizer change to toggle momentum
-        this.addTrackedListener(this.elements.inputOptimizer, 'change', () => {
-            if (this.elements.inputOptimizer.value === 'sgd') {
-                this.elements.momentumControl.classList.remove('hidden');
-            } else {
-                this.elements.momentumControl.classList.add('hidden');
-            }
-        });
-
-        this.addTrackedListener(this.elements.inputMomentum, 'input', () => {
-            this.elements.momentumValue.textContent = this.elements.inputMomentum.value;
-        });
     }
 
     /**
@@ -236,29 +183,23 @@ export class TrainingController {
         const layers = this.parseLayersInput(this.elements.inputLayers.value);
         // Validate enum values at runtime to prevent invalid configurations
         const optimizer = parseOptimizerType(this.elements.inputOptimizer.value);
-        const momentum = parseFloat(this.elements.inputMomentum.value) || 0.9;
         const activation = parseActivationType(this.elements.inputActivation.value);
         const l1Regularization = parseFloat(this.elements.inputL1.value) || 0;
         const l2Regularization = parseFloat(this.elements.inputL2.value) || 0;
         const numClasses = parseInt(this.elements.inputNumClasses.value, 10) || 2;
         const dropoutRate = parseFloat(this.elements.inputDropout.value) || 0;
-        const clipNorm = parseFloat(this.elements.inputClipNorm.value) || 0;
         const batchNorm = this.elements.inputBatchNorm.checked;
         const lossFunction = parseLossType(this.elements.inputLossFunction.value);
-        const layerActivations = this.parseLayerActivations(this.elements.inputLayerActivations.value);
 
         return {
             learningRate,
             layers,
             optimizer,
-            momentum,
             activation,
-            layerActivations: layerActivations.length > 0 ? layerActivations : undefined,
             l1Regularization,
             l2Regularization,
             numClasses,
             dropoutRate,
-            clipNorm,
             batchNorm,
             lossFunction,
         };
@@ -293,10 +234,6 @@ export class TrainingController {
         const validationSplit = parseInt(this.elements.inputValSplit.value, 10) / 100;
         // Validate LR schedule type at runtime
         const lrScheduleType = parseLRScheduleType(this.elements.inputLrSchedule.value);
-        const warmupEpochs = parseInt(this.elements.inputWarmup.value, 10) || 0;
-        const cycleLength = parseInt(this.elements.inputCycleLength.value, 10) || 20;
-        const minLR = parseFloat(this.elements.inputMinLr.value) || 0.001;
-        const earlyStoppingPatience = parseInt(this.elements.inputEarlyStop.value, 10) || 0;
 
         return {
             batchSize,
@@ -307,24 +244,11 @@ export class TrainingController {
                 type: lrScheduleType,
                 decayRate: 0.95,
                 decaySteps: 10,
-                warmupEpochs,
-                cycleLength,
-                minLR,
             },
-            earlyStoppingPatience,
         };
     }
 
     private handleLrScheduleChange(): void {
-        const scheduleType = this.elements.inputLrSchedule.value;
-        const isCyclic = scheduleType === 'cyclic_triangular' || scheduleType === 'cyclic_cosine';
-
-        if (isCyclic) {
-            this.elements.cyclicLrControls.classList.remove('hidden');
-        } else {
-            this.elements.cyclicLrControls.classList.add('hidden');
-        }
-
         void this.applyTrainingConfig();
     }
 
@@ -377,7 +301,6 @@ export class TrainingController {
      */
     public async handleStart(): Promise<void> {
         logger.debug('[TrainingController] handleStart called');
-        resetSuggestionsDismissal('suggestions-panel');
 
         // Auto-initialize if network hasn't been set up yet
         const state = this.session.getState();
@@ -446,172 +369,36 @@ export class TrainingController {
     public handleReset(): void {
         this.session.reset();
         this.callbacks.onClearVisualization();
-        this.callbacks.onDismissSuggestions();
     }
 
     public updateUI(state: TrainingState): void {
-        logger.debug('[TrainingController] updateUI called with state:', {
-            epoch: state.currentEpoch,
-            loss: state.currentLoss,
-            accuracy: state.currentAccuracy,
-            isRunning: state.isRunning,
-            isPaused: state.isPaused,
-            isInitialised: state.isInitialised,
-            datasetLoaded: state.datasetLoaded
-        });
-
-        logger.debug('[TrainingController] Elements check:', {
-            epochValue: this.elements.epochValue,
-            lossValue: this.elements.lossValue,
-            accuracyValue: this.elements.accuracyValue
-        });
-
         this.elements.epochValue.textContent = state.currentEpoch.toString();
         this.elements.lossValue.textContent = state.currentLoss !== null ? state.currentLoss.toFixed(4) : '—';
         this.elements.accuracyValue.textContent = state.currentAccuracy !== null ? `${(state.currentAccuracy * 100).toFixed(1)}%` : '—';
         this.elements.valLossValue.textContent = state.currentValLoss !== null ? state.currentValLoss.toFixed(4) : '—';
-        this.elements.valAccuracyValue.textContent = state.currentValAccuracy !== null ? `${(state.currentValAccuracy * 100).toFixed(1)}%` : '—';
-
-        logger.debug('[TrainingController] UI elements updated:', {
-            epochText: this.elements.epochValue.textContent,
-            lossText: this.elements.lossValue.textContent,
-            accuracyText: this.elements.accuracyValue.textContent
-        });
-
-        // Update status display text
-        let statusText = 'Idle';
-        if (state.isRunning && !state.isPaused) {
-            statusText = 'Training';
-        } else if (state.isPaused) {
-            statusText = 'Paused';
-        } else if (state.isInitialised && state.datasetLoaded) {
-            statusText = 'Ready';
-        }
-        this.elements.stateDisplay.textContent = statusText;
 
         // Determine if training can be started (or resumed from pause)
         // Allow start when dataset is loaded even if not yet initialized — handleStart() will auto-init
         const canStart = state.datasetLoaded && (!state.isRunning || state.isPaused);
-
-        // Update button states using standardised DOM helpers
         const isTraining = state.isRunning && !state.isPaused;
-        
+
         // Toggle Start/Pause button visibility
         setVisible(this.elements.btnStart, !isTraining);
         setVisible(this.elements.btnPause, isTraining);
         setEnabled(this.elements.btnPause, isTraining);
         setEnabled(this.elements.btnStep, canStart && !isTraining && !state.isProcessing);
 
-        // Mobile FAB buttons
-        setVisible(this.elements.fabStart, !isTraining);
-        setVisible(this.elements.fabPause, isTraining);
-
         // Enable Reset button if initialized and not running (or paused)
         const canReset = state.isInitialised && (!state.isRunning || state.isPaused);
         setEnabled(this.elements.btnReset, canReset);
 
-        // Enable/disable Start buttons based on readiness
+        // Enable/disable Start button based on readiness
         setEnabled(this.elements.btnStart, canStart);
-        setEnabled(this.elements.fabStart, canStart);
-
-        // Update Floating Metrics Bar
-        this.updateFloatingMetrics(state);
-    }
-
-    private updateFloatingMetrics(state: TrainingState): void {
-        // Show/hide floating metrics bar based on dataset and training state
-        const showMetrics = state.datasetLoaded && state.currentEpoch > 0;
-        const isTraining = state.isRunning && !state.isPaused;
-
-        setVisible(this.elements.floatingMetricsBar, showMetrics);
-
-        if (showMetrics) {
-            // Add pulsing animation during training using standardised helper
-            setActiveState(this.elements.floatingMetricsBar, isTraining, 'training');
-            setActiveState(this.elements.vizPanel, isTraining, 'training');
-
-            // Update epoch
-            this.elements.floatEpoch.textContent = state.currentEpoch.toString();
-
-            // Update loss with trend
-            if (state.currentLoss !== null && state.currentLoss !== undefined) {
-                this.elements.floatLoss.textContent = state.currentLoss.toFixed(4);
-
-                // Calculate and display trend
-                if (this.previousLoss !== null) {
-                    const lossChange = state.currentLoss - this.previousLoss;
-                    if (Math.abs(lossChange) > 0.0001) {
-                        if (lossChange < 0) {
-                            this.elements.floatLossTrend.textContent = '▼';
-                            this.elements.floatLossTrend.className = 'floating-metric-trend trending-down';
-                        } else {
-                            this.elements.floatLossTrend.textContent = '▲';
-                            this.elements.floatLossTrend.className = 'floating-metric-trend trending-up';
-                        }
-                    } else {
-                        this.elements.floatLossTrend.textContent = '';
-                    }
-                }
-                this.previousLoss = state.currentLoss;
-            } else {
-                this.elements.floatLoss.textContent = '—';
-                this.elements.floatLossTrend.textContent = '';
-            }
-
-            // Update accuracy with trend
-            if (state.currentAccuracy !== null && state.currentAccuracy !== undefined) {
-                this.elements.floatAccuracy.textContent = `${(state.currentAccuracy * 100).toFixed(1)}%`;
-
-                // Calculate and display trend
-                if (this.previousAccuracy !== null) {
-                    const accChange = state.currentAccuracy - this.previousAccuracy;
-                    if (Math.abs(accChange) > 0.001) {
-                        if (accChange > 0) {
-                            this.elements.floatAccuracyTrend.textContent = '▲';
-                            this.elements.floatAccuracyTrend.className = 'floating-metric-trend trending-up';
-                        } else {
-                            this.elements.floatAccuracyTrend.textContent = '▼';
-                            this.elements.floatAccuracyTrend.className = 'floating-metric-trend trending-down';
-                        }
-                    } else {
-                        this.elements.floatAccuracyTrend.textContent = '';
-                    }
-                }
-                this.previousAccuracy = state.currentAccuracy;
-            } else {
-                this.elements.floatAccuracy.textContent = '—';
-                this.elements.floatAccuracyTrend.textContent = '';
-            }
-
-            // Update learning rate
-            const lr = parseFloat(this.elements.inputLr.value);
-            if (!isNaN(lr)) {
-                this.elements.floatLr.textContent = lr.toFixed(4);
-            } else {
-                this.elements.floatLr.textContent = '—';
-            }
-        } else {
-            // Already hidden by setVisible above, just reset training state
-            setActiveState(this.elements.floatingMetricsBar, false, 'training');
-            // Reset trend tracking
-            this.previousLoss = null;
-            this.previousAccuracy = null;
-        }
     }
 
     private parseLayersInput(input: string): number[] {
         return input.split(',')
             .map(s => parseInt(s.trim(), 10))
             .filter(n => !isNaN(n) && n > 0);
-    }
-
-    private parseLayerActivations(input: string): ActivationType[] {
-        if (!input || input.trim() === '') return [];
-
-        const validActivations: ActivationType[] = ['linear', 'relu', 'sigmoid', 'tanh', 'leaky_relu', 'elu', 'selu', 'softmax'];
-
-        return input.split(',')
-            .map(s => s.trim().toLowerCase() as ActivationType)
-            .filter(a => validActivations.includes(a));
     }
 }

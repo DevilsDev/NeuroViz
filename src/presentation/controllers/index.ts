@@ -17,11 +17,5 @@ export type { ExportElements } from './ExportController';
 export { SessionController } from './SessionController';
 export type { SessionElements } from './SessionController';
 
-export { ComparisonController } from './ComparisonController';
-export type { ComparisonElements } from './ComparisonController';
-
-export { ResearchController } from './ResearchController';
-export type { ResearchElements } from './ResearchController';
-
 export { MetricsController } from './MetricsController';
 export type { MetricsElements, ClassificationMetrics } from './MetricsController';

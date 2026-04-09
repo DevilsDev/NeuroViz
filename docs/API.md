@@ -8,7 +8,6 @@ Complete API documentation for NeuroViz's core interfaces, classes, and types.
   - [INeuralNetworkService](#ineuralnetworkservice)
   - [IVisualizerService](#ivisualizerservice)
   - [IDatasetRepository](#idatasetrepository)
-  - [IStorageService](#istorageservice)
   - [ITrainingSession](#itrainingsession)
 - [Domain Models](#domain-models)
   - [Point](#point)
@@ -422,64 +421,6 @@ const data = await dataRepo.getDataset('spiral', {
   noiseLevel: 0.1,
   preprocessing: 'normalize'
 });
-```
-
----
-
-### IStorageService
-
-Abstracts persistence (LocalStorage, IndexedDB, backend API, etc.).
-
-**Location**: `src/core/ports/IStorageService.ts`
-
-#### Interface Definition
-
-```typescript
-interface IStorageService {
-  save(key: string, value: unknown): Promise<void>;
-  load<T>(key: string): Promise<T | null>;
-  delete(key: string): Promise<void>;
-  clear(): Promise<void>;
-}
-```
-
-#### Methods
-
-##### `save(key: string, value: unknown): Promise<void>`
-
-Saves data to persistent storage.
-
-**Parameters**:
-- `key: string` - Storage key
-- `value: unknown` - Data to save (will be JSON-serialized)
-
-**Example**:
-```typescript
-await storage.save('session', {
-  hyperparameters: config,
-  dataset: dataPoints,
-  history: trainingHistory
-});
-```
-
----
-
-##### `load<T>(key: string): Promise<T | null>`
-
-Loads data from persistent storage.
-
-**Parameters**:
-- `key: string` - Storage key
-
-**Returns**:
-- `Promise<T | null>` - Loaded data or null if not found
-
-**Example**:
-```typescript
-const session = await storage.load<SessionData>('session');
-if (session) {
-  // Restore session
-}
 ```
 
 ---
@@ -1130,7 +1071,6 @@ class TFNeuralNet implements INeuralNetworkService {
   async exportModel(): Promise<{ modelJson: Blob; weightsBlob: Blob }>;
   getWeights(): number[];
   getConfig(): Hyperparameters | null;
-  setLearningRate(lr: number): void;
   generateDropoutMask(dropoutRate: number): boolean[][];
 
   static getMemoryInfo(): { numTensors: number; numBytes: number };
@@ -1214,7 +1154,7 @@ const data = await repo.getDataset('spiral', {
 
 ### LocalStorageService
 
-Browser LocalStorage implementation of `IStorageService`.
+Safe wrapper around browser `localStorage` with JSON serialization, quota-exceeded handling, and corruption recovery.
 
 **Location**: `src/infrastructure/storage/LocalStorageService.ts`
 
@@ -1222,8 +1162,8 @@ Browser LocalStorage implementation of `IStorageService`.
 ```typescript
 const storage = new LocalStorageService();
 
-await storage.save('session', sessionData);
-const loaded = await storage.load<SessionData>('session');
+storage.setItem('session', sessionData);
+const loaded = storage.getItem<SessionData>('session');
 ```
 
 ---

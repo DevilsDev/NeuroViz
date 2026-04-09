@@ -68,30 +68,3 @@ export function calculateDatasetStatistics(data: Point[]): DatasetStatistics {
     outliers: outliers.slice(0, 5), // Limit to 5 outliers
   };
 }
-
-/**
- * Format statistics for display
- */
-export function formatStatistics(stats: DatasetStatistics): string {
-  const lines: string[] = [];
-
-  lines.push(`Total Samples: ${stats.totalSamples}`);
-
-  // Class distribution
-  const sortedClasses = Array.from(stats.classDistribution.entries()).sort((a, b) => a[0] - b[0]);
-  lines.push('\nClass Distribution:');
-  for (const [classLabel, count] of sortedClasses) {
-    const percentage = ((count / stats.totalSamples) * 100).toFixed(1);
-    lines.push(`  Class ${classLabel}: ${count} (${percentage}%)`);
-  }
-
-  // Feature ranges
-  lines.push(`\nFeature X: [${stats.featureRanges.x.min.toFixed(2)}, ${stats.featureRanges.x.max.toFixed(2)}]`);
-  lines.push(`Feature Y: [${stats.featureRanges.y.min.toFixed(2)}, ${stats.featureRanges.y.max.toFixed(2)}]`);
-
-  if (stats.outliers.length > 0) {
-    lines.push(`\nOutliers Detected: ${stats.outliers.length}`);
-  }
-
-  return lines.join('\n');
-}

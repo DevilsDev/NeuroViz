@@ -14,15 +14,12 @@ import { MockDataRepository } from '../../infrastructure/api/MockDataRepository'
 import { LocalStorageService } from '../../infrastructure/storage/LocalStorageService';
 import { ErrorBoundary } from '../../infrastructure/errorHandling/ErrorBoundary';
 import { WorkerManager } from '../../workers/WorkerManager';
-import { dismissSuggestions } from '../../presentation/SuggestedFixes';
 import {
   DatasetController,
   TrainingController,
   VisualizationController,
   ExportController,
   SessionController,
-  ComparisonController,
-  ResearchController,
   MetricsController,
 } from '../../presentation/controllers';
 import {
@@ -31,8 +28,6 @@ import {
   getVisualizationElements,
   getExportElements,
   getSessionElements,
-  getComparisonElements,
-  getResearchElements,
 } from '../../utils/UIFactory';
 import { safeGetElement } from '../../utils/dom';
 import { KeyboardShortcuts } from '../../utils/KeyboardShortcuts';
@@ -223,7 +218,6 @@ export class ApplicationBuilder {
           visualizationControllerRef?.clear();
           metricsController.clearClassificationMetrics();
         },
-        onDismissSuggestions: () => dismissSuggestions('suggestions-panel'),
       }
     );
 
@@ -240,26 +234,11 @@ export class ApplicationBuilder {
     const exportController = new ExportController(
       services.session,
       services.neuralNet,
-      services.visualizer,
-      getExportElements(),
-      {
-        onModelLoaded: () => {
-          const structure = services.neuralNet.getStructure();
-          if (structure) {
-            services.networkDiagram.render(
-              structure.layers,
-              structure.activations,
-              services.neuralNet.getWeightMatrices()
-            );
-          }
-          services.visualizer.renderData(services.session.getData());
-        }
-      }
+      getExportElements()
     );
 
     const sessionController = new SessionController(
       services.session,
-      services.visualizer,
       services.storage,
       getSessionElements(),
       {
@@ -274,18 +253,12 @@ export class ApplicationBuilder {
       }
     );
 
-    const comparisonController = new ComparisonController(services.session, getComparisonElements());
-
-    const researchController = new ResearchController(services.session, getResearchElements());
-
     return {
       dataset: datasetController,
       training: trainingController,
       visualization: visualizationController,
       export: exportController,
       session: sessionController,
-      comparison: comparisonController,
-      research: researchController,
       metrics: metricsController,
     };
   }

@@ -30,7 +30,17 @@
       "Bash(npm run preview:*)",
       "Bash(tasklist:*)",
       "Bash(findstr:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npx eslint:*)",
+      "Bash(gh run:*)",
+      "Bash(gh api:*)",
+      "Bash(GITHUB_ACTIONS=true npm run build)",
+      "Bash(npx gh-pages:*)",
+      "Bash(node -e ':*)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(git grep:*)",
+      "Bash(echo \"EXIT: $?\")"
     ],
     "deny": [],
     "ask": []

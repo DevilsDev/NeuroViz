@@ -78,7 +78,7 @@ export const TUTORIALS: Tutorial[] = [
         id: 'observe',
         title: 'Observe the Training',
         content: 'Watch the loss decrease and accuracy increase. The coloured regions show what the network predicts for each area.',
-        target: '#chart',
+        target: '#viz-container',
         position: 'left',
       },
       {
@@ -192,9 +192,8 @@ export const TUTORIALS: Tutorial[] = [
       {
         id: 'early-stopping',
         title: 'Early Stopping',
-        content: 'Enable early stopping to automatically stop training when validation loss stops improving.',
-        target: '#input-early-stopping',
-        position: 'right',
+        content: 'Early stopping halts training automatically when validation loss stops improving. Watch the validation loss curve during training — if it plateaus or rises while training loss keeps falling, it is time to stop.',
+        position: 'bottom',
       },
     ],
   },

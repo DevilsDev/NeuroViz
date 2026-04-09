@@ -1,13 +1,10 @@
 export type { Point } from './Point';
 
-// Domain errors
+// Domain errors (NeuroVizError is the internal abstract base — do not re-export)
 export {
-  NeuroVizError,
   ModelDisposedError,
   GradientExplosionError,
   ModelNotInitialisedError,
-  DatasetError,
-  ConfigurationError,
   isModelDisposedError,
 } from './errors';
 export type { Prediction } from './Prediction';
@@ -118,3 +115,34 @@ export {
   validateChallenge,
   calculateChallengeScore,
 } from './Challenge';
+
+// Config history (undo/redo)
+export type { ConfigSnapshot } from './ConfigHistory';
+export { ConfigHistory } from './ConfigHistory';
+
+// Dataset statistics
+export type { DatasetStatistics } from './DatasetStatistics';
+export { calculateDatasetStatistics } from './DatasetStatistics';
+
+// Speed comparison
+export type {
+  SpeedMetrics,
+  SpeedBaseline,
+  SpeedComparison,
+} from './SpeedComparison';
+export {
+  calculateSpeedMetrics,
+  compareSpeed,
+  formatSpeedMetrics,
+} from './SpeedComparison';
+
+// Training presets
+export type {
+  DatasetType,
+  TrainingPreset,
+} from './TrainingPresets';
+export {
+  TRAINING_PRESETS,
+  getAllPresets,
+  getPreset,
+} from './TrainingPresets';

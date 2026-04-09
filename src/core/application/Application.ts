@@ -2,8 +2,6 @@ import { TrainingSession } from './TrainingSession';
 import type { IDatasetRepository } from '../ports/IDatasetRepository';
 import type { INeuralNetworkService } from '../ports/INeuralNetworkService';
 import type { IVisualizerService } from '../ports/IVisualizerService';
-// NOTE: LocalStorageService doesn't implement IStorageService (API mismatch: setItem/getItem vs save/load).
-// This is technical debt — the service should be aligned with the port interface.
 import type { LocalStorageService } from '../../infrastructure/storage/LocalStorageService';
 import type {
   ILossChartService,
@@ -14,14 +12,15 @@ import type {
   IActivationHistogramService,
 } from '../ports/IChartService';
 import type { Hyperparameters, ActivationType } from '../domain/Hyperparameters';
+import type { Point } from '../domain/Point';
+import { calculateDatasetStatistics } from '../domain/DatasetStatistics';
+import { getPreset } from '../domain/TrainingPresets';
 import {
   DatasetController,
   TrainingController,
   VisualizationController,
   ExportController,
   SessionController,
-  ComparisonController,
-  ResearchController,
   MetricsController,
 } from '../../presentation/controllers';
 import { EducationController } from '../../presentation/controllers/EducationController';
@@ -67,8 +66,6 @@ export interface Controllers {
   visualization: VisualizationController;
   export: ExportController;
   session: SessionController;
-  comparison: ComparisonController;
-  research: ResearchController;
   metrics: MetricsController;
 }
 
@@ -105,7 +102,6 @@ export class Application {
       this.controllers.training.updateUI(state);
       this.services.lossChart.update(state.history);
       this.services.lrChart.render(state.history);
-      this.controllers.comparison.updateComparisonDisplay();
 
       // Guard against disposed model
       if (!this.services.neuralNet.isReady()) {
@@ -272,25 +268,21 @@ export class Application {
         return;
       }
 
-      void import('../domain/TrainingPresets').then(({ getPreset }) => {
-        const preset = getPreset(presetId);
-        if (preset && descriptionEl) {
-          descriptionEl.textContent = preset.description;
-          applyBtn.disabled = false;
-        }
-      }).catch((error: unknown) => {
-        logger.error('Failed to load preset', error instanceof Error ? error : undefined);
-      });
+      const preset = getPreset(presetId);
+      if (preset && descriptionEl) {
+        descriptionEl.textContent = preset.description;
+        applyBtn.disabled = false;
+      }
     });
 
     applyBtn.addEventListener('click', () => {
       const presetId = presetSelect.value;
       if (!presetId) return;
 
-      void import('../domain/TrainingPresets').then(async ({ getPreset }) => {
-        const preset = getPreset(presetId);
-        if (!preset) return;
+      const preset = getPreset(presetId);
+      if (!preset) return;
 
+      void (async (): Promise<void> => {
         const datasetSelect = document.getElementById('dataset-select') as HTMLSelectElement | null;
         if (datasetSelect) {
           datasetSelect.value = preset.datasetType;
@@ -307,7 +299,7 @@ export class Application {
         presetSelect.value = '';
         applyBtn.disabled = true;
         if (descriptionEl) descriptionEl.textContent = '';
-      }).catch((error: unknown) => {
+      })().catch((error: unknown) => {
         logger.error('Failed to apply preset', error instanceof Error ? error : undefined);
       });
     });
@@ -379,17 +371,18 @@ export class Application {
       const data = this.services.session.getData();
       if (!data || data.length === 0) return;
 
-      void this.updateDatasetStatistics(data).catch((error: unknown) => {
+      try {
+        this.updateDatasetStatistics(data);
+      } catch (error) {
         logger.error('Failed to update dataset statistics', error instanceof Error ? error : undefined);
-      });
+      }
     });
   }
 
   /**
    * Updates dataset statistics panel
    */
-  private async updateDatasetStatistics(data: readonly import('../domain/Point').Point[]): Promise<void> {
-    const { calculateDatasetStatistics } = await import('../domain/DatasetStatistics');
+  private updateDatasetStatistics(data: readonly Point[]): void {
     const stats = calculateDatasetStatistics(Array.from(data));
 
     const panel = document.getElementById('dataset-stats-panel');

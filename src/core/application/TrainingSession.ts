@@ -906,17 +906,8 @@ export class TrainingSession implements ITrainingSession {
 
     // Run training steps with increasing LR
     for (let i = 0; i < steps; i++) {
-      // Use dedicated method to update LR without destroying weights
-      if ('setLearningRate' in this.neuralNet) {
-        // @ts-ignore - We know it exists on our implementation
-        this.neuralNet.setLearningRate(currentLR);
-      } else {
-        // Fallback for implementations that don't support dynamic LR
-        await this.neuralNet.initialize({
-          ...originalHyperparams,
-          learningRate: currentLR,
-        });
-      }
+      // Use the port method — preserves trained weights, no reflection, no @ts-ignore
+      this.neuralNet.updateLearningRate(currentLR);
 
       // Train one batch
       const batch = this.getTrainingBatch();

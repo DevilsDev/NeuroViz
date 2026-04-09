@@ -53,7 +53,6 @@ vi.mock('../../../src/utils/validation', () => ({
 vi.mock('../../../src/utils/dom', () => ({
     setVisible: vi.fn(),
     setEnabled: vi.fn(),
-    setActiveState: vi.fn(),
 }));
 
 // Mock toast
@@ -64,11 +63,6 @@ vi.mock('../../../src/presentation/toast', () => ({
         warning: vi.fn(),
         info: vi.fn(),
     },
-}));
-
-// Mock SuggestedFixes
-vi.mock('../../../src/presentation/SuggestedFixes', () => ({
-    resetSuggestionsDismissal: vi.fn(),
 }));
 
 describe('TrainingController', () => {
@@ -83,53 +77,29 @@ describe('TrainingController', () => {
             inputLr: Object.assign(createElement<HTMLInputElement>('input'), { value: '0.003' }),
             inputLayers: Object.assign(createElement<HTMLInputElement>('input'), { value: '8, 4' }),
             inputOptimizer: Object.assign(createElement<HTMLSelectElement>('select'), { value: 'adam' }),
-            inputMomentum: Object.assign(createElement<HTMLInputElement>('input'), { value: '0.9' }),
-            momentumValue: createElement<HTMLSpanElement>('span'),
-            momentumControl: createElement<HTMLDivElement>('div'),
             inputActivation: Object.assign(createElement<HTMLSelectElement>('select'), { value: 'relu' }),
             inputL1: Object.assign(createElement<HTMLInputElement>('input'), { value: '0' }),
             inputL2: Object.assign(createElement<HTMLInputElement>('input'), { value: '0' }),
             inputNumClasses: Object.assign(createElement<HTMLSelectElement>('select'), { value: '2' }),
             inputDropout: Object.assign(createElement<HTMLSelectElement>('select'), { value: '0' }),
-            inputClipNorm: Object.assign(createElement<HTMLSelectElement>('select'), { value: '0' }),
             inputBatchNorm: Object.assign(createElement<HTMLInputElement>('input'), { checked: false }),
             inputLossFunction: Object.assign(createElement<HTMLSelectElement>('select'), { value: 'crossEntropy' }),
-            inputLayerActivations: Object.assign(createElement<HTMLInputElement>('input'), { value: '' }),
             btnInit: createElement<HTMLButtonElement>('button'),
             inputBatchSize: Object.assign(createElement<HTMLInputElement>('input'), { value: '32' }),
             inputMaxEpochs: Object.assign(createElement<HTMLInputElement>('input'), { value: '100' }),
             inputFps: Object.assign(createElement<HTMLInputElement>('input'), { value: '60' }),
             fpsValue: createElement<HTMLSpanElement>('span'),
             inputLrSchedule: Object.assign(createElement<HTMLSelectElement>('select'), { value: 'none' }),
-            inputWarmup: Object.assign(createElement<HTMLInputElement>('input'), { value: '0' }),
-            inputCycleLength: Object.assign(createElement<HTMLInputElement>('input'), { value: '20' }),
-            inputMinLr: Object.assign(createElement<HTMLInputElement>('input'), { value: '0.001' }),
-            inputEarlyStop: Object.assign(createElement<HTMLInputElement>('input'), { value: '0' }),
-            cyclicLrControls: createElement<HTMLDivElement>('div'),
             inputValSplit: Object.assign(createElement<HTMLSelectElement>('select'), { value: '20' }),
             inputTargetFps: Object.assign(createElement<HTMLSelectElement>('select'), { value: 'full' }),
             btnStart: createElement<HTMLButtonElement>('button'),
             btnPause: createElement<HTMLButtonElement>('button'),
             btnStep: createElement<HTMLButtonElement>('button'),
             btnReset: createElement<HTMLButtonElement>('button'),
-            fabStart: createElement<HTMLButtonElement>('button'),
-            fabPause: createElement<HTMLButtonElement>('button'),
             epochValue: createElement<HTMLElement>('span'),
             lossValue: createElement<HTMLElement>('span'),
             accuracyValue: createElement<HTMLElement>('span'),
             valLossValue: createElement<HTMLElement>('span'),
-            valAccuracyValue: createElement<HTMLElement>('span'),
-            stateDisplay: createElement<HTMLElement>('span'),
-            suggestionsPanel: createElement<HTMLDivElement>('div'),
-            suggestionsList: createElement<HTMLDivElement>('div'),
-            floatingMetricsBar: createElement<HTMLDivElement>('div'),
-            floatEpoch: createElement<HTMLElement>('span'),
-            floatLoss: createElement<HTMLElement>('span'),
-            floatAccuracy: createElement<HTMLElement>('span'),
-            floatLr: createElement<HTMLElement>('span'),
-            floatLossTrend: createElement<HTMLElement>('span'),
-            floatAccuracyTrend: createElement<HTMLElement>('span'),
-            vizPanel: createElement<HTMLElement>('div'),
         };
     }
 
@@ -153,7 +123,6 @@ describe('TrainingController', () => {
             const callbacks = {
                 onNetworkUpdate: vi.fn(),
                 onClearVisualization: vi.fn(),
-                onDismissSuggestions: vi.fn(),
             };
 
             // Spy on removeEventListener
@@ -186,7 +155,6 @@ describe('TrainingController', () => {
             const callbacks = {
                 onNetworkUpdate: vi.fn(),
                 onClearVisualization: vi.fn(),
-                onDismissSuggestions: vi.fn(),
             };
 
             const controller = new TrainingController(
@@ -218,7 +186,6 @@ describe('TrainingController', () => {
             const callbacks = {
                 onNetworkUpdate: vi.fn(),
                 onClearVisualization: vi.fn(),
-                onDismissSuggestions: vi.fn(),
             };
 
             const controller = new TrainingController(
@@ -249,7 +216,6 @@ describe('TrainingController', () => {
             const callbacks = {
                 onNetworkUpdate: vi.fn(),
                 onClearVisualization: vi.fn(),
-                onDismissSuggestions: vi.fn(),
             };
 
             const controller = new TrainingController(
@@ -277,7 +243,6 @@ describe('TrainingController', () => {
             const callbacks = {
                 onNetworkUpdate: vi.fn(),
                 onClearVisualization: vi.fn(),
-                onDismissSuggestions: vi.fn(),
             };
 
             const controller = new TrainingController(
@@ -303,7 +268,6 @@ describe('TrainingController', () => {
             const callbacks = {
                 onNetworkUpdate: vi.fn(),
                 onClearVisualization: vi.fn(),
-                onDismissSuggestions: vi.fn(),
             };
 
             const controller = new TrainingController(
@@ -342,7 +306,6 @@ describe('TrainingController', () => {
             const callbacks = {
                 onNetworkUpdate: vi.fn(),
                 onClearVisualization: vi.fn(),
-                onDismissSuggestions: vi.fn(),
             };
 
             const controller = new TrainingController(
@@ -361,60 +324,6 @@ describe('TrainingController', () => {
             controller.dispose();
         });
 
-        it('should update status display text correctly', async () => {
-            const { TrainingController } = await import('../../../src/presentation/controllers/TrainingController');
-            
-            const mockElements = createMockElements();
-            const mockSession = createMockSession();
-
-            const callbacks = {
-                onNetworkUpdate: vi.fn(),
-                onClearVisualization: vi.fn(),
-                onDismissSuggestions: vi.fn(),
-            };
-
-            const controller = new TrainingController(
-                mockSession as any,
-                mockElements,
-                callbacks
-            );
-
-            // Test 'Idle' state
-            controller.updateUI(createMockState());
-            expect(mockElements.stateDisplay.textContent).toBe('Idle');
-
-            // Test 'Ready' state
-            controller.updateUI(createMockState({
-                isInitialised: true,
-                datasetLoaded: true,
-            }));
-            expect(mockElements.stateDisplay.textContent).toBe('Ready');
-
-            // Test 'Training' state
-            controller.updateUI(createMockState({
-                isInitialised: true,
-                datasetLoaded: true,
-                isRunning: true,
-                currentEpoch: 5,
-                currentLoss: 0.5,
-                currentAccuracy: 0.8,
-            }));
-            expect(mockElements.stateDisplay.textContent).toBe('Training');
-
-            // Test 'Paused' state
-            controller.updateUI(createMockState({
-                isInitialised: true,
-                datasetLoaded: true,
-                isRunning: true,
-                isPaused: true,
-                currentEpoch: 5,
-                currentLoss: 0.5,
-                currentAccuracy: 0.8,
-            }));
-            expect(mockElements.stateDisplay.textContent).toBe('Paused');
-
-            controller.dispose();
-        });
     });
 
     describe('Performance Mode', () => {
@@ -429,7 +338,6 @@ describe('TrainingController', () => {
             const callbacks = {
                 onNetworkUpdate: vi.fn(),
                 onClearVisualization: vi.fn(),
-                onDismissSuggestions: vi.fn(),
             };
 
             const controller = new TrainingController(

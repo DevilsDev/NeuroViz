@@ -49,28 +49,6 @@ export class ModelNotInitialisedError extends NeuroVizError {
 }
 
 /**
- * Dataset validation failed (e.g., empty data, invalid labels).
- */
-export class DatasetError extends NeuroVizError {
-  readonly code = 'DATASET_ERROR';
-
-  constructor(message: string) {
-    super(message);
-  }
-}
-
-/**
- * Training configuration is invalid.
- */
-export class ConfigurationError extends NeuroVizError {
-  readonly code = 'CONFIGURATION_ERROR';
-
-  constructor(message: string) {
-    super(message);
-  }
-}
-
-/**
  * Checks if an error is a ModelDisposedError or has a message indicating disposal.
  * Use this instead of string-matching on error messages.
  */

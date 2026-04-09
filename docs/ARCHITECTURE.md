@@ -79,8 +79,7 @@ NeuroViz implements **Hexagonal Architecture** (also known as Ports & Adapters) 
 - `INeuralNetworkService` - ML framework abstraction
 - `IVisualizerService` - Charting library abstraction
 - `IDatasetRepository` - Data source abstraction
-- `IStorageService` - Persistence abstraction
-- `ILogger` - Logging abstraction
+- `IChartService` - Chart adapter family (loss, LR, confusion matrix, histograms, etc.)
 
 ---
 
@@ -114,8 +113,7 @@ src/core/
 │   ├── INeuralNetworkService.ts  # ML abstraction
 │   ├── IVisualizerService.ts     # Chart abstraction
 │   ├── IDatasetRepository.ts     # Data source abstraction
-│   ├── IStorageService.ts        # Persistence abstraction
-│   └── ILogger.ts                # Logging abstraction
+│   └── IChartService.ts          # Chart adapter family
 │
 ├── application/                # Use cases and orchestration
 │   ├── TrainingSession.ts     # Main training orchestrator
@@ -186,7 +184,6 @@ src/infrastructure/
 │   ├── D3ActivationHeatmap.ts # Neuron activations
 │   ├── D3GradientFlow.ts     # Backprop visualization
 │   ├── D3WeightHistogram.ts  # Weight distribution
-│   ├── D3RocCurve.ts         # Binary classification ROC
 │   ├── D3LRFinder.ts         # LR finder chart
 │   └── D3VoronoiOverlay.ts   # Voronoi diagram
 │
@@ -195,10 +192,10 @@ src/infrastructure/
 │   └── RestAPI.ts            # Future real API adapter
 │
 ├── storage/                  # Persistence adapters
-│   └── LocalStorageService.ts # Implements IStorageService
+│   └── LocalStorageService.ts # Safe localStorage wrapper
 │
 ├── logging/                  # Logging adapters
-│   └── Logger.ts             # Implements ILogger
+│   └── Logger.ts             # Structured console logger
 │
 ├── education/                # Educational services
 │   ├── TutorialService.ts    # Tutorial orchestration
