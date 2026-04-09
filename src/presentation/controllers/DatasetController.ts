@@ -97,12 +97,13 @@ export class DatasetController {
     if (datasetType === 'custom') {
       this.customDataPoints = [];
       this.visualizerService.renderData([]);
-      // Show draw controls and enable draw mode
+      // Show draw controls. Draw mode is enabled in handleDatasetSelectChange() which runs
+      // via the dropdown 'change' event dispatched before this method — calling enableDrawMode()
+      // here would fire a duplicate "Draw mode enabled" toast on every Draw-chip click.
       this.elements.drawControls.classList.remove('hidden');
       this.elements.datasetOptions.classList.add('hidden');
       this.updateDrawClassButtons();
-      this.enableDrawMode();
-      logger.debug('[DatasetController] Custom draw mode enabled');
+      logger.debug('[DatasetController] Custom draw controls shown');
       return;
     }
 

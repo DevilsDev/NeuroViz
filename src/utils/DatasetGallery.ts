@@ -60,8 +60,12 @@ export class DatasetGallery {
       });
     }
 
-    // Sync gallery when dropdown changes
+    // Sync gallery when dropdown changes.
+    // Re-entry guard: selectDataset() itself dispatches a synthetic 'change' after mutating
+    // dropdown.value, and this listener would otherwise re-call selectDataset → a second
+    // loadDataButton.click(). Bail when the value already matches our tracked selection.
     this.addTrackedListener(this.dropdown, 'change', () => {
+      if (this.dropdown.value === this.selectedDataset) return;
       this.selectDataset(this.dropdown.value);
     });
 
