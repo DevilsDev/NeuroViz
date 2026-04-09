@@ -1,3 +1,9 @@
+## [2.27.11](https://github.com/DevilsDev/NeuroViz/compare/v2.27.10...v2.27.11) (2026-04-09)
+
+### Bug Fixes
+
+* move Learn dropdown to document.body — escapes all stacking contexts ([9cd85cc](https://github.com/DevilsDev/NeuroViz/commit/9cd85ccec42cc29983c57c761e3c6d622225a416))
+
 ## [2.27.10](https://github.com/DevilsDev/NeuroViz/compare/v2.27.9...v2.27.10) (2026-04-09)
 
 ### Bug Fixes
