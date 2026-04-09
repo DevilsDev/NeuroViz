@@ -208,6 +208,51 @@ html:not(.dark) .select-field:focus {
     border-color: rgb(var(--color-cyan-rgb)) !important;
 }
 
+/* Light mode: dropdown menus need white bg + shadow to stand out */
+html:not(.dark) #learn-menu-dropdown {
+    background: white !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+}
+
+html:not(.dark) #learn-menu-dropdown button {
+    color: var(--color-text-primary) !important;
+}
+
+html:not(.dark) #learn-menu-dropdown button:hover {
+    background: rgba(var(--color-cyan-rgb), 0.06) !important;
+}
+
+/* Light mode: Learn button should match header style, not green */
+html:not(.dark) #btn-learn-menu {
+    background: transparent !important;
+    color: var(--color-text-secondary) !important;
+    border: 1px solid var(--border-subtle) !important;
+}
+
+html:not(.dark) #btn-learn-menu:hover {
+    color: var(--color-text-primary) !important;
+    background: rgba(var(--color-cyan-rgb), 0.06) !important;
+}
+
+/* Light mode: help modal and other overlays */
+html:not(.dark) #help-modal > div,
+html:not(.dark) #tutorials-modal > div,
+html:not(.dark) #challenges-modal > div {
+    background: white !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Light mode: mode selector */
+html:not(.dark) .mode-selector {
+    border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+html:not(.dark) .mode-btn.active {
+    background: rgba(var(--color-cyan-rgb), 0.1) !important;
+    color: rgb(var(--color-cyan-rgb)) !important;
+}
+
 html:not(.dark) .text-red-400 {
     color: rgb(var(--color-danger-rgb)) !important;
 }
