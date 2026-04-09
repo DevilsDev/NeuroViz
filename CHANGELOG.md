@@ -1,3 +1,9 @@
+## [2.27.7](https://github.com/DevilsDev/NeuroViz/compare/v2.27.6...v2.27.7) (2026-04-09)
+
+### Bug Fixes
+
+* Learn dropdown hidden behind sidebar — raise header z-index to 100 ([07ca3d9](https://github.com/DevilsDev/NeuroViz/commit/07ca3d9ed75c87f42b1a1ea602cfde7a328e43a1))
+
 ## [2.27.6](https://github.com/DevilsDev/NeuroViz/compare/v2.27.5...v2.27.6) (2026-04-09)
 
 ### Bug Fixes
