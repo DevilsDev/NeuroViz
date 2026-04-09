@@ -499,23 +499,32 @@ export class ApplicationBuilder {
 
   /**
    * Fixes Learn dropdown positioning.
-   * The dropdown uses position:fixed (to escape grid stacking context),
-   * so we must manually position it below the trigger button.
+   * CSS Grid stacking contexts prevent any z-index from painting the dropdown
+   * above the sidebar. Solution: move the dropdown to document.body so it
+   * escapes all stacking contexts, then position it fixed relative to the button.
    */
   private fixLearnDropdownPosition(): void {
     const btn = document.getElementById('btn-learn-menu');
     const dropdown = document.getElementById('learn-menu-dropdown');
     if (!btn || !dropdown) return;
 
-    const observer = new MutationObserver(() => {
+    // Move dropdown to body to escape all grid stacking contexts
+    document.body.appendChild(dropdown);
+
+    const positionDropdown = (): void => {
       if (!dropdown.classList.contains('hidden')) {
         const rect = btn.getBoundingClientRect();
         dropdown.style.top = `${rect.bottom + 4}px`;
         dropdown.style.right = `${window.innerWidth - rect.right}px`;
         dropdown.style.left = 'auto';
       }
-    });
+    };
 
+    // Reposition whenever visibility changes
+    const observer = new MutationObserver(positionDropdown);
     observer.observe(dropdown, { attributes: true, attributeFilter: ['class'] });
+
+    // Also reposition on window resize
+    window.addEventListener('resize', positionDropdown);
   }
 }
