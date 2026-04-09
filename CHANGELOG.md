@@ -1,3 +1,9 @@
+## [2.27.6](https://github.com/DevilsDev/NeuroViz/compare/v2.27.5...v2.27.6) (2026-04-09)
+
+### Bug Fixes
+
+* **theme:** Learn dropdown invisible in light mode + modal/button fixes ([33b5453](https://github.com/DevilsDev/NeuroViz/commit/33b545326b2a2f14e41cbc30698d85754403a09b))
+
 ## [2.27.5](https://github.com/DevilsDev/NeuroViz/compare/v2.27.4...v2.27.5) (2026-04-08)
 
 ### Bug Fixes
