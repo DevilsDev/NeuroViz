@@ -124,9 +124,13 @@ html:not(.dark) .bg-navy-900\/30 {
 }
 
 html:not(.dark) .bg-navy-800,
-html:not(.dark) .bg-navy-800\/80,
-html:not(.dark) .bg-navy-800\/30 {
+html:not(.dark) .bg-navy-800\/80 {
     background-color: var(--surface-2) !important;
+}
+
+/* Sidebar sections: transparent in light mode (Colab-style spacing, not boxes) */
+html:not(.dark) .bg-navy-800\/30 {
+    background-color: transparent !important;
 }
 
 html:not(.dark) .bg-navy-700 {
@@ -156,6 +160,52 @@ html:not(.dark) .text-slate-500 {
 
 html:not(.dark) .bg-red-900\/20 {
     background-color: rgba(var(--color-danger-rgb), 0.1) !important;
+}
+
+/* Light mode: Colab-style compact buttons */
+html:not(.dark) .btn-primary {
+    background: rgb(var(--color-cyan-rgb)) !important;
+    color: white !important;
+    box-shadow: none !important;
+    font-size: 12px !important;
+}
+
+html:not(.dark) .btn-secondary {
+    background: transparent !important;
+    border: 1px solid var(--border-subtle) !important;
+    color: var(--color-text-primary) !important;
+    font-size: 12px !important;
+}
+
+html:not(.dark) .btn-secondary:hover {
+    background: rgba(var(--color-cyan-rgb), 0.06) !important;
+    border-color: rgba(var(--color-cyan-rgb), 0.3) !important;
+}
+
+/* Light mode: section titles — sentence-weight, not heavy uppercase */
+html:not(.dark) .sidebar-section h3,
+html:not(.dark) .panel-scroll .bg-navy-800\/30 h3 {
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+/* Light mode: tab active state — underline only, no colored pill */
+html:not(.dark) .sidebar-tab.active {
+    background: transparent !important;
+    color: rgb(var(--color-cyan-rgb));
+    border-bottom-color: rgb(var(--color-cyan-rgb));
+}
+
+/* Light mode: inputs — lighter borders */
+html:not(.dark) .input-field,
+html:not(.dark) .select-field {
+    background: white !important;
+    border-color: rgba(172, 176, 190, 0.4) !important;
+}
+
+html:not(.dark) .input-field:focus,
+html:not(.dark) .select-field:focus {
+    border-color: rgb(var(--color-cyan-rgb)) !important;
 }
 
 html:not(.dark) .text-red-400 {
@@ -240,7 +290,7 @@ html:not(.dark) .text-red-400 {
         border-bottom: 1px solid var(--border-subtle);
         border-radius: 0;
         margin-bottom: 0;
-        padding: 12px 0;
+        padding: 10px 0;
     }
 
     .panel-scroll .bg-navy-800\/30:last-child {
