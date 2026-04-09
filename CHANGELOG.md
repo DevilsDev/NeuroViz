@@ -1,3 +1,17 @@
+## [2.27.15](https://github.com/DevilsDev/NeuroViz/compare/v2.27.14...v2.27.15) (2026-04-09)
+
+### Bug Fixes
+
+* **dataset:** draw chip fires exactly one toast, not three ([591957d](https://github.com/DevilsDev/NeuroViz/commit/591957da0259eb1971f7eb5eccfe718762ddc79e)), closes [#1](https://github.com/DevilsDev/NeuroViz/issues/1)
+* **ui:** header dataset chips no longer disappear on hover ([a4ba849](https://github.com/DevilsDev/NeuroViz/commit/a4ba849093b3be69ea7e994480820518faddfe32)), closes [#313244](https://github.com/DevilsDev/NeuroViz/issues/313244)
+* **ui:** mirror compress icon top-right corner outward ([36fd62e](https://github.com/DevilsDev/NeuroViz/commit/36fd62e2cf4ffb2aad3aa373f8c48f865ef640b1))
+* **ui:** unify background to Catppuccin and fill full viewport ([25de1db](https://github.com/DevilsDev/NeuroViz/commit/25de1db9136a7691174291c285724855fb0c2082)), closes [#0A0E1A](https://github.com/DevilsDev/NeuroViz/issues/0A0E1A) [#0A0E1A](https://github.com/DevilsDev/NeuroViz/issues/0A0E1A)
+* **ui:** wire help button + stop header clipping button ascenders ([5c7e4db](https://github.com/DevilsDev/NeuroViz/commit/5c7e4db805a286af22275627f87cb8cd7a7552ee)), closes [#btn-help](https://github.com/DevilsDev/NeuroViz/issues/btn-help) [#help-modal](https://github.com/DevilsDev/NeuroViz/issues/help-modal) [#btn-open-help](https://github.com/DevilsDev/NeuroViz/issues/btn-open-help) [#btn-fullscreen](https://github.com/DevilsDev/NeuroViz/issues/btn-fullscreen)
+
+### Code Refactoring
+
+* phase 1-5 codebase cleanup — remove dead code, prune controllers, tighten barrels ([e1e278a](https://github.com/DevilsDev/NeuroViz/commit/e1e278afff56a73c364f91d51833ea870d40bf9a)), closes [#chart](https://github.com/DevilsDev/NeuroViz/issues/chart) [#viz-container](https://github.com/DevilsDev/NeuroViz/issues/viz-container)
+
 ## [2.27.14](https://github.com/DevilsDev/NeuroViz/compare/v2.27.13...v2.27.14) (2026-04-09)
 
 ### Bug Fixes
