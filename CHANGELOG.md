@@ -1,3 +1,9 @@
+## [2.27.12](https://github.com/DevilsDev/NeuroViz/compare/v2.27.11...v2.27.12) (2026-04-09)
+
+### Bug Fixes
+
+* challenge banner positioning — center on content, clear toolbar ([35789e0](https://github.com/DevilsDev/NeuroViz/commit/35789e095abea3bff96eb2eac7b526701380dd63))
+
 ## [2.27.11](https://github.com/DevilsDev/NeuroViz/compare/v2.27.10...v2.27.11) (2026-04-09)
 
 ### Bug Fixes
