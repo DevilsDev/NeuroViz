@@ -370,9 +370,20 @@ export class ApplicationBuilder {
   }
 
   /**
-   * Initializes header button controls (fullscreen only - theme is handled by SessionController)
+   * Initializes header button controls (fullscreen + help - theme is handled by SessionController)
    */
   private initializeHeaderButtons(): void {
+    // Help & Tutorials button — opens the keyboard-shortcuts help modal
+    // (same target the in-dropdown "btn-open-help" uses). Without this handler
+    // the toolbar "?" icon was a dead click.
+    const helpBtn = document.getElementById('btn-help');
+    const helpModal = document.getElementById('help-modal');
+    if (helpBtn && helpModal) {
+      helpBtn.addEventListener('click', () => {
+        helpModal.classList.remove('hidden');
+      });
+    }
+
     // Fullscreen toggle
     const fullscreenBtn = document.getElementById('btn-fullscreen');
     const expandIcon = document.getElementById('icon-expand');

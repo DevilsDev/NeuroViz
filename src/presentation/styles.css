@@ -3101,10 +3101,17 @@ body {
   contain: layout style;
 }
 
-/* Header - constrained width */
+/* Header - constrained width.
+ * overflow-x: clip horizontal blowout (e.g. chip row or mode selector growing too wide);
+ * overflow-y: visible so button focus rings, hover shadows, and dropdowns (e.g. the
+ * Learn menu) that extend vertically are NOT clipped by the header box. Using `clip`
+ * instead of `hidden` is critical: per CSS spec, `overflow-x: hidden` combined with
+ * `overflow-y: visible` silently promotes visible→auto, creating an unintended scroll
+ * container. `clip` is a non-scrolling hide that composes cleanly with visible. */
 header {
   max-width: 100%;
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 /* Additional zoom level support */
