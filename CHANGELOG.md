@@ -1,3 +1,9 @@
+## [2.27.8](https://github.com/DevilsDev/NeuroViz/compare/v2.27.7...v2.27.8) (2026-04-09)
+
+### Bug Fixes
+
+* sidebar z-index lower than header so Learn dropdown paints above it ([06d07ad](https://github.com/DevilsDev/NeuroViz/commit/06d07ad6af9590e8ed77bf77927665e7fa5e9923))
+
 ## [2.27.7](https://github.com/DevilsDev/NeuroViz/compare/v2.27.6...v2.27.7) (2026-04-09)
 
 ### Bug Fixes
