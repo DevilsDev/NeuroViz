@@ -1,3 +1,15 @@
+## [2.27.16](https://github.com/DevilsDev/NeuroViz/compare/v2.27.15...v2.27.16) (2026-04-10)
+
+### Bug Fixes
+
+* **ml-viz:** confusion matrix, activation histogram, webgl recovery ([#20](https://github.com/DevilsDev/NeuroViz/issues/20)) ([3e1c480](https://github.com/DevilsDev/NeuroViz/commit/3e1c480c830e7cec6eb7124f6057ba86e85beef5))
+
+### Documentation
+
+* **cicd:** archive forensic audit behind the pipeline overhaul [skip ci] ([240b143](https://github.com/DevilsDev/NeuroViz/commit/240b143be443b92f1dbd7c98c547f962114498c8))
+* **review:** dual-hat product readiness assessment after Phase 1 [skip ci] ([03adb58](https://github.com/DevilsDev/NeuroViz/commit/03adb58052780d8e91451e4e87ad6ae4dd9f2d81)), closes [#btn-init](https://github.com/DevilsDev/NeuroViz/issues/btn-init)
+* **review:** integrate static architecture audit findings [skip ci] ([e4ebba2](https://github.com/DevilsDev/NeuroViz/commit/e4ebba25a61a50751656daadcf743f83603693c4)), closes [#1](https://github.com/DevilsDev/NeuroViz/issues/1)
+
 ## [2.27.15](https://github.com/DevilsDev/NeuroViz/compare/v2.27.14...v2.27.15) (2026-04-09)
 
 ### Bug Fixes
