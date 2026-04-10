@@ -1,3 +1,9 @@
+## [2.30.0](https://github.com/DevilsDev/NeuroViz/compare/v2.29.2...v2.30.0) (2026-04-10)
+
+### Features
+
+* **ui:** wire dataset keyboard shortcuts 1–5 ([b797f65](https://github.com/DevilsDev/NeuroViz/commit/b797f656307482c087d1683ec47f09a834065a40))
+
 ## [2.29.2](https://github.com/DevilsDev/NeuroViz/compare/v2.29.1...v2.29.2) (2026-04-10)
 
 ### Bug Fixes
