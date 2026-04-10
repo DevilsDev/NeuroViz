@@ -488,6 +488,15 @@ export class ApplicationBuilder {
         btn.setAttribute('tabindex', isActive ? '0' : '-1');
       });
       localStorage.setItem(STORAGE_KEY, mode);
+
+      // Filter preset options by mode (CSS display:none doesn't work on <option>)
+      const presetSelect = document.getElementById('preset-select') as HTMLSelectElement | null;
+      if (presetSelect) {
+        const isLearn = mode === 'learn';
+        presetSelect.querySelectorAll('option[data-preset-mode]').forEach(opt => {
+          (opt as HTMLOptionElement).hidden = isLearn;
+        });
+      }
     };
 
     // Apply saved mode on load

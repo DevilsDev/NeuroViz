@@ -28,6 +28,7 @@ import { KeyboardShortcuts } from '../../utils/KeyboardShortcuts';
 import { DatasetGallery } from '../../utils/DatasetGallery';
 import { AdvancedFeaturesService } from '../../infrastructure/ml/AdvancedFeaturesService';
 import { logger } from '../../infrastructure/logging/Logger';
+import { WorkflowSpine } from '../../presentation/WorkflowSpine';
 
 
 /**
@@ -78,6 +79,7 @@ export interface Controllers {
 export class Application {
   private educationController: EducationController | null = null;
   private advancedFeatures: AdvancedFeaturesService | null = null;
+  private workflowSpine: WorkflowSpine | null = null;
 
   constructor(
     public readonly services: Services,
@@ -97,7 +99,16 @@ export class Application {
    * Sets up state synchronization between session and UI
    */
   private setupStateSync(): void {
+    // Initialize workflow spine breadcrumb
+    try {
+      this.workflowSpine = new WorkflowSpine('workflow-spine');
+    } catch {
+      // Container may not exist in test environments
+    }
+
     this.services.session.onStateChange((state): void => {
+      // Update workflow spine
+      this.workflowSpine?.update(state);
       // Always update: lightweight UI text + chart line appends
       this.controllers.training.updateUI(state);
       this.services.lossChart.update(state.history);

@@ -185,6 +185,9 @@
 
       <!-- CENTER PANEL (Viz & History) -->
       <main class="panel-center">
+        <!-- WORKFLOW SPINE — breadcrumb showing training progress stages -->
+        <div id="workflow-spine"></div>
+
         <!-- Persistent banners (WebGL recovery, etc.) -->
         <div id="banner-webgl-reinit" class="banner-webgl-reinit hidden" role="alert" aria-live="assertive">
           WebGL context was lost. Model has been paused — click <strong>Build Model</strong> to reinitialise.
@@ -336,6 +339,7 @@
                   <input type="range" id="input-samples" aria-label="Number of data samples"
                     class="w-full" value="200"
                     min="50" max="500" step="50" />
+                  <span class="control-caption" data-min-mode="learn-only">More samples = better training, but slower</span>
                 </label>
                 <label class="block">
                   <span class="input-label">Noise: <span id="noise-value">0.1</span></span>
@@ -386,9 +390,9 @@
               <select id="preset-select" aria-label="Select preset configuration" class="select-field mb-2 text-xs">
                 <option value="">-- Select a preset --</option>
                 <option value="quickDemo">Quick Demo</option>
-                <option value="deepNetwork">Deep Network</option>
-                <option value="highAccuracy">High Accuracy</option>
-                <option value="overfitDemo">Overfit Demo</option>
+                <option value="deepNetwork" data-preset-mode="experiment">Deep Network</option>
+                <option value="highAccuracy" data-preset-mode="experiment">High Accuracy</option>
+                <option value="overfitDemo" data-preset-mode="experiment">Overfit Demo</option>
               </select>
               <div id="preset-description" class="text-[10px] text-slate-400 mb-2 min-h-[1rem] italic"></div>
               <button id="btn-apply-preset" class="btn-primary w-full text-xs py-2" disabled>Apply</button>
@@ -428,6 +432,7 @@
                   <span class="input-label">Learning Rate</span>
                   <input type="number" id="input-lr" class="input-field text-xs" value="0.03" min="0.001" max="1"
                     step="0.001" aria-label="Learning rate" />
+                  <span class="control-caption" data-min-mode="learn-only">How big each training step is</span>
                 </label>
                 <label class="block">
                   <span class="input-label">Optimizer</span>
@@ -456,6 +461,7 @@
                 <span class="input-label">Hidden Layers</span>
                 <input type="text" id="input-layers" class="input-field text-xs" value="8, 4"
                   placeholder="e.g., 8, 4" aria-label="Hidden layer sizes, comma separated" />
+                <span class="control-caption" data-min-mode="learn-only">Neurons per layer; more = more complex boundaries</span>
               </label>
               <div class="grid grid-cols-2 gap-2">
                 <label class="block">
@@ -469,6 +475,7 @@
               </div>
 
               <button id="btn-init" class="btn-primary w-full text-xs">Build Model</button>
+              <span class="control-caption" data-min-mode="learn-only">Create the neural network with these settings</span>
             </div>
           </div>
           </div><!-- /tab-model -->
