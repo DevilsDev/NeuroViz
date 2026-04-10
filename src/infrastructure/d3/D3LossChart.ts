@@ -2,17 +2,14 @@ import * as d3 from 'd3';
 import type { TrainingHistory, TrainingRecord } from '../../core/domain';
 
 /**
- * D3.js line chart for visualizing training loss and accuracy over epochs.
+ * D3.js line chart for visualizing training loss and validation loss over epochs.
  *
  * Layout structure (margin convention):
  *   - Left margin (45px): loss axis ticks
- *   - Right margin (40px): accuracy axis ticks
+ *   - Right margin (10px): minimal breathing room
  *   - Top margin (8px): breathing room
  *   - Bottom margin (20px): epoch axis ticks
- *   - Legend: top-left inside the plot area, avoids axis collision
- *
- * The right "Accuracy" rotated label is removed — the legend and
- * color-coded ticks provide sufficient context without overlap.
+ *   - Legend: top-left inside the plot area
  */
 /** Reads a CSS custom property from the document root. */
 function themeColor(prop: string, fallback: string): string {
@@ -25,23 +22,19 @@ export class D3LossChart {
   private width: number;
   private height: number;
 
-  // Margins: balanced to avoid annotation collisions
-  private readonly margin = { top: 8, right: 40, bottom: 20, left: 45 };
+  // Margins: left for loss ticks, right minimal
+  private readonly margin = { top: 8, right: 10, bottom: 20, left: 45 };
 
   private xScale: d3.ScaleLinear<number, number>;
   private yScaleLoss: d3.ScaleLinear<number, number>;
-  private yScaleAccuracy: d3.ScaleLinear<number, number>;
 
   private lossLine: d3.Line<TrainingRecord>;
   private valLossLine: d3.Line<TrainingRecord>;
-  private accuracyLine: d3.Line<TrainingRecord>;
 
   private lossPath: d3.Selection<SVGPathElement, unknown, null, undefined>;
   private valLossPath: d3.Selection<SVGPathElement, unknown, null, undefined>;
-  private accuracyPath: d3.Selection<SVGPathElement, unknown, null, undefined>;
   private xAxisGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
   private yAxisLossGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
-  private yAxisAccuracyGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
   private resizeObserver: ResizeObserver | null = null;
 
   constructor(containerId: string) {
@@ -78,7 +71,6 @@ export class D3LossChart {
     // Scales
     this.xScale = d3.scaleLinear().range([0, this.width]);
     this.yScaleLoss = d3.scaleLinear().range([this.height, 0]);
-    this.yScaleAccuracy = d3.scaleLinear().domain([0, 1]).range([this.height, 0]);
 
     // Line generators
     this.lossLine = d3.line<TrainingRecord>()
@@ -92,11 +84,6 @@ export class D3LossChart {
       .y(d => this.yScaleLoss(d.valLoss ?? 0))
       .curve(d3.curveMonotoneX);
 
-    this.accuracyLine = d3.line<TrainingRecord>()
-      .x(d => this.xScale(d.epoch))
-      .y(d => this.yScaleAccuracy(d.accuracy))
-      .curve(d3.curveMonotoneX);
-
     // Grid (behind data)
     this.svg.append('g').attr('class', 'grid-lines');
 
@@ -106,10 +93,6 @@ export class D3LossChart {
       .attr('transform', `translate(0,${this.height})`);
 
     this.yAxisLossGroup = this.svg.append('g').attr('class', 'y-axis-loss axis');
-
-    this.yAxisAccuracyGroup = this.svg.append('g')
-      .attr('class', 'y-axis-accuracy axis')
-      .attr('transform', `translate(${this.width},0)`);
 
     // Data paths
     this.lossPath = this.svg.append('path')
@@ -125,13 +108,7 @@ export class D3LossChart {
       .attr('stroke-width', 1.5)
       .attr('stroke-dasharray', '4,2');
 
-    this.accuracyPath = this.svg.append('path')
-      .attr('class', 'accuracy-line')
-      .attr('fill', 'none')
-      .attr('stroke', '#10B981')
-      .attr('stroke-width', 1.5);
-
-    // Legend — top-left inside plot area to avoid right-axis collision
+    // Legend
     this.addLegend();
 
     // Resize observer
@@ -159,7 +136,6 @@ export class D3LossChart {
 
     this.xScale.range([0, this.width]);
     this.yScaleLoss.range([this.height, 0]);
-    this.yScaleAccuracy.range([this.height, 0]);
 
     this.updateGrid();
 
@@ -177,18 +153,11 @@ export class D3LossChart {
     ryL.selectAll('text').attr('fill', '#00D9FF').style('font-size', '9px');
     ryL.selectAll('line').attr('stroke', tl);
 
-    const ryA = this.svg.select<SVGGElement>('.y-axis-accuracy')
-      .attr('transform', `translate(${this.width},0)`)
-      .call(d3.axisRight(this.yScaleAccuracy).ticks(4).tickFormat(d3.format('.0%')).tickSize(3));
-    ryA.selectAll('text').attr('fill', '#10B981').style('font-size', '9px');
-    ryA.selectAll('line').attr('stroke', tl);
-
     // Re-render lines if data exists
     const currentData = this.lossPath.datum() as TrainingRecord[];
     if (currentData && currentData.length > 0) {
       this.lossPath.attr('d', this.lossLine as unknown as string);
       this.valLossPath.attr('d', this.valLossLine as unknown as string);
-      this.accuracyPath.attr('d', this.accuracyLine as unknown as string);
     }
   }
 
@@ -238,23 +207,14 @@ export class D3LossChart {
     yLoss.selectAll('line').attr('stroke', tickLine);
     yLoss.select('.domain').attr('stroke', domain);
 
-    const yAcc = this.yAxisAccuracyGroup.call(
-      d3.axisRight(this.yScaleAccuracy).ticks(4).tickFormat(d3.format('.0%')).tickSize(3)
-    );
-    yAcc.selectAll('text').attr('fill', '#10B981').style('font-size', '9px');
-    yAcc.selectAll('line').attr('stroke', tickLine);
-    yAcc.select('.domain').attr('stroke', domain);
-
     // Update lines
     this.lossPath.datum(records).attr('d', this.lossLine);
     this.valLossPath.datum(records).attr('d', this.valLossLine);
-    this.accuracyPath.datum(records).attr('d', this.accuracyLine);
   }
 
   clear(): void {
     this.lossPath.attr('d', null);
     this.valLossPath.attr('d', null);
-    this.accuracyPath.attr('d', null);
     this.svg.selectAll('.axis').style('opacity', 0);
     this.svg.selectAll('.grid-lines').style('opacity', 0);
     this.svg.selectAll('.legend').style('opacity', 0);
@@ -286,23 +246,21 @@ export class D3LossChart {
 
   /**
    * Legend: positioned top-left inside the plot area.
-   * This avoids collision with the right-side accuracy axis ticks.
-   * Uses compact inline layout: colored line + label, stacked vertically.
+   * Uses compact inline layout: colored line + label.
    */
   private addLegend(): void {
     const legend = this.svg.append('g')
       .attr('class', 'legend')
-      .attr('transform', 'translate(4, -2)'); // top-left, slightly above plot area for breathing room
+      .attr('transform', 'translate(4, -2)');
 
     const items = [
       { color: '#00D9FF', label: 'Loss', dash: '' },
       { color: '#FF00AA', label: 'Val', dash: '4,2' },
-      { color: '#10B981', label: 'Acc', dash: '' },
     ];
 
     items.forEach((item, i) => {
       const g = legend.append('g')
-        .attr('transform', `translate(${i * 50}, 0)`); // horizontal layout
+        .attr('transform', `translate(${i * 50}, 0)`);
 
       g.append('line')
         .attr('x1', 0).attr('x2', 14)

@@ -24,6 +24,14 @@ export interface ILearningRateChartService extends IDisposable {
 }
 
 /**
+ * Port for accuracy chart rendering.
+ */
+export interface IAccuracyChartService extends IDisposable {
+  update(history: TrainingHistory): void;
+  clear(): void;
+}
+
+/**
  * Port for network architecture diagram rendering.
  */
 export interface INetworkDiagramService extends IDisposable {

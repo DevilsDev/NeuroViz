@@ -4,6 +4,7 @@ export type { IDatasetRepository, DatasetOptions, PreprocessingType } from './ID
 export type {
   ILossChartService,
   ILearningRateChartService,
+  IAccuracyChartService,
   INetworkDiagramService,
   IConfusionMatrixService,
   IWeightHistogramService,

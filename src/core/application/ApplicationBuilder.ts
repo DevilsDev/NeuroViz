@@ -8,6 +8,7 @@ import { toast, showPersistentBanner, clearPersistentBanner } from '../../presen
 import { D3Chart } from '../../infrastructure/d3/D3Chart';
 import { D3LossChart } from '../../infrastructure/d3/D3LossChart';
 import { D3LearningRateChart } from '../../infrastructure/d3/D3LearningRateChart';
+import { D3AccuracyChart } from '../../infrastructure/d3/D3AccuracyChart';
 import { D3NetworkDiagram } from '../../infrastructure/d3/D3NetworkDiagram';
 import { D3ConfusionMatrix } from '../../infrastructure/d3/D3ConfusionMatrix';
 import { D3WeightHistogram } from '../../infrastructure/d3/D3WeightHistogram';
@@ -46,6 +47,7 @@ export interface ApplicationConfig {
   vizContainerId?: string;
   lossChartContainerId?: string;
   lrChartContainerId?: string;
+  accuracyChartContainerId?: string;
   networkDiagramId?: string;
   confusionMatrixContainerId?: string;
   weightHistogramId?: string;
@@ -64,6 +66,7 @@ interface ConcreteServices {
   session: TrainingSession;
   lossChart: D3LossChart;
   lrChart: D3LearningRateChart;
+  accuracyChart: D3AccuracyChart;
   networkDiagram: D3NetworkDiagram;
   confusionMatrix: D3ConfusionMatrix;
   weightHistogram: D3WeightHistogram;
@@ -86,6 +89,7 @@ export class ApplicationBuilder {
       vizContainerId: config.vizContainerId ?? 'viz-container',
       lossChartContainerId: config.lossChartContainerId ?? 'loss-chart-container',
       lrChartContainerId: config.lrChartContainerId ?? 'lr-chart-container',
+      accuracyChartContainerId: config.accuracyChartContainerId ?? 'accuracy-chart-container',
       networkDiagramId: config.networkDiagramId ?? 'network-diagram',
       confusionMatrixContainerId: config.confusionMatrixContainerId ?? 'confusion-matrix-container',
       weightHistogramId: config.weightHistogramId ?? 'weight-histogram',
@@ -184,6 +188,7 @@ export class ApplicationBuilder {
     const visualizer = new D3Chart(this.config.vizContainerId!);
     const lossChart = new D3LossChart(this.config.lossChartContainerId!);
     const lrChart = new D3LearningRateChart(this.config.lrChartContainerId!);
+    const accuracyChart = new D3AccuracyChart(this.config.accuracyChartContainerId!);
     const networkDiagram = new D3NetworkDiagram(
       safeGetElement<HTMLElement>(this.config.networkDiagramId!) || document.createElement('div')
     );
@@ -204,6 +209,7 @@ export class ApplicationBuilder {
       session,
       lossChart,
       lrChart,
+      accuracyChart,
       networkDiagram,
       confusionMatrix,
       weightHistogram,
@@ -257,6 +263,7 @@ export class ApplicationBuilder {
         },
         onClearVisualization: () => {
           services.lossChart.clear();
+          services.accuracyChart.clear();
           services.networkDiagram.clear();
           services.confusionMatrix.clear();
           services.weightHistogram.clear();

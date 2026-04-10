@@ -934,7 +934,7 @@ html:not(.dark) .text-red-400 {
     /* Chart row — Colab output cells: tight, room for D3 annotations */
     .charts-row {
         @apply grid gap-1 mt-1;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr;
         height: 130px;
     }
 

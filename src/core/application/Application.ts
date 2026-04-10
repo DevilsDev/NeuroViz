@@ -6,6 +6,7 @@ import type { LocalStorageService } from '../../infrastructure/storage/LocalStor
 import type {
   ILossChartService,
   ILearningRateChartService,
+  IAccuracyChartService,
   INetworkDiagramService,
   IConfusionMatrixService,
   IWeightHistogramService,
@@ -49,6 +50,7 @@ export interface Services {
   session: TrainingSession;
   lossChart: ILossChartService;
   lrChart: ILearningRateChartService;
+  accuracyChart: IAccuracyChartService;
   networkDiagram: INetworkDiagramService;
   confusionMatrix: IConfusionMatrixService;
   weightHistogram: IWeightHistogramService;
@@ -113,6 +115,7 @@ export class Application {
       this.controllers.training.updateUI(state);
       this.services.lossChart.update(state.history);
       this.services.lrChart.render(state.history);
+      this.services.accuracyChart.update(state.history);
 
       // Guard against disposed model
       if (!this.services.neuralNet.isReady()) {
@@ -681,6 +684,7 @@ export class Application {
 
     this.services.lossChart.dispose();
     this.services.lrChart.dispose();
+    this.services.accuracyChart.dispose();
     this.services.networkDiagram.dispose();
     this.services.confusionMatrix.dispose();
     this.services.weightHistogram.dispose();
