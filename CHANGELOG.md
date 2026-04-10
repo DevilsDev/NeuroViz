@@ -1,3 +1,9 @@
+## [2.29.1](https://github.com/DevilsDev/NeuroViz/compare/v2.29.0...v2.29.1) (2026-04-10)
+
+### Code Refactoring
+
+* **core:** Phase 5 — extract TrainingSession into single-responsibility services ([8c3bf66](https://github.com/DevilsDev/NeuroViz/commit/8c3bf66620aadae7ea5d9439409af352eb878dd5))
+
 ## [2.29.0](https://github.com/DevilsDev/NeuroViz/compare/v2.28.0...v2.29.0) (2026-04-10)
 
 ### Features
