@@ -424,6 +424,31 @@ This document outlines planned features for NeuroViz, organized by priority and 
 
 ---
 
+## Improvement Roadmap (Phases 2–6)
+
+The improvement roadmap addresses architecture quality, UX clarity, and
+repo hygiene — orthogonal to the feature phases above.
+
+| Phase | Description | Status | PR |
+|-------|-------------|--------|----|
+| Phase 2 | Repo hygiene + README reconciliation | ✅ Complete | `13188c1` |
+| Phase 3 | State cues + Learn Mode `data-min-mode` expansion | ✅ Complete | #23 |
+| Phase 4 | Onboarding modal + workflow spine | ✅ Complete | #24 |
+| Phase 5 | `TrainingSession` controlled extraction (3 services) | ✅ Complete | #25 |
+| Phase 6 | LR finder extraction + docs polish | ✅ Complete | #26 |
+
+### Services extracted from TrainingSession (Phase 5–6)
+
+| Service | Lines | Responsibility |
+|---------|-------|----------------|
+| `SessionStateStore` | 205 | Mutable state + observer notifications |
+| `DatasetPreparationService` | 162 | Data loading, preprocessing, train/val splitting |
+| `ExperimentService` | 80 | Config undo/redo, boundary snapshots, completion |
+| `LRFinderService` | 60 | LR range test sweep with model restoration |
+| `TrainingSession` (facade) | 605 | Orchestration, training loop, visualisation coordination |
+
+---
+
 ## Contributing
 
 To contribute a feature:
@@ -435,7 +460,7 @@ To contribute a feature:
 
 ---
 
-Last updated: December 2025
+Last updated: April 2026
 
 ---
 
