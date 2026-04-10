@@ -96,6 +96,7 @@ export class NeuroPage {
   async disableOnboarding(): Promise<void> {
     await this.page.addInitScript(() => {
       localStorage.setItem('neuroviz-has-visited', 'true');
+      localStorage.setItem('neuroviz-first-run-complete', 'true');
     });
   }
 
