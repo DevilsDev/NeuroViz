@@ -1,3 +1,9 @@
+## [2.31.0](https://github.com/DevilsDev/NeuroViz/compare/v2.30.2...v2.31.0) (2026-04-10)
+
+### Features
+
+* **chart:** split into 3 equal panels — LR, Loss, Accuracy ([789ac76](https://github.com/DevilsDev/NeuroViz/commit/789ac769258e85b086bf9be36b64cc85dc82de90))
+
 ## [2.30.2](https://github.com/DevilsDev/NeuroViz/compare/v2.30.1...v2.30.2) (2026-04-10)
 
 ### Bug Fixes
