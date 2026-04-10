@@ -345,10 +345,12 @@ export class TrainingController {
     public async handleStart(): Promise<void> {
         logger.debug('[TrainingController] handleStart called');
 
-        // Auto-initialize if network hasn't been set up yet
+        // Auto-initialize if network hasn't been set up yet, or re-init if config is stale
         const state = this.session.getState();
-        if (!state.isInitialised) {
-            logger.debug('[TrainingController] Auto-initializing network before training');
+        const isStale = this.lastInitConfig !== null
+            && this.currentConfigHash() !== this.lastInitConfig;
+        if (!state.isInitialised || isStale) {
+            logger.debug('[TrainingController] Auto-initializing network before training', { isStale });
             await this.handleInitialise();
             // Re-check — initialization may have failed
             if (!this.session.getState().isInitialised) {
