@@ -1,3 +1,9 @@
+## [2.28.0](https://github.com/DevilsDev/NeuroViz/compare/v2.27.16...v2.28.0) (2026-04-10)
+
+### Features
+
+* **ui:** Phase 3 — state cues + Learn Mode data-min-mode expansion ([cc3658a](https://github.com/DevilsDev/NeuroViz/commit/cc3658a6ffccdc524bb9f7bd12303bb86df82e7b))
+
 ## [2.27.16](https://github.com/DevilsDev/NeuroViz/compare/v2.27.15...v2.27.16) (2026-04-10)
 
 ### Bug Fixes
