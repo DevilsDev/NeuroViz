@@ -10,6 +10,7 @@ import {
   SessionStateStore,
   DatasetPreparationService,
   ExperimentService,
+  LRFinderService,
 } from './training';
 
 /**
@@ -52,6 +53,7 @@ export class TrainingSession implements ITrainingSession {
   private readonly state: SessionStateStore;
   private readonly dataService: DatasetPreparationService;
   private readonly experiment: ExperimentService;
+  private readonly lrFinder: LRFinderService;
   private lrScheduler: LearningRateScheduler;
   private earlyStoppingStrategy: EarlyStoppingStrategy;
 
@@ -80,10 +82,11 @@ export class TrainingSession implements ITrainingSession {
     this.initialisePredictionGrid();
 
     // Construct services
-    // Construction order: StateStore → DatasetPrep → Experiment → LR/EarlyStopping
+    // Construction order: StateStore → DatasetPrep → Experiment → LRFinder → LR/EarlyStopping
     this.state = new SessionStateStore({ ...this.trainingConfig });
     this.dataService = new DatasetPreparationService(dataRepo, new TrainingDataSplitter());
     this.experiment = new ExperimentService();
+    this.lrFinder = new LRFinderService(this.neuralNet);
 
     this.lrScheduler = new LearningRateScheduler(
       this.initialLearningRate,
@@ -368,7 +371,7 @@ export class TrainingSession implements ITrainingSession {
   }
 
   // ===========================================================================
-  // LR Finder
+  // LR Finder (delegates to LRFinderService)
   // ===========================================================================
 
   async runLRFinder(
@@ -384,34 +387,17 @@ export class TrainingSession implements ITrainingSession {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
 
-    const results: Array<{ lr: number; loss: number }> = [];
-    const lrMultiplier = Math.pow(maxLR / minLR, 1 / steps);
-    let currentLR = minLR;
-
-    const originalHyperparams = this.currentHyperparameters;
-    if (!originalHyperparams) {
+    if (!this.currentHyperparameters) {
       throw new Error('Model not initialized');
     }
 
-    for (let i = 0; i < steps; i++) {
-      this.neuralNet.updateLearningRate(currentLR);
-
-      const batch = this.getTrainingBatch();
-      const result = await this.neuralNet.train(batch);
-
-      results.push({ lr: currentLR, loss: result.loss });
-
-      if (!isFinite(result.loss) || result.loss > 1e10) {
-        break;
-      }
-
-      currentLR *= lrMultiplier;
-    }
-
-    // Restore original model
-    await this.neuralNet.initialize(originalHyperparams);
-
-    return results;
+    return this.lrFinder.run(
+      () => this.getTrainingBatch(),
+      this.currentHyperparameters,
+      minLR,
+      maxLR,
+      steps
+    );
   }
 
   // ===========================================================================

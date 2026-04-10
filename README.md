@@ -12,9 +12,9 @@ Adapters) so the ML core has no dependency on TensorFlow.js, D3, or the DOM.
 🔗 **[Live Demo](https://devilsdev.github.io/NeuroViz/)**
 📘 **[Feature Guide](docs/FEATURES.md)** · **[Architecture](docs/ARCHITECTURE.md)** · **[Roadmap](docs/ROADMAP.md)**
 
-> **Status.** Phases 1–4 of the delivery roadmap are complete (99 features
-> shipped as of the latest release). Phase 5 and follow-up polish are tracked
-> in [`docs/ROADMAP.md`](docs/ROADMAP.md). See
+> **Status.** All 9 feature phases and the 5-phase improvement roadmap are
+> complete (99 features shipped, architecture consolidated). See
+> [`docs/ROADMAP.md`](docs/ROADMAP.md) for the full delivery status and
 > [`docs/archive/`](docs/archive/) for historical audit reports.
 
 ---
@@ -138,7 +138,8 @@ root.
 ┌─────────────────────────────────────────────────────────────────┐
 │                          Core                                   │
 │   Domain (entities)  ·  Ports (interfaces)  ·  Application      │
-│                        (TrainingSession)                         │
+│   TrainingSession facade → SessionStateStore,                    │
+│   DatasetPreparationService, ExperimentService, LRFinderService  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -152,7 +153,8 @@ src/
 ├── core/                    # Framework-agnostic business logic
 │   ├── domain/              # Point, Prediction, Hyperparameters, ...
 │   ├── ports/               # INeuralNetworkService, IVisualizerService, ...
-│   └── application/         # TrainingSession orchestrator + services
+│   └── application/         # TrainingSession facade + extracted services
+│       └── training/        # SessionStateStore, DatasetPrep, Experiment, LRFinder
 │
 ├── infrastructure/          # Framework-specific adapters
 │   ├── tensorflow/          # TFNeuralNet (TensorFlow.js)
@@ -170,7 +172,8 @@ src/
 | Decision | Rationale |
 |----------|-----------|
 | **Ports & Adapters** | Core logic never imports TensorFlow.js, D3, or Three.js. |
-| **Constructor injection** | All dependencies arrive via `TrainingSession`. |
+| **Constructor injection** | All dependencies arrive via `TrainingSession` facade. |
+| **Service extraction** | `TrainingSession` delegates to four SRP services. |
 | **Async training loop** | Guard-rail pattern prevents overlapping GPU calls. |
 | **Immutable domain** | `Point`, `Prediction`, `Hyperparameters` are readonly. |
 | **Observer state fan-out** | Controllers subscribe via `onStateChange`, never poll. |
@@ -293,24 +296,24 @@ The GitHub Actions workflow runs on every push and PR:
 
 ---
 
-## Roadmap highlights
+## Roadmap
 
-Phases 1–4 of the delivery roadmap are complete. The next planned work
-focuses on:
+All 9 feature phases (99 features) and the 5-phase improvement roadmap
+are complete:
 
-- **Learn Mode onboarding** — first-run modal, curated 3-preset surface,
-  per-control captions
-- **Workflow spine** — `Prepare → Configure → Train → Analyze`
-  breadcrumb wired to training state
-- **`TrainingSession` controlled extraction** — split into
-  `TrainingEngine`, `SessionStateStore`, `ExperimentService`, and
-  `DatasetPreparationService` while holding the port contract constant
-- **State cues** — stale-model badge, validation-active badge, dataset
-  source indicator, WebGL recovery banner
+- **Phases 1–9** — Training, metrics, visualisation, data management,
+  model capabilities, UX, education, performance, research features
+- **Improvement Phase 2** — Repo hygiene, README reconciliation
+- **Improvement Phase 3** — State cues (stale badge, validation badge,
+  dataset source label, WebGL banner), Learn Mode `data-min-mode` expansion
+- **Improvement Phase 4** — First-run onboarding modal, workflow spine
+  (`Prepare → Configure → Train → Analyze`), Learn Mode presets + captions
+- **Improvement Phase 5** — `TrainingSession` extraction into
+  `SessionStateStore`, `DatasetPreparationService`, `ExperimentService`
+- **Improvement Phase 6** — `LRFinderService` extraction, docs polish
 
-Full details and per-feature status live in [`docs/ROADMAP.md`](docs/ROADMAP.md).
-Historical audit reports and implementation logs are archived under
-[`docs/archive/`](docs/archive/).
+Full per-feature status lives in [`docs/ROADMAP.md`](docs/ROADMAP.md).
+Historical audit reports are archived under [`docs/archive/`](docs/archive/).
 
 ---
 
