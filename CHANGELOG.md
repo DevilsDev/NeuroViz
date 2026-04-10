@@ -1,3 +1,9 @@
+## [2.31.1](https://github.com/DevilsDev/NeuroViz/compare/v2.31.0...v2.31.1) (2026-04-10)
+
+### Bug Fixes
+
+* **training:** auto re-init when model config is stale before training ([7190510](https://github.com/DevilsDev/NeuroViz/commit/71905105d2fa2da1a359b02796bf42810bb8831c))
+
 ## [2.31.0](https://github.com/DevilsDev/NeuroViz/compare/v2.30.2...v2.31.0) (2026-04-10)
 
 ### Features
