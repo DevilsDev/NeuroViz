@@ -49,10 +49,10 @@
     }
   </style>
 
-  <script type="module" crossorigin src="/NeuroViz/assets/index-CNDlUwbo.js"></script>
+  <script type="module" crossorigin src="/NeuroViz/assets/index-r60LtqZ8.js"></script>
   <link rel="modulepreload" crossorigin href="/NeuroViz/assets/vendor-tensorflow-C7gZW83r.js">
-  <link rel="modulepreload" crossorigin href="/NeuroViz/assets/vendor-d3-DK9LbSRk.js">
-  <link rel="stylesheet" crossorigin href="/NeuroViz/assets/index-KiVMjZM9.css">
+  <link rel="modulepreload" crossorigin href="/NeuroViz/assets/vendor-d3-BBDaZmYA.js">
+  <link rel="stylesheet" crossorigin href="/NeuroViz/assets/index-8zAmgn_P.css">
 </head>
 
 <body>
@@ -300,7 +300,7 @@
           </div>
         </section>
 
-        <!-- Charts — Colab-style: no titles, charts are the content -->
+        <!-- Charts — three equal panels: LR, Loss, Accuracy -->
         <div class="charts-row">
           <div class="viz-card">
             <div id="lr-chart-container" class="flex-1 w-full relative"></div>
@@ -315,6 +315,9 @@
             <span id="stat-best-loss" class="hidden">—</span>
             <span id="stat-best-accuracy" class="hidden">—</span>
             <span id="stat-improvement" class="hidden">—</span>
+          </div>
+          <div class="viz-card">
+            <div id="accuracy-chart-container" class="flex-1 w-full relative"></div>
           </div>
         </div>
 
