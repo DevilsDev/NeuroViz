@@ -76,8 +76,15 @@ export interface INeuralNetworkService {
    * Gets activations for each layer given an input point.
    * Used for neuron activation visualization.
    *
+   * Contract: returns one entry per layer in {@link getStructure}().layers,
+   * in order. The first entry is the raw input coordinates (input layer);
+   * subsequent entries are the output of each trainable layer. This guarantees
+   * `result.length === structure.layers.length` so callers can index into
+   * both arrays symmetrically without shifting.
+   *
    * @param point - Input point to get activations for
-   * @returns Array of activation arrays per layer
+   * @returns Array of activation arrays per layer, or `[]` if the model is
+   *          not initialised or was disposed mid-call
    */
   getLayerActivations(point: Point): number[][];
 

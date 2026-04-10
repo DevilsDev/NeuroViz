@@ -450,13 +450,21 @@ export class TFNeuralNet implements INeuralNetworkService {
       return [];
     }
 
-    const activations: number[][] = [];
+    // Contract: returns one entry per layer in structure.layers, in order:
+    //   [0]      raw input coordinates (input layer)
+    //   [1..N-1] output of each trainable Dense layer
+    //
+    // TF.js Keras sequential models do NOT expose the input as a trainable layer,
+    // so model.layers has one fewer entry than structure.layers. Prepending the
+    // raw [x, y] here keeps callers' index math aligned with structure.layers
+    // and restores the Input vs Output labels on the activation histogram.
+    const activations: number[][] = [[point.x, point.y]];
 
     // Create input tensor
     const input = tf.tensor2d([[point.x, point.y]]);
 
     try {
-      // Get activations from each layer
+      // Get activations from each trainable layer
       let currentInput: tf.Tensor = input;
 
       for (const layer of this.model.layers) {
