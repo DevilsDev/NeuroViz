@@ -124,12 +124,12 @@ export class Application {
       const isTrainingStep = state.eventType === 'trainingStep';
       const isMilestone = state.currentEpoch % 5 === 0;
 
-      if (!isTrainingStep || isMilestone) {
+      if ((!isTrainingStep || isMilestone) && this.services.neuralNet.isReady()) {
         this.controllers.visualization.updateGradientFlow();
       }
 
       // Update 3D view periodically during training
-      if (isMilestone && state.isRunning) {
+      if (isMilestone && state.isRunning && this.services.neuralNet.isReady()) {
         void this.controllers.visualization.update3dView();
       }
 

@@ -109,7 +109,7 @@ export class TFNeuralNet implements INeuralNetworkService {
    * cannot wrap async operations like `trainOnBatch`.
    */
   async train(data: Point[]): Promise<TrainResult> {
-    const model = this.assertInitialised();
+    this.assertInitialised();
 
     // Guard against empty data
     if (data.length === 0) {
@@ -122,7 +122,8 @@ export class TFNeuralNet implements INeuralNetworkService {
 
     try {
       // trainOnBatch returns loss (metrics are not computed for trainOnBatch)
-      const result = await model.trainOnBatch(xs, ys);
+      // Re-read this.model after each await to avoid using a disposed reference
+      const result = await this.model!.trainOnBatch(xs, ys);
 
       // Extract loss value
       const loss = Array.isArray(result) ? (result[0] ?? 0) : result;
@@ -132,8 +133,13 @@ export class TFNeuralNet implements INeuralNetworkService {
         throw new GradientExplosionError();
       }
 
+      // Model may have been disposed during the await above
+      if (!this.model || this.isDisposed) {
+        return { loss, accuracy: 0 };
+      }
+
       // Compute accuracy manually since trainOnBatch doesn't compute metrics
-      const predictions = model.predict(xs) as tf.Tensor;
+      const predictions = this.model.predict(xs) as tf.Tensor;
       const accuracy = await this.computeAccuracy(predictions, ys, data);
       predictions.dispose();
 
@@ -154,7 +160,7 @@ export class TFNeuralNet implements INeuralNetworkService {
    * @throws {ModelNotInitialisedError} If called before initialize()
    */
   async evaluate(data: Point[]): Promise<TrainResult> {
-    const model = this.assertInitialised();
+    this.assertInitialised();
 
     // Guard against empty data
     if (data.length === 0) {
@@ -166,7 +172,8 @@ export class TFNeuralNet implements INeuralNetworkService {
 
     try {
       // evaluate returns [loss, ...metrics] as scalars
-      const result = model.evaluate(xs, ys) as tf.Scalar[];
+      // Re-read this.model to avoid using a disposed reference
+      const result = this.model!.evaluate(xs, ys) as tf.Scalar[];
 
       // Extract loss and accuracy
       const lossValue = await result[0]?.data();
@@ -198,7 +205,7 @@ export class TFNeuralNet implements INeuralNetworkService {
    * Returns data asynchronously via `.data()` to keep UI responsive.
    */
   async predict(grid: Point[]): Promise<Prediction[]> {
-    const model = this.assertInitialised();
+    this.assertInitialised();
 
     // Guard against empty grid
     if (grid.length === 0) {
@@ -209,8 +216,8 @@ export class TFNeuralNet implements INeuralNetworkService {
     const inputTensor = tf.tensor2d(grid.map((p) => [p.x, p.y]), [grid.length, 2]);
 
     try {
-      // Run inference
-      const outputTensor = model.predict(inputTensor) as tf.Tensor;
+      // Run inference — re-read this.model to avoid using a disposed reference
+      const outputTensor = this.model!.predict(inputTensor) as tf.Tensor;
 
       try {
         // Use async .data() to avoid blocking the UI thread
@@ -278,7 +285,7 @@ export class TFNeuralNet implements INeuralNetworkService {
    * Uses TensorFlow.js model serialization format.
    */
   async exportModel(): Promise<{ modelJson: Blob; weightsBlob: Blob }> {
-    const model = this.assertInitialised();
+    this.assertInitialised();
 
     // Use custom IOHandler to capture the model data
     const modelArtifacts = await new Promise<tf.io.ModelArtifacts>((resolve, reject) => {
@@ -288,7 +295,7 @@ export class TFNeuralNet implements INeuralNetworkService {
           return { modelArtifactsInfo: { dateSaved: new Date(), modelTopologyType: 'JSON' } };
         },
       };
-      model.save(saveHandler).catch(reject);
+      this.model!.save(saveHandler).catch(reject);
     });
 
     // Create model.json blob

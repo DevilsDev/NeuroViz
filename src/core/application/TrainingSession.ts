@@ -65,6 +65,9 @@ export class TrainingSession implements ITrainingSession {
   private lastFrameTime = 0;
   private frameInterval = 0;
 
+  // Re-entrancy guard for setHyperparameters
+  private isInitialising = false;
+
   // Learning rate tracking
   private initialLearningRate = 0.03;
   private currentHyperparameters: Hyperparameters | null = null;
@@ -142,32 +145,42 @@ export class TrainingSession implements ITrainingSession {
   }
 
   async setHyperparameters(config: Hyperparameters, skipHistory: boolean = false): Promise<void> {
-    // Stop training before re-initializing to prevent accessing disposed model
-    const wasTraining = this.state.getIsTraining() && !this.state.getIsPaused();
-    if (wasTraining) {
-      this.pause();
-      while (this.state.getIsProcessingStep()) {
-        await new Promise(resolve => setTimeout(resolve, 50));
+    // Prevent overlapping init calls — second click is dropped
+    if (this.isInitialising) {
+      return;
+    }
+    this.isInitialising = true;
+
+    try {
+      // Stop training before re-initializing to prevent accessing disposed model
+      const wasTraining = this.state.getIsTraining() && !this.state.getIsPaused();
+      if (wasTraining) {
+        this.pause();
+        while (this.state.getIsProcessingStep()) {
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
       }
+
+      await this.neuralNet.initialize(config);
+      this.state.setInitialised(true);
+      this.state.resetProgress();
+
+      // Store for LR scheduling and reset scheduler
+      this.currentHyperparameters = config;
+      this.initialLearningRate = config.learningRate;
+      this.lrScheduler.setInitialLR(config.learningRate);
+      this.lrScheduler.setSchedule(this.trainingConfig.lrSchedule ?? DEFAULT_LR_SCHEDULE);
+
+      this.earlyStoppingStrategy.reset();
+
+      if (!skipHistory) {
+        this.experiment.pushConfig(config, 'Configuration updated');
+      }
+
+      this.state.notifyListeners('initialized');
+    } finally {
+      this.isInitialising = false;
     }
-
-    await this.neuralNet.initialize(config);
-    this.state.setInitialised(true);
-    this.state.resetProgress();
-
-    // Store for LR scheduling and reset scheduler
-    this.currentHyperparameters = config;
-    this.initialLearningRate = config.learningRate;
-    this.lrScheduler.setInitialLR(config.learningRate);
-    this.lrScheduler.setSchedule(this.trainingConfig.lrSchedule ?? DEFAULT_LR_SCHEDULE);
-
-    this.earlyStoppingStrategy.reset();
-
-    if (!skipHistory) {
-      this.experiment.pushConfig(config, 'Configuration updated');
-    }
-
-    this.state.notifyListeners('initialized');
   }
 
   // ===========================================================================
@@ -550,20 +563,20 @@ export class TrainingSession implements ITrainingSession {
   }
 
   private async updateVisualisation(): Promise<void> {
-    if (!this.state.getDatasetLoaded()) {
+    if (!this.state.getDatasetLoaded() || !this.neuralNet.isReady()) {
       return;
     }
 
     this.cachedPredictions = await this.neuralNet.predict(this.predictionGrid);
 
-    if (!this.state.getDatasetLoaded()) {
+    if (!this.state.getDatasetLoaded() || !this.neuralNet.isReady()) {
       return;
     }
 
     const allData = this.dataService.getAllData();
     const pointPredictions = await this.neuralNet.predict(allData);
 
-    if (!this.state.getDatasetLoaded()) {
+    if (!this.state.getDatasetLoaded() || !this.neuralNet.isReady()) {
       return;
     }
 
