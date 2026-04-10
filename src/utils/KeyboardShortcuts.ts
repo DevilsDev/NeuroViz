@@ -10,7 +10,7 @@
  * - ?: Toggle help modal
  * - Ctrl+Z: Undo config
  * - Ctrl+Y: Redo config
- * - 1-5: Select dataset (Circle, XOR, Gaussian, Spiral, Clusters)
+ * - 1-5: Select dataset (Circle, XOR, Spiral, Gaussian, Clusters)
  */
 
 export interface KeyboardShortcutsCallbacks {
@@ -120,12 +120,12 @@ export class KeyboardShortcuts {
 
             case '3':
                 e.preventDefault();
-                this.callbacks.onSelectDataset?.('gaussian');
+                this.callbacks.onSelectDataset?.('spiral');
                 break;
 
             case '4':
                 e.preventDefault();
-                this.callbacks.onSelectDataset?.('spiral');
+                this.callbacks.onSelectDataset?.('gaussian');
                 break;
 
             case '5':
