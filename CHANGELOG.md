@@ -1,3 +1,9 @@
+## [2.29.2](https://github.com/DevilsDev/NeuroViz/compare/v2.29.1...v2.29.2) (2026-04-10)
+
+### Bug Fixes
+
+* **core:** prevent disposed model race condition during re-initialisation ([005a69d](https://github.com/DevilsDev/NeuroViz/commit/005a69d8bd9ad97d6469cfecf705687120efed5e))
+
 ## [2.29.1](https://github.com/DevilsDev/NeuroViz/compare/v2.29.0...v2.29.1) (2026-04-10)
 
 ### Code Refactoring
