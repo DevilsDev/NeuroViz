@@ -209,10 +209,13 @@ export class D3LossChart {
     const maxEpoch = d3.max(records, d => d.epoch) ?? 1;
     const maxTrainLoss = d3.max(records, d => d.loss) ?? 1;
     const maxValLoss = d3.max(records, d => d.valLoss ?? 0) ?? 0;
+    const minTrainLoss = d3.min(records, d => d.loss) ?? 0;
+    const minValLoss = d3.min(records, d => d.valLoss ?? 0) ?? 0;
     const maxLoss = Math.max(maxTrainLoss, maxValLoss);
+    const minLoss = Math.min(minTrainLoss, minValLoss, 0);
 
     this.xScale.domain([1, maxEpoch]);
-    this.yScaleLoss.domain([0, maxLoss * 1.1]);
+    this.yScaleLoss.domain([minLoss * 1.1, maxLoss * 1.1]);
 
     this.updateGrid();
 
