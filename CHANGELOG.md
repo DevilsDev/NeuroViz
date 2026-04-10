@@ -1,3 +1,9 @@
+## [2.30.1](https://github.com/DevilsDev/NeuroViz/compare/v2.30.0...v2.30.1) (2026-04-10)
+
+### Bug Fixes
+
+* **ui:** match dataset shortcut order to UI bar (3=Spiral, 4=Gaussian) ([4f1a12b](https://github.com/DevilsDev/NeuroViz/commit/4f1a12b62902bceaacd33aa797d18762cb334396))
+
 ## [2.30.0](https://github.com/DevilsDev/NeuroViz/compare/v2.29.2...v2.30.0) (2026-04-10)
 
 ### Features
