@@ -1,3 +1,9 @@
+## [2.30.2](https://github.com/DevilsDev/NeuroViz/compare/v2.30.1...v2.30.2) (2026-04-10)
+
+### Bug Fixes
+
+* **chart:** support negative loss values in loss chart Y-axis domain ([96bcc77](https://github.com/DevilsDev/NeuroViz/commit/96bcc7798be6e4b8b9c7ec0b2b4c2c8bd15c1ace))
+
 ## [2.30.1](https://github.com/DevilsDev/NeuroViz/compare/v2.30.0...v2.30.1) (2026-04-10)
 
 ### Bug Fixes
