@@ -10,6 +10,7 @@
  * - ?: Toggle help modal
  * - Ctrl+Z: Undo config
  * - Ctrl+Y: Redo config
+ * - 1-5: Select dataset (Circle, XOR, Gaussian, Spiral, Clusters)
  */
 
 export interface KeyboardShortcutsCallbacks {
@@ -21,6 +22,7 @@ export interface KeyboardShortcutsCallbacks {
     onToggleHelp: () => void;
     onUndo?: () => void;
     onRedo?: () => void;
+    onSelectDataset?: (dataset: string) => void;
 }
 
 export class KeyboardShortcuts {
@@ -104,6 +106,31 @@ export class KeyboardShortcuts {
             case '?':
                 e.preventDefault();
                 this.callbacks.onToggleHelp();
+                break;
+
+            case '1':
+                e.preventDefault();
+                this.callbacks.onSelectDataset?.('circle');
+                break;
+
+            case '2':
+                e.preventDefault();
+                this.callbacks.onSelectDataset?.('xor');
+                break;
+
+            case '3':
+                e.preventDefault();
+                this.callbacks.onSelectDataset?.('gaussian');
+                break;
+
+            case '4':
+                e.preventDefault();
+                this.callbacks.onSelectDataset?.('spiral');
+                break;
+
+            case '5':
+                e.preventDefault();
+                this.callbacks.onSelectDataset?.('clusters');
                 break;
         }
     }

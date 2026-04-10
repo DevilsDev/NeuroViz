@@ -374,6 +374,9 @@ export class ApplicationBuilder {
       onRedo: () => {
         void session.redoConfig();
       },
+      onSelectDataset: (dataset: string) => {
+        datasetGallery.selectDataset(dataset);
+      },
     });
 
     // Initialize header button controls
