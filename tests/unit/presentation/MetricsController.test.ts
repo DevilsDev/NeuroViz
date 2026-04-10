@@ -8,7 +8,7 @@
  * behaviour so it cannot silently regress.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MetricsController, type MetricsElements } from '../../../src/presentation/controllers/MetricsController';
 import type { TrainingState, TrainingEventType } from '../../../src/core/application/ITrainingSession';
 import type { IConfusionMatrixService } from '../../../src/core/ports/IChartService';
@@ -163,5 +163,66 @@ describe('MetricsController — confusion matrix filter', () => {
     emit('trainingStep', { isInitialised: false });
     await tickMicrotasks();
     expect(mockConfusionMatrix.render).not.toHaveBeenCalled();
+  });
+});
+
+describe('MetricsController — validation badge', () => {
+  let stateListener: ((state: TrainingState) => void) | null = null;
+  let badge: HTMLSpanElement;
+
+  beforeEach(() => {
+    stateListener = null;
+
+    badge = document.createElement('span');
+    badge.id = 'badge-validation-active';
+    badge.classList.add('hidden');
+    document.body.appendChild(badge);
+
+    const mockSession = {
+      getState: vi.fn(() => createState()),
+      getData: vi.fn(() => []),
+      onStateChange: vi.fn((cb: (s: TrainingState) => void) => {
+        stateListener = cb;
+        return () => { stateListener = null; };
+      }),
+    };
+
+    const mockNeuralNet = new MockNeuralNetworkService();
+    (mockNeuralNet as unknown as { isReady: () => boolean }).isReady = (): boolean => true;
+
+    const mockConfusionMatrix = {
+      render: vi.fn(),
+      dispose: vi.fn(),
+    } as unknown as IConfusionMatrixService;
+
+    const controller = new MetricsController(
+      mockSession as unknown as ConstructorParameters<typeof MetricsController>[0],
+      mockNeuralNet,
+      mockConfusionMatrix,
+      createMockElements(),
+    );
+    controller.initialize();
+  });
+
+  afterEach(() => {
+    badge.remove();
+  });
+
+  it('shows validation badge when validationSplit > 0', () => {
+    stateListener!(createState({ validationSplit: 0.2 }));
+    expect(badge.classList.contains('hidden')).toBe(false);
+  });
+
+  it('hides validation badge when validationSplit is 0', () => {
+    stateListener!(createState({ validationSplit: 0 }));
+    expect(badge.classList.contains('hidden')).toBe(true);
+  });
+
+  it('toggles badge when validationSplit changes', () => {
+    stateListener!(createState({ validationSplit: 0.3 }));
+    expect(badge.classList.contains('hidden')).toBe(false);
+
+    stateListener!(createState({ validationSplit: 0 }));
+    expect(badge.classList.contains('hidden')).toBe(true);
   });
 });

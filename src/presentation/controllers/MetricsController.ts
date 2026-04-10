@@ -168,10 +168,20 @@ export class MetricsController {
     }
   }
 
+  private updateValidationBadge(state: TrainingState): void {
+    const badge = document.getElementById('badge-validation-active');
+    if (!badge) return;
+    const hasValidation = (state.validationSplit ?? 0) > 0;
+    badge.classList.toggle('hidden', !hasValidation);
+  }
+
   private setupStateSync(): void {
     this.session.onStateChange((state: TrainingState): void => {
       // Update speed metrics on every state change
       this.updateSpeedMetrics(state.history);
+
+      // Update validation badge
+      this.updateValidationBadge(state);
 
       // Update confusion matrix and classification metrics:
       //   - after every epoch completes (trainingStep)

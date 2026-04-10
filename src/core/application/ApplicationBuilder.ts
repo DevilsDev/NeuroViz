@@ -4,7 +4,7 @@ import type { Services, Controllers } from './Application';
 import { TrainingSession } from './TrainingSession';
 import { TFNeuralNet } from '../../infrastructure/tensorflow/TFNeuralNet';
 import { WebGLContextRecovery } from '../../infrastructure/tensorflow/WebGLContextRecovery';
-import { toast } from '../../presentation/toast';
+import { toast, showPersistentBanner, clearPersistentBanner } from '../../presentation/toast';
 import { D3Chart } from '../../infrastructure/d3/D3Chart';
 import { D3LossChart } from '../../infrastructure/d3/D3LossChart';
 import { D3LearningRateChart } from '../../infrastructure/d3/D3LearningRateChart';
@@ -142,12 +142,14 @@ export class ApplicationBuilder {
         } catch {
           // Same rationale.
         }
+        showPersistentBanner('banner-webgl-reinit');
         toast.error(
           'GPU context was lost (likely background-tab memory pressure or a driver reset). ' +
           'Click "Initialise Network" in the Model tab to recover.',
         );
       },
       onContextRestored: () => {
+        clearPersistentBanner('banner-webgl-reinit');
         toast.info('GPU context restored. Reinitialise the network to continue training.');
       },
     });
