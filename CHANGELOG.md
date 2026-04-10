@@ -1,3 +1,9 @@
+## [2.29.0](https://github.com/DevilsDev/NeuroViz/compare/v2.28.0...v2.29.0) (2026-04-10)
+
+### Features
+
+* **ui:** Phase 4 — onboarding modal + workflow spine ([d827308](https://github.com/DevilsDev/NeuroViz/commit/d82730884b2fe672596a419641345b83602aaec5))
+
 ## [2.28.0](https://github.com/DevilsDev/NeuroViz/compare/v2.27.16...v2.28.0) (2026-04-10)
 
 ### Features
