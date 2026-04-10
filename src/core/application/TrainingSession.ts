@@ -1,10 +1,16 @@
 import type { Hyperparameters, Point, Prediction, TrainingConfig, TrainingHistory, ExportFormat } from '../domain';
-import { DEFAULT_TRAINING_CONFIG, DEFAULT_LR_SCHEDULE, createEmptyHistory, addHistoryRecord, exportHistory, isModelDisposedError } from '../domain';
+import { DEFAULT_TRAINING_CONFIG, DEFAULT_LR_SCHEDULE, exportHistory, isModelDisposedError } from '../domain';
 import type { INeuralNetworkService, IVisualizerService, IDatasetRepository, DatasetOptions } from '../ports';
 import type { ITrainingSession, TrainingState } from './ITrainingSession';
 import { logger } from '../../infrastructure/logging/Logger';
-import { LearningRateScheduler, EarlyStoppingStrategy, TrainingDataSplitter } from './training';
-import { ConfigHistory } from '../domain/ConfigHistory';
+import {
+  LearningRateScheduler,
+  EarlyStoppingStrategy,
+  TrainingDataSplitter,
+  SessionStateStore,
+  DatasetPreparationService,
+  ExperimentService,
+} from './training';
 
 /**
  * Configuration for training session behaviour.
@@ -23,92 +29,62 @@ const DEFAULT_CONFIG: TrainingSessionConfig = {
 
 /**
  * Orchestrates the training workflow.
- * Acts as the "Director" coordinating neural network, visualiser, and data repository.
+ * Acts as a thin facade coordinating four single-responsibility services:
+ *
+ * - SessionStateStore: mutable state + observer notifications
+ * - DatasetPreparationService: data loading, preprocessing, splitting
+ * - ExperimentService: config undo/redo, boundary snapshots, completion
+ * - LearningRateScheduler / EarlyStoppingStrategy: training loop policies
+ *
+ * Keeps visualisation coordination (updateVisualisation, predictionGrid)
+ * because it spans neuralNet + visualizer + state.
  *
  * @remarks
  * Concurrency Strategy (Guard-Rail Loop):
  * - `isTraining` controls whether the loop should continue
  * - `isProcessingStep` acts as a mutex to prevent overlapping async calls
  * - `requestAnimationFrame` fires ~60fps, but we skip frames while GPU is busy
- *
- * This prevents "call stack pile-up" where Step 2 starts before Step 1 finishes.
- *
- * @example
- * ```
- * Frame 1: isProcessingStep=false → Execute train() → isProcessingStep=true
- * Frame 2: isProcessingStep=true  → Skip (GPU busy)
- * Frame 3: isProcessingStep=true  → Skip (GPU busy)
- * Frame 4: train() completes      → isProcessingStep=false
- * Frame 5: isProcessingStep=false → Execute train() → ...
- * ```
  */
 export class TrainingSession implements ITrainingSession {
   private readonly config: TrainingSessionConfig;
-  private readonly stateListeners: Set<(state: TrainingState) => void> = new Set();
 
-  // Training state
-  private currentEpoch = 0;
-  private currentLoss: number | null = null;
-  private currentAccuracy: number | null = null;
-  private currentValLoss: number | null = null;
-  private currentValAccuracy: number | null = null;
-  private isInitialised = false;
-  private datasetLoaded = false;
+  // Decomposed services
+  private readonly state: SessionStateStore;
+  private readonly dataService: DatasetPreparationService;
+  private readonly experiment: ExperimentService;
+  private lrScheduler: LearningRateScheduler;
+  private earlyStoppingStrategy: EarlyStoppingStrategy;
 
-  // Training history
-  private history: TrainingHistory = createEmptyHistory();
-  private trainingStartTime = 0;
-
-  // Loop control flags
-  private isTraining = false;
-  private isPaused = false;
-  private isProcessingStep = false;
-
-  // Data caches (reused to reduce GC pressure)
-  private allData: Point[] = []; // Original full dataset
-  private trainingData: Point[] = []; // Training split
-  private validationData: Point[] = []; // Validation split
+  // Visualisation state (stays in facade — spans neuralNet + visualizer)
   private readonly predictionGrid: Point[] = [];
   private cachedPredictions: Prediction[] = [];
-  private detectedNumClasses = 2; // Detected from loaded data
-
-  // Runtime training configuration
-  private trainingConfig: Required<TrainingConfig> = { ...DEFAULT_TRAINING_CONFIG };
 
   // Timing control
   private lastFrameTime = 0;
-  private frameInterval = 0; // ms between frames (0 = no limit)
+  private frameInterval = 0;
 
-  // Decomposed services (SRP - each service has a single responsibility)
-  private lrScheduler: LearningRateScheduler;
-  private earlyStoppingStrategy: EarlyStoppingStrategy;
-  private readonly dataSplitter: TrainingDataSplitter;
-
-  // Learning rate tracking (for scheduler initialization)
+  // Learning rate tracking
   private initialLearningRate = 0.03;
   private currentHyperparameters: Hyperparameters | null = null;
 
-  // Configuration history for undo/redo
-  private readonly configHistory: ConfigHistory = new ConfigHistory();
-
-  // Completion callback
-  private onCompleteCallback: ((reason: 'maxEpochs' | 'earlyStopping' | 'manual') => void) | null = null;
-
-  // Boundary evolution recording
-  private boundarySnapshots: Array<{ epoch: number; predictions: Prediction[] }> = [];
-  private recordingEnabled = false;
-  private snapshotInterval = 10; // Record every N epochs
+  // Runtime training config (owned here, mirrored to state store for snapshots)
+  private trainingConfig: Required<TrainingConfig> = { ...DEFAULT_TRAINING_CONFIG };
 
   constructor(
     private readonly neuralNet: INeuralNetworkService,
     private readonly visualizer: IVisualizerService,
-    private readonly dataRepo: IDatasetRepository,
+    dataRepo: IDatasetRepository,
     config: Partial<TrainingSessionConfig> = {}
   ) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.initialisePredictionGrid();
 
-    // Initialize decomposed services
+    // Construct services
+    // Construction order: StateStore → DatasetPrep → Experiment → LR/EarlyStopping
+    this.state = new SessionStateStore({ ...this.trainingConfig });
+    this.dataService = new DatasetPreparationService(dataRepo, new TrainingDataSplitter());
+    this.experiment = new ExperimentService();
+
     this.lrScheduler = new LearningRateScheduler(
       this.initialLearningRate,
       this.trainingConfig.lrSchedule ?? DEFAULT_LR_SCHEDULE
@@ -116,86 +92,65 @@ export class TrainingSession implements ITrainingSession {
     this.earlyStoppingStrategy = new EarlyStoppingStrategy(
       this.trainingConfig.earlyStoppingPatience ?? 0
     );
-    this.dataSplitter = new TrainingDataSplitter();
   }
 
-  /**
-   * Returns a snapshot of the current training state.
-   * isRunning is derived from isTraining flag.
-   */
+  // ===========================================================================
+  // ITrainingSession — state
+  // ===========================================================================
+
   getState(): TrainingState {
-    return {
-      eventType: this.lastEventType,
-      currentEpoch: this.currentEpoch,
-      currentLoss: this.currentLoss,
-      currentAccuracy: this.currentAccuracy,
-      currentValLoss: this.currentValLoss,
-      currentValAccuracy: this.currentValAccuracy,
-      isRunning: this.isTraining,
-      isPaused: this.isPaused,
-      isProcessing: this.isProcessingStep,
-      isInitialised: this.isInitialised,
-      datasetLoaded: this.datasetLoaded,
-      maxEpochs: this.trainingConfig.maxEpochs,
-      batchSize: this.trainingConfig.batchSize,
-      targetFps: this.trainingConfig.targetFps,
-      validationSplit: this.trainingConfig.validationSplit,
-      history: this.history,
-    };
+    return this.state.getState();
   }
 
-  /**
-   * Updates runtime training configuration.
-   * Can be called during training to adjust batch size, speed, etc.
-   */
+  onStateChange(callback: (state: TrainingState) => void): () => void {
+    return this.state.addListener(callback);
+  }
+
+  // ===========================================================================
+  // ITrainingSession — configuration
+  // ===========================================================================
+
   setTrainingConfig(config: Partial<TrainingConfig>): void {
     this.trainingConfig = { ...this.trainingConfig, ...config };
+    this.state.setTrainingConfig(this.trainingConfig);
 
-    // Update frame interval based on target FPS
     if (config.targetFps !== undefined) {
       this.frameInterval = config.targetFps > 0 ? 1000 / config.targetFps : 0;
     }
 
-    // Update frame interval based on epoch delay
     if (config.epochDelayMs !== undefined && config.epochDelayMs > 0) {
       this.frameInterval = config.epochDelayMs;
     }
 
-    // Update early stopping patience
     if (config.earlyStoppingPatience !== undefined) {
       this.earlyStoppingStrategy.setPatience(config.earlyStoppingPatience);
     }
 
-    // Update LR schedule
     if (config.lrSchedule !== undefined) {
       this.lrScheduler.setSchedule(config.lrSchedule);
     }
 
     // Re-split data if validation split changed
-    if (config.validationSplit !== undefined && this.allData.length > 0) {
-      this.splitData();
+    if (config.validationSplit !== undefined && this.dataService.hasData()) {
+      this.dataService.splitData(this.trainingConfig.validationSplit);
     }
 
-    this.notifyListeners('configChanged');
+    this.state.notifyListeners('configChanged');
   }
 
   async setHyperparameters(config: Hyperparameters, skipHistory: boolean = false): Promise<void> {
     // Stop training before re-initializing to prevent accessing disposed model
-    const wasTraining = this.isTraining && !this.isPaused;
+    const wasTraining = this.state.getIsTraining() && !this.state.getIsPaused();
     if (wasTraining) {
       this.pause();
-      // Wait for current step to actually complete
-      while (this.isProcessingStep) {
+      while (this.state.getIsProcessingStep()) {
         await new Promise(resolve => setTimeout(resolve, 50));
       }
     }
 
     await this.neuralNet.initialize(config);
-    this.isInitialised = true;
-    this.currentEpoch = 0;
-    this.currentLoss = null;
-    this.currentAccuracy = null;
-    this.history = createEmptyHistory();
+    this.state.setInitialised(true);
+    this.state.resetProgress();
 
     // Store for LR scheduling and reset scheduler
     this.currentHyperparameters = config;
@@ -203,253 +158,128 @@ export class TrainingSession implements ITrainingSession {
     this.lrScheduler.setInitialLR(config.learningRate);
     this.lrScheduler.setSchedule(this.trainingConfig.lrSchedule ?? DEFAULT_LR_SCHEDULE);
 
-    // Reset early stopping strategy
     this.earlyStoppingStrategy.reset();
 
-    // Save to config history (unless this is an undo/redo operation)
     if (!skipHistory) {
-      this.configHistory.push(config, 'Configuration updated');
+      this.experiment.pushConfig(config, 'Configuration updated');
     }
 
-    this.notifyListeners('initialized');
+    this.state.notifyListeners('initialized');
   }
 
-  /**
-   * Exports training history in the specified format.
-   */
-  exportHistory(format: ExportFormat): string {
-    return exportHistory(this.history, format);
-  }
+  // ===========================================================================
+  // ITrainingSession — data
+  // ===========================================================================
 
   async loadData(datasetType: string, options?: DatasetOptions): Promise<void> {
-    const rawData = await this.dataRepo.getDataset(datasetType, options);
-    this.allData = this.applyPreprocessing(rawData, options?.preprocessing ?? 'none');
-    this.splitData();
-    this.datasetLoaded = true;
-    
-    // Detect actual number of classes in the data
-    this.detectedNumClasses = this.detectNumClasses(this.allData);
-    
-    this.visualizer.renderData(this.allData);
-    this.notifyListeners('dataLoaded');
+    const allData = await this.dataService.loadData(
+      datasetType, options, this.trainingConfig.validationSplit
+    );
+    this.state.setDatasetLoaded(true);
+    this.visualizer.renderData(allData);
+    this.state.notifyListeners('dataLoaded');
   }
 
-  /**
-   * Detects the number of unique classes in the dataset.
-   */
-  private detectNumClasses(data: Point[]): number {
-    const uniqueLabels = new Set(data.map(p => p.label));
-    return uniqueLabels.size;
+  setCustomData(points: Point[]): void {
+    this.dataService.setCustomData(points, this.trainingConfig.validationSplit);
+    this.state.setDatasetLoaded(points.length > 0);
+    this.state.notifyListeners('configChanged');
   }
 
-  /**
-   * Returns the detected number of classes in the current dataset.
-   */
+  getData(): Point[] {
+    return this.dataService.getData();
+  }
+
+  getTrainingData(): Point[] {
+    return this.dataService.getTrainingData();
+  }
+
   getDetectedNumClasses(): number {
-    return this.detectedNumClasses;
+    return this.dataService.getDetectedNumClasses();
   }
 
-  /**
-   * Applies preprocessing to the dataset features.
-   */
-  private applyPreprocessing(data: Point[], method: 'none' | 'normalize' | 'standardize'): Point[] {
-    if (method === 'none' || data.length === 0) {
-      return data;
-    }
+  // ===========================================================================
+  // ITrainingSession — training control
+  // ===========================================================================
 
-    if (method === 'normalize') {
-      // Min-max normalization to [-1, 1]
-      // Use loop-based min/max to avoid stack overflow with Math.min(...spread) on large arrays
-      let xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
-      for (const p of data) {
-        if (p.x < xMin) xMin = p.x;
-        if (p.x > xMax) xMax = p.x;
-        if (p.y < yMin) yMin = p.y;
-        if (p.y > yMax) yMax = p.y;
-      }
-
-      const xRange = xMax - xMin || 1;
-      const yRange = yMax - yMin || 1;
-
-      return data.map(p => ({
-        x: ((p.x - xMin) / xRange) * 2 - 1,
-        y: ((p.y - yMin) / yRange) * 2 - 1,
-        label: p.label,
-      }));
-    }
-
-    if (method === 'standardize') {
-      // Z-score standardization — single-pass for mean, second pass for variance
-      let xSum = 0, ySum = 0;
-      for (const p of data) {
-        xSum += p.x;
-        ySum += p.y;
-      }
-      const n = data.length;
-      const xMean = xSum / n;
-      const yMean = ySum / n;
-
-      let xVariance = 0, yVariance = 0;
-      for (const p of data) {
-        xVariance += (p.x - xMean) ** 2;
-        yVariance += (p.y - yMean) ** 2;
-      }
-      const xStd = Math.sqrt(xVariance / n) || 1;
-      const yStd = Math.sqrt(yVariance / n) || 1;
-
-      return data.map(p => ({
-        x: (p.x - xMean) / xStd,
-        y: (p.y - yMean) / yStd,
-        label: p.label,
-      }));
-    }
-
-    return data;
-  }
-
-  /**
-   * Splits the dataset into training and validation sets using TrainingDataSplitter.
-   * Delegates to the splitter service for clean separation of concerns.
-   */
-  private splitData(): void {
-    const { validationSplit } = this.trainingConfig;
-
-    // Use the data splitter service
-    const split = this.dataSplitter.split(this.allData, validationSplit, true);
-
-    this.trainingData = split.training;
-    this.validationData = split.validation;
-    this.allData = split.all; // Updated with validation markers
-  }
-
-  /**
-   * Starts the training loop.
-   * Uses requestAnimationFrame with a guard-rail to prevent overlapping calls.
-   */
   start(): void {
     this.assertReadyToTrain();
 
-    if (this.isTraining && !this.isPaused) {
+    if (this.state.getIsTraining() && !this.state.getIsPaused()) {
       return; // Already running
     }
 
-    this.isTraining = true;
-    this.isPaused = false;
-    this.notifyListeners('started');
+    this.state.setTraining(true);
+    this.state.setPaused(false);
+    this.state.notifyListeners('started');
 
-    // Kick off the guard-rail loop
     void this.loop();
   }
 
-  /**
-   * Pauses the training loop.
-   * The current step will complete, but no new steps will start.
-   */
   pause(): void {
-    if (!this.isTraining) {
+    if (!this.state.getIsTraining()) {
       return;
     }
 
-    this.isPaused = true;
-    this.notifyListeners('paused');
+    this.state.setPaused(true);
+    this.state.notifyListeners('paused');
   }
 
-  /**
-   * Resets training state to initial values.
-   * Stops the loop and clears epoch/loss/history.
-   */
   reset(): void {
-    this.isTraining = false;
-    this.isPaused = false;
-    this.isProcessingStep = false;
-    this.currentEpoch = 0;
-    this.currentLoss = null;
-    this.currentAccuracy = null;
-    this.currentValLoss = null;
-    this.currentValAccuracy = null;
-    this.history = createEmptyHistory();
+    this.state.setTraining(false);
+    this.state.setPaused(false);
+    this.state.setProcessingStep(false);
+    this.state.resetProgress();
 
-    // Re-split data (shuffles again for different validation set)
-    if (this.allData.length > 0) {
-      this.splitData();
+    // Re-split data
+    if (this.dataService.hasData()) {
+      this.dataService.splitData(this.trainingConfig.validationSplit);
     }
 
     // Re-render data points without boundary
-    if (this.datasetLoaded) {
-      this.visualizer.renderData(this.allData);
+    if (this.state.getDatasetLoaded()) {
+      this.visualizer.renderData(this.dataService.getAllData());
     }
 
-    this.notifyListeners('reset');
+    this.state.notifyListeners('reset');
   }
 
-  /**
-   * Clears all data and resets to initial state.
-   * Use this for a full session clear.
-   */
   clearAll(): void {
-    // Stop training
-    this.isTraining = false;
-    this.isPaused = false;
-    this.isProcessingStep = false;
-
-    // Clear training progress
-    this.currentEpoch = 0;
-    this.currentLoss = null;
-    this.currentAccuracy = null;
-    this.currentValLoss = null;
-    this.currentValAccuracy = null;
-    this.history = createEmptyHistory();
-
-    // Clear all data
-    this.allData = [];
-    this.trainingData = [];
-    this.validationData = [];
-    this.datasetLoaded = false;
-    this.isInitialised = false;
-
-    // Clear visualisation
+    this.state.clearAll();
+    this.dataService.clear();
     this.visualizer.clear();
-
-    this.notifyListeners('reset');
+    this.state.notifyListeners('reset');
   }
 
-  /**
-   * Executes a single training step manually.
-   * Useful for step-by-step debugging.
-   */
   async step(): Promise<void> {
     this.assertReadyToTrain();
 
-    // Prevent overlapping manual steps
-    if (this.isProcessingStep) {
+    if (this.state.getIsProcessingStep()) {
       return;
     }
 
-    this.isProcessingStep = true;
+    this.state.setProcessingStep(true);
 
     try {
-      this.currentEpoch++;
+      const epoch = this.state.incrementEpoch();
 
-      // Train on training data
-      const result = await this.neuralNet.train(this.trainingData);
-      this.currentLoss = result.loss;
-      this.currentAccuracy = result.accuracy;
+      const result = await this.neuralNet.train(this.dataService.getTrainingData());
+      this.state.setMetrics(result.loss, result.accuracy);
 
       // Evaluate on validation data if available
       let valLoss: number | null = null;
       let valAccuracy: number | null = null;
 
-      if (this.validationData.length > 0) {
-        const valResult = await this.neuralNet.evaluate(this.validationData);
+      const validationData = this.dataService.getValidationData();
+      if (validationData.length > 0) {
+        const valResult = await this.neuralNet.evaluate(validationData);
         valLoss = valResult.loss;
         valAccuracy = valResult.accuracy;
-        this.currentValLoss = valLoss;
-        this.currentValAccuracy = valAccuracy;
+        this.state.setValidationMetrics(valLoss, valAccuracy);
       }
 
-      // Record in history (including current learning rate)
-      this.history = addHistoryRecord(this.history, {
-        epoch: this.currentEpoch,
+      this.state.addHistoryRecord({
+        epoch,
         loss: result.loss,
         accuracy: result.accuracy,
         valLoss,
@@ -458,73 +288,154 @@ export class TrainingSession implements ITrainingSession {
         learningRate: this.lrScheduler.getCurrentLR(),
       });
 
-      // Render boundary at intervals
-      if (this.currentEpoch === 1 || this.currentEpoch % this.config.renderInterval === 0) {
+      if (epoch === 1 || epoch % this.config.renderInterval === 0) {
         await this.updateVisualisation();
       }
 
-      this.notifyListeners('trainingStep');
+      this.state.notifyListeners('trainingStep');
     } finally {
-      this.isProcessingStep = false;
+      this.state.setProcessingStep(false);
     }
   }
 
-  onStateChange(callback: (state: TrainingState) => void): () => void {
-    this.stateListeners.add(callback);
-    return () => this.stateListeners.delete(callback);
+  // ===========================================================================
+  // ITrainingSession — export / history
+  // ===========================================================================
+
+  exportHistory(format: ExportFormat): string {
+    return exportHistory(this.state.getHistory(), format);
   }
 
-  /**
-   * Cleans up resources and stops the training loop.
-   */
+  getHistory(): TrainingHistory {
+    return this.state.getHistory();
+  }
+
+  getCurrentLearningRate(): number {
+    return this.lrScheduler.getCurrentLR();
+  }
+
+  // ===========================================================================
+  // ITrainingSession — dispose
+  // ===========================================================================
+
   dispose(): void {
-    this.isTraining = false;
-    this.isPaused = false;
-    this.isProcessingStep = false;
-    this.stateListeners.clear();
-    // Note: neuralNet.dispose() should be called by the composition root
+    this.state.setTraining(false);
+    this.state.setPaused(false);
+    this.state.setProcessingStep(false);
+    this.state.clearListeners();
   }
 
   // ===========================================================================
-  // Guard-Rail Training Loop
+  // Experiment service delegates
   // ===========================================================================
 
-  /**
-   * The main training loop with guard-rail protection.
-   *
-   * Key behaviour:
-   * 1. If not training or paused → exit
-   * 2. If max epochs reached → auto-stop
-   * 3. If already processing a step → skip this frame (GPU busy)
-   * 4. If frame interval not elapsed → skip (speed control)
-   * 5. Otherwise → execute step, then schedule next frame
-   *
-   * This ensures we never start Step N+1 before Step N completes,
-   * even if requestAnimationFrame fires faster than GPU training.
-   */
+  onComplete(callback: (reason: 'maxEpochs' | 'earlyStopping' | 'manual') => void): void {
+    this.experiment.onComplete(callback);
+  }
+
+  setRecording(enabled: boolean, interval = 10): void {
+    this.experiment.setRecording(enabled, interval);
+  }
+
+  getBoundarySnapshots(): Array<{ epoch: number; predictions: Prediction[] }> {
+    return this.experiment.getBoundarySnapshots();
+  }
+
+  clearBoundarySnapshots(): void {
+    this.experiment.clearBoundarySnapshots();
+  }
+
+  async undoConfig(): Promise<boolean> {
+    const config = this.experiment.undoConfig();
+    if (!config) return false;
+    await this.setHyperparameters(config, true);
+    return true;
+  }
+
+  async redoConfig(): Promise<boolean> {
+    const config = this.experiment.redoConfig();
+    if (!config) return false;
+    await this.setHyperparameters(config, true);
+    return true;
+  }
+
+  canUndo(): boolean {
+    return this.experiment.canUndo();
+  }
+
+  canRedo(): boolean {
+    return this.experiment.canRedo();
+  }
+
+  // ===========================================================================
+  // LR Finder
+  // ===========================================================================
+
+  async runLRFinder(
+    minLR = 1e-7,
+    maxLR = 1,
+    steps = 100
+  ): Promise<Array<{ lr: number; loss: number }>> {
+    this.assertReadyToTrain();
+
+    const wasTraining = this.state.getIsTraining() && !this.state.getIsPaused();
+    if (wasTraining) {
+      this.pause();
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    const results: Array<{ lr: number; loss: number }> = [];
+    const lrMultiplier = Math.pow(maxLR / minLR, 1 / steps);
+    let currentLR = minLR;
+
+    const originalHyperparams = this.currentHyperparameters;
+    if (!originalHyperparams) {
+      throw new Error('Model not initialized');
+    }
+
+    for (let i = 0; i < steps; i++) {
+      this.neuralNet.updateLearningRate(currentLR);
+
+      const batch = this.getTrainingBatch();
+      const result = await this.neuralNet.train(batch);
+
+      results.push({ lr: currentLR, loss: result.loss });
+
+      if (!isFinite(result.loss) || result.loss > 1e10) {
+        break;
+      }
+
+      currentLR *= lrMultiplier;
+    }
+
+    // Restore original model
+    await this.neuralNet.initialize(originalHyperparams);
+
+    return results;
+  }
+
+  // ===========================================================================
+  // Guard-Rail Training Loop (private)
+  // ===========================================================================
+
   private async loop(): Promise<void> {
-    // Exit condition: training stopped or paused
-    if (!this.isTraining || this.isPaused) {
+    if (!this.state.getIsTraining() || this.state.getIsPaused()) {
       return;
     }
 
-    // Check epoch limit (auto-stop)
     const { maxEpochs } = this.trainingConfig;
-    if (maxEpochs > 0 && this.currentEpoch >= maxEpochs) {
-      this.isTraining = false;
-      this.notifyListeners('stopped');
-      this.onCompleteCallback?.('maxEpochs');
+    if (maxEpochs > 0 && this.state.getEpoch() >= maxEpochs) {
+      this.state.setTraining(false);
+      this.state.notifyListeners('stopped');
+      this.experiment.notifyComplete('maxEpochs');
       return;
     }
 
-    // Guard-rail: skip if previous step still processing
-    if (this.isProcessingStep) {
-      // Schedule next check without executing a step
+    if (this.state.getIsProcessingStep()) {
       requestAnimationFrame(() => void this.loop());
       return;
     }
 
-    // Speed control: check if enough time has passed
     const now = performance.now();
     if (this.frameInterval > 0 && now - this.lastFrameTime < this.frameInterval) {
       requestAnimationFrame(() => void this.loop());
@@ -532,49 +443,38 @@ export class TrainingSession implements ITrainingSession {
     }
     this.lastFrameTime = now;
 
-    // Lock: prevent overlapping execution
-    this.isProcessingStep = true;
+    this.state.setProcessingStep(true);
 
     try {
-      // Guard: check if model is still ready (may have been disposed during reinitialisation)
       if (!this.neuralNet.isReady()) {
-        this.isTraining = false;
-        this.isProcessingStep = false;
-        this.notifyListeners('stopped');
+        this.state.setTraining(false);
+        this.state.setProcessingStep(false);
+        this.state.notifyListeners('stopped');
         return;
       }
 
-      // Get training batch (all data or subset)
       const batch = this.getTrainingBatch();
+      const epoch = this.state.incrementEpoch();
 
-      // Increment epoch BEFORE calculating LR (so epoch 1 gets the right schedule)
-      this.currentEpoch++;
-
-      // Update learning rate for THIS epoch BEFORE training
-      // This ensures the optimizer uses the correct LR for this epoch
       this.updateLearningRateIfNeeded();
       const epochLearningRate = this.lrScheduler.getCurrentLR();
 
-      // Execute training step (uses the LR we just set)
       const result = await this.neuralNet.train(batch);
-      this.currentLoss = result.loss;
-      this.currentAccuracy = result.accuracy;
+      this.state.setMetrics(result.loss, result.accuracy);
 
-      // Evaluate on validation data if available
       let valLoss: number | null = null;
       let valAccuracy: number | null = null;
 
-      if (this.validationData.length > 0) {
-        const valResult = await this.neuralNet.evaluate(this.validationData);
+      const validationData = this.dataService.getValidationData();
+      if (validationData.length > 0) {
+        const valResult = await this.neuralNet.evaluate(validationData);
         valLoss = valResult.loss;
         valAccuracy = valResult.accuracy;
-        this.currentValLoss = valLoss;
-        this.currentValAccuracy = valAccuracy;
+        this.state.setValidationMetrics(valLoss, valAccuracy);
       }
 
-      // Record in history (using the LR that was actually used for training)
-      this.history = addHistoryRecord(this.history, {
-        epoch: this.currentEpoch,
+      this.state.addHistoryRecord({
+        epoch,
         loss: result.loss,
         accuracy: result.accuracy,
         valLoss,
@@ -583,41 +483,31 @@ export class TrainingSession implements ITrainingSession {
         learningRate: epochLearningRate,
       });
 
-      // Check early stopping using strategy service
       if (this.earlyStoppingStrategy.shouldStop(valLoss)) {
-        this.isTraining = false;
-        this.notifyListeners('stopped');
-        this.onCompleteCallback?.('earlyStopping');
-        logger.info(`Early stopping triggered at epoch ${this.currentEpoch}`, {
+        this.state.setTraining(false);
+        this.state.notifyListeners('stopped');
+        this.experiment.notifyComplete('earlyStopping');
+        logger.info(`Early stopping triggered at epoch ${epoch}`, {
           component: 'TrainingSession',
           action: 'earlyStopping',
-          epoch: this.currentEpoch,
+          epoch,
           bestValLoss: this.earlyStoppingStrategy.getBestValLoss(),
           epochsWithoutImprovement: this.earlyStoppingStrategy.getEpochsWithoutImprovement(),
         });
-        return; // Exit loop
+        return;
       }
 
-      // Update visualisation at intervals (decouples rendering from training)
-      if (this.currentEpoch === 1 || this.currentEpoch % this.config.renderInterval === 0) {
+      if (epoch === 1 || epoch % this.config.renderInterval === 0) {
         await this.updateVisualisation();
       }
 
-      // Record boundary snapshot if recording is enabled
-      if (this.recordingEnabled && this.currentEpoch % this.snapshotInterval === 0) {
-        this.boundarySnapshots.push({
-          epoch: this.currentEpoch,
-          predictions: [...this.cachedPredictions],
-        });
-      }
+      this.experiment.maybeRecordSnapshot(epoch, this.cachedPredictions);
 
-      this.notifyListeners('trainingStep');
+      this.state.notifyListeners('trainingStep');
     } catch (error) {
-      // Stop training on error (e.g., GradientExplosionError)
-      this.isTraining = false;
-      this.notifyListeners('stopped');
+      this.state.setTraining(false);
+      this.state.notifyListeners('stopped');
 
-      // Silently handle disposed model errors (expected during reinitialisation)
       if (isModelDisposedError(error)) {
         return;
       }
@@ -628,47 +518,41 @@ export class TrainingSession implements ITrainingSession {
         {
           component: 'TrainingSession',
           action: 'loop',
-          epoch: this.currentEpoch,
+          epoch: this.state.getEpoch(),
         }
       );
     } finally {
-      // Unlock: allow next step
-      this.isProcessingStep = false;
-      // Notify if we're stopping or pausing so UI knows processing is done
-      if (!this.isTraining || this.isPaused) {
-        this.notifyListeners('stopped');
+      this.state.setProcessingStep(false);
+      if (!this.state.getIsTraining() || this.state.getIsPaused()) {
+        this.state.notifyListeners('stopped');
       }
     }
 
-    // Schedule next frame (only if still training and not at epoch limit)
-    if (this.isTraining && !this.isPaused) {
-      const stillUnderLimit = maxEpochs === 0 || this.currentEpoch < maxEpochs;
+    if (this.state.getIsTraining() && !this.state.getIsPaused()) {
+      const stillUnderLimit = maxEpochs === 0 || this.state.getEpoch() < maxEpochs;
       if (stillUnderLimit) {
         requestAnimationFrame(() => void this.loop());
       } else {
-        // Reached epoch limit
-        this.isTraining = false;
-        this.notifyListeners('stopped');
-        this.onCompleteCallback?.('maxEpochs');
+        this.state.setTraining(false);
+        this.state.notifyListeners('stopped');
+        this.experiment.notifyComplete('maxEpochs');
       }
     }
   }
 
-  /**
-   * Returns a batch of training data based on batchSize config.
-   * If batchSize is 0 or >= data length, returns all data.
-   * Otherwise, returns a random subset.
-   */
+  // ===========================================================================
+  // Private helpers
+  // ===========================================================================
+
   private getTrainingBatch(): Point[] {
     const { batchSize } = this.trainingConfig;
+    const trainingData = this.dataService.getTrainingData();
 
-    // Use all data if batchSize is 0 or larger than dataset
-    if (batchSize <= 0 || batchSize >= this.trainingData.length) {
-      return this.trainingData;
+    if (batchSize <= 0 || batchSize >= trainingData.length) {
+      return trainingData;
     }
 
-    // Random sampling without replacement
-    const shuffled = [...this.trainingData];
+    const shuffled = [...trainingData];
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       const temp = shuffled[i] as Point;
@@ -679,65 +563,35 @@ export class TrainingSession implements ITrainingSession {
     return shuffled.slice(0, batchSize);
   }
 
-  // ===========================================================================
-  // Visualisation
-  // ===========================================================================
-
-  /**
-   * Updates the decision boundary visualisation.
-   *
-   * @remarks
-   * The predictionGrid is reused across calls (no new allocations for input).
-   * Predictions are immutable by design, so we replace the cached array.
-   * Guards against rendering after session has been cleared.
-   */
   private async updateVisualisation(): Promise<void> {
-    // Guard: don't render if session was cleared while async operation was pending
-    if (!this.datasetLoaded) {
+    if (!this.state.getDatasetLoaded()) {
       return;
     }
 
-    // Get predictions for grid (decision boundary)
     this.cachedPredictions = await this.neuralNet.predict(this.predictionGrid);
 
-    // Guard again after async operation - session may have been cleared
-    if (!this.datasetLoaded) {
+    if (!this.state.getDatasetLoaded()) {
       return;
     }
 
-    // Get predictions for actual data points (for Voronoi overlay)
-    const pointPredictions = await this.neuralNet.predict(this.allData);
+    const allData = this.dataService.getAllData();
+    const pointPredictions = await this.neuralNet.predict(allData);
 
-    // Guard again after async operation
-    if (!this.datasetLoaded) {
+    if (!this.state.getDatasetLoaded()) {
       return;
     }
 
-    // Render boundary, then data points on top
     this.visualizer.renderBoundary(this.cachedPredictions, this.config.gridSize);
-    this.visualizer.renderData(this.allData);
-    
-    // Update point predictions for Voronoi
+    this.visualizer.renderData(allData);
     this.visualizer.setPointPredictions(pointPredictions);
   }
 
-  // ===========================================================================
-  // Initialisation Helpers
-  // ===========================================================================
-
-  /**
-   * Pre-generates the prediction grid (once, at construction).
-   * Grid points are in [-1, 1] range for both axes.
-   */
   private initialisePredictionGrid(): void {
     const { gridSize } = this.config;
-
-    // Clear and reuse existing array
     this.predictionGrid.length = 0;
 
     for (let i = 0; i < gridSize; i++) {
       for (let j = 0; j < gridSize; j++) {
-        // Map grid indices to [-1, 1] range
         const x = (i / (gridSize - 1)) * 2 - 1;
         const y = (j / (gridSize - 1)) * 2 - 1;
         this.predictionGrid.push({ x, y, label: 0 });
@@ -745,227 +599,21 @@ export class TrainingSession implements ITrainingSession {
     }
   }
 
-  private lastEventType: import('./ITrainingSession').TrainingEventType | undefined;
+  private updateLearningRateIfNeeded(): void {
+    const previousLR = this.lrScheduler.getCurrentLR();
+    this.lrScheduler.calculateLR(this.state.getEpoch(), this.trainingConfig.maxEpochs);
 
-  private notifyListeners(eventType?: import('./ITrainingSession').TrainingEventType): void {
-    this.lastEventType = eventType;
-    const state = this.getState();
-    for (const listener of this.stateListeners) {
-      listener(state);
+    if (this.lrScheduler.hasSignificantChange(previousLR, 0.01) && this.currentHyperparameters) {
+      this.neuralNet.updateLearningRate(this.lrScheduler.getCurrentLR());
     }
   }
 
   private assertReadyToTrain(): void {
-    if (!this.isInitialised) {
+    if (!this.state.getIsInitialised()) {
       throw new Error('Hyperparameters not set. Call setHyperparameters() first.');
     }
-    if (!this.datasetLoaded) {
+    if (!this.state.getDatasetLoaded()) {
       throw new Error('No data loaded. Call loadData() first.');
     }
-  }
-
-  // ===========================================================================
-  // Custom Data
-  // ===========================================================================
-
-  /**
-   * Sets custom data points directly (for draw mode).
-   * Bypasses the data repository and uses provided points.
-   */
-  setCustomData(points: Point[]): void {
-    this.allData = [...points];
-    this.datasetLoaded = points.length > 0;
-
-    // Split into training/validation
-    if (points.length > 0) {
-      this.splitData();
-    } else {
-      this.trainingData = [];
-      this.validationData = [];
-    }
-
-    this.notifyListeners('configChanged');
-  }
-
-  /**
-   * Returns the current dataset points.
-   * Useful for session persistence.
-   */
-  getData(): Point[] {
-    return [...this.allData];
-  }
-
-  /**
-   * Returns the training data (after train/validation split).
-   * Useful for checking if training set is empty (e.g., when validation split is 100%).
-   */
-  getTrainingData(): Point[] {
-    return this.trainingData;
-  }
-
-  /**
-   * Returns the current training history.
-   */
-  getHistory(): TrainingHistory {
-    return this.history;
-  }
-
-  /**
-   * Returns the current learning rate (after warmup/decay adjustments).
-   */
-  getCurrentLearningRate(): number {
-    return this.lrScheduler.getCurrentLR();
-  }
-
-  /**
-   * Updates the learning rate using the LearningRateScheduler service.
-   * Only updates if the change is significant to avoid unnecessary optimizer updates.
-   */
-  private updateLearningRateIfNeeded(): void {
-    const previousLR = this.lrScheduler.getCurrentLR();
-    const newLR = this.lrScheduler.calculateLR(this.currentEpoch, this.trainingConfig.maxEpochs);
-
-    // Only update if LR changed significantly (more than 1%)
-    if (this.lrScheduler.hasSignificantChange(previousLR, 0.01) && this.currentHyperparameters) {
-      // Update optimizer learning rate WITHOUT destroying weights
-      this.neuralNet.updateLearningRate(newLR);
-    }
-  }
-
-  // ===========================================================================
-  // Training Completion & Recording
-  // ===========================================================================
-
-  /**
-   * Sets a callback to be called when training completes.
-   * @param callback - Function called with completion reason
-   */
-  onComplete(callback: (reason: 'maxEpochs' | 'earlyStopping' | 'manual') => void): void {
-    this.onCompleteCallback = callback;
-  }
-
-  /**
-   * Enables or disables boundary evolution recording.
-   * @param enabled - Whether to record snapshots
-   * @param interval - Epochs between snapshots (default: 10)
-   */
-  setRecording(enabled: boolean, interval = 10): void {
-    this.recordingEnabled = enabled;
-    this.snapshotInterval = interval;
-    if (enabled) {
-      this.boundarySnapshots = [];
-    }
-  }
-
-  /**
-   * Returns recorded boundary snapshots.
-   */
-  getBoundarySnapshots(): Array<{ epoch: number; predictions: Prediction[] }> {
-    return [...this.boundarySnapshots];
-  }
-
-  /**
-   * Clears recorded boundary snapshots.
-   */
-  clearBoundarySnapshots(): void {
-    this.boundarySnapshots = [];
-  }
-
-  /**
-   * Runs learning rate finder test.
-   * Trains with exponentially increasing LR and records loss at each step.
-   * @param minLR - Starting learning rate (default: 1e-7)
-   * @param maxLR - Ending learning rate (default: 1)
-   * @param steps - Number of steps (default: 100)
-   * @returns Array of {lr, loss} points
-   */
-  async runLRFinder(
-    minLR = 1e-7,
-    maxLR = 1,
-    steps = 100
-  ): Promise<Array<{ lr: number; loss: number }>> {
-    this.assertReadyToTrain();
-
-    // Pause training before running LR finder to prevent accessing disposed model
-    const wasTraining = this.isTraining && !this.isPaused;
-    if (wasTraining) {
-      this.pause();
-      // Wait for current step to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-
-    const results: Array<{ lr: number; loss: number }> = [];
-    const lrMultiplier = Math.pow(maxLR / minLR, 1 / steps);
-    let currentLR = minLR;
-
-    // Store original hyperparameters to restore later
-    const originalHyperparams = this.currentHyperparameters;
-    if (!originalHyperparams) {
-      throw new Error('Model not initialized');
-    }
-
-    // Run training steps with increasing LR
-    for (let i = 0; i < steps; i++) {
-      // Use the port method — preserves trained weights, no reflection, no @ts-ignore
-      this.neuralNet.updateLearningRate(currentLR);
-
-      // Train one batch
-      const batch = this.getTrainingBatch();
-      const result = await this.neuralNet.train(batch);
-
-      results.push({
-        lr: currentLR,
-        loss: result.loss,
-      });
-
-      // Stop if loss explodes
-      if (!isFinite(result.loss) || result.loss > 1e10) {
-        break;
-      }
-
-      // Increase LR exponentially
-      currentLR *= lrMultiplier;
-    }
-
-    // Restore original model
-    await this.neuralNet.initialize(originalHyperparams);
-
-    return results;
-  }
-
-  /**
-   * Undo to previous configuration
-   */
-  async undoConfig(): Promise<boolean> {
-    const config = this.configHistory.undo();
-    if (!config) return false;
-
-    await this.setHyperparameters(config, true); // skipHistory=true to avoid creating new snapshot
-    return true;
-  }
-
-  /**
-   * Redo to next configuration
-   */
-  async redoConfig(): Promise<boolean> {
-    const config = this.configHistory.redo();
-    if (!config) return false;
-
-    await this.setHyperparameters(config, true); // skipHistory=true
-    return true;
-  }
-
-  /**
-   * Check if undo is available
-   */
-  canUndo(): boolean {
-    return this.configHistory.canUndo();
-  }
-
-  /**
-   * Check if redo is available
-   */
-  canRedo(): boolean {
-    return this.configHistory.canRedo();
   }
 }
