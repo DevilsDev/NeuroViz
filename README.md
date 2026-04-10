@@ -3,89 +3,181 @@
 [![CI/CD](https://github.com/DevilsDev/NeuroViz/actions/workflows/ci.yml/badge.svg)](https://github.com/DevilsDev/NeuroViz/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-Interactive Neural Network Decision Boundary Visualiser — a browser-based application that visualises how neural networks learn to classify 2D data points in real-time. Built with **Hexagonal Architecture** (Ports & Adapters) to demonstrate clean separation of concerns.
+**Interactive neural network decision-boundary visualiser.** Build, train, and
+inspect small neural networks in the browser — watch the decision boundary
+evolve epoch by epoch, flip between 2D and 3D views, follow gradient flow,
+and export trained models. Built with **Hexagonal Architecture** (Ports &
+Adapters) so the ML core has no dependency on TensorFlow.js, D3, or the DOM.
 
 🔗 **[Live Demo](https://devilsdev.github.io/NeuroViz/)**
+📘 **[Feature Guide](docs/FEATURES.md)** · **[Architecture](docs/ARCHITECTURE.md)** · **[Roadmap](docs/ROADMAP.md)**
 
-## Features
+> **Status.** Phases 1–4 of the delivery roadmap are complete (99 features
+> shipped as of the latest release). Phase 5 and follow-up polish are tracked
+> in [`docs/ROADMAP.md`](docs/ROADMAP.md). See
+> [`docs/archive/`](docs/archive/) for historical audit reports.
 
-- **Real-time Training Visualisation** — Watch the decision boundary evolve as the network learns
-- **Multiple Datasets** — Circle, XOR, Spiral, and Gaussian cluster patterns
-- **Configurable Hyperparameters** — Adjust learning rate and hidden layer architecture
-- **Step-by-Step Mode** — Debug training one epoch at a time
-- **Responsive UI** — Modern dark theme with Tailwind CSS
+---
+
+## What ships today
+
+### Training & model
+- **Optimizers** — SGD (with momentum), Adam, RMSprop, Adagrad
+- **Regularisation** — L1, L2, dropout (per-layer), batch normalisation,
+  gradient clipping
+- **Learning-rate control** — exponential / step / cosine schedules, warmup,
+  cyclic LR (triangle + cosine), LR finder with sensitivity curve
+- **Training flow** — configurable batch size, epoch limit, FPS-capped
+  training speed, early stopping on validation-loss patience, train/validation
+  split, step-by-step single-epoch mode
+- **Activations** — ReLU, Sigmoid, Tanh, ELU, with per-layer selection
+- **Multi-class classification** up to 10 classes via softmax output
+
+### Datasets
+- **Built-in patterns** — Circle, XOR, Spiral, Gaussian clusters,
+  N-cluster blobs
+- **Real-world samples** — Iris and Wine (PCA-reduced to 2D, bundled)
+- **Custom input** — draw your own points by clicking, or upload CSV
+- **Controls** — noise level, sample count, class-imbalance ratio,
+  feature normalisation + standardisation toggles, train/test split
+  visualisation
+
+### Visualisation
+- **Real-time decision boundary** with colour-scheme presets (default,
+  viridis, plasma, cool, warm), heatmap opacity and contour-count sliders,
+  misclassified-point highlighting, confidence circles
+- **Interactive chart** — zoom, pan, hover tooltips, click-for-prediction
+  details
+- **3D view** (Three.js) — height encodes prediction confidence
+- **Network diagram** — interactive D3 node graph with weight-magnitude
+  colour coding
+- **Activation heatmaps** — per-layer neuron activations in real time
+- **Voronoi overlay** — alternative boundary view
+- **Gradient flow animation** — backprop visualisation
+- **Boundary evolution recording** — record and replay training
+
+### Metrics & analysis
+- **Loss chart** — training loss + dashed validation loss overlay
+- **Accuracy, precision, recall, F1** (macro-averaged)
+- **Confusion matrix** heatmap
+- **ROC curve with AUC** (binary classification)
+- **Training history** with JSON + CSV export
+- **Weight histograms** and model-complexity metrics
+- **Overfitting / underfitting detection** with suggested fixes
+
+### Export & persistence
+- **Model download / upload** — TensorFlow.js JSON + weights format
+- **ONNX export** for cross-platform use
+- **Python codegen** — produces a matching Keras/TensorFlow script
+- **Image export** — PNG, SVG, and screenshot-with-metadata overlay
+- **Session save/load** — auto-save to localStorage
+- **Shareable config code** — copy/paste Base64 string
+
+### UX & modes
+- **Learn / Experiment / Advanced mode selector** (persisted) — progressively
+  reveals controls as the user graduates between surfaces
+- **Preset configurations** — five quick-start templates + bookmarkable
+  named presets
+- **Guided tutorials** and **challenge mode** for self-directed learning
+- **ELI5 tooltips** on hyperparameters
+- **Keyboard shortcuts** — Space, S, R, F, Escape
+- **Dark / light theme**, fullscreen mode, responsive mobile layout
+- **Browser notifications** on training completion
+
+### Advanced & research
+- **Model comparison (A/B)** panel — side-by-side training runs
+- **Model ensemble** voting visualisation
+- **Feature importance** (permutation), **LIME-style explanations**,
+  **saliency maps**
+- **Adversarial examples** (FGSM), **Bayesian NNs** (MC Dropout),
+  **neural architecture search**
+- **Web-Worker-backed training** for a non-blocking UI
+- **WebGL-accelerated rendering** and progressive grid chunking
+- **REST API** via `window.neurovizAPI`, **WebSocket** live collaboration,
+  **plugin system** for custom extensions
+
+A full per-feature reference lives in [`docs/FEATURES.md`](docs/FEATURES.md).
+Delivery status by phase is tracked in [`docs/ROADMAP.md`](docs/ROADMAP.md).
+
+---
 
 ## Architecture
 
-NeuroViz follows **Hexagonal Architecture** (also known as Ports & Adapters), ensuring the core business logic is completely decoupled from infrastructure concerns.
+NeuroViz follows **Hexagonal Architecture** (Ports & Adapters). Core
+business logic has zero dependency on TensorFlow.js, D3, Three.js, or
+the DOM — adapters live at the edges and are wired up in a composition
+root.
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Presentation                             │
-│                     (index.html, styles)                        │
+│        (controllers, modals, toast, workflow UI)                 │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                      Composition Root                           │
-│                        (main.ts)                                │
+│                (main.ts + ApplicationBuilder)                    │
 │         Wires adapters to ports via dependency injection        │
 └─────────────────────────────────────────────────────────────────┘
                               │
           ┌───────────────────┼───────────────────┐
           ▼                   ▼                   ▼
 ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-│   TFNeuralNet   │ │    D3Chart      │ │ MockDataRepo    │
-│  (TensorFlow)   │ │    (D3.js)      │ │   (Mock API)    │
+│   TFNeuralNet   │ │    D3Chart      │ │ DatasetRepo     │
+│  (TensorFlow.js)│ │ (D3 + Three.js) │ │  (mock + real)  │
 └────────┬────────┘ └────────┬────────┘ └────────┬────────┘
-         │                   │                   │
          │ implements        │ implements        │ implements
          ▼                   ▼                   ▼
 ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
 │ INeuralNetwork  │ │  IVisualizer    │ │ IDatasetRepo    │
 │    Service      │ │    Service      │ │                 │
 └────────┬────────┘ └────────┬────────┘ └────────┬────────┘
-         │                   │                   │
          └───────────────────┼───────────────────┘
-                             │
                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                          Core                                   │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
-│  │   Domain    │  │    Ports    │  │      Application        │  │
-│  │  (Entities) │  │ (Interfaces)│  │   (TrainingSession)     │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────────┘  │
+│   Domain (entities)  ·  Ports (interfaces)  ·  Application      │
+│                        (TrainingSession)                         │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Project Structure
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full layer
+breakdown, port contracts, and extension points.
+
+### Project structure
 
 ```text
 src/
 ├── core/                    # Framework-agnostic business logic
-│   ├── domain/              # Entities: Point, Prediction, Hyperparameters
-│   ├── ports/               # Interfaces: INeuralNetworkService, IVisualizerService
-│   └── application/         # Use cases: TrainingSession orchestrator
+│   ├── domain/              # Point, Prediction, Hyperparameters, ...
+│   ├── ports/               # INeuralNetworkService, IVisualizerService, ...
+│   └── application/         # TrainingSession orchestrator + services
 │
-├── infrastructure/          # Framework-specific implementations
-│   ├── tensorflow/          # TFNeuralNet adapter (TensorFlow.js)
-│   ├── d3/                  # D3Chart adapter (D3.js)
-│   └── api/                 # MockDataRepository (simulated microservice)
+├── infrastructure/          # Framework-specific adapters
+│   ├── tensorflow/          # TFNeuralNet (TensorFlow.js)
+│   ├── d3/                  # D3Chart, Voronoi, gradient flow
+│   ├── three/               # 3D boundary view (Three.js)
+│   ├── api/                 # Dataset repositories
+│   └── education/           # Tutorials, challenges, explain-this-moment
 │
-├── presentation/            # UI styles (Tailwind CSS)
-└── main.ts                  # Composition root (dependency injection)
+├── presentation/            # Controllers, modals, toasts, workflow UI
+└── main.ts                  # Composition root
 ```
 
-### Key Design Decisions
+### Key design decisions
 
 | Decision | Rationale |
 |----------|-----------|
-| **Ports & Adapters** | Core logic has zero dependencies on TensorFlow.js or D3.js |
-| **Constructor Injection** | All dependencies injected via `TrainingSession` constructor |
-| **Async Training Loop** | Guard-rail pattern prevents overlapping GPU calls |
-| **Immutable Domain** | `Point`, `Prediction`, `Hyperparameters` are readonly |
+| **Ports & Adapters** | Core logic never imports TensorFlow.js, D3, or Three.js. |
+| **Constructor injection** | All dependencies arrive via `TrainingSession`. |
+| **Async training loop** | Guard-rail pattern prevents overlapping GPU calls. |
+| **Immutable domain** | `Point`, `Prediction`, `Hyperparameters` are readonly. |
+| **Observer state fan-out** | Controllers subscribe via `onStateChange`, never poll. |
 
-## Getting Started
+---
+
+## Getting started
 
 ### Prerequisites
 
@@ -95,20 +187,15 @@ src/
 ### Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/DevilsDev/NeuroViz.git
 cd NeuroViz
-
-# Install dependencies
 npm install
-
-# Start development server
 npm run dev
 ```
 
 The app will open at `http://localhost:3000`.
 
-### Available Scripts
+### Available scripts
 
 | Command | Description |
 |---------|-------------|
@@ -121,43 +208,63 @@ The app will open at `http://localhost:3000`.
 | `npm run test:e2e` | Run E2E tests (Playwright) |
 | `npm run test:e2e:ui` | Run E2E tests with interactive UI |
 
-## How to Use
+---
 
-1. **Select a Dataset** — Choose from Circle, XOR, Spiral, or Gaussian
-2. **Fetch Data** — Click "Fetch Data" to load the dataset (simulates API call)
-3. **Configure Network** — Set learning rate and hidden layer sizes (e.g., `8, 4`)
-4. **Initialise** — Click "Initialise Network" to create the model
-5. **Train** — Click "Start" to begin training, or "Step" for single epochs
-6. **Observe** — Watch the decision boundary evolve in real-time
+## How to use
 
-## Tech Stack
+1. **Pick a dataset** — Circle, XOR, Spiral, Gaussian, Clusters, Iris,
+   Wine, or draw your own.
+2. **Pick a preset** (optional) — five quick-start configurations cover
+   common learning scenarios.
+3. **Configure the network** — set optimizer, learning rate, hidden
+   layers (e.g. `8, 4`), activation, regularisation, batch size.
+4. **Initialise** — creates the model with the chosen hyperparameters.
+5. **Train** — click **Start** to run the training loop, or **Step** to
+   advance one epoch at a time.
+6. **Observe** — watch the boundary, loss chart, confusion matrix,
+   activation heatmaps, and gradient flow update in real time.
+7. **Analyse** — flip to the **Analyze** tab for confusion matrix,
+   precision / recall / F1, and model-complexity metrics.
+8. **Export** — save the model, the session, an image, or generate
+   Python code.
+
+New users should stay in **Learn Mode** (the default) to see a calm
+subset of controls. **Experiment** and **Advanced** modes progressively
+reveal regularisation, LR-schedule, gradient flow, and research tools.
+
+---
+
+## Tech stack
 
 | Layer | Technology |
 |-------|------------|
-| **ML Framework** | [TensorFlow.js](https://www.tensorflow.org/js) |
-| **Visualisation** | [D3.js](https://d3js.org/) |
-| **Styling** | [Tailwind CSS](https://tailwindcss.com/) |
-| **Build Tool** | [Vite](https://vitejs.dev/) |
-| **Unit Testing** | [Vitest](https://vitest.dev/) |
-| **E2E Testing** | [Playwright](https://playwright.dev/) |
+| **ML framework** | [TensorFlow.js](https://www.tensorflow.org/js) |
+| **2D visualisation** | [D3.js](https://d3js.org/) |
+| **3D visualisation** | [Three.js](https://threejs.org/) |
+| **Styling** | CSS variables + [Tailwind CSS](https://tailwindcss.com/) |
+| **Build tool** | [Vite](https://vitejs.dev/) |
+| **Unit testing** | [Vitest](https://vitest.dev/) |
+| **E2E testing** | [Playwright](https://playwright.dev/) |
 | **Language** | TypeScript 5.6 |
 
-## Testing Strategy
+---
 
-### Unit Tests (Vitest)
+## Testing strategy
 
-Core domain and application logic tested with mocked infrastructure:
+### Unit tests (Vitest)
 
 ```bash
 npm test
 ```
 
 Coverage focuses on:
-- `TrainingSession` orchestration logic
-- Domain entity validation
+- `TrainingSession` orchestration and lifecycle transitions
 - Port contract compliance
+- Domain entity validation
+- Application-layer services (early stopping, LR scheduling, data split)
+- Presentation controllers (with mocked ports)
 
-### E2E Tests (Playwright)
+### E2E tests (Playwright)
 
 Full browser tests across Chromium, Firefox, and WebKit:
 
@@ -166,41 +273,52 @@ npm run test:e2e
 ```
 
 Test categories:
-- **Happy Path** — Full training cycle, pause/resume, reset
-- **Mocked Microservice** — Deterministic data for reproducible tests
-- **Error Handling** — Input validation, disabled states
-- **Accessibility** — Button labels, keyboard navigation
+- **Happy path** — full training cycle, pause/resume, reset
+- **Deterministic datasets** — seeded mock repository
+- **Mode switching** — Learn / Experiment / Advanced
+- **Export flows** — model, image, session
+- **Accessibility** — keyboard navigation, ARIA labels
 
-## CI/CD Pipeline
+---
+
+## CI/CD pipeline
 
 The GitHub Actions workflow runs on every push and PR:
 
-1. **Lint & Type Check** — TypeScript compilation
-2. **Unit Tests** — Vitest with coverage
+1. **Lint & type check** — ESLint + `tsc --noEmit`
+2. **Unit tests** — Vitest with coverage
 3. **Build** — Vite production build
-4. **E2E Tests** — Playwright across 3 browsers
+4. **E2E tests** — Playwright across Chromium, Firefox, WebKit
 5. **Deploy** — GitHub Pages (main branch only)
 
 ---
 
-## Roadmap
+## Roadmap highlights
 
-See [docs/ROADMAP.md](docs/ROADMAP.md) for planned features including:
+Phases 1–4 of the delivery roadmap are complete. The next planned work
+focuses on:
 
-- Advanced optimizers (Adam, RMSprop) and regularization
-- Real-time training metrics and loss charts
-- Custom dataset upload and drawing
-- Multi-class classification support
-- Model export and session persistence
-- Educational tooltips and tutorials
+- **Learn Mode onboarding** — first-run modal, curated 3-preset surface,
+  per-control captions
+- **Workflow spine** — `Prepare → Configure → Train → Analyze`
+  breadcrumb wired to training state
+- **`TrainingSession` controlled extraction** — split into
+  `TrainingEngine`, `SessionStateStore`, `ExperimentService`, and
+  `DatasetPreparationService` while holding the port contract constant
+- **State cues** — stale-model badge, validation-active badge, dataset
+  source indicator, WebGL recovery banner
+
+Full details and per-feature status live in [`docs/ROADMAP.md`](docs/ROADMAP.md).
+Historical audit reports and implementation logs are archived under
+[`docs/archive/`](docs/archive/).
 
 ---
 
-## Extending the Application
+## Extending the application
 
-### Adding a New ML Backend
+### Adding a new ML backend
 
-1. Create a new adapter implementing `INeuralNetworkService`:
+1. Create an adapter implementing `INeuralNetworkService`:
 
 ```typescript
 // src/infrastructure/onnx/ONNXNeuralNet.ts
@@ -211,16 +329,16 @@ export class ONNXNeuralNet implements INeuralNetworkService {
 }
 ```
 
-2. Swap the adapter in `main.ts`:
+2. Swap the adapter in `ApplicationBuilder`:
 
 ```typescript
 // const neuralNetService = new TFNeuralNet();
 const neuralNetService = new ONNXNeuralNet();
 ```
 
-No changes required to `TrainingSession` or any core logic.
+No changes required in `TrainingSession` or any core logic.
 
-### Adding a New Visualisation
+### Adding a new visualisation
 
 1. Implement `IVisualizerService`:
 
@@ -232,7 +350,7 @@ export class CanvasChart implements IVisualizerService {
 }
 ```
 
-2. Inject in `main.ts`:
+2. Inject in `ApplicationBuilder`:
 
 ```typescript
 const visualizerService = new CanvasChart('viz-container', 500, 500);
@@ -242,6 +360,6 @@ const visualizerService = new CanvasChart('viz-container', 500, 500);
 
 ## License
 
-Apache 2.0  [DevilsDev](https://github.com/DevilsDev)
+Apache 2.0 · [DevilsDev](https://github.com/DevilsDev)
 
 See [LICENSE](LICENSE) for details.

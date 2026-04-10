@@ -87,8 +87,9 @@ NeuroViz/
 │       └── toast.ts           # Notification system
 ├── docs/                      # Documentation
 │   ├── PROJECT_OVERVIEW.md    # This file
-│   ├── UX_UI_AUDIT_REPORT.md  # UX/UI audit findings and fixes
-│   └── SPATIAL_AUDIT_REPORT.md # Spatial efficiency audit
+│   ├── ARCHITECTURE.md        # Hexagonal architecture reference
+│   ├── ROADMAP.md             # Phased delivery roadmap
+│   └── archive/               # Historical audit snapshots and one-off reports
 └── public/                    # Static assets
 ```
 
@@ -500,10 +501,13 @@ Complete HTML structure including:
 
 ## Contributing
 
-See the audit reports for identified improvements:
+Start from the evergreen docs:
 
-- `docs/UX_UI_AUDIT_REPORT.md` — User experience findings
-- `docs/SPATIAL_AUDIT_REPORT.md` — Layout and spatial efficiency
+- `docs/ARCHITECTURE.md` — Hexagonal architecture reference
+- `docs/DEVELOPMENT.md` — Local setup and workflow
+- `docs/ROADMAP.md` — Phased delivery plan and current status
+
+Historical audit reports and one-off reviews live under `docs/archive/`.
 
 ---
 

@@ -143,3 +143,9 @@ tests/results/
 tests/reports/
 playwright-report/
 test-results/
+
+# Ad-hoc test output dumps — should never be committed
+*_results.txt
+test_output*.txt
+error_log.txt
+debug_results.txt

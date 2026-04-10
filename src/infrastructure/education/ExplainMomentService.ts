@@ -4,7 +4,7 @@
  * Generates natural-language explanations of the current training state
  * to help beginners understand what's happening during training.
  *
- * Based on DESIGN_AUDIT_360.md recommendation #3
+ * Based on docs/archive/DESIGN_AUDIT_360.md recommendation #3
  */
 
 export type DatasetType = 'circle' | 'xor' | 'spiral' | 'gaussian' | 'custom';
