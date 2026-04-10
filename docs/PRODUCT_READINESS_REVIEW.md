@@ -12,15 +12,16 @@
 
 NeuroViz does what it says on the tin: a learner can pick a dataset, configure a small MLP, press Start, and watch the decision boundary refine itself while loss falls and accuracy rises. The ML primitives are real (TensorFlow.js, He init, SGD/Adam, live loss/val curves) and the D3 visualisations are correct (verified colormap, contour topology, network diagram, weight histogram, complexity math). The hexagonal architecture is genuinely hexagonal — the domain layer is pure and ports are narrow — with two specific core→infrastructure leaks worth fixing.
 
-Five items keep this from being a victory lap:
+Six items keep this from being a victory lap:
 
-1. **Confusion Matrix panel renders an empty container** — 0 DOM children even when open and trained. Highest-priority user-visible bug.
-2. **Output-layer activation histogram shows "No data"** while Input/L1/L2 populate. Partial rendering bug in the activation pipeline's final layer hook.
-3. **Architecture edit (`#input-layers`) does not propagate** through programmatic input events — the network silently stays on the last-initialised topology. Keyboard-only users appear unaffected; anything that edits the field via JS is not.
-4. **"Initialise Network" (`#btn-init`) lives in the Model tab** while Start/Pause/Reset live in the Train tab, and Reset wipes the network diagram without rebuilding. The rebuild-after-edit workflow is present but undiscoverable.
-5. **Two core→infrastructure leaks:** `TrainingSession` and `Application` both import `logger` directly from `src/infrastructure/logging/Logger`. Logger should be an `ILogger` port.
+1. **No WebGL `contextlost` handler anywhere in `src/`** — under memory pressure or backgrounded-tab conditions the TF.js backend can silently die and leave the UI showing stale state with no recovery path. Latent but real; highest-priority reliability gap.
+2. **Confusion Matrix panel renders an empty container** — 0 DOM children even when open and trained. Highest-priority user-visible bug.
+3. **Output-layer activation histogram shows "No data"** while Input/L1/L2 populate. Partial rendering bug in the activation pipeline's final layer hook.
+4. **`Application.ts` (698 LOC) and `ApplicationBuilder.ts` (514 LOC) are composition-root / DOM-wiring files misfiled inside `src/core/application/`.** They import directly from `infrastructure/`, `presentation/`, and `workers/` — the hexagonal boundary rule is enforced everywhere else but these two files break it. A staff reviewer would not merge this without moving them to `src/bootstrap/`.
+5. **`TrainingSession.loop()` is a 150-line scheduler** (lines 505–655) doing 13 distinct responsibilities. Violates the project's ≤40 LOC function rule by ~3.5× and has no reentrancy test despite being the most subtle correctness-critical function in the repo.
+6. **Architecture edit (`#input-layers`) does not propagate** through programmatic input events — the network silently stays on the last-initialised topology. Keyboard users appear unaffected; anything that edits the field via JS is not. Combined with the "Initialise Network" button living in a different tab than the training controls, the rebuild-after-edit workflow is present but undiscoverable.
 
-None of these block the app from teaching a first-time learner how a neural network fits a Spiral dataset. All five are addressable in a focused follow-up PR and do not require touching the ML core.
+None of these block the app from teaching a first-time learner how a neural network fits a Spiral dataset. All six are addressable without touching the ML core or the port contracts. Items #1, #2, #3 should ship in the next PR; items #4 and #5 are a structural refactor worth batching together behind a feature branch.
 
 ---
 
@@ -56,7 +57,13 @@ The logger imports are the more important ones because they bind the entire trai
 **Phase 1 fix quality.**
 The `runLRFinder` change at `TrainingSession.ts:910` is exactly the right shape: one line, no reflection, no `@ts-ignore`, no fallback path that rebuilds the model and silently destroys trained weights. The plan specified leaving `TFNeuralNet.setLearningRate` (the off-contract sibling method) for Phase 2 dead-code removal; in reality it has already been stripped — a grep for `setLearningRate` across `src/` returns zero hits. The contract is now the only way to change the learning rate, which is what you want.
 
-### A.2 CI/CD posture
+### A.2 State discipline and reentrancy
+
+`TrainingSession` is a legitimate single source of truth for *training* state. Private fields at lines 45–100 fully describe a session (epoch, loss, history, `isTraining`, `isPaused`, `isProcessingStep`, boundary snapshots). `getState()` returns a clean snapshot and `stateListeners` provides observer-pattern fan-out to controllers. The mutex discipline inside `loop()` (the `isProcessingStep` guard at line 521 combined with the `isTraining`/`isPaused` short-circuit at 507 and the `try/finally` at 538/634) is solid for its specific claim: *"don't start step N+1 before step N's await resolves"*.
+
+What is **not** in a store: dataset selection, preset application, and several ephemeral UI knobs live in DOM elements. `Application.ts` reads them via `document.getElementById('...').value` at call time. This creates three-way drift risk (DOM `<input>` value, `TrainingSession.trainingConfig`, any cached copy in a controller). The fix is not "add Zustand" — it is "have controllers write through to `TrainingSession` immediately on change" so the DOM never becomes authoritative. Small discipline shift, no new dependencies.
+
+### A.3 CI/CD posture
 
 The pipeline overhaul in `0493999` and the forensic audit committed at `docs/CICD_AUDIT_REPORT.md` (240b143) already document this in depth. The critical property for product readiness is: **`deploy` depends on `test` and `build`, not on `e2e`**. E2E is advisory on `main` (`continue-on-error: true`) with a `timeout-minutes` guard and a `workflow_dispatch` escape hatch. This means a flaky Playwright run cannot hold a working build hostage, while a regressed unit test or a broken build still blocks deploy. That is the right priority ordering for a GitHub-Pages-hosted educational tool where real users care about the site being up, not about the E2E suite being green on every commit.
 
@@ -65,7 +72,38 @@ Outstanding CI/CD items (already filed as issues in the earlier session):
 - **Issue #18** — Playwright Page Object Model selector drift after the hexagonal refactor. Scope clarified: only `#btn-*-sticky` IDs are genuinely drifted; `.data-point` is *not* dead (verified at `src/infrastructure/d3/D3Chart.ts:227`). Fix belongs in `tests/e2e/pages/NeuroPage.ts`, not in the app.
 - **Issue #19** — Node 20 deprecation on GitHub Actions runners (forced Node 24 by 2026-06-02, removed 2026-09-16). 22 action pins across four workflows need a version bump. Full inventory is in the issue.
 
-### A.3 User-visible bugs (architect hat)
+### A.4 Reliability gaps (static audit)
+
+Verified against the current source tree:
+
+**File-size and god-class smells.** Hand-counted line totals in the four largest orchestration/adapter files:
+
+| File | Lines | Concern |
+|---|---|---|
+| `src/core/application/TrainingSession.ts` | 971 | Contains `loop()` at lines 505–655 — a **150-line scheduler** doing epoch-limit, mutex guard, speed throttle, readiness check, batching, LR schedule, training, validation, history, early stopping, visualisation, snapshotting, error handling, and re-scheduling. Violates the project's ≤40 LOC function rule by ~3.5×. Extract `runSingleStep()` and keep the outer function as a pure scheduler. |
+| `src/infrastructure/tensorflow/TFNeuralNet.ts` | 796 | Single adapter class doing model building, gradient monitoring, weight extraction, and serialization. Under the 1000-line file cap but the class itself is a decomposition target (`ModelBuilder`, `GradientMonitor`, `WeightExtractor`, `ModelSerializer`). |
+| `src/core/application/Application.ts` | 698 | 698-line god-class with DOM queries interleaved with business logic. Imports presentation controllers directly. |
+| `src/core/application/ApplicationBuilder.ts` | 514 | 514-line sibling doing DI wiring + DOM event binding + fullscreen + mode switching + dropdown repositioning + tab-bar setup. ~39 methods in one file. Textbook SRP violation and the root cause of the hexagonal boundary leak in A.1. |
+
+**No WebGL context-loss handler.** A `grep` for `webglcontextlost` / `contextlost` across `src/` returns **zero hits**. On a long training run in a backgrounded tab, or on a mobile GPU that restarts the WebGL context under memory pressure, the TF.js backend will silently die and the UI will keep displaying stale state with no recovery path and no user warning. This is the biggest latent resilience bug in the codebase. Fix is a listener on the rendering canvas that (a) calls `neuralNet.dispose()`, (b) flips a "backend unhealthy" flag, (c) shows a recoverable toast, (d) offers a reinitialise button.
+
+**Busy-wait in `TrainingSession.setHyperparameters`** (`src/core/application/TrainingSession.ts:188-190`):
+```ts
+while (this.isProcessingStep) {
+  await new Promise(resolve => setTimeout(resolve, 50));
+}
+```
+This polls in 50 ms chunks to drain an in-flight step before re-initialising. It works, but it is the wrong primitive — a slider drag that fires `setHyperparameters` at interactive rates can stall the event loop in 50 ms increments. Correct fix: have the `finally` block of `loop()` resolve a stored `Promise`, and `await` that Promise here. You own both sides of the producer/consumer; polling is what you do when you don't.
+
+**`ErrorBoundary` layering inversion.** `src/infrastructure/errorHandling/ErrorBoundary.ts:9` does `import { toast } from '../../presentation/toast'`. Infrastructure depending on presentation is the wrong direction. Lift `toast` to a port (e.g., `IUserNotifier`) or move error-boundary toasting into a presentation-layer subscriber.
+
+**Thin test coverage on the TF adapter.** `tests/unit/infrastructure/tensorflow/` contains exactly one file (`TFNeuralNet.calculations.test.ts`) for a 796-line adapter that owns the entire ML backend. Missing: dispose / memory-leak test, learning-rate-update test, loadModel test, model-disposed-error edge-case coverage. Also missing: a reentrancy test for `TrainingSession.loop()` that simulates fast successive `start()` / `setHyperparameters()` calls and asserts no double-training. This is the single most subtle correctness-critical function in the repo and it has no dedicated test.
+
+**No `requestAnimationFrame` cancellation handle.** `loop()` reschedules itself with `requestAnimationFrame(() => void this.loop())` three times (lines 523, 530, 647) but never stores the handle. If `dispose()` is called while a frame is queued, it still fires; the `isTraining` check at 507 catches the no-op, but the defensive `neuralNet.isReady()` at 540 is doing real work to protect against it. Works today, fragile tomorrow.
+
+**No circular-dependency signal in CI.** `src/core/domain/index.ts` has 14+ re-export blocks, `ApplicationBuilder.ts` imports from barrel files alongside named files, and the dependency graph is opaque enough that a future circular import could land silently. Recommend adding `madge --circular src/` as a CI step.
+
+### A.5 User-visible bugs (architect hat)
 
 Observed live at `BR__Damg`:
 
@@ -79,7 +117,7 @@ Observed live at `BR__Damg`:
 
 5. **No ROC curve panel in Analyze.** The Analyze tab accordion has Network Diagram, Weight Histogram, Confusion Matrix, Activation Histogram, Model Complexity, Adversarial, Loss Chart. There is no ROC panel, consistent with the earlier session's finding that `D3RocCurve` was unreferenced dead code. Either ship the panel or delete the adapter; the middle state (adapter exists but no UI slot) is what produced the confusion in the first place.
 
-### A.4 Architect hat verdict
+### A.6 Architect hat verdict
 
 **Ship-quality, with surgical follow-ups.** The hexagonal boundaries are real, the ports are used the way ports are supposed to be used, the CI/CD pipeline puts deploy on the right critical path, and the Phase 1 fix closed the one place the port contract was being bypassed with reflection. The four follow-ups (logger port extraction, composition-root relocation, confusion matrix binding fix, output-layer activation hook) are all contained, reviewable, and do not require a re-architecture.
 
@@ -151,23 +189,36 @@ NeuroViz's core educational proposition is: *"Manipulate a small neural network 
 
 | # | Item | Hat | Effort | Impact |
 |---|---|---|---|---|
-| 1 | Fix Confusion Matrix empty container binding | ML/UX | S | High — restores the canonical classification-quality visual |
-| 2 | Fix Output-layer activation histogram "No data" | ML/UX | S | High — restores the most interesting layer for a classifier |
-| 3 | Extract `ILogger` port; remove `logger` import from `TrainingSession.ts:5` and `Application.ts:30` | Architect | S | Medium — closes the last core→infrastructure leak in the training pipeline |
-| 4 | Add Apply/Rebuild button next to `#input-layers` in the Train tab OR have Reset re-initialise | UX | S | Medium — closes the architecture-edit feedback loop |
-| 5 | Verify manually whether `#input-layers` accepts keyboard edits, then either confirm fix-for-programmatic-only or log as a real propagation bug | UX/QA | XS | Medium |
-| 6 | Decide: ship ROC curve panel OR remove `D3RocCurve` adapter and any dangling references | ML/Architect | S | Medium — closes the middle state |
-| 7 | Relocate `ApplicationBuilder.ts` from `src/core/application/` to `src/bootstrap/` or `src/main.ts` | Architect | S | Low — cosmetic, but clarifies that core does not depend on adapters |
-| 8 | Issue #18 — Playwright selector drift in `NeuroPage.ts` (`#btn-*-sticky` IDs) | CI/CD | S | Medium — restores E2E as a reliable signal |
-| 9 | Issue #19 — Node 20 → Node 24 bump across 22 action pins in 4 workflows before 2026-06-02 | CI/CD | S | High before deadline, irrelevant after |
+| 1 | **Add WebGL `contextlost` handler** on the rendering canvas: dispose neural net, flip "backend unhealthy" flag, show recoverable toast with reinitialise action | Architect/ML | S | **Critical** — latent silent-failure bug under memory pressure / backgrounded-tab conditions |
+| 2 | Fix Confusion Matrix empty container binding | ML/UX | S | High — restores the canonical classification-quality visual |
+| 3 | Fix Output-layer activation histogram "No data" | ML/UX | S | High — restores the most interesting layer for a classifier |
+| 4 | Replace busy-wait at `TrainingSession.ts:188-190` with a `Promise` resolved from `loop()`'s `finally` | Architect | XS | Medium — removes event-loop stall under fast slider-drag reinit |
+| 5 | Extract `ILogger` port; remove `logger` import from `TrainingSession.ts:5` and `Application.ts:30` | Architect | S | Medium — closes the last core→infrastructure leak in the training pipeline |
+| 6 | Extract `IUserNotifier` port; fix `ErrorBoundary.ts:9` infrastructure→presentation inversion | Architect | XS | Low — cosmetic layering correction |
+| 7 | Split `TrainingSession.loop()` (lines 505–655, 150 LOC) into a pure scheduler + `runSingleStep()` to comply with the ≤40 LOC function rule | Architect | M | Medium — improves testability and review clarity |
+| 8 | Add reentrancy test for `TrainingSession.loop()`: simulate fast successive `start()` / `setHyperparameters()` calls, assert no double-training | QA/Architect | S | Medium — protects the most subtle correctness-critical function in the repo |
+| 9 | Add `TFNeuralNet` adapter tests: dispose / memory-leak, `updateLearningRate`, `loadModel`, model-disposed-error edge cases | QA | M | Medium — raises coverage on a 796-line ML-critical adapter |
+| 10 | Store a handle for the training-loop `requestAnimationFrame` so `dispose()` can cancel it deterministically | Architect | XS | Low |
+| 11 | Add Apply/Rebuild button next to `#input-layers` in the Train tab OR have Reset re-initialise | UX | S | Medium — closes the architecture-edit feedback loop |
+| 12 | Verify manually whether `#input-layers` accepts keyboard edits, then either confirm fix-for-programmatic-only or log as a real propagation bug | UX/QA | XS | Medium |
+| 13 | Decide: ship ROC curve panel OR remove `D3RocCurve` adapter and any dangling references | ML/Architect | S | Medium — closes the middle state |
+| 14 | Relocate `ApplicationBuilder.ts` and `Application.ts` from `src/core/application/` to `src/bootstrap/` — they are composition-root / DOM-wiring code misfiled under `core` | Architect | M | High — single structural move that restores hexagonal honesty |
+| 15 | Split `ApplicationBuilder` (514 LOC, ~39 methods) into `AppBootstrap` (DI only), `UiWiring` (DOM event listeners), `KeyboardShortcuts`, `LayoutController` | Architect | M | Medium — SRP correction enabled by #14 |
+| 16 | Add `madge --circular src/` as a CI check | Architect | XS | Low — prevents silent circular-import introduction |
+| 17 | Issue #18 — Playwright selector drift in `NeuroPage.ts` (`#btn-*-sticky` IDs) | CI/CD | S | Medium — restores E2E as a reliable signal |
+| 18 | Issue #19 — Node 20 → Node 24 bump across 22 action pins in 4 workflows before 2026-06-02 | CI/CD | S | High before deadline, irrelevant after |
 
-None of these require touching the ML core, the port contracts, the domain types, or the deploy pipeline. All nine fit into a single focused week of work.
+Items #1–#9 fit into one focused week. Items #14–#15 are the single structural refactor that moves the codebase from "aspirational hexagonal" to "actually hexagonal" — high-impact but touch many files; recommend batching behind a feature branch with the full unit suite as a guard.
 
 ---
 
 ## Sign-off
 
-The live build at `BR__Damg` delivers the essential educational loop (dataset → architecture → training → live decision boundary + loss curves) correctly and with real ML under the hood. The hexagonal architecture is genuine. The Phase 1 fix closed the one reflective hack in the training pipeline and the one tutorial silent-miss. The four surgical follow-ups (confusion matrix, output activation, logger port, architecture-edit loop) move the build from "ships" to "ships well", and none of them require re-architecting anything.
+The live build at `BR__Damg` delivers the essential educational loop (dataset → architecture → training → live decision boundary + loss curves) correctly and with real ML under the hood. The ports are clean, the TF.js adapter is well-isolated, and the Phase 1 fix closed the one reflective hack in the training pipeline and the one tutorial silent-miss.
+
+The hexagonal theory is there and was clearly understood by whoever designed the ports layer — the problem is that `Application.ts` and `ApplicationBuilder.ts` are composition-root and DOM-wiring code misfiled under `core/`, which pulls the inner hexagon's integrity down with them. Fix that single structural issue (move those two files + extract `ILogger` and `IUserNotifier` ports) and the codebase jumps from "aspirational hexagonal" to "actually hexagonal".
+
+The runner-up issues are the WebGL context-loss gap (real user-visible bug waiting to happen), the 150-line `loop()` function with no dedicated reentrancy test, and the thin TF adapter test coverage. None are release-blocking if the team is comfortable with the latent risk; all are contained and reviewable.
 
 **Phase 1 verdict: complete and merged (`240b143`).**
-**Product-readiness verdict: ship, with the consolidated follow-up list above scheduled as the next focused PR.**
+**Product-readiness verdict: ship today, but schedule the consolidated 18-item follow-up list above. Items #1 (WebGL), #2 (confusion matrix), and #3 (output activation) belong in the very next PR.**
