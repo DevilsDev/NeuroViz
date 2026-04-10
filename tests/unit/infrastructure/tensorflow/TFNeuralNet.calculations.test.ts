@@ -473,15 +473,20 @@ describe('TFNeuralNet - Mathematical Correctness', () => {
       expect(activationsReLU.length).toBeGreaterThan(0);
       expect(activationsTanh.length).toBeGreaterThan(0);
 
+      // Skip index 0 (raw input coordinates — the activation function is not
+      // applied to the input layer; only to hidden + output layers).
+      const reluTrainable = activationsReLU.slice(1);
+      const tanhTrainable = activationsTanh.slice(1);
+
       // ReLU activations should all be >= 0
-      for (const layer of activationsReLU) {
+      for (const layer of reluTrainable) {
         for (const activation of layer) {
           expect(activation).toBeGreaterThanOrEqual(0);
         }
       }
 
       // Tanh activations should be in [-1, 1]
-      for (const layer of activationsTanh) {
+      for (const layer of tanhTrainable) {
         for (const activation of layer) {
           expect(activation).toBeGreaterThanOrEqual(-1);
           expect(activation).toBeLessThanOrEqual(1);
@@ -497,12 +502,15 @@ describe('TFNeuralNet - Mathematical Correctness', () => {
         activation: 'sigmoid',
       });
 
-      const point: Point = { x: 0, y: 0, label: 0 };
+      const point: Point = { x: 0.1, y: 0.1, label: 0 };
       const activations = neuralNet.getLayerActivations(point);
 
-      // Sigmoid outputs should be in (0, 1)
-      expect(activations.length).toBeGreaterThan(0);
-      for (const layer of activations) {
+      // Sigmoid outputs should be in (0, 1).
+      // Skip index 0 — the input layer holds the raw coordinates which are
+      // not squashed through sigmoid.
+      expect(activations.length).toBeGreaterThan(1);
+      const trainable = activations.slice(1);
+      for (const layer of trainable) {
         for (const activation of layer) {
           expect(activation).toBeGreaterThan(0);
           expect(activation).toBeLessThan(1);
@@ -522,9 +530,74 @@ describe('TFNeuralNet - Mathematical Correctness', () => {
       const activations = neuralNet.getLayerActivations(point);
 
       expect(activations.length).toBeGreaterThan(0);
-      // ELU can have negative values (for x < 0)
-      // Just verify we get activations
-      expect(activations[0]?.length).toBeGreaterThan(0);
+      // ELU can have negative values (for x < 0). Index 0 is the raw input
+      // coordinates, so it will hold [0.5, -0.5] exactly.
+      expect(activations[0]).toEqual([0.5, -0.5]);
+      // Hidden layer should have data.
+      expect(activations[1]?.length).toBeGreaterThan(0);
+    });
+
+    it('should prepend raw input coordinates as layer 0 and return one entry per trainable layer', async () => {
+      // 2 → 8 → 4 → 3 topology: the fix prepends [x, y] at index 0 so the
+      // returned array has length (1 input + N trainable layers), which
+      // aligns with structure.layers for the multi-class case where
+      // numClasses matches the actual output units.
+      await neuralNet.initialize({
+        learningRate: 0.01,
+        layers: [8, 4],
+        numClasses: 3,
+        activation: 'relu',
+      });
+
+      const structure = neuralNet.getStructure();
+      expect(structure).not.toBeNull();
+      expect(structure!.layers).toEqual([2, 8, 4, 3]);
+
+      const point: Point = { x: 0.3, y: -0.7, label: 0 };
+      const activations = neuralNet.getLayerActivations(point);
+
+      // Contract: one entry per structure.layers index
+      expect(activations).toHaveLength(structure!.layers.length);
+
+      // Index 0 is the raw input coordinates (the fix)
+      expect(activations[0]).toEqual([0.3, -0.7]);
+
+      // Each subsequent layer has the correct fan-out
+      expect(activations[1]).toHaveLength(8);
+      expect(activations[2]).toHaveLength(4);
+      expect(activations[3]).toHaveLength(3);
+    });
+
+    it('should populate the output layer for binary classification (no more "No data")', async () => {
+      // Binary classification uses sigmoid with units=1 in TF.js Keras, so
+      // activations[last] has length 1 (not 2 as structure.layers suggests —
+      // that is a pre-existing cosmetic inconsistency in getStructure, not
+      // part of this fix). The point of this test is: before the fix the
+      // output slot was EMPTY because the input layer was being aliased into
+      // index 0. After the fix, the output slot is populated with the
+      // sigmoid probability.
+      await neuralNet.initialize({
+        learningRate: 0.01,
+        layers: [8, 4],
+        numClasses: 2,
+        activation: 'relu',
+      });
+
+      const point: Point = { x: 0.3, y: -0.7, label: 0 };
+      const activations = neuralNet.getLayerActivations(point);
+
+      // Length 4 (input + 2 hidden + 1 output) despite structure reporting
+      // [2, 8, 4, 2] — the array is still one-per-layer in the TF model sense.
+      expect(activations).toHaveLength(4);
+
+      // Raw input prepended
+      expect(activations[0]).toEqual([0.3, -0.7]);
+
+      // Output layer is non-empty and holds a valid probability
+      expect(activations[3]).toBeDefined();
+      expect(activations[3]!.length).toBeGreaterThan(0);
+      expect(activations[3]![0]).toBeGreaterThan(0);
+      expect(activations[3]![0]).toBeLessThan(1);
     });
   });
 

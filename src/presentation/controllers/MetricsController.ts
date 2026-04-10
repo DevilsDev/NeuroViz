@@ -173,8 +173,22 @@ export class MetricsController {
       // Update speed metrics on every state change
       this.updateSpeedMetrics(state.history);
 
-      // Update confusion matrix and classification metrics when training completes or pauses
-      if (state.isInitialised && state.datasetLoaded && state.currentEpoch > 0 && !state.isRunning) {
+      // Update confusion matrix and classification metrics:
+      //   - after every epoch completes (trainingStep)
+      //   - on explicit pause so the user can inspect a snapshot
+      //   - on natural stop (maxEpochs / early stopping / user stop)
+      // NOTE: the old filter checked !state.isRunning, but isRunning maps to
+      // isTraining which stays true during pause. That meant the matrix only
+      // ever rendered when training completed its full epoch budget.
+      const shouldUpdate =
+        state.isInitialised &&
+        state.datasetLoaded &&
+        state.currentEpoch > 0 &&
+        (state.eventType === 'trainingStep' ||
+          state.eventType === 'paused' ||
+          state.eventType === 'stopped');
+
+      if (shouldUpdate) {
         void this.updateClassificationMetrics();
       }
     });

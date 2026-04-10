@@ -3,6 +3,8 @@ import { Application } from './Application';
 import type { Services, Controllers } from './Application';
 import { TrainingSession } from './TrainingSession';
 import { TFNeuralNet } from '../../infrastructure/tensorflow/TFNeuralNet';
+import { WebGLContextRecovery } from '../../infrastructure/tensorflow/WebGLContextRecovery';
+import { toast } from '../../presentation/toast';
 import { D3Chart } from '../../infrastructure/d3/D3Chart';
 import { D3LossChart } from '../../infrastructure/d3/D3LossChart';
 import { D3LearningRateChart } from '../../infrastructure/d3/D3LearningRateChart';
@@ -105,8 +107,51 @@ export class ApplicationBuilder {
     concreteServices.keyboardShortcuts = uiComponents.keyboardShortcuts;
     concreteServices.datasetGallery = uiComponents.datasetGallery;
 
+    // Wire WebGL context-loss recovery now that we have a session + neuralNet.
+    // On context loss: stop training (prevents the loop from hitting a dead
+    // backend), dispose the neural net, and tell the user they need to click
+    // Initialise Network to recover. On restore, clear the toast so the user
+    // knows it's safe to continue.
+    this.setupWebGLRecovery(concreteServices);
+
     // Upcast to port-typed Services for Application (concrete types implement all ports)
     return new Application(concreteServices as Services, controllers);
+  }
+
+  /**
+   * Attaches WebGL context-loss / restore listeners and wires them to the
+   * training session and neural network. Separate from initializeInfrastructure
+   * because it needs the session/neuralNet instances that only exist after
+   * buildConcreteServices.
+   */
+  private setupWebGLRecovery(services: ConcreteServices): void {
+    const recovery = new WebGLContextRecovery({
+      onContextLost: () => {
+        // Halt the training loop first so the RAF scheduler does not try to
+        // execute another step against a dead backend.
+        try {
+          services.session.pause();
+        } catch {
+          // pause() on a non-running session is effectively a no-op, but we
+          // swallow defensively because we are on the recovery path.
+        }
+        // Dispose the dead neural net so the next initialise() rebuilds
+        // cleanly on a fresh backend.
+        try {
+          services.neuralNet.dispose();
+        } catch {
+          // Same rationale.
+        }
+        toast.error(
+          'GPU context was lost (likely background-tab memory pressure or a driver reset). ' +
+          'Click "Initialise Network" in the Model tab to recover.',
+        );
+      },
+      onContextRestored: () => {
+        toast.info('GPU context restored. Reinitialise the network to continue training.');
+      },
+    });
+    recovery.init();
   }
 
 
