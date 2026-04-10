@@ -69,6 +69,9 @@ export class TrainingController {
     // Event cleanup tracking for proper disposal
     private eventCleanup: Array<{ element: HTMLElement; event: string; handler: EventListener }> = [];
 
+    // Stale-model detection: snapshot of last-initialised hyperparams
+    private lastInitConfig: string | null = null;
+
     constructor(
         private session: TrainingSession,
         private elements: TrainingElements,
@@ -105,6 +108,19 @@ export class TrainingController {
         this.addTrackedListener(this.elements.inputMaxEpochs, 'change', () => this.handleMaxEpochsChange());
         this.addTrackedListener(this.elements.inputValSplit, 'change', () => this.handleValSplitChange());
         this.addTrackedListener(this.elements.inputTargetFps, 'change', () => this.handlePerfModeChange());
+
+        // Model-defining inputs that make an existing model stale when changed
+        const staleInputs: HTMLElement[] = [
+            this.elements.inputLr, this.elements.inputLayers,
+            this.elements.inputOptimizer, this.elements.inputActivation,
+            this.elements.inputLossFunction, this.elements.inputBatchNorm,
+            this.elements.inputL1, this.elements.inputL2,
+            this.elements.inputDropout, this.elements.inputNumClasses,
+        ];
+        for (const el of staleInputs) {
+            this.addTrackedListener(el, 'change', () => this.updateStaleBadge());
+            this.addTrackedListener(el, 'input', () => this.updateStaleBadge());
+        }
     }
 
     /**
@@ -161,6 +177,10 @@ export class TrainingController {
 
             // Apply training config after successful initialization
             await this.applyTrainingConfig();
+
+            // Snapshot config so we can detect staleness on future changes
+            this.lastInitConfig = this.currentConfigHash();
+            this.updateStaleBadge();
 
             const optimizer = this.elements.inputOptimizer.value.toUpperCase();
             toast.success(`Network initialized with ${optimizer} optimizer!`);
@@ -246,6 +266,29 @@ export class TrainingController {
                 decaySteps: 10,
             },
         };
+    }
+
+    private currentConfigHash(): string {
+        return [
+            this.elements.inputLr.value,
+            this.elements.inputLayers.value,
+            this.elements.inputOptimizer.value,
+            this.elements.inputActivation.value,
+            this.elements.inputLossFunction.value,
+            this.elements.inputBatchNorm.checked,
+            this.elements.inputL1.value,
+            this.elements.inputL2.value,
+            this.elements.inputDropout.value,
+            this.elements.inputNumClasses.value,
+        ].join('|');
+    }
+
+    private updateStaleBadge(): void {
+        const badge = document.getElementById('badge-model-stale');
+        if (!badge) return;
+        const isStale = this.lastInitConfig !== null
+            && this.currentConfigHash() !== this.lastInitConfig;
+        badge.classList.toggle('hidden', !isStale);
     }
 
     private handleLrScheduleChange(): void {

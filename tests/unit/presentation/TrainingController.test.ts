@@ -326,6 +326,93 @@ describe('TrainingController', () => {
 
     });
 
+    describe('Stale Model Badge', () => {
+        it('should show stale badge when hyperparams change after init', async () => {
+            const { TrainingController } = await import('../../../src/presentation/controllers/TrainingController');
+
+            const mockElements = createMockElements();
+            const mockSession = createMockSession({ isInitialised: true, datasetLoaded: true });
+            // Make execute succeed so init completes
+            mockSession.getState.mockReturnValue(createMockState({ isInitialised: true, datasetLoaded: true }));
+            const callbacks = { onNetworkUpdate: vi.fn(), onClearVisualization: vi.fn() };
+
+            // Add the badge element to the document so getElementById can find it
+            const badge = document.createElement('span');
+            badge.id = 'badge-model-stale';
+            badge.classList.add('hidden');
+            document.body.appendChild(badge);
+
+            const controller = new TrainingController(mockSession as any, mockElements, callbacks);
+
+            // Simulate a successful init by calling the private methods
+            (controller as any).lastInitConfig = (controller as any).currentConfigHash();
+            (controller as any).updateStaleBadge();
+
+            // Badge should be hidden (config matches)
+            expect(badge.classList.contains('hidden')).toBe(true);
+
+            // Change a hyperparam
+            mockElements.inputLr.value = '0.01';
+            (controller as any).updateStaleBadge();
+
+            // Badge should now be visible
+            expect(badge.classList.contains('hidden')).toBe(false);
+
+            // Cleanup
+            document.body.removeChild(badge);
+            controller.dispose();
+        });
+
+        it('should hide stale badge when config matches last init', async () => {
+            const { TrainingController } = await import('../../../src/presentation/controllers/TrainingController');
+
+            const mockElements = createMockElements();
+            const mockSession = createMockSession();
+            const callbacks = { onNetworkUpdate: vi.fn(), onClearVisualization: vi.fn() };
+
+            const badge = document.createElement('span');
+            badge.id = 'badge-model-stale';
+            badge.classList.add('hidden');
+            document.body.appendChild(badge);
+
+            const controller = new TrainingController(mockSession as any, mockElements, callbacks);
+
+            // Set last init config to current
+            (controller as any).lastInitConfig = (controller as any).currentConfigHash();
+            (controller as any).updateStaleBadge();
+
+            expect(badge.classList.contains('hidden')).toBe(true);
+
+            document.body.removeChild(badge);
+            controller.dispose();
+        });
+
+        it('should not show stale badge before first init', async () => {
+            const { TrainingController } = await import('../../../src/presentation/controllers/TrainingController');
+
+            const mockElements = createMockElements();
+            const mockSession = createMockSession();
+            const callbacks = { onNetworkUpdate: vi.fn(), onClearVisualization: vi.fn() };
+
+            const badge = document.createElement('span');
+            badge.id = 'badge-model-stale';
+            badge.classList.add('hidden');
+            document.body.appendChild(badge);
+
+            const controller = new TrainingController(mockSession as any, mockElements, callbacks);
+
+            // lastInitConfig is null before first init
+            mockElements.inputLr.value = '0.999';
+            (controller as any).updateStaleBadge();
+
+            // Should remain hidden because no init has happened
+            expect(badge.classList.contains('hidden')).toBe(true);
+
+            document.body.removeChild(badge);
+            controller.dispose();
+        });
+    });
+
     describe('Performance Mode', () => {
         it('should sync FPS slider with performance mode dropdown', async () => {
             const { fpsToPerformanceMode } = await import('../../../src/utils/validation');

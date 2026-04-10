@@ -33,6 +33,13 @@ export class DatasetController {
   /** Cleanup functions for dynamically created button listeners */
   private drawButtonCleanup: Array<() => void> = [];
 
+  private updateDatasetSourceBadge(source: string): void {
+    const badge = document.getElementById('badge-dataset-source');
+    if (!badge) return;
+    badge.textContent = source;
+    badge.classList.remove('hidden');
+  }
+
   constructor(
     private session: TrainingSession,
     private visualizerService: D3Chart,
@@ -162,6 +169,9 @@ export class DatasetController {
       this.visualizerService.renderData(loadedData);
       logger.debug(`[DatasetController] Visualization updated with ${loadedData.length} points`);
 
+      // Update dataset source badge
+      this.updateDatasetSourceBadge(isRealWorld ? datasetType.charAt(0).toUpperCase() + datasetType.slice(1) : datasetType.toUpperCase());
+
       // Disable draw mode
       this.visualizerService.disableDrawMode();
       this.elements.drawControls.classList.add('hidden');
@@ -231,6 +241,7 @@ export class DatasetController {
 
     // Update session with custom data
     this.session.setCustomData(this.customDataPoints);
+    this.updateDatasetSourceBadge('Custom');
   }
 
   private updateDrawClassButtons(): void {
@@ -320,6 +331,7 @@ export class DatasetController {
         this.elements.datasetSelect.value = 'custom';
         this.handleDatasetSelectChange();
 
+        this.updateDatasetSourceBadge('CSV');
         toast.success(`Loaded ${points.length} points from CSV`);
       } catch (error) {
         console.error('CSV Parse Error:', error);

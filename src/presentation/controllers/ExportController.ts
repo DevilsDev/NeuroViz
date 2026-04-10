@@ -43,9 +43,17 @@ export class ExportController {
         this.eventCleanup = [];
     }
 
+    private buildExportPrefix(): string {
+        const state = this.session.getState();
+        const epoch = state.currentEpoch;
+        const ts = new Date().toISOString().replace(/[:.]/g, '-');
+        return `epoch-${epoch}-${ts}`;
+    }
+
     private handleExportJson(): void {
         const data = this.session.exportHistory('json');
-        this.downloadFile(data, 'training-history.json', 'application/json');
+        const prefix = this.buildExportPrefix();
+        this.downloadFile(data, `${prefix}-training-history.json`, 'application/json');
         toast.success('Training history exported as JSON');
     }
 
@@ -63,7 +71,8 @@ export class ExportController {
             const modelUrl = URL.createObjectURL(modelJson);
             const modelLink = document.createElement('a');
             modelLink.href = modelUrl;
-            modelLink.download = 'model.json';
+            const prefix = this.buildExportPrefix();
+            modelLink.download = `${prefix}-model.json`;
             modelLink.click();
             URL.revokeObjectURL(modelUrl);
 
@@ -71,7 +80,7 @@ export class ExportController {
             const weightsUrl = URL.createObjectURL(weightsBlob);
             const weightsLink = document.createElement('a');
             weightsLink.href = weightsUrl;
-            weightsLink.download = 'weights.bin';
+            weightsLink.download = `${prefix}-weights.bin`;
             weightsLink.click();
             URL.revokeObjectURL(weightsUrl);
 

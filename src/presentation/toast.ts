@@ -156,6 +156,26 @@ function getToastIcon(type: ToastType): HTMLSpanElement {
 }
 
 /**
+ * Shows a persistent banner by unhiding a pre-existing DOM element.
+ * Unlike toasts, banners stay visible until explicitly cleared by code.
+ */
+export function showPersistentBanner(id: string, message?: string): void {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (message) el.innerHTML = message;
+  el.classList.remove('hidden');
+}
+
+/**
+ * Hides a persistent banner.
+ */
+export function clearPersistentBanner(id: string): void {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('hidden');
+}
+
+/**
  * Convenience methods for specific toast types
  */
 export const toast = {
