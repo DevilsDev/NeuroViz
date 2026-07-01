@@ -110,7 +110,7 @@ jobs:
       # TruffleHog - Free open-source secret scanner
       # -----------------------------------------------------------------------
       - name: Run TruffleHog secret scan
-        uses: trufflesecurity/trufflehog@v3.94.3
+        uses: trufflesecurity/trufflehog@v3.95.7
         with:
           # Scan the entire git history
           path: ./
