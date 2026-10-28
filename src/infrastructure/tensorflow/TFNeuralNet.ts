@@ -264,6 +264,9 @@ export class TFNeuralNet implements INeuralNetworkService {
    */
   dispose(): void {
     if (this.model) {
+      // Optimizers passed to compile() are not owned by the model, so
+      // model.dispose() leaves their slot variables (e.g. Adam moments) alive.
+      this.model.optimizer?.dispose();
       this.model.dispose();
       this.model = null;
     }
@@ -686,10 +689,9 @@ export class TFNeuralNet implements INeuralNetworkService {
       // Binary: single column with 0 or 1
       return tf.tensor2d(data.map((p) => [p.label]));
     } else {
-      // Multi-class: one-hot encoded
-      return tf.oneHot(
-        tf.tensor1d(data.map((p) => p.label), 'int32'),
-        this.numClasses
+      // Multi-class: one-hot encoded (tidy frees the intermediate index tensor)
+      return tf.tidy(() =>
+        tf.oneHot(tf.tensor1d(data.map((p) => p.label), 'int32'), this.numClasses)
       );
     }
   }

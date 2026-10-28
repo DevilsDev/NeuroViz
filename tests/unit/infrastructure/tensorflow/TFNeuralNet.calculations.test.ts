@@ -951,6 +951,46 @@ describe('TFNeuralNet - Mathematical Correctness', () => {
       const tensorGrowth = finalNumTensors - initialNumTensors;
       expect(tensorGrowth).toBeLessThan(10);
     });
+
+    it('should not leak label tensors in multi-class train and evaluate', async () => {
+      await neuralNet.initialize({ learningRate: 0.01, layers: [4], numClasses: 3 });
+      const data: Point[] = [
+        { x: 0, y: 0, label: 0 },
+        { x: 1, y: 1, label: 1 },
+        { x: -1, y: 1, label: 2 },
+      ];
+
+      // Warm up: the first train step allocates optimizer state
+      await neuralNet.train(data);
+      await neuralNet.evaluate(data);
+      const tensorsBefore = tf.memory().numTensors;
+
+      for (let i = 0; i < 5; i++) {
+        await neuralNet.train(data);
+        await neuralNet.evaluate(data);
+      }
+
+      expect(tf.memory().numTensors).toBe(tensorsBefore);
+    });
+
+    it('should release optimizer state when re-initialising', async () => {
+      const config = { learningRate: 0.01, layers: [4], numClasses: 2, optimizer: 'adam' as const };
+      const data: Point[] = [
+        { x: 0, y: 0, label: 0 },
+        { x: 1, y: 1, label: 1 },
+      ];
+
+      await neuralNet.initialize(config);
+      await neuralNet.train(data);
+      const tensorsAfterFirstRun = tf.memory().numTensors;
+
+      for (let i = 0; i < 3; i++) {
+        await neuralNet.initialize(config);
+        await neuralNet.train(data);
+      }
+
+      expect(tf.memory().numTensors).toBe(tensorsAfterFirstRun);
+    });
   });
 
   describe('Evaluation Mode', () => {
