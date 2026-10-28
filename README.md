@@ -7,14 +7,17 @@
 inspect small neural networks in the browser — watch the decision boundary
 evolve epoch by epoch, flip between 2D and 3D views, follow gradient flow,
 and export trained models. Built with **Hexagonal Architecture** (Ports &
-Adapters) so the ML core has no dependency on TensorFlow.js, D3, or the DOM.
+Adapters): the domain model, ports and training services have no dependency
+on TensorFlow.js, D3, or the DOM.
 
 🔗 **[Live Demo](https://devilsdev.github.io/NeuroViz/)**
 📘 **[Feature Guide](docs/FEATURES.md)** · **[Architecture](docs/ARCHITECTURE.md)** · **[Roadmap](docs/ROADMAP.md)**
 
 > **Status.** All 9 feature phases and the 5-phase improvement roadmap are
-> complete (99 features shipped, architecture consolidated). See
-> [`docs/ROADMAP.md`](docs/ROADMAP.md) for the full delivery status and
+> complete. Some research features exist as code but are not yet wired into
+> the app; they are listed separately under
+> [Implemented but not yet in the app](#implemented-but-not-yet-in-the-app).
+> See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the full delivery status and
 > [`docs/archive/`](docs/archive/) for historical audit reports.
 
 ---
@@ -26,7 +29,7 @@ Adapters) so the ML core has no dependency on TensorFlow.js, D3, or the DOM.
 - **Regularisation** — L1, L2, dropout (per-layer), batch normalisation,
   gradient clipping
 - **Learning-rate control** — exponential / step / cosine schedules, warmup,
-  cyclic LR (triangle + cosine), LR finder with sensitivity curve
+  cyclic LR (triangle + cosine)
 - **Training flow** — configurable batch size, epoch limit, FPS-capped
   training speed, early stopping on validation-loss patience, train/validation
   split, step-by-step single-epoch mode
@@ -46,7 +49,7 @@ Adapters) so the ML core has no dependency on TensorFlow.js, D3, or the DOM.
 - **Real-time decision boundary** with colour-scheme presets (default,
   viridis, plasma, cool, warm), heatmap opacity and contour-count sliders,
   misclassified-point highlighting, confidence circles
-- **Interactive chart** — zoom, pan, hover tooltips, click-for-prediction
+- **Interactive chart** — hover tooltips, click-for-prediction
   details
 - **3D view** (Three.js) — height encodes prediction confidence
 - **Network diagram** — interactive D3 node graph with weight-magnitude
@@ -85,16 +88,24 @@ Adapters) so the ML core has no dependency on TensorFlow.js, D3, or the DOM.
 - **Browser notifications** on training completion
 
 ### Advanced & research
-- **Model comparison (A/B)** panel — side-by-side training runs
-- **Model ensemble** voting visualisation
-- **Feature importance** (permutation), **LIME-style explanations**,
-  **saliency maps**
-- **Adversarial examples** (FGSM), **Bayesian NNs** (MC Dropout),
-  **neural architecture search**
-- **Web-Worker-backed training** for a non-blocking UI
-- **WebGL-accelerated rendering** and progressive grid chunking
-- **REST API** via `window.neurovizAPI`, **WebSocket** live collaboration,
-  **plugin system** for custom extensions
+- **Adversarial examples** (FGSM) generated against the trained model
+- **Dropout visualisation** — which neurons are dropped during training
+
+### Implemented but not yet in the app
+
+These modules exist in the source tree (with some unit tests) but nothing in
+the running app imports or exposes them yet:
+
+- Domain / application code (`src/core/`, `src/workers/`,
+  `src/infrastructure/performance/`): model comparison (A/B), model
+  ensembles, permutation feature importance, LR finder, Web-Worker-backed
+  training, progressive grid rendering
+- Experimental modules (`src/experimental/`, excluded from the production
+  bundle): LIME-style explanations, saliency maps, Bayesian NNs
+  (MC Dropout), neural architecture search, WebGL renderer, REST API
+  (`window.neurovizAPI`), WebSocket collaboration, plugin system
+- Chart zoom/pan is implemented in `D3Chart` but disabled by default
+  (`zoomEnabled: false`)
 
 A full per-feature reference lives in [`docs/FEATURES.md`](docs/FEATURES.md).
 Delivery status by phase is tracked in [`docs/ROADMAP.md`](docs/ROADMAP.md).
@@ -103,10 +114,18 @@ Delivery status by phase is tracked in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Architecture
 
-NeuroViz follows **Hexagonal Architecture** (Ports & Adapters). Core
-business logic has zero dependency on TensorFlow.js, D3, Three.js, or
-the DOM — adapters live at the edges and are wired up in a composition
-root.
+NeuroViz follows **Hexagonal Architecture** (Ports & Adapters). The
+domain model (`core/domain`), ports (`core/ports`) and training services
+(`core/application/training`, `commands`, `TrainingSession`) have no
+dependency on TensorFlow.js, D3, Three.js, or the DOM — adapters live at
+the edges and are wired up in a composition root.
+
+> **Known boundary exceptions.** The composition root
+> (`ApplicationBuilder`) and the UI coordinator (`Application`) currently
+> live in `src/core/application/` and import TensorFlow.js, the D3 adapters,
+> presentation controllers and the DOM. `TrainingSession` also uses the
+> infrastructure logger and `requestAnimationFrame` directly. Moving these
+> out of `core/` is planned.
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
@@ -164,14 +183,15 @@ src/
 │   └── education/           # Tutorials, challenges, explain-this-moment
 │
 ├── presentation/            # Controllers, modals, toasts, workflow UI
-└── main.ts                  # Composition root
+├── experimental/            # Not imported by the app (see above)
+└── main.ts                  # Entry point (builds via ApplicationBuilder)
 ```
 
 ### Key design decisions
 
 | Decision | Rationale |
 |----------|-----------|
-| **Ports & Adapters** | Core logic never imports TensorFlow.js, D3, or Three.js. |
+| **Ports & Adapters** | Domain, ports and training services never import TensorFlow.js, D3, or Three.js (see boundary exceptions above). |
 | **Constructor injection** | All dependencies arrive via `TrainingSession` facade. |
 | **Service extraction** | `TrainingSession` delegates to four SRP services. |
 | **Async training loop** | Guard-rail pattern prevents overlapping GPU calls. |
