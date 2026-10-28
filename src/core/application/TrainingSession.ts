@@ -71,6 +71,8 @@ export class TrainingSession implements ITrainingSession {
   // Learning rate tracking
   private initialLearningRate = 0.03;
   private currentHyperparameters: Hyperparameters | null = null;
+  /** LR last pushed to the network; compared against the schedule each epoch */
+  private appliedLearningRate: number | null = null;
 
   // Runtime training config (owned here, mirrored to state store for snapshots)
   private trainingConfig: Required<TrainingConfig> = { ...DEFAULT_TRAINING_CONFIG };
@@ -167,6 +169,7 @@ export class TrainingSession implements ITrainingSession {
 
       // Store for LR scheduling and reset scheduler
       this.currentHyperparameters = config;
+      this.appliedLearningRate = config.learningRate;
       this.initialLearningRate = config.learningRate;
       this.lrScheduler.setInitialLR(config.learningRate);
       this.lrScheduler.setSchedule(this.trainingConfig.lrSchedule ?? DEFAULT_LR_SCHEDULE);
@@ -404,13 +407,16 @@ export class TrainingSession implements ITrainingSession {
       throw new Error('Model not initialized');
     }
 
-    return this.lrFinder.run(
+    const results = await this.lrFinder.run(
       () => this.getTrainingBatch(),
       this.currentHyperparameters,
       minLR,
       maxLR,
       steps
     );
+    // The finder re-initialises the network at the original LR
+    this.appliedLearningRate = this.currentHyperparameters.learningRate;
+    return results;
   }
 
   // ===========================================================================
@@ -599,11 +605,13 @@ export class TrainingSession implements ITrainingSession {
   }
 
   private updateLearningRateIfNeeded(): void {
-    const previousLR = this.lrScheduler.getCurrentLR();
-    this.lrScheduler.calculateLR(this.state.getEpoch(), this.trainingConfig.maxEpochs);
+    const scheduledLR = this.lrScheduler.calculateLR(this.state.getEpoch(), this.trainingConfig.maxEpochs);
 
-    if (this.lrScheduler.hasSignificantChange(previousLR, 0.01) && this.currentHyperparameters) {
-      this.neuralNet.updateLearningRate(this.lrScheduler.getCurrentLR());
+    // Compare against the LR actually applied, not the previous epoch's scheduled
+    // value: otherwise slow schedules (<1%/epoch) never reach the optimizer.
+    if (this.currentHyperparameters && scheduledLR !== this.appliedLearningRate) {
+      this.neuralNet.updateLearningRate(scheduledLR);
+      this.appliedLearningRate = scheduledLR;
     }
   }
 
