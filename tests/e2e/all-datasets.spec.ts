@@ -69,11 +69,8 @@ test.describe('All Dataset Loading - Black Box Tests', () => {
     await expect(neuroPage.dataPoints.first()).toBeVisible();
   });
 
-  test('should load Iris dataset (real-world)', async ({ page }) => {
-    // The dropdown is hidden by default - show it first
-    await page.locator('#toggle-dataset-view').click();
-    await page.locator('#dataset-select').selectOption('iris');
-    await neuroPage.loadDataset();
+  test('should load Iris dataset (real-world)', async () => {
+    await neuroPage.selectAndLoadDataset('iris');
 
     // Iris has 150 samples
     const pointCount = await neuroPage.getDataPointCount();
@@ -82,11 +79,8 @@ test.describe('All Dataset Loading - Black Box Tests', () => {
     await neuroPage.waitForDataPoints(150);
   });
 
-  test('should load Wine dataset (real-world)', async ({ page }) => {
-    // The dropdown is hidden by default - show it first
-    await page.locator('#toggle-dataset-view').click();
-    await page.locator('#dataset-select').selectOption('wine');
-    await neuroPage.loadDataset();
+  test('should load Wine dataset (real-world)', async () => {
+    await neuroPage.selectAndLoadDataset('wine');
 
     // Wine has 178 samples
     const pointCount = await neuroPage.getDataPointCount();
@@ -96,15 +90,10 @@ test.describe('All Dataset Loading - Black Box Tests', () => {
   });
 
   test('should enable Custom dataset drawing mode', async ({ page }) => {
-    // Custom dataset has no gallery card - use dropdown
-    // Toggle dropdown visibility first (it's hidden by default)
-    await page.locator('#toggle-dataset-view').click();
-    await page.waitForSelector('#dataset-select', { state: 'visible' });
-    await page.locator('#dataset-select').selectOption('custom');
+    await neuroPage.selectDataset('custom');
 
-    // Custom dataset doesn't show loading overlay - just click button
-    await page.locator('#btn-load-data').click();
-    await page.waitForTimeout(500);
+    // Custom starts with 0 points, so don't use loadDataset() (it waits for points)
+    await (await neuroPage.reveal(neuroPage.loadDataButton)).click();
 
     // Custom dataset starts with 0 points
     // Drawing controls should become visible
@@ -122,6 +111,7 @@ test.describe('All Datasets Training - White Box Tests', () => {
   });
 
   test('should train Circle dataset and verify internal state', async ({ page }) => {
+    test.skip(!(await neuroPage.hasAppHandle()), 'window.app is only exposed in dev/test builds (main.ts), not the production bundle CI serves');
     await neuroPage.setupForTraining('circle', 0.01, '8, 4');
     await neuroPage.startTraining();
 
@@ -214,12 +204,8 @@ test.describe('All Datasets Training - White Box Tests', () => {
   });
 
   test('should verify Iris dataset loads with correct dimensions', async ({ page }) => {
-    // Wait for dropdown toggle to be clickable
-    const toggleBtn = page.locator('#toggle-dataset-view');
-    await toggleBtn.click();
-    await page.waitForSelector('#dataset-select', { state: 'visible' });
-    await page.locator('#dataset-select').selectOption('iris');
-    await neuroPage.loadDataset();
+    test.skip(!(await neuroPage.hasAppHandle()), 'window.app is only exposed in dev/test builds (main.ts), not the production bundle CI serves');
+    await neuroPage.selectAndLoadDataset('iris');
 
     // White box: Verify data structure
     const dataInfo = await page.evaluate(() => {
@@ -238,12 +224,8 @@ test.describe('All Datasets Training - White Box Tests', () => {
   });
 
   test('should verify Wine dataset loads with correct dimensions', async ({ page }) => {
-    // Wait for dropdown toggle to be clickable
-    const toggleBtn = page.locator('#toggle-dataset-view');
-    await toggleBtn.click();
-    await page.waitForSelector('#dataset-select', { state: 'visible' });
-    await page.locator('#dataset-select').selectOption('wine');
-    await neuroPage.loadDataset();
+    test.skip(!(await neuroPage.hasAppHandle()), 'window.app is only exposed in dev/test builds (main.ts), not the production bundle CI serves');
+    await neuroPage.selectAndLoadDataset('wine');
 
     const dataInfo = await page.evaluate(() => {
       const app = (window as any).app;
@@ -283,6 +265,7 @@ test.describe('Dataset Switching - State Management', () => {
   });
 
   test('should clear previous dataset when loading new one', async ({ page }) => {
+    test.skip(!(await neuroPage.hasAppHandle()), 'window.app is only exposed in dev/test builds (main.ts), not the production bundle CI serves');
     // Load first dataset
     await neuroPage.selectAndLoadDataset('circle');
     const firstCount = await neuroPage.getDataPointCount();
@@ -317,10 +300,8 @@ test.describe('Dataset Switching - State Management', () => {
     // Load new dataset
     await neuroPage.selectAndLoadDataset('xor');
 
-    // Epoch should NOT reset just from loading data
-    // But training state should be stopped
-    const state = await neuroPage.getStateText();
-    expect(state).not.toBe('Training');
+    // Loading a new dataset must leave training stopped
+    await neuroPage.expectStopped();
   });
 });
 
@@ -362,6 +343,7 @@ test.describe('Dataset Parameters - White Box', () => {
   });
 
   test('should respect number of classes parameter', async ({ page }) => {
+    test.skip(!(await neuroPage.hasAppHandle()), 'window.app is only exposed in dev/test builds (main.ts), not the production bundle CI serves');
     // Use clusters dataset which supports numClasses (gaussian ignores it)
     const classesInput = page.locator('#input-num-classes');
 

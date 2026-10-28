@@ -39,7 +39,9 @@ export class NeuroPage {
   // =========================================================================
   readonly epochCounter: Locator;
   readonly lossDisplay: Locator;
-  readonly stateDisplay: Locator;
+  readonly accuracyDisplay: Locator;
+  /** Messages of currently shown toast notifications */
+  readonly toastMessages: Locator;
 
   // =========================================================================
   // Locators - Visualisation
@@ -67,16 +69,17 @@ export class NeuroPage {
     this.layersInput = page.locator('#input-layers');
     this.initButton = page.locator('#btn-init');
 
-    // Training controls (using sticky footer buttons which are visible)
-    this.startButton = page.locator('#btn-start-sticky');
-    this.pauseButton = page.locator('#btn-pause-sticky');
-    this.stepButton = page.locator('#btn-step-sticky');
-    this.resetButton = page.locator('#btn-reset-sticky');
+    // Training controls (toolbar above the chart)
+    this.startButton = page.locator('#btn-start');
+    this.pauseButton = page.locator('#btn-pause');
+    this.stepButton = page.locator('#btn-step');
+    this.resetButton = page.locator('#btn-reset');
 
-    // Status display
+    // Status display (toolbar metrics)
     this.epochCounter = page.locator('#status-epoch');
     this.lossDisplay = page.locator('#status-loss');
-    this.stateDisplay = page.locator('#status-state');
+    this.accuracyDisplay = page.locator('#status-accuracy');
+    this.toastMessages = page.locator('#toast-container .toast-message');
 
     // Visualisation
     this.vizContainer = page.locator('#viz-container');
@@ -90,14 +93,65 @@ export class NeuroPage {
   // =========================================================================
 
   /**
-   * Disable the onboarding tutorial for E2E tests.
-   * Sets localStorage flag to skip tutorial on page load.
+   * Disable the onboarding tutorial for E2E tests and start in Advanced mode.
+   *
+   * The Learn/Experiment/Advanced selector hides controls marked with
+   * `data-min-mode`; Advanced shows all of them so every control is testable.
    */
   async disableOnboarding(): Promise<void> {
     await this.page.addInitScript(() => {
       localStorage.setItem('neuroviz-has-visited', 'true');
       localStorage.setItem('neuroviz-first-run-complete', 'true');
+      localStorage.setItem('neuroviz-ui-mode', 'advanced');
     });
+  }
+
+  /**
+   * Whether white-box tests can inspect the app: main.ts exposes `window.app`
+   * only in dev/test builds, not in the production bundle CI serves.
+   */
+  async hasAppHandle(): Promise<boolean> {
+    return this.page.evaluate(() => 'app' in window);
+  }
+
+  // =========================================================================
+  // Sidebar navigation
+  // =========================================================================
+
+  /**
+   * Activate a sidebar tab (Data, Model, Train, Analyze).
+   */
+  async openTab(tab: 'data' | 'model' | 'train' | 'analyze'): Promise<void> {
+    const button = this.page.locator(`.sidebar-tab[data-tab="tab-${tab}"]`);
+    await button.click();
+    await expect(this.page.locator(`#tab-${tab}`)).toHaveClass(/active/);
+  }
+
+  /**
+   * Make a sidebar control interactable: activate the tab panel that contains
+   * it and expand any collapsed <details> sections around it.
+   */
+  async reveal(locator: Locator): Promise<Locator> {
+    const tabId = await locator.evaluate((el) => {
+      let node: Element | null = el.parentElement;
+      while (node) {
+        if (node instanceof HTMLDetailsElement) node.open = true;
+        node = node.parentElement;
+      }
+      return el.closest('[data-tab-content]')?.getAttribute('data-tab-content') ?? null;
+    });
+    if (tabId) {
+      await this.openTab(tabId.replace('tab-', '') as 'data' | 'model' | 'train' | 'analyze');
+    }
+    await expect(locator).toBeVisible();
+    return locator;
+  }
+
+  /**
+   * Shorthand: locate a sidebar control by CSS selector and reveal it.
+   */
+  async control(selector: string): Promise<Locator> {
+    return this.reveal(this.page.locator(selector));
   }
 
   /**
@@ -131,19 +185,20 @@ export class NeuroPage {
   async selectDataset(name: string): Promise<void> {
     // Use visual gallery card instead of hidden dropdown
     const card = this.page.locator(`.dataset-preview-card[data-dataset="${name}"]`);
-    await card.click();
+    await (await this.reveal(card)).click();
   }
 
   /**
-   * Load the currently selected dataset.
-   * Waits for the loading overlay to appear and disappear.
+   * Load the currently selected dataset and wait until its points are drawn.
+   *
+   * Waits on the outcome rather than on the loading overlay appearing: a fast
+   * load can show and hide the overlay before Playwright ever observes it.
    */
   async loadDataset(): Promise<void> {
-    await this.loadDataButton.click();
-    // Wait for loading to start
-    await expect(this.loadingOverlay).toBeVisible();
-    // Wait for loading to complete (500ms simulated latency + buffer)
-    await expect(this.loadingOverlay).toBeHidden({ timeout: 5000 });
+    await (await this.reveal(this.loadDataButton)).click();
+    await expect(this.loadingOverlay).toBeHidden({ timeout: 10000 });
+    await expect(this.dataPoints.first()).toBeVisible({ timeout: 10000 });
+    await expect(this.startButton).toBeEnabled({ timeout: 10000 });
   }
 
   /**
@@ -162,9 +217,9 @@ export class NeuroPage {
    * Set hyperparameters and initialise the network.
    */
   async initialiseNetwork(learningRate = 0.003, layers = '8, 4'): Promise<void> {
-    await this.learningRateInput.fill(learningRate.toString());
-    await this.layersInput.fill(layers);
-    await this.initButton.click();
+    await (await this.reveal(this.learningRateInput)).fill(learningRate.toString());
+    await (await this.reveal(this.layersInput)).fill(layers);
+    await (await this.reveal(this.initButton)).click();
     // Wait for initialisation to complete (TensorFlow.js initialization can take time)
     await expect(this.startButton).toBeEnabled({ timeout: 15000 });
   }
@@ -180,7 +235,7 @@ export class NeuroPage {
     await expect(this.startButton).toBeEnabled();
     await this.startButton.click();
     // Wait for training to actually start
-    await expect(this.stateDisplay).toHaveText('Training', { timeout: 2000 });
+    await this.expectRunning();
   }
 
   /**
@@ -188,7 +243,23 @@ export class NeuroPage {
    */
   async pauseTraining(): Promise<void> {
     await this.pauseButton.click();
-    await expect(this.stateDisplay).toHaveText('Paused', { timeout: 2000 });
+    await this.expectStopped();
+  }
+
+  /**
+   * Training is running: the toolbar swaps Train for Pause.
+   */
+  async expectRunning(timeout = 5000): Promise<void> {
+    await expect(this.pauseButton).toBeVisible({ timeout });
+    await expect(this.startButton).toBeHidden({ timeout });
+  }
+
+  /**
+   * Training is not running (idle, paused or stopped): Train is shown again.
+   */
+  async expectStopped(timeout = 5000): Promise<void> {
+    await expect(this.startButton).toBeVisible({ timeout });
+    await expect(this.pauseButton).toBeHidden({ timeout });
   }
 
   /**
@@ -241,13 +312,6 @@ export class NeuroPage {
     }
     const value = parseFloat(text);
     return isNaN(value) ? null : value;
-  }
-
-  /**
-   * Get the current training state text.
-   */
-  async getStateText(): Promise<string> {
-    return (await this.stateDisplay.textContent()) ?? '';
   }
 
   // =========================================================================
