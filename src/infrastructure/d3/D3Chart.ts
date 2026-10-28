@@ -22,7 +22,10 @@ function themeColor(prop: string, fallback: string): string {
 export class D3Chart implements IVisualizerService {
   private readonly container: d3.Selection<HTMLElement, unknown, null, undefined>;
   private readonly svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
+  /** Inner layer holding all plotted content; receives the zoom transform */
   private readonly chartGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
+  /** Per-instance clip-path id so multiple charts don't share one clip rect */
+  private readonly clipId: string;
   private width: number;
   private height: number;
   // Margins: right increased to prevent last x-tick clipping
@@ -33,6 +36,8 @@ export class D3Chart implements IVisualizerService {
 
   private config: VisualizationConfig = { ...DEFAULT_VISUALIZATION_CONFIG };
   private zoom: d3.ZoomBehavior<SVGSVGElement, unknown> | null = null;
+  /** Current zoom expressed in plot-area coordinates (identity when not zoomed) */
+  private zoomTransform: d3.ZoomTransform = d3.zoomIdentity;
   private tooltip: d3.Selection<HTMLDivElement, unknown, HTMLElement, unknown> | null = null;
 
   // Cache for re-rendering after zoom
@@ -83,19 +88,24 @@ export class D3Chart implements IVisualizerService {
       .style('display', 'block') as d3.Selection<SVGSVGElement, unknown, null, undefined>;
 
     // Add clip path to prevent rendering outside chart area
+    this.clipId = `chart-clip-${containerId}`;
     this.svg
       .append('defs')
       .append('clipPath')
-      .attr('id', 'chart-clip')
+      .attr('id', this.clipId)
       .append('rect')
       .attr('width', this.width)
       .attr('height', this.height);
 
-    // Main chart group with margin transform
-    this.chartGroup = this.svg
+    // Plot area: fixed margin offset + clip. The zoom transform goes on an inner
+    // layer so zooming never moves the margin or the clip region.
+    const plotArea = this.svg
       .append('g')
       .attr('transform', `translate(${this.margin.left},${this.margin.top})`)
-      .attr('clip-path', 'url(#chart-clip)') as d3.Selection<SVGGElement, unknown, null, undefined>;
+      .attr('clip-path', `url(#${this.clipId})`);
+    this.chartGroup = plotArea
+      .append('g')
+      .attr('class', 'zoom-layer') as d3.Selection<SVGGElement, unknown, null, undefined>;
 
     // Initialise scales with default domain [-1, 1]
     this.xScale = d3.scaleLinear().domain([-1, 1]).range([0, this.width]);
@@ -130,7 +140,7 @@ export class D3Chart implements IVisualizerService {
     this.height = Math.max(0, height - this.margin.top - this.margin.bottom);
 
     // Update clip path
-    this.svg.select('#chart-clip rect')
+    this.svg.select(`#${this.clipId} rect`)
       .attr('width', this.width)
       .attr('height', this.height);
 
@@ -138,23 +148,7 @@ export class D3Chart implements IVisualizerService {
     this.xScale.range([0, this.width]);
     this.yScale.range([this.height, 0]);
 
-    // Update axes with consistent styling
-    const tt = themeColor('--chart-tick-text', '#94a3b8');
-    const tl = themeColor('--chart-tick-line', '#475569');
-    const dc = themeColor('--chart-domain', '#334155');
-
-    const xAxis = this.svg.select<SVGGElement>('.x-axis')
-      .attr('transform', `translate(0,${this.height})`)
-      .call(d3.axisBottom(this.xScale).ticks(5).tickSize(4));
-    xAxis.selectAll('text').attr('fill', tt).style('font-size', '9px');
-    xAxis.selectAll('line').attr('stroke', tl);
-    xAxis.select('.domain').attr('stroke', dc);
-
-    const yAxis = this.svg.select<SVGGElement>('.y-axis')
-      .call(d3.axisLeft(this.yScale).ticks(5).tickSize(4));
-    yAxis.selectAll('text').attr('fill', tt).style('font-size', '9px');
-    yAxis.selectAll('line').attr('stroke', tl);
-    yAxis.select('.domain').attr('stroke', dc);
+    this.updateAxes();
 
     // Re-render content
     if (this.cachedPoints.length > 0) {
@@ -607,18 +601,55 @@ export class D3Chart implements IVisualizerService {
       .attr('stroke', themeColor('--chart-domain', '#334155'));
   }
 
+  /**
+   * Redraws both axes, rescaled by the current zoom so ticks match the
+   * visible region.
+   */
+  private updateAxes(): void {
+    const tt = themeColor('--chart-tick-text', '#94a3b8');
+    const tl = themeColor('--chart-tick-line', '#475569');
+    const dc = themeColor('--chart-domain', '#334155');
+
+    const xAxis = this.svg.select<SVGGElement>('.x-axis')
+      .attr('transform', `translate(0,${this.height})`)
+      .call(d3.axisBottom(this.zoomTransform.rescaleX(this.xScale)).ticks(5).tickSize(4));
+    xAxis.selectAll('text').attr('fill', tt).style('font-size', '9px');
+    xAxis.selectAll('line').attr('stroke', tl);
+    xAxis.select('.domain').attr('stroke', dc);
+
+    const yAxis = this.svg.select<SVGGElement>('.y-axis')
+      .call(d3.axisLeft(this.zoomTransform.rescaleY(this.yScale)).ticks(5).tickSize(4));
+    yAxis.selectAll('text').attr('fill', tt).style('font-size', '9px');
+    yAxis.selectAll('line').attr('stroke', tl);
+    yAxis.select('.domain').attr('stroke', dc);
+  }
+
   private setupZoom(): void {
     if (!this.config.zoomEnabled) {
-      // Remove zoom behaviour
+      // Remove zoom behaviour and any applied zoom
       this.svg.on('.zoom', null);
+      this.zoomTransform = d3.zoomIdentity;
+      this.chartGroup.attr('transform', null);
+      this.updateAxes();
       return;
     }
 
+    const { left, top, right, bottom } = this.margin;
     this.zoom = d3
       .zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.5, 5])
-      .on('zoom', (event) => {
-        this.chartGroup.attr('transform', event.transform);
+      .extent((): [[number, number], [number, number]] => [[0, 0], [this.width + left + right, this.height + top + bottom]])
+      .on('zoom', (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
+        // d3 computes the transform in SVG coordinates (pointer relative to the
+        // <svg>), but it is applied inside the margin-translated plot area.
+        // Re-express it in plot-area coordinates so the point under the cursor
+        // stays fixed: inner = translate(t.x + (k-1)*left, t.y + (k-1)*top) scale(k)
+        const t = event.transform;
+        this.zoomTransform = d3.zoomIdentity
+          .translate(t.x + (t.k - 1) * left, t.y + (t.k - 1) * top)
+          .scale(t.k);
+        this.chartGroup.attr('transform', this.zoomTransform.toString());
+        this.updateAxes();
       });
 
     this.svg.call(this.zoom);
