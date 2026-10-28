@@ -55,5 +55,8 @@
     "vite": "^6.0.1",
     "vitest": "^4.0.14",
     "wait-on": "^9.0.4"
+  },
+  "overrides": {
+    "form-data": "^4.0.6"
   }
 }
