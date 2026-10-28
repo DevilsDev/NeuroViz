@@ -443,4 +443,34 @@ describe('TrainingController', () => {
             controller.dispose();
         });
     });
+
+    describe('Step button', () => {
+        it('should be clickable again after a step completes', async () => {
+            const { TrainingController } = await import('../../../src/presentation/controllers/TrainingController');
+            const { setEnabled } = await import('../../../src/utils/dom');
+            const actualDom = await vi.importActual<typeof import('../../../src/utils/dom')>('../../../src/utils/dom');
+            vi.mocked(setEnabled).mockImplementation(actualDom.setEnabled);
+
+            const mockElements = createMockElements();
+            const mockSession = createMockSession({ isInitialised: true, datasetLoaded: true });
+            const controller = new TrainingController(
+                mockSession as any,
+                mockElements,
+                { onNetworkUpdate: vi.fn(), onClearVisualization: vi.fn() }
+            );
+
+            // updateUI ran mid-step (isProcessing) and dimmed the button
+            actualDom.setEnabled(mockElements.btnStep, false);
+            mockElements.btnStep.disabled = false;
+            (controller as any).commandExecutor = { execute: vi.fn().mockResolvedValue({ success: true }) };
+
+            await controller.handleStep();
+
+            expect(mockElements.btnStep.disabled).toBe(false);
+            expect(mockElements.btnStep.classList.contains('pointer-events-none')).toBe(false);
+
+            vi.mocked(setEnabled).mockReset();
+            controller.dispose();
+        });
+    });
 });

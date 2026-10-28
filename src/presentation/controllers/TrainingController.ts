@@ -407,7 +407,10 @@ export class TrainingController {
             // Re-enable only if state is valid for stepping
             const state = this.session.getState();
             const canStep = state.isInitialised && state.datasetLoaded && (!state.isRunning || state.isPaused) && !state.isProcessing;
-            this.elements.btnStep.disabled = !canStep;
+            // Use setEnabled (not just .disabled): updateUI ran mid-step while
+            // isProcessing was true and added the pointer-events-none class,
+            // which would otherwise leave the button unclickable.
+            setEnabled(this.elements.btnStep, canStep);
         }
     }
 
