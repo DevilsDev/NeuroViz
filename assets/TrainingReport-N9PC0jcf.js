@@ -1,9 +1,9 @@
-function a(e){const i=new Date().toLocaleString(),t=(e.history.totalTimeMs/1e3).toFixed(1);return`<!DOCTYPE html>
+import{e as d}from"./index-DlBjjV0b.js";import"./vendor-tensorflow-BABp9r46.js";import"./vendor-d3-3RmUZZtA.js";const i=e=>d(String(e));function n(e){const t=new Date().toLocaleString(),r=(e.history.totalTimeMs/1e3).toFixed(1);return`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NeuroViz Training Report - ${i}</title>
+  <title>NeuroViz Training Report - ${t}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -84,7 +84,7 @@ function a(e){const i=new Date().toLocaleString(),t=(e.history.totalTimeMs/1e3).
 <body>
   <div class="container">
     <h1>🧠 NeuroViz Training Report</h1>
-    <div class="timestamp">Generated: ${i}</div>
+    <div class="timestamp">Generated: ${t}</div>
 
     <h2>Summary</h2>
     <div class="grid">
@@ -102,7 +102,7 @@ function a(e){const i=new Date().toLocaleString(),t=(e.history.totalTimeMs/1e3).
       </div>
       <div class="metric-card">
         <div class="metric-label">Training Time</div>
-        <div class="metric-value">${t}s</div>
+        <div class="metric-value">${r}s</div>
       </div>
     </div>
 
@@ -128,34 +128,34 @@ function a(e){const i=new Date().toLocaleString(),t=(e.history.totalTimeMs/1e3).
     <table class="config-table">
       <tr>
         <td>Dataset</td>
-        <td>${e.datasetInfo.name} <span class="badge">${e.datasetInfo.samples} samples</span></td>
+        <td>${i(e.datasetInfo.name)} <span class="badge">${i(e.datasetInfo.samples)} samples</span></td>
       </tr>
       <tr>
         <td>Architecture</td>
-        <td>[2, ${e.config.layers.join(", ")}, ${e.datasetInfo.classes}]</td>
+        <td>[2, ${i(e.config.layers.join(", "))}, ${i(e.datasetInfo.classes)}]</td>
       </tr>
       <tr>
         <td>Learning Rate</td>
-        <td>${e.config.learningRate}</td>
+        <td>${i(e.config.learningRate)}</td>
       </tr>
       <tr>
         <td>Optimizer</td>
-        <td>${e.config.optimizer??"adam"}</td>
+        <td>${i(e.config.optimizer??"adam")}</td>
       </tr>
       <tr>
         <td>Activation</td>
-        <td>${e.config.activation??"relu"}</td>
+        <td>${i(e.config.activation??"relu")}</td>
       </tr>
       ${e.config.l2Regularization?`
       <tr>
         <td>L2 Regularization</td>
-        <td>${e.config.l2Regularization}</td>
+        <td>${i(e.config.l2Regularization)}</td>
       </tr>
       `:""}
       ${e.config.dropoutRate?`
       <tr>
         <td>Dropout Rate</td>
-        <td>${e.config.dropoutRate}</td>
+        <td>${i(e.config.dropoutRate)}</td>
       </tr>
       `:""}
     </table>
@@ -163,7 +163,7 @@ function a(e){const i=new Date().toLocaleString(),t=(e.history.totalTimeMs/1e3).
     <h2>Training Progress</h2>
     <div class="chart-placeholder">
       📊 Loss curve would be rendered here<br>
-      <small>Best Loss: ${e.history.bestLoss?.toFixed(4)??"N/A"} at epoch ${e.history.bestEpoch??"N/A"}</small>
+      <small>Best Loss: ${e.history.bestLoss?.toFixed(4)??"N/A"} at epoch ${i(e.history.bestEpoch??"N/A")}</small>
     </div>
 
     ${e.confusionMatrix?`
@@ -179,5 +179,4 @@ function a(e){const i=new Date().toLocaleString(),t=(e.history.totalTimeMs/1e3).
     </div>
   </div>
 </body>
-</html>`}function d(e,i="neuroviz-report.html"){const t=new Blob([e],{type:"text/html"}),o=URL.createObjectURL(t),r=document.createElement("a");r.href=o,r.download=i,r.click(),URL.revokeObjectURL(o)}export{d as downloadHTMLReport,a as generateHTMLReport};
-//# sourceMappingURL=TrainingReport-_2ZvuTs2.js.map
+</html>`}function m(e,t="neuroviz-report.html"){const r=new Blob([e],{type:"text/html"}),a=URL.createObjectURL(r),o=document.createElement("a");o.href=a,o.download=t,o.click(),URL.revokeObjectURL(a)}export{m as downloadHTMLReport,n as generateHTMLReport};
