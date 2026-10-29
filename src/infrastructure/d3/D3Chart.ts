@@ -705,42 +705,57 @@ export class D3Chart implements IVisualizerService {
   // ===========================================================================
 
   /**
-   * Exports the current chart as a PNG image.
-   * @param filename - Name of the downloaded file (without extension)
+   * Clones the chart SVG for raster export: inlines styles, adds a background
+   * and pins explicit pixel dimensions covering the full chart *including*
+   * the axis margins (the live SVG is sized "100%" with no viewBox).
    */
-  exportAsPNG(filename = 'neuroviz-boundary'): void {
+  private serializeForRasterExport(): { url: string; width: number; height: number } | null {
     const svgElement = this.svg.node();
-    if (!svgElement) return;
+    if (!svgElement) return null;
 
-    // Clone SVG and inline styles
+    const width = this.width + this.margin.left + this.margin.right;
+    const height = this.height + this.margin.top + this.margin.bottom;
+
     const clonedSvg = svgElement.cloneNode(true) as SVGSVGElement;
     this.inlineStyles(clonedSvg);
+    clonedSvg.setAttribute('width', String(width));
+    clonedSvg.setAttribute('height', String(height));
 
-    // Add white background for PNG
     const background = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     background.setAttribute('width', '100%');
     background.setAttribute('height', '100%');
     background.setAttribute('fill', '#0a0f1a');
     clonedSvg.insertBefore(background, clonedSvg.firstChild);
 
-    // Serialize SVG to string
-    const serializer = new XMLSerializer();
-    const svgString = serializer.serializeToString(clonedSvg);
+    const svgString = new XMLSerializer().serializeToString(clonedSvg);
     const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(svgBlob);
+    return { url: URL.createObjectURL(svgBlob), width, height };
+  }
+
+  /**
+   * Exports the current chart as a PNG image.
+   * @param filename - Name of the downloaded file (without extension)
+   */
+  exportAsPNG(filename = 'neuroviz-boundary'): void {
+    const exported = this.serializeForRasterExport();
+    if (!exported) return;
+    const { url, width, height } = exported;
 
     // Create canvas and draw SVG
     const canvas = document.createElement('canvas');
     const scale = 2; // Higher resolution
-    canvas.width = this.width * scale;
-    canvas.height = this.height * scale;
+    canvas.width = width * scale;
+    canvas.height = height * scale;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      URL.revokeObjectURL(url);
+      return;
+    }
 
     const img = new Image();
     img.onload = () => {
       ctx.scale(scale, scale);
-      ctx.drawImage(img, 0, 0);
+      ctx.drawImage(img, 0, 0, width, height);
       URL.revokeObjectURL(url);
 
       // Download PNG
@@ -764,34 +779,21 @@ export class D3Chart implements IVisualizerService {
    * @param metadata - Configuration metadata to display on the image
    */
   exportAsPNGWithMetadata(filename = 'neuroviz-boundary', metadata: Record<string, string>): void {
-    const svgElement = this.svg.node();
-    if (!svgElement) return;
-
-    // Clone SVG and inline styles
-    const clonedSvg = svgElement.cloneNode(true) as SVGSVGElement;
-    this.inlineStyles(clonedSvg);
-
-    // Add dark background for PNG
-    const background = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    background.setAttribute('width', '100%');
-    background.setAttribute('height', '100%');
-    background.setAttribute('fill', '#0a0f1a');
-    clonedSvg.insertBefore(background, clonedSvg.firstChild);
-
-    // Serialize SVG to string
-    const serializer = new XMLSerializer();
-    const svgString = serializer.serializeToString(clonedSvg);
-    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(svgBlob);
+    const exported = this.serializeForRasterExport();
+    if (!exported) return;
+    const { url, width, height } = exported;
 
     // Create canvas with extra space for metadata
     const canvas = document.createElement('canvas');
     const scale = 2;
     const metadataHeight = 80;
-    canvas.width = this.width * scale;
-    canvas.height = (this.height + metadataHeight) * scale;
+    canvas.width = width * scale;
+    canvas.height = (height + metadataHeight) * scale;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      URL.revokeObjectURL(url);
+      return;
+    }
 
     const img = new Image();
     img.onload = () => {
@@ -801,12 +803,12 @@ export class D3Chart implements IVisualizerService {
 
       // Draw chart
       ctx.scale(scale, scale);
-      ctx.drawImage(img, 0, 0);
+      ctx.drawImage(img, 0, 0, width, height);
       URL.revokeObjectURL(url);
 
       // Draw metadata panel
       ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
-      ctx.fillRect(0, this.height, this.width, metadataHeight);
+      ctx.fillRect(0, height, width, metadataHeight);
 
       // Draw metadata text
       ctx.fillStyle = '#94a3b8';
@@ -814,8 +816,8 @@ export class D3Chart implements IVisualizerService {
 
       const entries = Object.entries(metadata);
       const cols = 3;
-      const colWidth = this.width / cols;
-      const startY = this.height + 18;
+      const colWidth = width / cols;
+      const startY = height + 18;
       const lineHeight = 16;
 
       entries.forEach(([key, value], i) => {
@@ -833,7 +835,7 @@ export class D3Chart implements IVisualizerService {
       // Add NeuroViz watermark
       ctx.fillStyle = '#475569';
       ctx.font = '10px Inter, system-ui, sans-serif';
-      ctx.fillText('NeuroViz', this.width - 55, this.height + metadataHeight - 8);
+      ctx.fillText('NeuroViz', width - 55, height + metadataHeight - 8);
 
       // Download PNG
       const pngUrl = canvas.toDataURL('image/png');
@@ -841,6 +843,10 @@ export class D3Chart implements IVisualizerService {
       link.download = `${filename}.png`;
       link.href = pngUrl;
       link.click();
+    };
+    img.onerror = () => {
+      console.error('Failed to load SVG for export');
+      URL.revokeObjectURL(url);
     };
     img.src = url;
   }

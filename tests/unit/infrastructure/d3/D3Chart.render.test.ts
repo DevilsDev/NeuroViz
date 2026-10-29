@@ -59,6 +59,64 @@ describe('D3Chart - rendering', () => {
     });
   });
 
+  describe('PNG export', () => {
+    class FakeImage {
+      static last: FakeImage | null = null;
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      src = '';
+      constructor() { FakeImage.last = this; }
+    }
+
+    let canvas: HTMLCanvasElement | null;
+    const revoke = vi.fn();
+
+    beforeEach(() => {
+      canvas = null;
+      FakeImage.last = null;
+      revoke.mockReset();
+      const ctx = {
+        scale: vi.fn(), drawImage: vi.fn(), fillRect: vi.fn(), fillText: vi.fn(),
+        measureText: () => ({ width: 10 }), fillStyle: '', font: '',
+      };
+      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function (this: HTMLCanvasElement) {
+        canvas = this;
+        return ctx as unknown as CanvasRenderingContext2D;
+      } as unknown as HTMLCanvasElement['getContext']);
+      vi.stubGlobal('Image', FakeImage);
+      vi.stubGlobal('URL', Object.assign(Object.create(URL), {
+        createObjectURL: () => 'blob:fake',
+        revokeObjectURL: revoke,
+      }));
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    // Default container size in jsdom is 500x500 (margins included); scale 2
+    it('sizes the canvas to include the axis margins', () => {
+      chart.exportAsPNG('x');
+      expect(canvas?.width).toBe(1000);
+      expect(canvas?.height).toBe(1000);
+    });
+
+    it('sizes the metadata canvas to include the axis margins', () => {
+      chart.exportAsPNGWithMetadata('x', { a: 'b' });
+      expect(canvas?.width).toBe(1000);
+      expect(canvas?.height).toBe((500 + 80) * 2);
+    });
+
+    it('handles image load errors in exportAsPNGWithMetadata', () => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      chart.exportAsPNGWithMetadata('x', { a: 'b' });
+      expect(FakeImage.last?.onerror).toBeTypeOf('function');
+      FakeImage.last?.onerror?.();
+      expect(error).toHaveBeenCalled();
+      expect(revoke).toHaveBeenCalledWith('blob:fake');
+    });
+  });
+
   describe('multi-class boundary', () => {
     const grid = (gridSize: number, cls: number): Prediction[] =>
       Array.from({ length: gridSize * gridSize }, (_, i) => ({
