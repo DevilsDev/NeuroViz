@@ -240,4 +240,21 @@ describe('D3ConfusionMatrix', () => {
       expect(() => chart.render(data)).not.toThrow();
     });
   });
+  describe('tooltip', () => {
+    it('escapes class labels in the tooltip HTML', () => {
+      const data: ConfusionMatrixData = {
+        matrix: [[1, 0], [0, 1]],
+        labels: ['<img src=x onerror=alert(1)>', 'B'],
+        total: 2,
+      };
+      chart.render(data);
+
+      const cell = document.querySelector(`#${containerId} #cell-0-1`);
+      cell?.dispatchEvent(new MouseEvent('mouseenter'));
+
+      const tooltip = document.querySelector('.cm-tooltip');
+      expect(tooltip?.querySelector('img')).toBeNull();
+      expect(tooltip?.textContent).toContain('<img src=x onerror=alert(1)>');
+    });
+  });
 });
