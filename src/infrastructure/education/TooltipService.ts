@@ -361,18 +361,3 @@ export class TooltipService {
     }
   }
 }
-
-// Add tooltip CSS
-const tooltipStyle = document.createElement('style');
-tooltipStyle.textContent = `
-  .tooltip-visible {
-    opacity: 1;
-  }
-  .tooltip-hidden {
-    opacity: 0;
-  }
-  #neuroviz-tooltip {
-    transition: opacity 0.15s ease-in-out;
-  }
-`;
-document.head.appendChild(tooltipStyle);

@@ -538,13 +538,3 @@ export class TutorialService {
     }
   }
 }
-
-// Add CSS animation for highlight pulse
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes tutorial-pulse {
-    0%, 100% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5), 0 0 20px rgba(34, 211, 238, 0.5); }
-    50% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5), 0 0 30px rgba(34, 211, 238, 0.8); }
-  }
-`;
-document.head.appendChild(style);
