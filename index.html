@@ -49,10 +49,10 @@
     }
   </style>
 
-  <script type="module" crossorigin src="/NeuroViz/assets/index-N9Bcd1al.js"></script>
+  <script type="module" crossorigin src="/NeuroViz/assets/index-gRK6JQwY.js"></script>
   <link rel="modulepreload" crossorigin href="/NeuroViz/assets/vendor-tensorflow-Bcd71DZd.js">
-  <link rel="modulepreload" crossorigin href="/NeuroViz/assets/vendor-d3-3RmUZZtA.js">
-  <link rel="stylesheet" crossorigin href="/NeuroViz/assets/index-rzGzPcmH.css">
+  <link rel="modulepreload" crossorigin href="/NeuroViz/assets/vendor-d3-DjmNKLjT.js">
+  <link rel="stylesheet" crossorigin href="/NeuroViz/assets/index-42VYCf4Y.css">
 </head>
 
 <body>
@@ -283,6 +283,16 @@
               </button>
             </div>
           </div>
+
+          <!-- Training timeline: TimelinePanel (shown once a dataset is loaded) -->
+          <div id="timeline" class="timeline" hidden>
+            <span class="timeline-title">Timeline</span>
+            <input type="range" id="timeline-slider" class="timeline-slider" min="0" max="0" value="0" step="1"
+                   aria-label="Replay the decision boundary during training" />
+            <span id="timeline-label" class="timeline-label"></span>
+            <button type="button" id="btn-timeline-live" class="timeline-btn" hidden>Live</button>
+            <button type="button" id="btn-timeline-gif" class="timeline-btn" title="Download the recording as an animated GIF">GIF</button>
+          </div>
         </section>
       </main>
 
@@ -471,8 +481,8 @@
               <div class="grid grid-cols-2 gap-2">
                 <label class="block">
                   <span class="input-label">Learning Rate</span>
-                  <input type="number" id="input-lr" class="input-field text-xs" value="0.03" min="0.001" max="1"
-                    step="0.001" aria-label="Learning rate" />
+                  <input type="number" id="input-lr" class="input-field text-xs" value="0.03" min="0.0001" max="1"
+                    step="any" aria-label="Learning rate" />
                   <span class="control-caption" data-min-mode="learn-only">How big each training step is</span>
                 </label>
                 <label class="block">
@@ -483,6 +493,16 @@
                     <option value="rmsprop">RMSprop</option>
                   </select>
                 </label>
+              </div>
+              <!-- Learning-rate finder: LRFinderPanel -->
+              <div class="lr-finder">
+                <button type="button" id="btn-find-lr" class="lr-finder-btn" disabled
+                        title="Load a dataset first">Find a good learning rate</button>
+                <div id="lr-finder-result" class="lr-finder-result" hidden>
+                  <p id="lr-finder-status" class="side-card-text" role="status"></p>
+                  <div id="lr-finder-chart" class="lr-finder-chart-box"></div>
+                  <button type="button" id="btn-use-lr" class="btn-primary text-xs lr-finder-use" hidden></button>
+                </div>
               </div>
               <div class="grid grid-cols-2 gap-2">
                 <label class="block" data-min-mode="experiment">
