@@ -138,7 +138,7 @@ export class TooltipService {
 
     this.renderTooltip(definition);
     this.positionTooltip(target, definition.position ?? 'auto');
-    this.tooltipElement?.classList.remove('hidden');
+    this.tooltipElement?.classList.remove('hidden', 'tooltip-hidden');
     this.tooltipElement?.classList.add('tooltip-visible');
   }
 
@@ -154,7 +154,7 @@ export class TooltipService {
       currentDefinition: null,
     };
 
-    this.tooltipElement?.classList.add('hidden');
+    this.tooltipElement?.classList.add('hidden', 'tooltip-hidden');
     this.tooltipElement?.classList.remove('tooltip-visible');
   }
 

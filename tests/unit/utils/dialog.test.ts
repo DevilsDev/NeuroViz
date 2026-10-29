@@ -96,6 +96,19 @@ describe('bindModalDialog', () => {
     shortcuts.dispose();
   });
 
+  it('uses returnFocusFallback when the opener is now inside a hidden section', () => {
+    handle.dispose();
+    document.body.insertAdjacentHTML('afterbegin',
+      '<button id="menu">Menu</button><div id="dropdown"><button id="item">Item</button></div>');
+    handle = bindModalDialog(dialog, { returnFocusFallback: () => document.getElementById('menu') });
+
+    document.getElementById('item')!.focus();
+    document.getElementById('dropdown')!.classList.add('hidden');
+    handle.open();
+    handle.close();
+    expect(document.activeElement?.id).toBe('menu');
+  });
+
   it('stops handling keys after dispose', () => {
     handle.open();
     handle.dispose();

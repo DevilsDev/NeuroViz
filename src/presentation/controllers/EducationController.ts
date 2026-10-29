@@ -123,7 +123,11 @@ export class EducationController {
     for (const id of MODAL_IDS) {
       const el = document.getElementById(id);
       if (!el) continue;
-      const handle = bindModalDialog(el);
+      // Openers often live in the Learn dropdown, which is hidden by the time
+      // the modal closes; fall back to the menu button in that case.
+      const handle = bindModalDialog(el, {
+        returnFocusFallback: () => document.getElementById('btn-learn-menu'),
+      });
       this.dialogs.set(id, handle);
       this.cleanupFunctions.push(() => {
         handle.dispose();
@@ -225,7 +229,9 @@ export class EducationController {
         if (ke.key !== 'Enter' && ke.key !== ' ') return;
         const target = ke.target as Element | null;
         if (!target?.classList.contains('tutorial-card')) return;
+        // Consume the key so global shortcuts (Space = start/pause) don't also act
         ke.preventDefault();
+        ke.stopPropagation();
         activate(target);
       });
       this.renderTutorialsList(list);

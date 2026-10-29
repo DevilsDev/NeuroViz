@@ -28,6 +28,11 @@ const FOCUSABLE_SELECTOR = [
 export interface ModalDialogOptions {
   /** Called after the dialog has been closed via Escape or close(). */
   onClose?: () => void;
+  /**
+   * Where to return focus if the element that had focus at open time is gone
+   * or now hidden (e.g. a menu item inside a dropdown that closed).
+   */
+  returnFocusFallback?: () => HTMLElement | null;
 }
 
 export interface ModalDialogHandle {
@@ -51,12 +56,19 @@ function getFocusable(container: HTMLElement): HTMLElement[] {
   );
 }
 
-/** True if el sits in a `.hidden` subtree (e.g. an inactive tab) of container. */
-function isInsideHiddenSection(el: HTMLElement, container: HTMLElement): boolean {
+/**
+ * True if el sits in a `.hidden` subtree of container (or of the document when
+ * container is omitted), e.g. an inactive tab or a closed dropdown.
+ */
+function isInsideHiddenSection(el: HTMLElement, container?: HTMLElement): boolean {
   for (let node: HTMLElement | null = el; node && node !== container; node = node.parentElement) {
     if (node.classList.contains(HIDDEN_CLASS)) return true;
   }
   return false;
+}
+
+function canReceiveFocus(el: HTMLElement | null | undefined): el is HTMLElement {
+  return !!el && el.isConnected && !isInsideHiddenSection(el);
 }
 
 /**
@@ -125,9 +137,10 @@ export function bindModalDialog(dialog: HTMLElement, options: ModalDialogOptions
     const index = openStack.lastIndexOf(dialog);
     if (index > -1) openStack.splice(index, 1);
 
-    const focusTarget = returnFocus;
+    const saved = returnFocus;
     returnFocus = null;
-    if (focusTarget?.isConnected) {
+    const focusTarget = canReceiveFocus(saved) ? saved : options.returnFocusFallback?.();
+    if (canReceiveFocus(focusTarget)) {
       focusTarget.focus();
     }
   };

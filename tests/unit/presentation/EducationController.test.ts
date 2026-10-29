@@ -109,9 +109,10 @@ describe('EducationController', () => {
     expect(controller.getTutorialService().getCurrentTutorial()?.id).toBe(card.dataset.tutorialId);
   });
 
-  it('closes the tutorials modal on Escape and restores focus', () => {
+  it('closes the tutorials modal on Escape and returns focus to the Learn button', () => {
     controller = new EducationController();
     controller.initialise();
+    document.getElementById('btn-learn-menu')!.click();
     const opener = document.getElementById('btn-open-tutorials')!;
     opener.focus();
     opener.click();
@@ -120,7 +121,28 @@ describe('EducationController', () => {
 
     document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
     expect(modal.classList.contains('hidden')).toBe(true);
-    expect(document.activeElement).toBe(opener);
+    // The opener now sits in the closed (hidden) dropdown, so focus falls back
+    expect(document.activeElement?.id).toBe('btn-learn-menu');
+  });
+
+  it('Space on a tutorial card starts it without triggering the start/pause shortcut', async () => {
+    const { KeyboardShortcuts } = await import('../../../src/utils/KeyboardShortcuts');
+    const onStartPause = vi.fn();
+    const shortcuts = new KeyboardShortcuts({
+      onStartPause, onStep: vi.fn(), onReset: vi.fn(), onPause: vi.fn(),
+      onToggleFullscreen: vi.fn(), onToggleHelp: vi.fn(),
+    });
+    controller = new EducationController();
+    controller.initialise();
+    document.getElementById('btn-open-tutorials')!.click();
+
+    const card = document.querySelector<HTMLElement>('.tutorial-card')!;
+    card.focus();
+    card.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+
+    expect(controller.getTutorialService().getCurrentTutorial()?.id).toBe(card.dataset.tutorialId);
+    expect(onStartPause).not.toHaveBeenCalled();
+    shortcuts.dispose();
   });
 
   it('escapes stored leaderboard data before rendering', () => {

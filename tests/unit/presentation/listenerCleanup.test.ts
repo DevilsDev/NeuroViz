@@ -85,6 +85,23 @@ describe('TooltipService.detachFromElement', () => {
     expectAllRemoved(add, remove);
     expect(add.mock.calls.some(([t]) => t === 'touchstart')).toBe(true);
   });
+
+  it('swaps tooltip-hidden/tooltip-visible so a shown tooltip is not left at opacity 0', () => {
+    const service = new TooltipService();
+    const el = document.createElement('button');
+    document.body.appendChild(el);
+    const def = { id: 't', target: '#x', title: 'T', content: 'C' } as never;
+    const tip = document.getElementById('neuroviz-tooltip')!;
+
+    service.show(el, def);
+    expect(tip.classList.contains('tooltip-hidden')).toBe(false);
+    expect(tip.classList.contains('tooltip-visible')).toBe(true);
+
+    service.hide();
+    expect(tip.classList.contains('tooltip-hidden')).toBe(true);
+    expect(tip.classList.contains('tooltip-visible')).toBe(false);
+    service.dispose();
+  });
 });
 
 describe('MetricsController.dispose', () => {
