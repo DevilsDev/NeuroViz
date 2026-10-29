@@ -13,6 +13,8 @@
  * - 1-5: Select dataset (Circle, XOR, Spiral, Gaussian, Clusters)
  */
 
+import { isModalDialogOpen } from './dialog';
+
 export interface KeyboardShortcutsCallbacks {
     onStartPause: () => void;
     onStep: () => void;
@@ -51,6 +53,11 @@ export class KeyboardShortcuts {
     }
 
     private handleKeydown(e: KeyboardEvent): void {
+        // Escape belongs to an open modal dialog (close), not to "pause"
+        if (e.key === 'Escape' && isModalDialogOpen()) {
+            return;
+        }
+
         // Don't trigger shortcuts if user is typing in an input field
         if (this.isTyping(e.target as Element)) {
             return;
