@@ -50,13 +50,19 @@ export type WebGLCanvasResolver = () => EventTarget | null | undefined;
  * Returns null when the active backend is not `webgl` (e.g. CPU fallback),
  * in which case there is no GPU context to lose.
  */
-export function resolveTfWebGLCanvas(): EventTarget | null {
+export function resolveTfWebGLCanvas(
+  tfApi: { backend: () => unknown; getBackend: () => string } = tf
+): EventTarget | null {
   try {
-    if (tf.getBackend() !== 'webgl') return null;
+    // tf.getBackend() only reads an engine field that stays unset until a
+    // backend is initialised, and the app builds before any TF.js op runs.
+    // tf.backend() initialises the best registered backend (synchronously for
+    // webgl), creating the same context the first train/predict would create.
+    const backend = tfApi.backend() as { gpgpu?: { gl?: { canvas?: EventTarget } } } | null;
+    if (tfApi.getBackend() !== 'webgl') return null;
     // MathBackendWebGL exposes its GPGPUContext as `gpgpu`; the canvas is the
     // one its WebGL context was created on (backend_webgl.js: gpgpu.gl.canvas).
-    const backend = tf.backend() as unknown as { gpgpu?: { gl?: { canvas?: EventTarget } } };
-    return backend.gpgpu?.gl?.canvas ?? null;
+    return backend?.gpgpu?.gl?.canvas ?? null;
   } catch {
     return null;
   }

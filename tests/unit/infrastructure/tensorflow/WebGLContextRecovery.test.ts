@@ -161,5 +161,30 @@ describe('WebGLContextRecovery', () => {
       await tf.setBackend('cpu');
       expect(resolveTfWebGLCanvas()).toBeNull();
     });
+
+    it('initialises the backend before checking its name (no TF.js op has run at app build time)', () => {
+      const canvas = document.createElement('canvas');
+      let initialised = false;
+      // Before any op runs, getBackend() is just an unset engine field;
+      // only tf.backend() triggers backend initialisation.
+      const fakeTf = {
+        getBackend: (): string => (initialised ? 'webgl' : (undefined as unknown as string)),
+        backend: (): unknown => {
+          initialised = true;
+          return { gpgpu: { gl: { canvas } } };
+        },
+      };
+      expect(resolveTfWebGLCanvas(fakeTf)).toBe(canvas);
+    });
+
+    it('returns null when backend initialisation throws', () => {
+      const fakeTf = {
+        getBackend: (): string => 'webgl',
+        backend: (): unknown => {
+          throw new Error('no webgl');
+        },
+      };
+      expect(resolveTfWebGLCanvas(fakeTf)).toBeNull();
+    });
   });
 });
