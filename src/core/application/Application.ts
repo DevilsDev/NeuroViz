@@ -472,7 +472,8 @@ export class Application {
       if (state.currentEpoch > 0) {
         this.educationController.notifyTrainingEvent('epoch', state.currentEpoch);
       }
-      if (!state.isRunning && state.currentEpoch > 0) {
+      // Only on the run's single 'stopped' event, not on every later state change
+      if (state.eventType === 'stopped' && !state.isRunning && state.currentEpoch > 0) {
         this.educationController.notifyTrainingEvent('complete');
       }
 

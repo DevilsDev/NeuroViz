@@ -44,9 +44,11 @@ export class DatasetPreparationService {
 
     if (points.length > 0) {
       this.splitData(validationSplit);
+      this.detectedNumClasses = this.detectNumClasses(this.allData);
     } else {
       this.trainingData = [];
       this.validationData = [];
+      this.detectedNumClasses = 2;
     }
   }
 

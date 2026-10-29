@@ -1,6 +1,7 @@
 import type { TrainingConfig, TrainingHistory } from '../../domain';
 import { createEmptyHistory, addHistoryRecord } from '../../domain';
 import type { TrainingState, TrainingEventType } from '../ITrainingSession';
+import { logger } from '../../../infrastructure/logging/Logger';
 
 /**
  * Owns the mutable training state and the observer/listener mechanism.
@@ -78,8 +79,19 @@ export class SessionStateStore {
   notifyListeners(eventType?: TrainingEventType): void {
     this.lastEventType = eventType;
     const state = this.getState();
+    // A throwing subscriber must not abort the caller (e.g. the training loop
+    // between setTraining(true) and scheduling the next frame) or starve the
+    // listeners after it.
     for (const listener of this.listeners) {
-      listener(state);
+      try {
+        listener(state);
+      } catch (error) {
+        logger.error(
+          'State listener threw',
+          error instanceof Error ? error : new Error(String(error)),
+          { component: 'SessionStateStore', action: 'notifyListeners', eventType }
+        );
+      }
     }
   }
 

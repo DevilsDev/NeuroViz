@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { TrainingDataSplitter } from '../../../../src/core/application/training/TrainingDataSplitter';
+import { TrainingDataSplitter, MAX_VALIDATION_SPLIT } from '../../../../src/core/application/training/TrainingDataSplitter';
 import { Point } from '../../../../src/core/domain';
 
 describe('TrainingDataSplitter', () => {
@@ -141,25 +141,32 @@ describe('TrainingDataSplitter', () => {
         expect(result.validation).toEqual([]);
       });
 
-      it('should handle validation split of 0.99 (almost all validation)', () => {
+      it('should cap a validation split of 0.99 at 90%', () => {
         const result = splitter.split(testData, 0.99, false);
 
-        expect(result.training.length).toBe(1);
-        expect(result.validation.length).toBe(99);
+        expect(result.training.length).toBe(Math.floor(100 * (1 - MAX_VALIDATION_SPLIT)));
+        expect(result.validation.length).toBe(100 - result.training.length);
       });
 
-      it('should handle validation split >= 1 (invalid)', () => {
+      it('should cap a validation split >= 1 at 90% instead of disabling validation', () => {
         const result = splitter.split(testData, 1.0);
 
-        expect(result.training).toEqual(testData);
+        expect(result.training.length).toBe(Math.floor(100 * (1 - MAX_VALIDATION_SPLIT)));
+        expect(result.validation.length).toBe(100 - result.training.length);
+      });
+
+      it('should treat a negative validation split as 0', () => {
+        const result = splitter.split(testData, -0.2);
+
+        expect(result.training.length).toBe(testData.length);
         expect(result.validation).toEqual([]);
       });
 
-      it('should handle negative validation split', () => {
-        const result = splitter.split(testData, -0.2);
+      it('should use the default split for NaN instead of validating on everything', () => {
+        const result = splitter.split(testData, NaN, false);
 
-        expect(result.training).toEqual(testData);
-        expect(result.validation).toEqual([]);
+        expect(result.training.length).toBe(80);
+        expect(result.validation.length).toBe(20);
       });
 
       it('should handle single data point', () => {
@@ -279,11 +286,18 @@ describe('TrainingDataSplitter', () => {
       expect(result.validation).toEqual([]);
     });
 
-    it('should handle validation split >= 1', () => {
+    it('should cap a validation split >= 1 at 90%', () => {
       const result = splitter.stratifiedSplit(multiClassData, 1.0);
 
-      expect(result.training).toEqual(multiClassData);
-      expect(result.validation).toEqual([]);
+      expect(result.training.length).toBeGreaterThan(0);
+      expect(result.validation.length).toBeGreaterThan(result.training.length);
+    });
+
+    it('should use the default split for NaN', () => {
+      const result = splitter.stratifiedSplit(multiClassData, NaN);
+
+      expect(result.training.length).toBeGreaterThan(result.validation.length);
+      expect(result.validation.length).toBeGreaterThan(0);
     });
 
     it('should handle empty dataset', () => {

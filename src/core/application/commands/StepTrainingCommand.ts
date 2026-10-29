@@ -19,6 +19,10 @@ export class StepTrainingCommand implements ICommand<void> {
       return ValidationResult.error('Dataset must be loaded before stepping');
     }
 
+    if (this.session.getTrainingData().length === 0) {
+      return ValidationResult.error('No training data available. Validation split might be set to 100%. Reduce it to create a training set.');
+    }
+
     if (state.isRunning && !state.isPaused) {
       return ValidationResult.error('Cannot step while training is running');
     }
