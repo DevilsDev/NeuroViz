@@ -19,7 +19,7 @@
     /* #9399B2 — warm gray */
 
     /* Accent colors — warmer, more vibrant */
-    --color-cyan-rgb: 137, 180, 250;
+    --color-cyan-rgb: 45, 212, 191;
     /* #89B4FA — soft blue (Catppuccin blue) */
     --color-magenta-rgb: 245, 194, 231;
     /* #F5C2E7 — soft pink */
@@ -49,7 +49,7 @@
     --surface-1: #1e1e2e;
     --surface-2: #313244;
     --border-subtle: rgba(147, 153, 178, 0.12);
-    --border-hover: rgba(137, 180, 250, 0.25);
+    --border-hover: rgba(45, 212, 191, 0.3);
 
     /* D3 chart theme tokens */
     --chart-tick-text: #94a3b8;
@@ -58,61 +58,61 @@
     --chart-grid: rgba(255, 255, 255, 0.05);
 
     /* Training animation glow — dark mode */
-    --glow-color: rgba(137, 180, 250, 0.08);
-    --glow-border: rgba(137, 180, 250, 0.3);
+    --glow-color: rgba(45, 212, 191, 0.08);
+    --glow-border: rgba(45, 212, 191, 0.3);
 }
 
 /* Light mode overrides — Catppuccin Latte inspired */
 html:not(.dark) {
     /* Text */
-    --color-bg-primary-rgb: 239, 241, 245;
+    --color-bg-primary-rgb: 246, 247, 249;
     /* #EFF1F5 — page background */
-    --color-bg-secondary-rgb: 230, 233, 239;
+    --color-bg-secondary-rgb: 238, 240, 243;
     /* #E6E9EF — secondary surface */
-    --color-text-primary-rgb: 76, 79, 105;
+    --color-text-primary-rgb: 15, 23, 42;
     /* #4C4F69 — primary text */
-    --color-text-secondary-rgb: 108, 111, 133;
+    --color-text-secondary-rgb: 71, 85, 105;
     /* #6C6F85 — secondary text */
 
     /* Accent — slightly deeper blue for light backgrounds */
-    --color-cyan-rgb: 30, 102, 245;
+    --color-cyan-rgb: 15, 118, 110;
     /* #1E66F5 — Catppuccin Latte blue */
-    --color-orange-rgb: 254, 100, 11;
+    --color-orange-rgb: 180, 83, 9;
     /* #FE640B — peach */
-    --color-success-rgb: 64, 160, 43;
+    --color-success-rgb: 21, 128, 61;
     /* #40A02B — green */
-    --color-warning-rgb: 223, 142, 29;
+    --color-warning-rgb: 161, 98, 7;
     /* #DF8E1D — yellow */
-    --color-danger-rgb: 210, 15, 57;
+    --color-danger-rgb: 185, 28, 28;
     /* #D20F39 — red */
     --color-magenta-rgb: 234, 118, 203;
     /* #EA76CB — pink */
 
     /* Surface layers — light depth hierarchy */
-    --surface-0: #EFF1F5;
+    --surface-0: #F6F7F9;
     /* page background */
-    --surface-1: #E6E9EF;
+    --surface-1: #FFFFFF;
     /* primary surface (panels) */
-    --surface-2: #DCE0E8;
+    --surface-2: #EEF0F3;
     /* elevated surface (cards, inputs) */
 
     /* Borders — visible on light backgrounds */
-    --border-subtle: rgba(76, 79, 105, 0.12);
-    --border-hover: rgba(30, 102, 245, 0.3);
+    --border-subtle: rgba(15, 23, 42, 0.10);
+    --border-hover: rgba(15, 118, 110, 0.35);
 
     /* Semantic computed values */
     --color-cyan: rgb(var(--color-cyan-rgb));
     --color-cyan-glow: rgb(var(--color-cyan-rgb) / 0.15);
 
     /* D3 chart theme tokens — read by chart classes */
-    --chart-tick-text: #6C6F85;
-    --chart-tick-line: #BCC0CC;
-    --chart-domain: #ACB0BE;
-    --chart-grid: rgba(76, 79, 105, 0.08);
+    --chart-tick-text: #556377;
+    --chart-tick-line: #CBD2DC;
+    --chart-domain: #94A3B8;
+    --chart-grid: rgba(15, 23, 42, 0.06);
 
     /* Training animation glow — light mode (subtle, no pink) */
-    --glow-color: rgba(30, 102, 245, 0.05);
-    --glow-border: rgba(30, 102, 245, 0.2);
+    --glow-color: rgba(15, 118, 110, 0.05);
+    --glow-border: rgba(15, 118, 110, 0.25);
 }
 
 /* Light mode overrides for Tailwind dark utility classes used in HTML */

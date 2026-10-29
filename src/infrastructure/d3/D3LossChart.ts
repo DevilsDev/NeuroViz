@@ -1,6 +1,10 @@
 import * as d3 from 'd3';
 import type { TrainingHistory, TrainingRecord } from '../../core/domain';
 
+// Theme-aware series colours (resolved via CSS variables, so they follow light/dark mode)
+const TRAIN_COLOUR = 'rgb(var(--color-cyan-rgb))';
+const VAL_COLOUR = 'rgb(var(--color-orange-rgb))';
+
 /**
  * D3.js line chart for visualizing training loss and validation loss over epochs.
  *
@@ -127,13 +131,13 @@ export class D3LossChart {
     this.lossPath = this.svg.append('path')
       .attr('class', 'loss-line')
       .attr('fill', 'none')
-      .attr('stroke', '#00D9FF')
+      .style('stroke', TRAIN_COLOUR)
       .attr('stroke-width', 1.5);
 
     this.valLossPath = this.svg.append('path')
       .attr('class', 'val-loss-line')
       .attr('fill', 'none')
-      .attr('stroke', '#FF00AA')
+      .style('stroke', VAL_COLOUR)
       .attr('stroke-width', 1.5)
       .attr('stroke-dasharray', '4,2');
 
@@ -179,7 +183,7 @@ export class D3LossChart {
 
     const ryL = this.svg.select<SVGGElement>('.y-axis-loss')
       .call(d3.axisLeft(this.yScaleLoss).ticks(4).tickFormat(d3.format('.2f')).tickSize(3));
-    ryL.selectAll('text').attr('fill', '#00D9FF').style('font-size', '9px');
+    ryL.selectAll('text').style('fill', TRAIN_COLOUR).style('font-size', '9px');
     ryL.selectAll('line').attr('stroke', tl);
 
     // Re-render lines if data exists
@@ -226,7 +230,7 @@ export class D3LossChart {
     const yLoss = this.yAxisLossGroup.call(
       d3.axisLeft(this.yScaleLoss).ticks(4).tickFormat(d3.format('.2f')).tickSize(3)
     );
-    yLoss.selectAll('text').attr('fill', '#00D9FF').style('font-size', '9px');
+    yLoss.selectAll('text').style('fill', TRAIN_COLOUR).style('font-size', '9px');
     yLoss.selectAll('line').attr('stroke', tickLine);
     yLoss.select('.domain').attr('stroke', domain);
 
@@ -277,18 +281,18 @@ export class D3LossChart {
       .attr('transform', 'translate(4, -2)');
 
     const items = [
-      { color: '#00D9FF', label: 'Loss', dash: '' },
-      { color: '#FF00AA', label: 'Val', dash: '4,2' },
+      { color: TRAIN_COLOUR, label: 'Training', dash: '' },
+      { color: VAL_COLOUR, label: 'Validation', dash: '4,2' },
     ];
 
     items.forEach((item, i) => {
       const g = legend.append('g')
-        .attr('transform', `translate(${i * 50}, 0)`);
+        .attr('transform', `translate(${i * 64}, 0)`);
 
       g.append('line')
         .attr('x1', 0).attr('x2', 14)
         .attr('y1', 0).attr('y2', 0)
-        .attr('stroke', item.color)
+        .style('stroke', item.color)
         .attr('stroke-width', 2)
         .attr('stroke-dasharray', item.dash);
 
