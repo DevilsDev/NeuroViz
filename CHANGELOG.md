@@ -1,3 +1,9 @@
+## [2.31.4](https://github.com/DevilsDev/NeuroViz/compare/v2.31.3...v2.31.4) (2026-10-29)
+
+### Bug Fixes
+
+* **ui:** restore visible 3D, Voronoi and weights view toggles ([3f206fb](https://github.com/DevilsDev/NeuroViz/commit/3f206fb069be4632c23f512a9350ba33a836b136))
+
 ## [2.31.3](https://github.com/DevilsDev/NeuroViz/compare/v2.31.2...v2.31.3) (2026-10-29)
 
 ### Bug Fixes
