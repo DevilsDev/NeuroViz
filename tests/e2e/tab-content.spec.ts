@@ -1,9 +1,11 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { NeuroPage } from '../pages/NeuroPage';
 
 /**
  * Tab Content Organization Tests
- * Verifies each tab contains the correct sections and elements
+ * Verifies each sidebar tab (Data, Model, Train, Analyze) contains the
+ * expected controls. Placement is checked with toBeAttached() inside the
+ * tab panel because some controls live in collapsed <details> sections.
  */
 test.describe('Tab Content Organization', () => {
     let neuroPage: NeuroPage;
@@ -13,103 +15,110 @@ test.describe('Tab Content Organization', () => {
         await neuroPage.goto();
     });
 
-    test('Setup tab should contain all required sections', async ({ page }) => {
-        // Setup tab should be active by default
-        const setupTab = page.locator('button.sidebar-tab[data-tab="setup"]');
-        await expect(setupTab).toHaveClass(/active/);
+    async function expectInTab(page: Page, tab: string, selectors: string[]): Promise<void> {
+        const panel = page.locator(`#tab-${tab}`);
+        await expect(panel).toBeVisible();
+        for (const selector of selectors) {
+            await expect(panel.locator(selector), `${selector} should be in the ${tab} tab`).toBeAttached();
+        }
+    }
 
-        // Quick Start section
-        await expect(page.locator('#preset-select')).toBeVisible();
-        await expect(page.locator('#btn-apply-preset')).toBeVisible();
-        await expect(page.locator('#btn-save-bookmark')).toBeVisible();
+    test('Data tab should contain all required sections', async ({ page }) => {
+        // Data tab is active by default
+        await expect(page.locator('button.sidebar-tab[data-tab="tab-data"]')).toHaveClass(/active/);
 
-        // Dataset gallery
-        await expect(page.locator('.dataset-preview-card[data-dataset="circle"]')).toBeVisible();
-        await expect(page.locator('.dataset-preview-card[data-dataset="xor"]')).toBeVisible();
-        await expect(page.locator('.dataset-preview-card[data-dataset="spiral"]')).toBeVisible();
-        await expect(page.locator('.dataset-preview-card[data-dataset="gaussian"]')).toBeVisible();
-        await expect(page.locator('.dataset-preview-card[data-dataset="clusters"]')).toBeVisible();
-
-        // Dataset Options  
-        await expect(page.locator('#input-samples')).toBeVisible();
-        await expect(page.locator('#input-noise')).toBeVisible();
-        await expect(page.locator('#input-balance')).toBeVisible();
+        await expectInTab(page, 'data', [
+            // Quick start presets
+            '#preset-select',
+            '#btn-apply-preset',
+            // Dataset options
+            '#input-samples',
+            '#input-noise',
+            '#input-balance',
+            '#input-preprocessing',
+            '#btn-load-data',
+            // Session
+            '#btn-save-session',
+            '#btn-load-session',
+        ]);
         await expect(page.locator('#btn-load-data')).toBeVisible();
 
-        // Visualization controls
-        await expect(page.locator('#input-colour-scheme')).toBeVisible();
-        await expect(page.locator('#input-point-size')).toBeVisible();
-        await expect(page.locator('#input-opacity')).toBeVisible();
+        // The dataset gallery chips sit above the tabs and are always visible
+        for (const dataset of ['circle', 'xor', 'spiral', 'gaussian', 'clusters', 'iris', 'wine', 'custom']) {
+            await expect(page.locator(`.dataset-preview-card[data-dataset="${dataset}"]`)).toBeVisible();
+        }
+    });
 
-        // Hyperparameters
-        await expect(page.locator('#input-lr')).toBeVisible();
-        await expect(page.locator('#input-optimizer')).toBeVisible();
-        await expect(page.locator('#input-layers')).toBeVisible();
-        await expect(page.locator('#input-activation')).toBeVisible();
+    test('Model tab should contain all required sections', async ({ page }) => {
+        await neuroPage.openTab('model');
+
+        await expectInTab(page, 'model', [
+            '#input-lr',
+            '#input-optimizer',
+            '#input-loss-function',
+            '#input-layers',
+            '#input-activation',
+            '#input-batch-norm',
+            '#btn-init',
+        ]);
         await expect(page.locator('#btn-init')).toBeVisible();
     });
 
     test('Train tab should contain all required sections', async ({ page }) => {
-        // Click Train tab
-        const trainTab = page.locator('button.sidebar-tab[data-tab="train"]');
-        await trainTab.click();
-        await expect(trainTab).toHaveClass(/active/);
+        await neuroPage.openTab('train');
 
-        // Keyboard shortcuts hint
-        await expect(page.locator('.kbd').first()).toBeVisible();
-
-        // Metrics section
-        await expect(page.locator('#status-epoch')).toBeVisible();
-        await expect(page.locator('#status-loss')).toBeVisible();
-        await expect(page.locator('#status-accuracy')).toBeVisible();
-        await expect(page.locator('#status-state')).toBeVisible();
-
-        // Training History
-        await expect(page.locator('#stat-best-loss')).toBeVisible();
-        await expect(page.locator('#stat-best-epoch')).toBeVisible();
-        await expect(page.locator('#loss-chart-container')).toBeVisible();
+        await expectInTab(page, 'train', [
+            '#input-batch-size',
+            '#input-max-epochs',
+            '#input-lr-schedule',
+            '#input-val-split',
+            '#input-fps',
+            '#input-l1',
+            '#input-l2',
+            '#input-dropout',
+        ]);
     });
 
-    test('Analyse tab should contain all required sections', async ({ page }) => {
-        // Click Analyse tab
-        const analyseTab = page.locator('button.sidebar-tab[data-tab="analyse"]');
-        await analyseTab.click();
-        await expect(analyseTab).toHaveClass(/active/);
+    test('Analyze tab should contain all required sections', async ({ page }) => {
+        await neuroPage.openTab('analyze');
 
-        // What-If Analysis (always visible)
-        await expect(page.locator('#whatif-parameter')).toBeVisible();
-        await expect(page.locator('#btn-whatif')).toBeVisible();
+        await expectInTab(page, 'analyze', [
+            '#network-diagram',
+            '#weight-histogram',
+            '#confusion-matrix-container',
+            '#btn-generate-adversarial',
+            '#btn-export-model-sticky',
+            '#btn-export-history-sticky',
+            '#btn-export-report',
+        ]);
+    });
 
-        // Classification section header exists
-        await expect(page.locator('[data-collapsible="classification-metrics"]')).toBeAttached();
-
-        // Model Internals section header exists
-        await expect(page.locator('[data-collapsible="model-internals"]')).toBeAttached();
+    test('Training metrics stay visible in the toolbar on every tab', async ({ page }) => {
+        for (const tab of ['data', 'model', 'train', 'analyze'] as const) {
+            await neuroPage.openTab(tab);
+            await expect(page.locator('#status-epoch')).toBeVisible();
+            await expect(page.locator('#status-loss')).toBeVisible();
+            await expect(page.locator('#status-accuracy')).toBeVisible();
+            await expect(page.locator('#loss-chart-container')).toBeVisible();
+        }
     });
 
     test('Tab switching should work correctly', async ({ page }) => {
-        // Start on Setup
-        const setupPanel = page.locator('[data-tab-content="setup"]');
-        const trainPanel = page.locator('[data-tab-content="train"]');
-        const analysePanel = page.locator('[data-tab-content="analyse"]');
+        const tabs = ['data', 'model', 'train', 'analyze'] as const;
 
-        await expect(setupPanel).toHaveClass(/active/);
-        await expect(trainPanel).not.toHaveClass(/active/);
-        await expect(analysePanel).not.toHaveClass(/active/);
+        // Data is active by default; the others are not
+        await expect(page.locator('#tab-data')).toHaveClass(/active/);
+        for (const other of tabs.slice(1)) {
+            await expect(page.locator(`#tab-${other}`)).not.toHaveClass(/active/);
+        }
 
-        // Switch to Train
-        await page.locator('button.sidebar-tab[data-tab="train"]').click();
-        await expect(trainPanel).toHaveClass(/active/);
-        await expect(setupPanel).not.toHaveClass(/active/);
-
-        // Switch to Analyse
-        await page.locator('button.sidebar-tab[data-tab="analyse"]').click();
-        await expect(analysePanel).toHaveClass(/active/);
-        await expect(trainPanel).not.toHaveClass(/active/);
-
-        // Back to Setup
-        await page.locator('button.sidebar-tab[data-tab="setup"]').click();
-        await expect(setupPanel).toHaveClass(/active/);
-        await expect(analysePanel).not.toHaveClass(/active/);
+        // Each tab activates its own panel and deactivates the rest
+        for (const tab of [...tabs.slice(1), 'data' as const]) {
+            await neuroPage.openTab(tab);
+            await expect(page.locator(`button.sidebar-tab[data-tab="tab-${tab}"]`)).toHaveAttribute('aria-selected', 'true');
+            for (const other of tabs.filter((t) => t !== tab)) {
+                await expect(page.locator(`#tab-${other}`)).not.toHaveClass(/active/);
+            }
+        }
     });
 });

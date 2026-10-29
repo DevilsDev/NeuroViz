@@ -1,4 +1,4 @@
-import { test, expect, type Page, type Dialog } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { NeuroPage } from '../pages/NeuroPage';
 
 /**
@@ -82,9 +82,7 @@ test.describe('NeuroViz Application', () => {
       // Verify state is reset
       const epochAfterReset = await neuroPage.getEpochCount();
       expect(epochAfterReset).toBe(0);
-
-      const stateText = await neuroPage.getStateText();
-      expect(stateText).toBe('Ready');
+      await neuroPage.expectStopped();
     });
 
     test('should handle step-by-step training', async () => {
@@ -155,13 +153,27 @@ test.describe('NeuroViz Application', () => {
 
     test('should show loading state during data fetch', async () => {
       await neuroPage.goto();
+      const page = neuroPage.page;
 
-      // Click load data and verify loading overlay appears
+      // The overlay is only up for the ~500 ms simulated latency, which a busy
+      // runner can miss when polling. Record it being shown instead of racing it.
+      await page.evaluate(() => {
+        const overlay = document.getElementById('loading-overlay');
+        const w = window as unknown as { __overlayShown: boolean };
+        w.__overlayShown = false;
+        if (!overlay) return;
+        new MutationObserver(() => {
+          if (!overlay.classList.contains('hidden')) w.__overlayShown = true;
+        }).observe(overlay, { attributes: true, attributeFilter: ['class'] });
+      });
+
       await neuroPage.loadDataButton.click();
-      await expect(neuroPage.loadingOverlay).toBeVisible();
 
-      // Wait for loading to complete
+      // Wait for loading to complete, then confirm the overlay was shown
       await expect(neuroPage.loadingOverlay).toBeHidden({ timeout: 5000 });
+      await expect
+        .poll(() => page.evaluate(() => (window as unknown as { __overlayShown: boolean }).__overlayShown))
+        .toBe(true);
 
       // Verify data points are rendered
       const pointCount = await neuroPage.getDataPointCount();
@@ -189,6 +201,10 @@ test.describe('NeuroViz Application', () => {
   // Root cause of failures: Toast notifications and animation timing
   // ===========================================================================
   test.describe('Visual Regression', () => {
+    // Baselines are committed for Windows only (*-win32.png). Font rendering
+    // differs across OSes, so on CI's Linux runners these would always fail
+    // against missing/foreign baselines. Run locally on Windows to verify.
+    test.skip(process.platform !== 'win32', 'Visual baselines exist for win32 only');
 
     test('should match initial state screenshot', async ({ page }) => {
       await neuroPage.goto();
@@ -276,18 +292,14 @@ test.describe('NeuroViz Application', () => {
   // Test 4: Error Handling & Edge Cases
   // ===========================================================================
   test.describe('Error Handling', () => {
-    test('should disable start button until network is initialised', async () => {
+    test('should disable start button until a dataset is loaded', async () => {
       await neuroPage.goto();
 
       // Start button should be disabled initially
       await expect(neuroPage.startButton).toBeDisabled();
 
-      // Load data but don't initialise
+      // Loading data enables Train: it auto-initialises the network on start
       await neuroPage.selectAndLoadDataset('circle');
-      await expect(neuroPage.startButton).toBeDisabled();
-
-      // Initialise network
-      await neuroPage.initialiseNetwork();
       await expect(neuroPage.startButton).toBeEnabled();
     });
 
@@ -296,31 +308,22 @@ test.describe('NeuroViz Application', () => {
       await neuroPage.selectAndLoadDataset('circle');
 
       // Set invalid learning rate
-      await neuroPage.learningRateInput.fill('-1');
-      await neuroPage.layersInput.fill('8, 4');
+      await (await neuroPage.reveal(neuroPage.learningRateInput)).fill('-1');
+      await (await neuroPage.reveal(neuroPage.layersInput)).fill('8, 4');
+      await (await neuroPage.reveal(neuroPage.initButton)).click();
 
-      // Listen for alert
-      neuroPage.page.on('dialog', async (dialog: Dialog) => {
-        expect(dialog.message()).toContain('valid learning rate');
-        await dialog.accept();
-      });
-
-      await neuroPage.initButton.click();
+      await expect(neuroPage.toastMessages).toContainText(['Learning rate must be a positive number']);
     });
 
     test('should handle empty layers input', async () => {
       await neuroPage.goto();
       await neuroPage.selectAndLoadDataset('circle');
 
-      await neuroPage.learningRateInput.fill('0.03');
-      await neuroPage.layersInput.fill('');
+      await (await neuroPage.reveal(neuroPage.learningRateInput)).fill('0.03');
+      await (await neuroPage.reveal(neuroPage.layersInput)).fill('');
+      await (await neuroPage.reveal(neuroPage.initButton)).click();
 
-      neuroPage.page.on('dialog', async (dialog: Dialog) => {
-        expect(dialog.message()).toContain('hidden layer');
-        await dialog.accept();
-      });
-
-      await neuroPage.initButton.click();
+      await expect(neuroPage.toastMessages).toContainText(['At least one hidden layer is required']);
     });
   });
 
@@ -331,11 +334,12 @@ test.describe('NeuroViz Application', () => {
     test('should have proper button labels', async () => {
       await neuroPage.goto();
 
-      // Buttons use aria-label for accessibility (icon-only buttons)
-      await expect(neuroPage.startButton).toHaveAttribute('aria-label', 'Start training');
-      await expect(neuroPage.pauseButton).toHaveAttribute('aria-label', 'Pause training');
-      await expect(neuroPage.resetButton).toHaveAttribute('aria-label', 'Reset training');
-      await expect(neuroPage.stepButton).toHaveAttribute('aria-label', 'Execute single training step');
+      // Train/Pause have visible text; Step/Reset are icon-only with aria-labels
+      await expect(neuroPage.startButton).toHaveAccessibleName(/train/i);
+      // Pause is hidden while idle, so its accessible name is empty; check its label text
+      await expect(neuroPage.pauseButton).toContainText('Pause');
+      await expect(neuroPage.resetButton).toHaveAccessibleName('Reset training');
+      await expect(neuroPage.stepButton).toHaveAccessibleName('Step one epoch');
     });
 
     test('should have visible status indicators', async () => {
@@ -343,7 +347,7 @@ test.describe('NeuroViz Application', () => {
 
       await expect(neuroPage.epochCounter).toBeVisible();
       await expect(neuroPage.lossDisplay).toBeVisible();
-      await expect(neuroPage.stateDisplay).toBeVisible();
+      await expect(neuroPage.accuracyDisplay).toBeVisible();
     });
   });
 });
