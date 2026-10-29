@@ -55,7 +55,6 @@ interface INeuralNetworkService {
   getLayerActivations(point: Point): number[][];
   getStructure(): { layers: number[]; activations: string[] } | null;
   isReady(): boolean;
-  loadModel(modelJson: File, weightsBlob: File): Promise<void>;
 }
 ```
 
@@ -221,21 +220,6 @@ Checks if model is initialized and ready to use.
 if (neuralNet.isReady()) {
   await neuralNet.train(data);
 }
-```
-
----
-
-##### `loadModel(modelJson: File, weightsBlob: File): Promise<void>`
-
-Loads a previously exported model.
-
-**Parameters**:
-- `modelJson: File` - Model topology file
-- `weightsBlob: File` - Model weights file
-
-**Example**:
-```typescript
-await neuralNet.loadModel(modelJsonFile, weightsFile);
 ```
 
 ---
