@@ -25,7 +25,7 @@ on TensorFlow.js, D3, or the DOM.
 ## What ships today
 
 ### Training & model
-- **Optimizers** — SGD (with momentum), Adam, RMSprop, Adagrad
+- **Optimizers** — SGD (with momentum), Adam, RMSprop
 - **Regularisation** — L1, L2, dropout (per-layer), batch normalisation,
   gradient clipping
 - **Learning-rate control** — exponential / step / cosine schedules, warmup,
@@ -33,7 +33,7 @@ on TensorFlow.js, D3, or the DOM.
 - **Training flow** — configurable batch size, epoch limit, FPS-capped
   training speed, early stopping on validation-loss patience, train/validation
   split, step-by-step single-epoch mode
-- **Activations** — ReLU, Sigmoid, Tanh, ELU, with per-layer selection
+- **Activations** — ReLU, Sigmoid, Tanh
 - **Multi-class classification** up to 10 classes via softmax output
 
 ### Datasets
@@ -93,16 +93,15 @@ on TensorFlow.js, D3, or the DOM.
 
 ### Implemented but not yet in the app
 
-These modules exist in the source tree (with some unit tests) but nothing in
-the running app imports or exposes them yet:
+These are implemented but nothing in the running app imports or exposes
+them. They live in [`archive/`](archive/README.md), outside `src/`, so they
+are not built, type-checked or tested; the archive README explains how to
+revive one.
 
-- Domain / application code (`src/core/`, `src/workers/`,
-  `src/infrastructure/performance/`): model comparison (A/B), model
-  ensembles, permutation feature importance, LR finder, Web-Worker-backed
-  training, progressive grid rendering
-- Experimental modules (`src/experimental/`, excluded from the production
-  bundle): LIME-style explanations, saliency maps, Bayesian NNs
-  (MC Dropout), neural architecture search, WebGL renderer, REST API
+- Model comparison (A/B), model ensembles, permutation feature importance
+- Web-Worker-backed training, progressive grid rendering
+- LIME-style explanations, saliency maps, Bayesian NNs (MC Dropout),
+  neural architecture search, WebGL renderer, REST API
   (`window.neurovizAPI`), WebSocket collaboration, plugin system
 - Chart zoom/pan is implemented in `D3Chart` but disabled by default
   (`zoomEnabled: false`)
@@ -183,7 +182,6 @@ src/
 │   └── education/           # Tutorials, challenges, explain-this-moment
 │
 ├── presentation/            # Controllers, modals, toasts, workflow UI
-├── experimental/            # Not imported by the app (see above)
 └── main.ts                  # Entry point (builds via ApplicationBuilder)
 ```
 
@@ -204,7 +202,7 @@ src/
 
 ### Prerequisites
 
-- **Node.js** 20+ (LTS recommended)
+- **Node.js** 22+ (matches CI; semantic-release requires 22+)
 - **npm** 10+
 
 ### Installation
