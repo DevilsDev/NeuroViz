@@ -104,6 +104,9 @@ export class D3ConfusionMatrix {
           .attr('rx', 2)
           .attr('fill', isCorrect ? colorScale(0) : d3.interpolateReds(0))
           .style('cursor', 'pointer')
+          .merge(rect)
+          // Bound on every render (not only on enter) so the tooltip closes
+          // over this render's count and percentage
           .on('mouseenter', (event) => {
             tooltipMerged
               .html(`
@@ -126,7 +129,6 @@ export class D3ConfusionMatrix {
           .on('mouseleave', () => {
             tooltipMerged.style('opacity', '0');
           })
-          .merge(rect)
           .transition()
           .duration(500)
           .attr('fill', isCorrect ? colorScale(value) : d3.interpolateReds(value / (maxVal || 1)));

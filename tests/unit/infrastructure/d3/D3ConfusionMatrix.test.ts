@@ -256,5 +256,17 @@ describe('D3ConfusionMatrix', () => {
       expect(tooltip?.querySelector('img')).toBeNull();
       expect(tooltip?.textContent).toContain('<img src=x onerror=alert(1)>');
     });
+
+    it('shows the latest counts after a re-render', () => {
+      chart.render({ matrix: [[1, 2], [3, 4]], labels: ['A', 'B'], total: 10 });
+      chart.render({ matrix: [[7, 8], [9, 6]], labels: ['A', 'B'], total: 30 });
+
+      const cell = document.querySelector(`#${containerId} #cell-0-1`);
+      cell?.dispatchEvent(new MouseEvent('mouseenter'));
+
+      const tooltip = document.querySelector('.cm-tooltip');
+      expect(tooltip?.textContent).toContain('Count: 8');
+      expect(tooltip?.textContent).toContain('26.7%');
+    });
   });
 });
