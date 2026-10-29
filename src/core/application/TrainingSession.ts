@@ -65,12 +65,23 @@ export class TrainingSession implements ITrainingSession {
   private lastFrameTime = 0;
   private frameInterval = 0;
 
-  // Re-entrancy guard for setHyperparameters
-  private isInitialising = false;
+  // Serialises setHyperparameters calls so each config is applied in order
+  private initQueue: Promise<void> = Promise.resolve();
+
+  // Bumped by reset/re-init/dispose/clearAll. A step that was in flight when
+  // the generation changed discards its results instead of writing them into
+  // the fresh session.
+  private sessionGeneration = 0;
+
+  // Identifies the active loop chain; bumped by start() so a pause/resume
+  // while a step is in flight doesn't leave two rAF chains running.
+  private loopId = 0;
 
   // Learning rate tracking
   private initialLearningRate = 0.03;
   private currentHyperparameters: Hyperparameters | null = null;
+  /** LR last pushed to the network; compared against the schedule each epoch */
+  private appliedLearningRate: number | null = null;
 
   // Runtime training config (owned here, mirrored to state store for snapshots)
   private trainingConfig: Required<TrainingConfig> = { ...DEFAULT_TRAINING_CONFIG };
@@ -144,43 +155,44 @@ export class TrainingSession implements ITrainingSession {
     this.state.notifyListeners('configChanged');
   }
 
-  async setHyperparameters(config: Hyperparameters, skipHistory: boolean = false): Promise<void> {
-    // Prevent overlapping init calls — second click is dropped
-    if (this.isInitialising) {
-      return;
+  setHyperparameters(config: Hyperparameters, skipHistory: boolean = false): Promise<void> {
+    // Queue rather than drop overlapping calls: a dropped call used to resolve
+    // as if it had succeeded, so callers recorded a config that was never applied.
+    const run = this.initQueue.then(() => this.applyHyperparameters(config, skipHistory));
+    this.initQueue = run.catch(() => undefined);
+    return run;
+  }
+
+  private async applyHyperparameters(config: Hyperparameters, skipHistory: boolean): Promise<void> {
+    // Stop training and wait for any in-flight step (loop or manual step())
+    // so the model isn't disposed underneath it
+    if (this.state.getIsTraining() && !this.state.getIsPaused()) {
+      this.pause();
     }
-    this.isInitialising = true;
+    await this.waitForInFlightStep();
 
-    try {
-      // Stop training before re-initializing to prevent accessing disposed model
-      const wasTraining = this.state.getIsTraining() && !this.state.getIsPaused();
-      if (wasTraining) {
-        this.pause();
-        while (this.state.getIsProcessingStep()) {
-          await new Promise(resolve => setTimeout(resolve, 50));
-        }
-      }
+    this.sessionGeneration++;
+    // initialize() disposes the old model first, so until it succeeds there is
+    // no usable model; a failed init must leave the session uninitialised
+    this.state.setInitialised(false);
+    await this.neuralNet.initialize(config);
+    this.state.setInitialised(true);
+    this.state.resetProgress();
 
-      await this.neuralNet.initialize(config);
-      this.state.setInitialised(true);
-      this.state.resetProgress();
+    // Store for LR scheduling and reset scheduler
+    this.currentHyperparameters = config;
+    this.appliedLearningRate = config.learningRate;
+    this.initialLearningRate = config.learningRate;
+    this.lrScheduler.setInitialLR(config.learningRate);
+    this.lrScheduler.setSchedule(this.trainingConfig.lrSchedule ?? DEFAULT_LR_SCHEDULE);
 
-      // Store for LR scheduling and reset scheduler
-      this.currentHyperparameters = config;
-      this.initialLearningRate = config.learningRate;
-      this.lrScheduler.setInitialLR(config.learningRate);
-      this.lrScheduler.setSchedule(this.trainingConfig.lrSchedule ?? DEFAULT_LR_SCHEDULE);
+    this.earlyStoppingStrategy.reset();
 
-      this.earlyStoppingStrategy.reset();
-
-      if (!skipHistory) {
-        this.experiment.pushConfig(config, 'Configuration updated');
-      }
-
-      this.state.notifyListeners('initialized');
-    } finally {
-      this.isInitialising = false;
+    if (!skipHistory) {
+      this.experiment.pushConfig(config, 'Configuration updated');
     }
+
+    this.state.notifyListeners('initialized');
   }
 
   // ===========================================================================
@@ -229,7 +241,8 @@ export class TrainingSession implements ITrainingSession {
     this.state.setPaused(false);
     this.state.notifyListeners('started');
 
-    void this.loop();
+    this.loopId++;
+    void this.loop(this.loopId);
   }
 
   pause(): void {
@@ -242,10 +255,13 @@ export class TrainingSession implements ITrainingSession {
   }
 
   reset(): void {
+    this.sessionGeneration++;
     this.state.setTraining(false);
     this.state.setPaused(false);
-    this.state.setProcessingStep(false);
+    // The step mutex is left alone: an in-flight step still owns it and
+    // releases it when it finishes (its results are discarded).
     this.state.resetProgress();
+    this.earlyStoppingStrategy.reset();
 
     // Re-split data
     if (this.dataService.hasData()) {
@@ -261,6 +277,7 @@ export class TrainingSession implements ITrainingSession {
   }
 
   clearAll(): void {
+    this.sessionGeneration++;
     this.state.clearAll();
     this.dataService.clear();
     this.visualizer.clear();
@@ -274,12 +291,15 @@ export class TrainingSession implements ITrainingSession {
       return;
     }
 
+    const generation = this.sessionGeneration;
+    const isStale = (): boolean => generation !== this.sessionGeneration;
     this.state.setProcessingStep(true);
 
     try {
       const epoch = this.state.incrementEpoch();
 
       const result = await this.neuralNet.train(this.dataService.getTrainingData());
+      if (isStale()) return;
       this.state.setMetrics(result.loss, result.accuracy);
 
       // Evaluate on validation data if available
@@ -289,6 +309,7 @@ export class TrainingSession implements ITrainingSession {
       const validationData = this.dataService.getValidationData();
       if (validationData.length > 0) {
         const valResult = await this.neuralNet.evaluate(validationData);
+        if (isStale()) return;
         valLoss = valResult.loss;
         valAccuracy = valResult.accuracy;
         this.state.setValidationMetrics(valLoss, valAccuracy);
@@ -306,6 +327,7 @@ export class TrainingSession implements ITrainingSession {
 
       if (epoch === 1 || epoch % this.config.renderInterval === 0) {
         await this.updateVisualisation();
+        if (isStale()) return;
       }
 
       this.state.notifyListeners('trainingStep');
@@ -335,9 +357,9 @@ export class TrainingSession implements ITrainingSession {
   // ===========================================================================
 
   dispose(): void {
+    this.sessionGeneration++;
     this.state.setTraining(false);
     this.state.setPaused(false);
-    this.state.setProcessingStep(false);
     this.state.clearListeners();
   }
 
@@ -394,31 +416,33 @@ export class TrainingSession implements ITrainingSession {
   ): Promise<Array<{ lr: number; loss: number }>> {
     this.assertReadyToTrain();
 
-    const wasTraining = this.state.getIsTraining() && !this.state.getIsPaused();
-    if (wasTraining) {
+    if (this.state.getIsTraining() && !this.state.getIsPaused()) {
       this.pause();
-      await new Promise(resolve => setTimeout(resolve, 100));
     }
+    await this.waitForInFlightStep();
 
     if (!this.currentHyperparameters) {
       throw new Error('Model not initialized');
     }
 
-    return this.lrFinder.run(
+    const results = await this.lrFinder.run(
       () => this.getTrainingBatch(),
       this.currentHyperparameters,
       minLR,
       maxLR,
       steps
     );
+    // The finder re-initialises the network at the original LR
+    this.appliedLearningRate = this.currentHyperparameters.learningRate;
+    return results;
   }
 
   // ===========================================================================
   // Guard-Rail Training Loop (private)
   // ===========================================================================
 
-  private async loop(): Promise<void> {
-    if (!this.state.getIsTraining() || this.state.getIsPaused()) {
+  private async loop(loopId: number): Promise<void> {
+    if (loopId !== this.loopId || !this.state.getIsTraining() || this.state.getIsPaused()) {
       return;
     }
 
@@ -431,17 +455,19 @@ export class TrainingSession implements ITrainingSession {
     }
 
     if (this.state.getIsProcessingStep()) {
-      requestAnimationFrame(() => void this.loop());
+      requestAnimationFrame(() => void this.loop(loopId));
       return;
     }
 
     const now = performance.now();
     if (this.frameInterval > 0 && now - this.lastFrameTime < this.frameInterval) {
-      requestAnimationFrame(() => void this.loop());
+      requestAnimationFrame(() => void this.loop(loopId));
       return;
     }
     this.lastFrameTime = now;
 
+    const generation = this.sessionGeneration;
+    const isStale = (): boolean => generation !== this.sessionGeneration;
     this.state.setProcessingStep(true);
 
     try {
@@ -459,6 +485,7 @@ export class TrainingSession implements ITrainingSession {
       const epochLearningRate = this.lrScheduler.getCurrentLR();
 
       const result = await this.neuralNet.train(batch);
+      if (isStale()) return;
       this.state.setMetrics(result.loss, result.accuracy);
 
       let valLoss: number | null = null;
@@ -467,6 +494,7 @@ export class TrainingSession implements ITrainingSession {
       const validationData = this.dataService.getValidationData();
       if (validationData.length > 0) {
         const valResult = await this.neuralNet.evaluate(validationData);
+        if (isStale()) return;
         valLoss = valResult.loss;
         valAccuracy = valResult.accuracy;
         this.state.setValidationMetrics(valLoss, valAccuracy);
@@ -498,12 +526,14 @@ export class TrainingSession implements ITrainingSession {
 
       if (epoch === 1 || epoch % this.config.renderInterval === 0) {
         await this.updateVisualisation();
+        if (isStale()) return;
       }
 
       this.experiment.maybeRecordSnapshot(epoch, this.cachedPredictions);
 
       this.state.notifyListeners('trainingStep');
     } catch (error) {
+      if (isStale()) return;
       this.state.setTraining(false);
       this.state.notifyListeners('stopped');
 
@@ -521,16 +551,18 @@ export class TrainingSession implements ITrainingSession {
         }
       );
     } finally {
+      // This step owns the mutex, so it always releases it, even when stale
       this.state.setProcessingStep(false);
-      if (!this.state.getIsTraining() || this.state.getIsPaused()) {
+      if (!isStale() && (!this.state.getIsTraining() || this.state.getIsPaused())) {
         this.state.notifyListeners('stopped');
       }
     }
 
-    if (this.state.getIsTraining() && !this.state.getIsPaused()) {
+    // Only the most recently started loop chain keeps scheduling frames
+    if (loopId === this.loopId && this.state.getIsTraining() && !this.state.getIsPaused()) {
       const stillUnderLimit = maxEpochs === 0 || this.state.getEpoch() < maxEpochs;
       if (stillUnderLimit) {
-        requestAnimationFrame(() => void this.loop());
+        requestAnimationFrame(() => void this.loop(loopId));
       } else {
         this.state.setTraining(false);
         this.state.notifyListeners('stopped');
@@ -542,6 +574,12 @@ export class TrainingSession implements ITrainingSession {
   // ===========================================================================
   // Private helpers
   // ===========================================================================
+
+  private async waitForInFlightStep(): Promise<void> {
+    while (this.state.getIsProcessingStep()) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+  }
 
   private getTrainingBatch(): Point[] {
     const { batchSize } = this.trainingConfig;
@@ -599,11 +637,13 @@ export class TrainingSession implements ITrainingSession {
   }
 
   private updateLearningRateIfNeeded(): void {
-    const previousLR = this.lrScheduler.getCurrentLR();
-    this.lrScheduler.calculateLR(this.state.getEpoch(), this.trainingConfig.maxEpochs);
+    const scheduledLR = this.lrScheduler.calculateLR(this.state.getEpoch(), this.trainingConfig.maxEpochs);
 
-    if (this.lrScheduler.hasSignificantChange(previousLR, 0.01) && this.currentHyperparameters) {
-      this.neuralNet.updateLearningRate(this.lrScheduler.getCurrentLR());
+    // Compare against the LR actually applied, not the previous epoch's scheduled
+    // value: otherwise slow schedules (<1%/epoch) never reach the optimizer.
+    if (this.currentHyperparameters && scheduledLR !== this.appliedLearningRate) {
+      this.neuralNet.updateLearningRate(scheduledLR);
+      this.appliedLearningRate = scheduledLR;
     }
   }
 

@@ -2,7 +2,11 @@
 # NeuroViz Semantic Release Automation
 # =============================================================================
 # Triggered on:
-#   - Push to main branch
+#   - Successful completion of the CI/CD workflow for a push to main.
+#     Releases are gated on lint, typecheck, unit tests and build passing,
+#     and are cut from the exact commit CI validated. If main has moved on
+#     since, semantic-release skips (branch not up to date) and the newer
+#     commit's own CI run releases instead.
 #
 # Purpose:
 #   - Automatically determine version bump based on commit messages
@@ -22,9 +26,15 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ['CI/CD']
+    types: [completed]
+    branches: [main]
+
+# Never run two releases at once, and never cancel one mid-publish
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -35,13 +45,20 @@ jobs:
   release:
     name: Semantic Release
     runs-on: ubuntu-latest
-    # Skip if commit message contains [skip ci] or [skip release]
-    if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, '[skip release]')"
+    timeout-minutes: 15
+    # Only release pushes to main whose CI run succeeded, and honour
+    # [skip ci] / [skip release] in the commit message
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      !contains(github.event.workflow_run.head_commit.message, '[skip ci]') &&
+      !contains(github.event.workflow_run.head_commit.message, '[skip release]')
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.workflow_run.head_sha }}  # the commit CI validated
           fetch-depth: 0  # Fetch all history for semantic versioning
           persist-credentials: false
 
@@ -53,6 +70,10 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # Build the bundle published as release assets (.releaserc.json: dist/**)
+      - name: Build
+        run: npm run build
 
       # -----------------------------------------------------------------------
       # Semantic Release

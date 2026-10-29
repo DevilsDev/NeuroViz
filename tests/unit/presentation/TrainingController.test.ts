@@ -326,6 +326,36 @@ describe('TrainingController', () => {
 
     });
 
+    describe('Start with stale config', () => {
+        it('should not start training when re-initialisation fails', async () => {
+            const { TrainingController } = await import('../../../src/presentation/controllers/TrainingController');
+
+            const mockElements = createMockElements();
+            // Previous init succeeded, so the session still reports isInitialised
+            const mockSession = createMockSession({ isInitialised: true, datasetLoaded: true });
+            const callbacks = { onNetworkUpdate: vi.fn(), onClearVisualization: vi.fn() };
+            const controller = new TrainingController(mockSession as any, mockElements, callbacks);
+            const controllerAny = controller as any;
+
+            controllerAny.lastInitConfig = controllerAny.currentConfigHash();
+            mockElements.inputLr.value = '0.01'; // make the model stale
+
+            const execute = vi.fn().mockResolvedValue({
+                success: false,
+                validationResult: { isValid: false, message: 'Invalid config', errors: [] },
+            });
+            controllerAny.commandExecutor = { execute };
+
+            await controller.handleStart();
+
+            // Only the failed InitializeNetworkCommand ran; StartTrainingCommand did not
+            expect(execute).toHaveBeenCalledTimes(1);
+            expect(execute.mock.calls[0]?.[0]?.constructor.name).toBe('InitializeNetworkCommand');
+
+            controller.dispose();
+        });
+    });
+
     describe('Stale Model Badge', () => {
         it('should show stale badge when hyperparams change after init', async () => {
             const { TrainingController } = await import('../../../src/presentation/controllers/TrainingController');

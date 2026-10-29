@@ -139,11 +139,13 @@ export class TrainingController {
      * Handles network initialization using InitializeNetworkCommand
      * Business logic and validation have been moved to the command
      */
-    public async handleInitialise(): Promise<void> {
+    public async handleInitialise(): Promise<boolean> {
         logger.debug('[TrainingController] handleInitialise called');
 
-        // Build configuration from UI inputs
+        // Build configuration from UI inputs; snapshot the hash now so edits made
+        // while initialisation is awaiting are still detected as stale
         const config = this.buildInitializeNetworkConfig();
+        const configHash = this.currentConfigHash();
         logger.debug('[TrainingController] Config built', config as unknown as LogContext);
 
         // Create and execute command
@@ -172,22 +174,24 @@ export class TrainingController {
                     console.error('[TrainingController] Execution error:', result.error);
                     toast.error(`Failed to initialise: ${result.error.message}`);
                 }
-                return;
+                return false;
             }
 
             // Apply training config after successful initialization
             await this.applyTrainingConfig();
 
             // Snapshot config so we can detect staleness on future changes
-            this.lastInitConfig = this.currentConfigHash();
+            this.lastInitConfig = configHash;
             this.updateStaleBadge();
 
             const optimizer = this.elements.inputOptimizer.value.toUpperCase();
             toast.success(`Network initialized with ${optimizer} optimizer!`);
             logger.debug('[TrainingController] Initialization completed successfully');
+            return true;
         } catch (error) {
             console.error('Unexpected error during initialization:', error);
             toast.error('An unexpected error occurred during initialization');
+            return false;
         } finally {
             this.elements.btnInit.disabled = false;
             this.elements.btnInit.textContent = 'Initialise Network';
@@ -351,9 +355,11 @@ export class TrainingController {
             && this.currentConfigHash() !== this.lastInitConfig;
         if (!state.isInitialised || isStale) {
             logger.debug('[TrainingController] Auto-initializing network before training', { isStale });
-            await this.handleInitialise();
-            // Re-check — initialization may have failed
-            if (!this.session.getState().isInitialised) {
+            // Don't train on the previous model if re-initialisation failed
+            // (e.g. validation rejected the new config): isInitialised alone
+            // would still be true from the earlier successful init.
+            const initialised = await this.handleInitialise();
+            if (!initialised || !this.session.getState().isInitialised) {
                 return;
             }
         }
