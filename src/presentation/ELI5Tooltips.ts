@@ -213,6 +213,8 @@ export const ELI5_EXPLANATIONS: Record<string, TooltipContent> = {
 export class ELI5TooltipManager {
   private tooltipElement: HTMLDivElement | null = null;
   private hideTimeout: ReturnType<typeof setTimeout> | null = null;
+  private fadeTimeout: ReturnType<typeof setTimeout> | null = null;
+  private readonly listeners: Array<[keyof DocumentEventMap, EventListener]> = [];
 
   constructor() {
     this.createTooltipElement();
@@ -225,6 +227,7 @@ export class ELI5TooltipManager {
   private createTooltipElement(): void {
     this.tooltipElement = document.createElement('div');
     this.tooltipElement.id = 'eli5-tooltip';
+    this.tooltipElement.setAttribute('role', 'tooltip');
     this.tooltipElement.className = `
       fixed z-[100] max-w-xs p-3 rounded-lg shadow-xl
       bg-navy-800 border border-navy-600
@@ -237,25 +240,59 @@ export class ELI5TooltipManager {
   }
 
   /**
-   * Attaches hover listeners to elements with data-eli5 attribute.
+   * Attaches delegated hover and keyboard-focus listeners for elements with a
+   * data-eli5 attribute.
    */
   private attachListeners(): void {
-    document.addEventListener('mouseover', (e) => {
-      const target = (e.target as HTMLElement).closest('[data-eli5]');
+    const showFor = (e: Event): void => {
+      const target = (e.target as HTMLElement | null)?.closest?.('[data-eli5]');
       if (target) {
         const key = target.getAttribute('data-eli5');
         if (key && ELI5_EXPLANATIONS[key]) {
           this.show(ELI5_EXPLANATIONS[key], target as HTMLElement);
         }
       }
-    });
-
-    document.addEventListener('mouseout', (e) => {
-      const target = (e.target as HTMLElement).closest('[data-eli5]');
+    };
+    const hideFor = (e: Event): void => {
+      const target = (e.target as HTMLElement | null)?.closest?.('[data-eli5]');
       if (target) {
         this.scheduleHide();
       }
-    });
+    };
+
+    this.listen('mouseover', showFor);
+    this.listen('focusin', showFor);
+    this.listen('mouseout', hideFor);
+    this.listen('focusout', hideFor);
+  }
+
+  private listen(type: keyof DocumentEventMap, handler: EventListener): void {
+    document.addEventListener(type, handler);
+    this.listeners.push([type, handler]);
+  }
+
+  /**
+   * Removes all document listeners, pending timers and the tooltip element.
+   */
+  dispose(): void {
+    for (const [type, handler] of this.listeners) {
+      document.removeEventListener(type, handler);
+    }
+    this.listeners.length = 0;
+    this.clearTimers();
+    this.tooltipElement?.remove();
+    this.tooltipElement = null;
+  }
+
+  private clearTimers(): void {
+    if (this.hideTimeout) {
+      clearTimeout(this.hideTimeout);
+      this.hideTimeout = null;
+    }
+    if (this.fadeTimeout) {
+      clearTimeout(this.fadeTimeout);
+      this.fadeTimeout = null;
+    }
   }
 
   /**
@@ -264,10 +301,7 @@ export class ELI5TooltipManager {
   private show(content: TooltipContent, target: HTMLElement): void {
     if (!this.tooltipElement) return;
 
-    if (this.hideTimeout) {
-      clearTimeout(this.hideTimeout);
-      this.hideTimeout = null;
-    }
+    this.clearTimers();
 
     // Build tooltip content with XSS protection
     let html = safeHTML`
@@ -311,6 +345,7 @@ export class ELI5TooltipManager {
    * Schedules hiding the tooltip.
    */
   private scheduleHide(): void {
+    this.clearTimers();
     this.hideTimeout = setTimeout(() => {
       this.hide();
     }, 150);
@@ -322,7 +357,7 @@ export class ELI5TooltipManager {
   private hide(): void {
     if (!this.tooltipElement) return;
     this.tooltipElement.style.opacity = '0';
-    setTimeout(() => {
+    this.fadeTimeout = setTimeout(() => {
       if (this.tooltipElement) {
         this.tooltipElement.style.display = 'none';
       }
