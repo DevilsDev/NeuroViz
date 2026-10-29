@@ -23,6 +23,11 @@ export interface TrainingSessionConfig {
   readonly gridSize: number;
 }
 
+interface EpochOutcome {
+  readonly epoch: number;
+  readonly earlyStop: boolean;
+}
+
 const DEFAULT_CONFIG: TrainingSessionConfig = {
   renderInterval: 5,
   gridSize: 50,
@@ -291,49 +296,46 @@ export class TrainingSession implements ITrainingSession {
       return;
     }
 
+    if (this.isAtEpochLimit()) {
+      return;
+    }
+
+    if (!this.neuralNet.isReady()) {
+      throw new Error('Model is not ready for training.');
+    }
+
     const generation = this.sessionGeneration;
     const isStale = (): boolean => generation !== this.sessionGeneration;
     this.state.setProcessingStep(true);
 
+    let outcome: EpochOutcome | null;
     try {
-      const epoch = this.state.incrementEpoch();
-
-      const result = await this.neuralNet.train(this.dataService.getTrainingData());
-      if (isStale()) return;
-      this.state.setMetrics(result.loss, result.accuracy);
-
-      // Evaluate on validation data if available
-      let valLoss: number | null = null;
-      let valAccuracy: number | null = null;
-
-      const validationData = this.dataService.getValidationData();
-      if (validationData.length > 0) {
-        const valResult = await this.neuralNet.evaluate(validationData);
-        if (isStale()) return;
-        valLoss = valResult.loss;
-        valAccuracy = valResult.accuracy;
-        this.state.setValidationMetrics(valLoss, valAccuracy);
-      }
-
-      this.state.addHistoryRecord({
-        epoch,
-        loss: result.loss,
-        accuracy: result.accuracy,
-        valLoss,
-        valAccuracy,
-        timestamp: performance.now(),
-        learningRate: this.lrScheduler.getCurrentLR(),
-      });
-
-      if (epoch === 1 || epoch % this.config.renderInterval === 0) {
-        await this.updateVisualisation();
-        if (isStale()) return;
-      }
-
+      outcome = await this.runEpoch(isStale);
+      if (!outcome) return;
       this.state.notifyListeners('trainingStep');
     } finally {
       this.state.setProcessingStep(false);
     }
+
+    if (outcome.earlyStop) {
+      this.logEarlyStop(outcome.epoch);
+      this.endSteppedRun('earlyStopping');
+    } else if (this.isAtEpochLimit()) {
+      this.endSteppedRun('maxEpochs');
+    }
+  }
+
+  /**
+   * Completion of a run driven by step(). A paused loop run is ended too; a
+   * step-only run never set isTraining, so it gets no 'stopped' event.
+   */
+  private endSteppedRun(reason: 'maxEpochs' | 'earlyStopping'): void {
+    if (this.state.getIsTraining()) {
+      this.state.setTraining(false);
+      this.state.setPaused(false);
+      this.state.notifyListeners('stopped');
+    }
+    this.experiment.notifyComplete(reason);
   }
 
   // ===========================================================================
@@ -446,8 +448,7 @@ export class TrainingSession implements ITrainingSession {
       return;
     }
 
-    const { maxEpochs } = this.trainingConfig;
-    if (maxEpochs > 0 && this.state.getEpoch() >= maxEpochs) {
+    if (this.isAtEpochLimit()) {
       this.state.setTraining(false);
       this.state.notifyListeners('stopped');
       this.experiment.notifyComplete('maxEpochs');
@@ -470,72 +471,27 @@ export class TrainingSession implements ITrainingSession {
     const isStale = (): boolean => generation !== this.sessionGeneration;
     this.state.setProcessingStep(true);
 
+    // Every exit path that ends the run only clears isTraining; the finally
+    // block emits the single 'stopped' event for it.
+    let earlyStoppedAt: number | null = null;
     try {
       if (!this.neuralNet.isReady()) {
         this.state.setTraining(false);
-        this.state.setProcessingStep(false);
-        this.state.notifyListeners('stopped');
         return;
       }
 
-      const batch = this.getTrainingBatch();
-      const epoch = this.state.incrementEpoch();
+      const outcome = await this.runEpoch(isStale);
+      if (!outcome) return;
 
-      this.updateLearningRateIfNeeded();
-      const epochLearningRate = this.lrScheduler.getCurrentLR();
-
-      const result = await this.neuralNet.train(batch);
-      if (isStale()) return;
-      this.state.setMetrics(result.loss, result.accuracy);
-
-      let valLoss: number | null = null;
-      let valAccuracy: number | null = null;
-
-      const validationData = this.dataService.getValidationData();
-      if (validationData.length > 0) {
-        const valResult = await this.neuralNet.evaluate(validationData);
-        if (isStale()) return;
-        valLoss = valResult.loss;
-        valAccuracy = valResult.accuracy;
-        this.state.setValidationMetrics(valLoss, valAccuracy);
-      }
-
-      this.state.addHistoryRecord({
-        epoch,
-        loss: result.loss,
-        accuracy: result.accuracy,
-        valLoss,
-        valAccuracy,
-        timestamp: performance.now(),
-        learningRate: epochLearningRate,
-      });
-
-      if (this.earlyStoppingStrategy.shouldStop(valLoss)) {
+      if (outcome.earlyStop) {
         this.state.setTraining(false);
-        this.state.notifyListeners('stopped');
-        this.experiment.notifyComplete('earlyStopping');
-        logger.info(`Early stopping triggered at epoch ${epoch}`, {
-          component: 'TrainingSession',
-          action: 'earlyStopping',
-          epoch,
-          bestValLoss: this.earlyStoppingStrategy.getBestValLoss(),
-          epochsWithoutImprovement: this.earlyStoppingStrategy.getEpochsWithoutImprovement(),
-        });
-        return;
+        earlyStoppedAt = outcome.epoch;
+      } else {
+        this.state.notifyListeners('trainingStep');
       }
-
-      if (epoch === 1 || epoch % this.config.renderInterval === 0) {
-        await this.updateVisualisation();
-        if (isStale()) return;
-      }
-
-      this.experiment.maybeRecordSnapshot(epoch, this.cachedPredictions);
-
-      this.state.notifyListeners('trainingStep');
     } catch (error) {
       if (isStale()) return;
       this.state.setTraining(false);
-      this.state.notifyListeners('stopped');
 
       if (isModelDisposedError(error)) {
         return;
@@ -558,10 +514,15 @@ export class TrainingSession implements ITrainingSession {
       }
     }
 
+    if (earlyStoppedAt !== null) {
+      this.experiment.notifyComplete('earlyStopping');
+      this.logEarlyStop(earlyStoppedAt);
+      return;
+    }
+
     // Only the most recently started loop chain keeps scheduling frames
     if (loopId === this.loopId && this.state.getIsTraining() && !this.state.getIsPaused()) {
-      const stillUnderLimit = maxEpochs === 0 || this.state.getEpoch() < maxEpochs;
-      if (stillUnderLimit) {
+      if (!this.isAtEpochLimit()) {
         requestAnimationFrame(() => void this.loop(loopId));
       } else {
         this.state.setTraining(false);
@@ -636,8 +597,75 @@ export class TrainingSession implements ITrainingSession {
     }
   }
 
-  private updateLearningRateIfNeeded(): void {
-    const scheduledLR = this.lrScheduler.calculateLR(this.state.getEpoch(), this.trainingConfig.maxEpochs);
+  /**
+   * One epoch shared by loop() and step(): LR schedule, train, validate,
+   * history, early-stopping check and (interval or final) boundary render.
+   * Returns null when the session changed underneath it (results discarded).
+   */
+  private async runEpoch(isStale: () => boolean): Promise<EpochOutcome | null> {
+    const batch = this.getTrainingBatch();
+    const epoch = this.state.incrementEpoch();
+
+    // Epochs are 1-based for display, the scheduler is 0-based
+    this.updateLearningRateIfNeeded(epoch - 1);
+    const epochLearningRate = this.lrScheduler.getCurrentLR();
+
+    const result = await this.neuralNet.train(batch);
+    if (isStale()) return null;
+    this.state.setMetrics(result.loss, result.accuracy);
+
+    let valLoss: number | null = null;
+    let valAccuracy: number | null = null;
+
+    const validationData = this.dataService.getValidationData();
+    if (validationData.length > 0) {
+      const valResult = await this.neuralNet.evaluate(validationData);
+      if (isStale()) return null;
+      valLoss = valResult.loss;
+      valAccuracy = valResult.accuracy;
+      this.state.setValidationMetrics(valLoss, valAccuracy);
+    }
+
+    this.state.addHistoryRecord({
+      epoch,
+      loss: result.loss,
+      accuracy: result.accuracy,
+      valLoss,
+      valAccuracy,
+      timestamp: performance.now(),
+      learningRate: epochLearningRate,
+    });
+
+    const earlyStop = this.earlyStoppingStrategy.shouldStop(valLoss);
+    const isFinalEpoch = earlyStop || this.isAtEpochLimit();
+
+    if (isFinalEpoch || epoch === 1 || epoch % this.config.renderInterval === 0) {
+      await this.updateVisualisation();
+      if (isStale()) return null;
+    }
+
+    this.experiment.maybeRecordSnapshot(epoch, this.cachedPredictions);
+
+    return { epoch, earlyStop };
+  }
+
+  private isAtEpochLimit(): boolean {
+    const { maxEpochs } = this.trainingConfig;
+    return maxEpochs > 0 && this.state.getEpoch() >= maxEpochs;
+  }
+
+  private logEarlyStop(epoch: number): void {
+    logger.info(`Early stopping triggered at epoch ${epoch}`, {
+      component: 'TrainingSession',
+      action: 'earlyStopping',
+      epoch,
+      bestValLoss: this.earlyStoppingStrategy.getBestValLoss(),
+      epochsWithoutImprovement: this.earlyStoppingStrategy.getEpochsWithoutImprovement(),
+    });
+  }
+
+  private updateLearningRateIfNeeded(schedulerEpoch: number): void {
+    const scheduledLR = this.lrScheduler.calculateLR(schedulerEpoch, this.trainingConfig.maxEpochs);
 
     // Compare against the LR actually applied, not the previous epoch's scheduled
     // value: otherwise slow schedules (<1%/epoch) never reach the optimizer.

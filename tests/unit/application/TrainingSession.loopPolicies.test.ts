@@ -105,4 +105,137 @@ describe('TrainingSession - loop policies', () => {
       expect(session.getState().isRunning).toBe(false);
     });
   });
+
+  describe('stop events', () => {
+    const countStopped = (): number => events.filter(e => e === 'stopped').length;
+
+    it('should emit one stopped event and render the final boundary on early stop', async () => {
+      // Constant val loss: epoch 1 sets the best, epoch 2 exhausts patience 1
+      session.setTrainingConfig({ maxEpochs: 50, targetFps: 0, validationSplit: 0.5, earlyStoppingPatience: 1 });
+      await session.setHyperparameters({ learningRate: 0.1, layers: [4] });
+      const onComplete = vi.fn();
+      session.onComplete(onComplete);
+
+      await trainUntilStopped(session);
+      await flush();
+
+      expect(session.getState().currentEpoch).toBe(2);
+      expect(onComplete).toHaveBeenCalledWith('earlyStopping');
+      expect(countStopped()).toBe(1);
+      // Epoch 1 render + final render at epoch 2 (off the render interval)
+      expect(visualizer.renderBoundary).toHaveBeenCalledTimes(2);
+    });
+
+    it('should emit one stopped event when the model is not ready', async () => {
+      session.setTrainingConfig({ targetFps: 0, validationSplit: 0 });
+      await session.setHyperparameters({ learningRate: 0.1, layers: [4] });
+      vi.mocked(neuralNet.isReady).mockReturnValue(false);
+
+      await trainUntilStopped(session);
+      await flush();
+
+      expect(countStopped()).toBe(1);
+      expect(neuralNet.train).not.toHaveBeenCalled();
+    });
+
+    it('should emit one stopped event when training crashes', async () => {
+      session.setTrainingConfig({ targetFps: 0, validationSplit: 0 });
+      await session.setHyperparameters({ learningRate: 0.1, layers: [4] });
+      vi.mocked(neuralNet.train).mockRejectedValue(new Error('boom'));
+
+      await trainUntilStopped(session);
+      await flush();
+
+      expect(countStopped()).toBe(1);
+      expect(session.getState().isRunning).toBe(false);
+    });
+
+    it('should emit one stopped event when maxEpochs is reached', async () => {
+      session.setTrainingConfig({ maxEpochs: 3, targetFps: 0, validationSplit: 0 });
+      await session.setHyperparameters({ learningRate: 0.1, layers: [4] });
+
+      await trainUntilStopped(session);
+      await flush();
+
+      expect(countStopped()).toBe(1);
+    });
+  });
+
+  describe('LR schedule epoch indexing', () => {
+    const recordedLRs = (): number[] => session.getHistory().records.map(r => r.learningRate ?? NaN);
+    const warmup = { type: 'none' as const, warmupEpochs: 4 };
+
+    it('should warm up over exactly W epochs starting at 1/W in the loop', async () => {
+      session.setTrainingConfig({ maxEpochs: 5, targetFps: 0, validationSplit: 0, lrSchedule: warmup });
+      await session.setHyperparameters({ learningRate: 0.1, layers: [4] });
+
+      await trainUntilStopped(session);
+
+      const lrs = recordedLRs();
+      [0.025, 0.05, 0.075, 0.1, 0.1].forEach((expected, i) => expect(lrs[i]).toBeCloseTo(expected, 10));
+    });
+
+    it('should use the initial LR for the first decayed epoch', async () => {
+      session.setTrainingConfig({
+        maxEpochs: 2, targetFps: 0, validationSplit: 0,
+        lrSchedule: { type: 'exponential', decayRate: 0.5 },
+      });
+      await session.setHyperparameters({ learningRate: 0.1, layers: [4] });
+
+      await trainUntilStopped(session);
+
+      const lrs = recordedLRs();
+      expect(lrs[0]).toBeCloseTo(0.1, 10);
+      expect(lrs[1]).toBeCloseTo(0.05, 10);
+    });
+
+    it('should apply the same schedule in step()', async () => {
+      session.setTrainingConfig({ validationSplit: 0, lrSchedule: warmup });
+      await session.setHyperparameters({ learningRate: 0.1, layers: [4] });
+
+      for (let i = 0; i < 4; i++) await session.step();
+
+      const lrs = recordedLRs();
+      [0.025, 0.05, 0.075, 0.1].forEach((expected, i) => expect(lrs[i]).toBeCloseTo(expected, 10));
+      expect(neuralNet.updateLearningRate).toHaveBeenLastCalledWith(0.1);
+    });
+  });
+
+  describe('step() policies', () => {
+    it('should not train past maxEpochs', async () => {
+      session.setTrainingConfig({ maxEpochs: 2, validationSplit: 0 });
+      await session.setHyperparameters({ learningRate: 0.1, layers: [4] });
+      const onComplete = vi.fn();
+      session.onComplete(onComplete);
+
+      for (let i = 0; i < 3; i++) await session.step();
+
+      expect(session.getState().currentEpoch).toBe(2);
+      expect(neuralNet.train).toHaveBeenCalledTimes(2);
+      expect(onComplete).toHaveBeenCalledWith('maxEpochs');
+    });
+
+    it('should refuse to step when the model is not ready', async () => {
+      session.setTrainingConfig({ validationSplit: 0 });
+      await session.setHyperparameters({ learningRate: 0.1, layers: [4] });
+      vi.mocked(neuralNet.isReady).mockReturnValue(false);
+
+      await expect(session.step()).rejects.toThrow(/not ready/);
+      expect(neuralNet.train).not.toHaveBeenCalled();
+      expect(session.getState().currentEpoch).toBe(0);
+    });
+
+    it('should report early stopping from manual steps', async () => {
+      session.setTrainingConfig({ validationSplit: 0.5, earlyStoppingPatience: 1 });
+      await session.setHyperparameters({ learningRate: 0.1, layers: [4] });
+      const onComplete = vi.fn();
+      session.onComplete(onComplete);
+
+      await session.step();
+      await session.step();
+
+      expect(onComplete).toHaveBeenCalledWith('earlyStopping');
+      expect(visualizer.renderBoundary).toHaveBeenCalledTimes(2);
+    });
+  });
 });
