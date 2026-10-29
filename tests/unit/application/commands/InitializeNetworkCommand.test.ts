@@ -403,6 +403,24 @@ describe('InitializeNetworkCommand', () => {
     });
   });
 
+  describe('validation - layer shape', () => {
+    it('should reject non-integer layer sizes', () => {
+      const config = { ...validConfig, layers: [4.5, 2] };
+      const result = new InitializeNetworkCommand(mockSession as any, config).validate();
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors.has('layers')).toBe(true);
+    });
+
+    it('should report a validation error instead of throwing when layers is missing', () => {
+      const config = { ...validConfig, layers: undefined as unknown as number[], layerActivations: ['relu' as const] };
+      const command = new InitializeNetworkCommand(mockSession as any, config);
+
+      expect(() => command.validate()).not.toThrow();
+      expect(command.validate().errors.get('layers')).toBe('At least one hidden layer is required');
+    });
+  });
+
   describe('validation - multiple errors', () => {
     it('should report all validation errors', () => {
       const config = {

@@ -474,6 +474,56 @@ describe('TrainingController', () => {
         });
     });
 
+    describe('Training config', () => {
+        it('should apply the whole config when max epochs and batch size are empty', async () => {
+            const { TrainingController } = await import('../../../src/presentation/controllers/TrainingController');
+
+            const mockElements = createMockElements();
+            mockElements.inputMaxEpochs.value = '';
+            mockElements.inputBatchSize.value = '0';
+            mockElements.inputValSplit.value = '';
+            const mockSession = createMockSession();
+            const controller = new TrainingController(
+                mockSession as any,
+                mockElements,
+                { onNetworkUpdate: vi.fn(), onClearVisualization: vi.fn() }
+            );
+
+            await controller.applyTrainingConfig();
+
+            expect(mockSession.setTrainingConfig).toHaveBeenCalledWith(expect.objectContaining({
+                maxEpochs: 0,
+                batchSize: 0,
+                validationSplit: 0.2,
+                lrSchedule: expect.objectContaining({ type: 'none', decaySteps: 10 }),
+            }));
+
+            controller.dispose();
+        });
+
+        it('should warn the user when the training config is rejected', async () => {
+            const { TrainingController } = await import('../../../src/presentation/controllers/TrainingController');
+            const { toast } = await import('../../../src/presentation/toast');
+            vi.mocked(toast.warning).mockClear();
+
+            const mockElements = createMockElements();
+            mockElements.inputBatchSize.value = '-5';
+            const mockSession = createMockSession();
+            const controller = new TrainingController(
+                mockSession as any,
+                mockElements,
+                { onNetworkUpdate: vi.fn(), onClearVisualization: vi.fn() }
+            );
+
+            await controller.applyTrainingConfig();
+
+            expect(mockSession.setTrainingConfig).not.toHaveBeenCalled();
+            expect(toast.warning).toHaveBeenCalledWith(expect.stringMatching(/Batch size/));
+
+            controller.dispose();
+        });
+    });
+
     describe('Step button', () => {
         it('should be clickable again after a step completes', async () => {
             const { TrainingController } = await import('../../../src/presentation/controllers/TrainingController');

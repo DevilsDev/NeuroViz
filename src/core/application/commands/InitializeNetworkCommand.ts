@@ -45,16 +45,15 @@ export class InitializeNetworkCommand implements ICommand<void> {
     }
 
     // Validate layers
-    if (!this.config.layers || this.config.layers.length === 0) {
+    const layers = Array.isArray(this.config.layers) ? this.config.layers : [];
+    if (layers.length === 0) {
       errors.set('layers', 'At least one hidden layer is required');
-    }
-
-    if (this.config.layers.some(l => l <= 0)) {
-      errors.set('layers', 'All layer sizes must be positive');
-    }
-
-    if (this.config.layers.some(l => isNaN(l))) {
+    } else if (layers.some(l => isNaN(l))) {
       errors.set('layers', 'All layer sizes must be valid numbers');
+    } else if (layers.some(l => l <= 0)) {
+      errors.set('layers', 'All layer sizes must be positive');
+    } else if (layers.some(l => !Number.isInteger(l))) {
+      errors.set('layers', 'All layer sizes must be whole numbers');
     }
 
     // Validate momentum (if SGD optimizer)
@@ -89,7 +88,7 @@ export class InitializeNetworkCommand implements ICommand<void> {
     }
 
     // Validate layer activations (if provided)
-    if (this.config.layerActivations && this.config.layerActivations.length !== this.config.layers.length) {
+    if (this.config.layerActivations && this.config.layerActivations.length !== layers.length) {
       errors.set('layerActivations', 'Layer activations must match the number of layers');
     }
 
