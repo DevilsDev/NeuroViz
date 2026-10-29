@@ -16,7 +16,6 @@ import { D3ActivationHistogram } from '../../infrastructure/d3/D3ActivationHisto
 import { MockDataRepository } from '../../infrastructure/api/MockDataRepository';
 import { LocalStorageService } from '../../infrastructure/storage/LocalStorageService';
 import { ErrorBoundary } from '../../infrastructure/errorHandling/ErrorBoundary';
-import { WorkerManager } from '../../workers/WorkerManager';
 import {
   DatasetController,
   TrainingController,
@@ -174,9 +173,6 @@ export class ApplicationBuilder {
     // Initialize Error Boundary
     const errorBoundary = new ErrorBoundary();
     errorBoundary.init();
-
-    // Initialize Worker Manager
-    new WorkerManager();
   }
 
   /**
