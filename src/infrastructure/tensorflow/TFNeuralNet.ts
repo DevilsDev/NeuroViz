@@ -334,34 +334,6 @@ export class TFNeuralNet implements INeuralNetworkService {
   }
 
   /**
-   * Loads a model from JSON and weights files.
-   * Disposes any existing model before loading.
-   */
-  async loadModel(modelJsonFile: File, weightsFile: File): Promise<void> {
-    this.dispose();
-
-    // Read the model JSON
-    const modelJsonText = await modelJsonFile.text();
-    const modelJson = JSON.parse(modelJsonText);
-
-    // Create a custom IOHandler that provides the model artifacts
-    const handler: tf.io.IOHandler = {
-      load: async () => {
-        const weightsBuffer = await weightsFile.arrayBuffer();
-        return {
-          modelTopology: modelJson.modelTopology,
-          weightSpecs: modelJson.weightsManifest?.[0]?.weights ?? [],
-          weightData: weightsBuffer,
-        };
-      },
-    };
-
-    // Load the model
-    this.model = (await tf.loadLayersModel(handler)) as tf.Sequential;
-    this.isDisposed = false;
-  }
-
-  /**
    * Returns the current number of tensors in GPU memory.
    * Useful for debugging memory leaks.
    */

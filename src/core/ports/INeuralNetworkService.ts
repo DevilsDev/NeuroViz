@@ -89,15 +89,6 @@ export interface INeuralNetworkService {
   getLayerActivations(point: Point): number[][];
 
   /**
-   * Loads a model from JSON and weights files.
-   *
-   * @param modelJson - The model topology JSON file
-   * @param weightsBlob - The model weights binary file
-   * @throws If loading fails
-   */
-  loadModel(modelJson: File, weightsBlob: File): Promise<void>;
-
-  /**
    * Returns the current network structure (layers and activations).
    * Used for visualisation and export.
    *
