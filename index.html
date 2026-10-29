@@ -243,6 +243,24 @@
             <span id="badge-model-stale" class="badge badge-stale hidden" aria-live="polite">Stale</span>
           </div>
 
+          <div class="toolbar-divider"></div>
+
+          <!-- View toggles -->
+          <div class="toolbar-group" role="group" aria-label="View options">
+            <label class="toolbar-toggle" title="Animate weights and gradient flow">
+              <input type="checkbox" id="input-show-gradients" aria-label="Toggle weight visualization" />
+              <span>Weights</span>
+            </label>
+            <label class="toolbar-toggle" title="Overlay Voronoi regions around data points">
+              <input type="checkbox" id="input-voronoi" aria-label="Toggle Voronoi overlay" />
+              <span>Voronoi</span>
+            </label>
+            <label class="toolbar-toggle" title="Show the decision surface in 3D (height = confidence)">
+              <input type="checkbox" id="input-3d-view" aria-label="Toggle 3D visualization mode" />
+              <span>3D</span>
+            </label>
+          </div>
+
           <!-- Spacer -->
           <div class="flex-1"></div>
 
@@ -282,12 +300,6 @@
           <!-- 3D View Container (hidden by default) -->
           <div id="three-container" class="absolute inset-0 hidden z-10"></div>
           
-          <!-- View toggles moved to toolbar — hidden inputs preserved for JS -->
-          <div class="hidden">
-            <input type="checkbox" id="input-show-gradients" aria-label="Toggle weight visualization" />
-            <input type="checkbox" id="input-voronoi" aria-label="Toggle Voronoi overlay" />
-            <input type="checkbox" id="input-3d-view" aria-label="Toggle 3D visualization mode" />
-          </div>
           
           <!-- Gradient Flow Container (hidden by default) -->
           <div id="gradient-flow-container" class="absolute bottom-14 left-4 w-64 bg-navy-900/90 rounded-lg border border-white/10 hidden z-40 p-2">

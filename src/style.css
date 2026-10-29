@@ -466,12 +466,27 @@ html:not(.dark) .text-red-400 {
     /* ===== TOOLBAR (Material Design) ===== */
     /* Toolbar — Colab-style: no card, just inline with subtle bottom border */
     .toolbar {
-        @apply flex items-center gap-2 mb-3 px-1 py-2;
+        @apply flex flex-wrap items-center gap-2 mb-3 px-1 py-2;
         border-bottom: 1px solid var(--border-subtle);
     }
 
     .toolbar-group {
         @apply flex items-center gap-1.5;
+    }
+
+    .toolbar-toggle {
+        @apply flex items-center gap-1.5 px-1 text-[10px] font-medium cursor-pointer select-none;
+        color: var(--color-text-secondary);
+    }
+
+    .toolbar-toggle:hover,
+    .toolbar-toggle:has(input:checked) {
+        color: var(--color-text-primary);
+    }
+
+    .toolbar-toggle input {
+        @apply w-3.5 h-3.5 cursor-pointer;
+        accent-color: rgb(var(--color-cyan-rgb));
     }
 
     .toolbar-divider {
