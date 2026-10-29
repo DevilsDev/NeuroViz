@@ -930,6 +930,42 @@ html:not(.dark) .text-red-400 {
     /* All visual panels (main viz + charts) share the same card language */
 
     /* Viz cards — Colab output cells: borderless, flow into page */
+    /* Decision-boundary plot legend */
+    .viz-legend {
+        @apply flex flex-wrap items-center gap-x-4 gap-y-1.5 px-2 pt-2 pb-1 text-xs;
+        color: var(--color-text-secondary);
+    }
+
+    .viz-legend[hidden] {
+        display: none;
+    }
+
+    .viz-legend-item {
+        @apply inline-flex items-center gap-1.5;
+    }
+
+    .viz-legend-swatch {
+        @apply inline-block w-2.5 h-2.5 rounded-full flex-none;
+    }
+
+    .viz-legend-dot {
+        box-shadow: 0 0 0 1.5px var(--surface-1), 0 0 0 2.5px var(--border-subtle);
+    }
+
+    .viz-legend-validation {
+        border: 2px dashed #fbbf24;
+        box-sizing: border-box;
+    }
+
+    .viz-legend-misclassified {
+        background: var(--surface-1);
+        box-shadow: 0 0 0 2.5px #ef4444;
+    }
+
+    .viz-legend-gradient {
+        @apply inline-block w-16 h-2 rounded-full flex-none;
+    }
+
     .viz-card {
         @apply rounded relative flex flex-col overflow-hidden;
         border: 1px solid var(--border-subtle);
