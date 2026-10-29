@@ -186,163 +186,121 @@
 
       <!-- CENTER PANEL (Viz & History) -->
       <main class="panel-center">
-        <!-- WORKFLOW SPINE — breadcrumb showing training progress stages -->
-        <div id="workflow-spine"></div>
-
-        <!-- Persistent banners (WebGL recovery, etc.) -->
         <div id="banner-webgl-reinit" class="banner-webgl-reinit hidden" role="alert" aria-live="assertive">
           WebGL context was lost. Model has been paused — click <strong>Build Model</strong> to reinitialise.
         </div>
 
-        <!-- TOOLBAR — Material Design: Playback | Metrics | Secondary Actions -->
-        <div class="toolbar">
-          <!-- Primary: Playback Controls -->
-          <div class="toolbar-group">
-            <button id="btn-start" class="btn-primary text-xs" title="Start training (Space)">
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-              Train
-            </button>
-            <button id="btn-pause" class="btn-secondary text-xs hidden" title="Pause training (Space)">
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" /></svg>
-              Pause
-            </button>
-            <button id="btn-step" class="btn-icon-sm" title="Step (S)" aria-label="Step one epoch" disabled>
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
-            </button>
-            <button id="btn-reset" class="btn-icon-sm text-red-400" title="Reset Training (R)" aria-label="Reset training" disabled>
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-            </button>
-          </div>
-
-          <!-- Divider -->
-          <div class="toolbar-divider"></div>
-
-          <!-- Metrics -->
-          <div class="toolbar-group">
-            <div class="toolbar-metric">
-              <span class="toolbar-metric-label">Epoch</span>
-              <span id="status-epoch" class="toolbar-metric-value" style="color: rgb(var(--color-cyan-rgb))">0</span>
+        <!-- DECISION BOUNDARY: header, plot and transport controls in one card -->
+        <section class="plot-card" aria-labelledby="plot-card-title">
+          <div class="plot-card-header">
+            <div class="plot-card-heading">
+              <h2 id="plot-card-title" class="plot-card-title">Decision boundary</h2>
+              <p class="plot-card-subtitle">How the network classifies every point in the input space</p>
             </div>
-            <div class="toolbar-metric">
-              <span class="toolbar-metric-label">Loss</span>
-              <span id="status-loss" class="toolbar-metric-value" style="color: rgb(var(--color-orange-rgb))">—</span>
+            <div class="plot-card-badges" id="state-cue-badges">
+              <span id="badge-dataset-source" class="badge badge-dataset-source hidden" aria-live="polite"></span>
+              <span id="badge-validation-active" class="badge badge-validation hidden" aria-live="polite">Val</span>
+              <span id="badge-model-stale" class="badge badge-stale hidden" aria-live="polite">Stale</span>
             </div>
-            <div class="toolbar-metric">
-              <span class="toolbar-metric-label">Accuracy</span>
-              <span id="status-accuracy" class="toolbar-metric-value" style="color: rgb(var(--color-success-rgb))">—</span>
-            </div>
-            <div class="toolbar-metric">
-              <span class="toolbar-metric-label">Val loss</span>
-              <span id="status-val-loss" class="toolbar-metric-value" style="color: rgb(var(--color-danger-rgb))">—</span>
+            <div class="flex-1"></div>
+            <div class="plot-card-toggles" role="group" aria-label="View options">
+              <label class="toolbar-toggle" title="Animate weights and gradient flow">
+                <input type="checkbox" id="input-show-gradients" aria-label="Toggle weight visualization" />
+                <span>Weights</span>
+              </label>
+              <label class="toolbar-toggle" title="Overlay Voronoi regions around data points">
+                <input type="checkbox" id="input-voronoi" aria-label="Toggle Voronoi overlay" />
+                <span>Voronoi</span>
+              </label>
+              <label class="toolbar-toggle" title="Show the decision surface in 3D (height = confidence)">
+                <input type="checkbox" id="input-3d-view" aria-label="Toggle 3D visualization mode" />
+                <span>3D</span>
+              </label>
             </div>
           </div>
 
-          <!-- State cue badges -->
-          <div class="toolbar-group" id="state-cue-badges">
-            <span id="badge-dataset-source" class="badge badge-dataset-source hidden" aria-live="polite"></span>
-            <span id="badge-validation-active" class="badge badge-validation hidden" aria-live="polite">Val</span>
-            <span id="badge-model-stale" class="badge badge-stale hidden" aria-live="polite">Stale</span>
-          </div>
-
-          <div class="toolbar-divider"></div>
-
-          <!-- View toggles -->
-          <div class="toolbar-group" role="group" aria-label="View options">
-            <label class="toolbar-toggle" title="Animate weights and gradient flow">
-              <input type="checkbox" id="input-show-gradients" aria-label="Toggle weight visualization" />
-              <span>Weights</span>
-            </label>
-            <label class="toolbar-toggle" title="Overlay Voronoi regions around data points">
-              <input type="checkbox" id="input-voronoi" aria-label="Toggle Voronoi overlay" />
-              <span>Voronoi</span>
-            </label>
-            <label class="toolbar-toggle" title="Show the decision surface in 3D (height = confidence)">
-              <input type="checkbox" id="input-3d-view" aria-label="Toggle 3D visualization mode" />
-              <span>3D</span>
-            </label>
-          </div>
-
-          <!-- Spacer -->
-          <div class="flex-1"></div>
-
-          <!-- Secondary: Undo/Redo -->
-          <div class="toolbar-group">
-            <button id="btn-undo-config" class="btn-icon-sm" title="Undo (Ctrl+Z)" aria-label="Undo configuration change" disabled>
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
-            </button>
-            <button id="btn-redo-config" class="btn-icon-sm" title="Redo (Ctrl+Y)" aria-label="Redo configuration change" disabled>
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" /></svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- Visualization Area -->
-        <section id="viz-panel" class="panel-glow relative flex-1 mb-1 flex flex-col"
-          aria-label="Neural network visualization">
-          <div id="viz-container" role="img" class="flex-1 w-full h-full min-h-0"
-            aria-label="Neural network decision boundary visualization">
-            <!-- D3 chart renders here -->
-            <div id="viz-empty-state" role="status"
-              class="empty-state absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
-              <svg class="w-12 h-12 mb-4" style="color: var(--color-text-secondary); opacity: 0.3;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              <div class="text-base font-medium mb-1" style="color: var(--color-text-secondary);">Choose a dataset to get started</div>
-              <div class="text-xs" style="color: var(--color-text-secondary); opacity: 0.5;">Select one above, then click Start Training to see the model learn.</div>
-            </div>
-          </div>
-
-          <!-- Plot legend (filled by D3Chart from the rendered data) -->
-          <div id="viz-legend" class="viz-legend" aria-label="Plot legend" hidden></div>
-
-          <!-- Overlays -->
-          <div id="loading-overlay"
-            class="loading-overlay hidden absolute inset-0 bg-navy-900/80 flex items-center justify-center z-20">
-            <div class="spinner"></div>
-          </div>
-
-          <!-- 3D View Container (hidden by default) -->
-          <div id="three-container" class="absolute inset-0 hidden z-10"></div>
-          
-          
-          <!-- Gradient Flow Container (hidden by default) -->
-          <div id="gradient-flow-container" class="absolute bottom-14 left-4 w-64 bg-navy-900/90 rounded-lg border border-white/10 hidden z-40 p-2">
-            <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-1">Weight Changes</h4>
-            <div id="gradient-flow-chart" class="w-full" style="height: 140px;"></div>
-          </div>
-        </section>
-
-        <!-- Charts — three equal panels: LR, Loss, Accuracy -->
-        <div class="charts-row">
-          <div class="viz-card">
-            <div id="lr-chart-container" class="flex-1 w-full relative"></div>
-          </div>
-          <div class="viz-card">
-            <div id="loss-chart-container" class="flex-1 w-full min-h-0 overflow-hidden relative">
-              <div id="loss-chart-empty" class="absolute inset-0 flex items-center justify-center text-[10px]" style="color: var(--color-text-secondary);">
-                Training history will appear here
+          <section id="viz-panel" class="panel-glow relative flex-1 flex flex-col"
+            aria-label="Neural network visualization">
+            <div id="viz-container" role="img" class="flex-1 w-full h-full min-h-0"
+              aria-label="Neural network decision boundary visualization">
+              <!-- D3 chart renders here -->
+              <div id="viz-empty-state" role="status"
+                class="empty-state absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
+                <svg class="w-12 h-12 mb-4" style="color: var(--color-text-secondary); opacity: 0.3;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <div class="text-base font-medium mb-1" style="color: var(--color-text-secondary);">Choose a dataset to get started</div>
+                <div class="text-xs" style="color: var(--color-text-secondary); opacity: 0.5;">Select one above, then click Start Training to see the model learn.</div>
               </div>
             </div>
-            <!-- Stats preserved for JS but shown inline -->
-            <span id="stat-best-loss" class="hidden">—</span>
-            <span id="stat-best-accuracy" class="hidden">—</span>
-            <span id="stat-improvement" class="hidden">—</span>
-          </div>
-          <div class="viz-card">
-            <div id="accuracy-chart-container" class="flex-1 w-full relative"></div>
-          </div>
-        </div>
 
+            <!-- Plot legend (filled by D3Chart from the rendered data) -->
+            <div id="viz-legend" class="viz-legend" aria-label="Plot legend" hidden></div>
+
+            <!-- Overlays -->
+            <div id="loading-overlay"
+              class="loading-overlay hidden absolute inset-0 bg-navy-900/80 flex items-center justify-center z-20">
+              <div class="spinner"></div>
+            </div>
+
+            <!-- 3D View Container (hidden by default) -->
+            <div id="three-container" class="absolute inset-0 hidden z-10"></div>
+
+
+            <!-- Gradient Flow Container (hidden by default) -->
+            <div id="gradient-flow-container" class="absolute bottom-14 left-4 w-64 bg-navy-900/90 rounded-lg border border-white/10 hidden z-40 p-2">
+              <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-1">Weight Changes</h4>
+              <div id="gradient-flow-chart" class="w-full" style="height: 140px;"></div>
+            </div>
+          </section>
+
+          <!-- Transport: play / step / reset, epoch progress, undo / redo -->
+          <div class="transport-bar">
+            <div class="transport-controls">
+              <button id="btn-start" class="btn-primary text-xs" title="Start training (Space)">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                Train
+              </button>
+              <button id="btn-pause" class="btn-secondary text-xs hidden" title="Pause training (Space)">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" /></svg>
+                Pause
+              </button>
+              <button id="btn-step" class="btn-icon-sm" title="Step (S)" aria-label="Step one epoch" disabled>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
+              </button>
+              <button id="btn-reset" class="btn-icon-sm text-red-400" title="Reset Training (R)" aria-label="Reset training" disabled>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+              </button>
+            </div>
+            <div class="epoch-progress">
+              <div class="epoch-progress-text">
+                <span id="epoch-progress-label">Epoch 0</span>
+                <span class="epoch-progress-hint">Space · S · R</span>
+              </div>
+              <div class="epoch-progress-track" aria-hidden="true">
+                <div id="epoch-progress-fill" class="epoch-progress-fill"></div>
+              </div>
+            </div>
+            <div class="transport-history">
+              <button id="btn-undo-config" class="btn-icon-sm" title="Undo (Ctrl+Z)" aria-label="Undo configuration change" disabled>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+              </button>
+              <button id="btn-redo-config" class="btn-icon-sm" title="Redo (Ctrl+Y)" aria-label="Redo configuration change" disabled>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" /></svg>
+              </button>
+            </div>
+          </div>
+        </section>
       </main>
 
-      <!-- RIGHT PANEL (Hyperparameters) -->
+      <!-- LEFT PANEL (Workflow nav + step settings) -->
       <aside class="panel-right panel-sidebar">
         <!-- Sidebar Tab Bar -->
-        <div class="sidebar-tabs" role="tablist" aria-label="Configuration panels">
-          <button class="sidebar-tab active" data-tab="tab-data" role="tab" aria-selected="true" aria-controls="tab-data">Data</button>
-          <button class="sidebar-tab" data-tab="tab-model" role="tab" aria-selected="false" aria-controls="tab-model">Model</button>
-          <button class="sidebar-tab" data-tab="tab-train" role="tab" aria-selected="false" aria-controls="tab-train">Train</button>
-          <button class="sidebar-tab" data-tab="tab-analyze" role="tab" aria-selected="false" aria-controls="tab-analyze">Analyze</button>
+        <div id="workflow-nav" class="sidebar-tabs" role="tablist" aria-label="Workflow" aria-orientation="vertical">
+          <button class="sidebar-tab active" data-tab="tab-data" role="tab" aria-selected="true" aria-controls="tab-data"><span class="step-marker" aria-hidden="true"><span class="step-number">1</span></span><span class="wf-step-label">Data</span></button>
+          <button class="sidebar-tab" data-tab="tab-model" role="tab" aria-selected="false" aria-controls="tab-model"><span class="step-marker" aria-hidden="true"><span class="step-number">2</span></span><span class="wf-step-label">Model</span></button>
+          <button class="sidebar-tab" data-tab="tab-train" role="tab" aria-selected="false" aria-controls="tab-train"><span class="step-marker" aria-hidden="true"><span class="step-number">3</span></span><span class="wf-step-label">Train</span></button>
+          <button class="sidebar-tab" data-tab="tab-analyze" role="tab" aria-selected="false" aria-controls="tab-analyze"><span class="step-marker" aria-hidden="true"><span class="step-number">4</span></span><span class="wf-step-label">Evaluate</span></button>
         </div>
 
         <div class="panel-scroll">
@@ -773,6 +731,65 @@
           </div><!-- /tab-analyze -->
 
         </div><!-- /panel-scroll -->
+      </aside>
+
+      <!-- RIGHT PANEL (Training metrics) -->
+      <aside class="panel-metrics" aria-label="Training metrics">
+        <div class="kpi-grid">
+          <div class="kpi-tile">
+            <span class="kpi-label">Epoch</span>
+            <span id="status-epoch" class="kpi-value">0</span>
+          </div>
+          <div class="kpi-tile">
+            <span class="kpi-label">Accuracy</span>
+            <span id="status-accuracy" class="kpi-value">—</span>
+          </div>
+          <div class="kpi-tile">
+            <span class="kpi-label">Training loss</span>
+            <span id="status-loss" class="kpi-value">—</span>
+          </div>
+          <div class="kpi-tile">
+            <span class="kpi-label">Validation loss</span>
+            <span id="status-val-loss" class="kpi-value">—</span>
+          </div>
+        </div>
+
+        <section class="panel-card panel-card-curves" aria-labelledby="curves-title">
+          <div class="panel-card-header">
+            <h2 id="curves-title" class="panel-card-title">Learning curves</h2>
+            <div class="segmented" role="group" aria-label="Curve shown">
+              <button type="button" class="segmented-btn active" data-curve="loss" aria-pressed="true">Loss</button>
+              <button type="button" class="segmented-btn" data-curve="accuracy" aria-pressed="false">Accuracy</button>
+            </div>
+          </div>
+          <div class="curve-panel" data-curve-panel="loss">
+            <div id="loss-chart-container" class="flex-1 w-full min-h-0 overflow-hidden relative">
+              <div id="loss-chart-empty" class="absolute inset-0 flex items-center justify-center text-[10px]" style="color: var(--color-text-secondary);">
+                Training history will appear here
+              </div>
+            </div>
+          </div>
+          <div class="curve-panel hidden" data-curve-panel="accuracy">
+            <div id="accuracy-chart-container" class="flex-1 w-full relative"></div>
+          </div>
+          <span id="stat-best-loss" class="hidden">—</span>
+          <span id="stat-best-accuracy" class="hidden">—</span>
+          <span id="stat-improvement" class="hidden">—</span>
+        </section>
+
+        <section class="panel-card" aria-labelledby="lr-title">
+          <h2 id="lr-title" class="panel-card-title">Learning rate</h2>
+          <div class="lr-panel">
+            <div id="lr-chart-container" class="flex-1 w-full relative"></div>
+          </div>
+        </section>
+
+        <section class="panel-card panel-card-insights" aria-labelledby="insights-title">
+          <h2 id="insights-title" class="panel-card-title">What the model is doing</h2>
+          <ul id="insights-list" class="insights-list" aria-live="polite">
+            <li class="insight insight-info">Load a dataset and press Train to see how the model learns.</li>
+          </ul>
+        </section>
       </aside>
 
     </div><!-- End Dashboard Grid -->

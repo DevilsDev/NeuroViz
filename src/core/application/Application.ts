@@ -29,7 +29,8 @@ import { KeyboardShortcuts } from '../../utils/KeyboardShortcuts';
 import { DatasetGallery } from '../../utils/DatasetGallery';
 import { AdvancedFeaturesService } from '../../infrastructure/ml/AdvancedFeaturesService';
 import { logger } from '../../infrastructure/logging/Logger';
-import { WorkflowSpine } from '../../presentation/WorkflowSpine';
+import { WorkflowNav } from '../../presentation/WorkflowNav';
+import { EpochProgress, InsightsPanel, setupCurveTabs } from '../../presentation/MetricsPanel';
 
 
 /**
@@ -81,7 +82,9 @@ export interface Controllers {
 export class Application {
   private educationController: EducationController | null = null;
   private advancedFeatures: AdvancedFeaturesService | null = null;
-  private workflowSpine: WorkflowSpine | null = null;
+  private workflowNav: WorkflowNav | null = null;
+  private epochProgress: EpochProgress | null = null;
+  private insights: InsightsPanel | null = null;
   private readonly disposers: Array<() => void> = [];
 
   constructor(
@@ -102,16 +105,26 @@ export class Application {
    * Sets up state synchronization between session and UI
    */
   private setupStateSync(): void {
-    // Initialize workflow spine breadcrumb
+    // Workflow progress on the step navigation
     try {
-      this.workflowSpine = new WorkflowSpine('workflow-spine');
+      this.workflowNav = new WorkflowNav('workflow-nav');
     } catch {
       // Container may not exist in test environments
     }
 
+    // Metrics column: curve tabs, epoch progress, insights
+    this.addDisposer(setupCurveTabs());
+    this.epochProgress = EpochProgress.fromDocument();
+    this.insights = InsightsPanel.fromDocument(() => ({
+      datasetType: (document.getElementById('dataset-select') as HTMLSelectElement | null)?.value ?? 'custom',
+      config: this.services.neuralNet.getConfig(),
+    }));
+
     this.services.session.onStateChange((state): void => {
-      // Update workflow spine
-      this.workflowSpine?.update(state);
+      // Workflow progress, epoch progress and insights (cheap DOM updates)
+      this.workflowNav?.update(state);
+      this.epochProgress?.update(state);
+      this.insights?.update(state);
       // Always update: lightweight UI text + chart line appends
       this.controllers.training.updateUI(state);
       this.services.lossChart.update(state.history);

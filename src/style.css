@@ -1180,6 +1180,10 @@ html:not(.dark) .text-red-400 {
 
     .chart-tooltip {
         @apply absolute z-50 px-3 py-2 text-xs font-medium text-slate-200 bg-navy-900/90 backdrop-blur-md border border-white/10 rounded-lg shadow-xl pointer-events-none transition-opacity duration-200;
+        /* Start at the page origin: without a position the hidden tooltip sat
+           below the app and made the whole page scroll */
+        top: 0;
+        left: 0;
     }
 
     .axis-label {
@@ -1852,8 +1856,411 @@ html:not(.dark) .text-red-400 {
     left: 75%;
     animation-delay: 1.35s;
 }
+/* ===== WORKSPACE LAYOUT (redesign phase 2) =====
+   Three columns: workflow nav + step settings | plot | training metrics. */
+.dashboard-grid {
+    grid-template-columns: minmax(280px, 320px) minmax(0, 1fr) minmax(260px, 300px);
+    grid-template-areas:
+        "header header header"
+        "sidebar center metrics";
+}
+
+.dashboard-grid .panel-sidebar {
+    border-left: 0;
+    border-right: 1px solid var(--border-subtle);
+}
+
+/* Vertical workflow nav (the former sidebar tabs) */
+.dashboard-grid .sidebar-tabs {
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px;
+    border-radius: 0;
+    border: 0;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--surface-0);
+}
+
+.dashboard-grid .sidebar-tab {
+    flex: none;
+    justify-content: flex-start;
+    gap: 10px;
+    min-height: 40px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--color-text-primary);
+}
+
+.dashboard-grid .sidebar-tab:hover {
+    background: var(--surface-2);
+}
+
+html .dashboard-grid .sidebar-tab.active {
+    background: var(--surface-1) !important;
+    box-shadow: 0 0 0 1px var(--border-subtle);
+    color: var(--color-text-primary);
+    font-weight: 600;
+}
+
+.step-marker {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    flex: none;
+    border-radius: 50%;
+    border: 1.5px solid var(--border-subtle);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    box-sizing: border-box;
+}
+
+.sidebar-tab[data-status="current"] .step-marker {
+    background: rgb(var(--color-cyan-rgb));
+    border-color: transparent;
+    color: #ffffff;
+}
+
+.sidebar-tab[data-status="complete"] .step-marker {
+    background: rgb(var(--color-cyan-rgb) / 0.15);
+    border-color: transparent;
+    color: rgb(var(--color-cyan-rgb));
+}
+
+.sidebar-tab[data-status="complete"] .step-number {
+    display: none;
+}
+
+.sidebar-tab[data-status="complete"] .step-marker::before {
+    content: "\2713";
+}
+
+/* Plot card: header, plot and transport bar */
+.plot-card {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.plot-card-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.plot-card-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.plot-card-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.plot-card-subtitle {
+    margin: 0;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+
+.plot-card-badges,
+.plot-card-toggles {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.plot-card #viz-panel {
+    padding: 8px 12px 4px;
+    border: 0;
+    border-radius: 0;
+}
+
+.transport-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 16px;
+    padding: 10px 16px;
+    border-top: 1px solid var(--border-subtle);
+    background: var(--surface-0);
+}
+
+.transport-controls,
+.transport-history {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.transport-controls #btn-start,
+.transport-controls #btn-pause {
+    min-height: 40px;
+    padding: 0 18px;
+    font-size: 14px !important;
+    font-weight: 600;
+    border-radius: 10px;
+}
+
+.transport-controls .btn-icon-sm {
+    width: 40px;
+    height: 40px;
+}
+
+.epoch-progress {
+    flex: 1 1 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 180px;
+}
+
+.epoch-progress-text {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+#epoch-progress-label {
+    font-weight: 600;
+    color: var(--color-text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.epoch-progress-hint {
+    font-size: 12px;
+}
+
+.epoch-progress-track {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--surface-2);
+    overflow: hidden;
+}
+
+.epoch-progress-fill {
+    width: 0;
+    height: 100%;
+    border-radius: 3px;
+    background: rgb(var(--color-cyan-rgb));
+    transition: width 200ms ease;
+}
+
+/* Metrics column */
+.panel-metrics {
+    grid-area: metrics;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 14px;
+    overflow-y: auto;
+    background: var(--surface-0);
+    border-left: 1px solid var(--border-subtle);
+}
+
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.kpi-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+}
+
+.kpi-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+.kpi-value {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.panel-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+}
+
+.panel-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.panel-card-title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.segmented {
+    display: flex;
+    padding: 2px;
+    background: var(--surface-2);
+    border-radius: 7px;
+}
+
+.segmented-btn {
+    height: 26px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+}
+
+.segmented-btn.active {
+    background: var(--surface-1);
+    color: var(--color-text-primary);
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.curve-panel {
+    display: flex;
+    height: 170px;
+}
+
+.curve-panel.hidden {
+    display: none;
+}
+
+.lr-panel {
+    display: flex;
+    height: 96px;
+}
+
+.panel-card-insights {
+    flex: 1;
+}
+
+.insights-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.insight {
+    position: relative;
+    padding-left: 16px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+}
+
+.insight strong {
+    color: var(--color-text-primary);
+    font-weight: 600;
+}
+
+.insight::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgb(var(--color-text-secondary-rgb));
+}
+
+.insight-good::before {
+    background: rgb(var(--color-cyan-rgb));
+}
+
+.insight-warning::before {
+    background: rgb(var(--color-orange-rgb));
+}
+
+/* Tablets: plot first, then metrics, then settings */
+@media (max-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+            "header"
+            "center"
+            "metrics"
+            "sidebar";
+    }
+
+    .dashboard-grid .panel-sidebar,
+    .panel-metrics {
+        border: 0;
+        border-top: 1px solid var(--border-subtle);
+        overflow: visible;
+    }
+
+    .plot-card #viz-panel {
+        min-height: 360px;
+    }
+
+    /* Header: dataset chips move to their own row so the controls fit */
+    .app-top-bar {
+        flex-wrap: wrap;
+        row-gap: 8px;
+    }
+
+    .app-top-bar .dataset-chips {
+        order: 10;
+        flex: 1 0 100%;
+        min-width: 0;
+    }
+}
+
+/* Tablets: KPI tiles in one row */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .kpi-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
 /* ===== PHONE LAYOUT =====
-   Below 768px the header, toolbar and chart row wrap instead of running off the
+   Below 768px the header and transport bar wrap instead of running off the
    right edge (the page used to scroll sideways on phones). */
 @media (max-width: 767px) {
     /* 1fr would never shrink below its widest child's min-content width */
@@ -1897,20 +2304,12 @@ html:not(.dark) .text-red-400 {
         padding-right: 12px;
     }
 
-    .toolbar-group {
-        flex-wrap: wrap;
-    }
-
-    #viz-panel {
+    .plot-card #viz-panel {
         min-height: 340px;
     }
 
-    .charts-row {
-        grid-template-columns: 1fr;
-        height: auto;
-    }
-
-    .charts-row .viz-card {
-        height: 140px;
+    /* Keyboard hints are irrelevant on touch screens */
+    .epoch-progress-hint {
+        display: none;
     }
 }
