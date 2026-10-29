@@ -82,11 +82,10 @@ export class DatasetGallery {
 
     // Update gallery selection
     this.cards.forEach((card) => {
-      if (card.getAttribute('data-dataset') === dataset) {
-        card.classList.add('selected');
-      } else {
-        card.classList.remove('selected');
-      }
+      const isSelected = card.getAttribute('data-dataset') === dataset;
+      card.classList.toggle('selected', isSelected);
+      // Cards are role="radio": keep the checked state in sync for assistive tech
+      card.setAttribute('aria-checked', String(isSelected));
     });
 
     // Update dropdown if needed

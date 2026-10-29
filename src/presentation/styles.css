@@ -1993,6 +1993,11 @@ html:not(.dark) svg text {
   fill: #334155 !important;
 }
 
+/* Confusion-matrix counts sitting on a dark (high-count) cell stay white */
+html:not(.dark) svg text.cm-count--on-dark {
+  fill: #fff !important;
+}
+
 /* Axis lines and ticks */
 html:not(.dark) .loss-chart .domain,
 html:not(.dark) .loss-chart .tick line,

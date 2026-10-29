@@ -2,6 +2,7 @@ import type { TrainingState } from '../../core/application/ITrainingSession';
 import type { TrainingHistory } from '../../core/domain';
 import type { INeuralNetworkService } from '../../core/ports';
 import type { IConfusionMatrixService } from '../../core/ports/IChartService';
+import type { EvaluationSummary } from '../EvaluationSummary';
 import type { TrainingSession } from '../../core/application/TrainingSession';
 import { calculateSpeedMetrics, compareSpeed, formatSpeedMetrics, type SpeedBaseline } from '../../core/domain/SpeedComparison';
 import { logger } from '../../infrastructure/logging/Logger';
@@ -30,6 +31,8 @@ export interface MetricsElements {
   speedComparisonResult: HTMLElement | null;
   saveSpeedBaselineBtn: HTMLElement | null;
   clearSpeedBaselineBtn: HTMLElement | null;
+  /** Summary card at the top of the Evaluate step (optional) */
+  evaluationSummary?: EvaluationSummary | null;
 }
 
 /**
@@ -88,6 +91,7 @@ export class MetricsController {
     if (this.elements.precisionEl) this.elements.precisionEl.textContent = '\u2014';
     if (this.elements.recallEl) this.elements.recallEl.textContent = '\u2014';
     if (this.elements.f1El) this.elements.f1El.textContent = '\u2014';
+    this.elements.evaluationSummary?.clear();
   }
 
   /**
@@ -137,6 +141,7 @@ export class MetricsController {
       if (this.elements.recallEl) this.elements.recallEl.textContent = (macroMetrics.recall * 100).toFixed(1) + '%';
       if (this.elements.f1El) this.elements.f1El.textContent = (macroMetrics.f1 * 100).toFixed(1) + '%';
       if (this.elements.confusionMatrixEmpty) this.elements.confusionMatrixEmpty.classList.add('hidden');
+      this.elements.evaluationSummary?.update(matrix, classMetrics, macroMetrics, this.session.getState());
 
     } catch (error) {
       if (!isModelDisposedError(error)) {
