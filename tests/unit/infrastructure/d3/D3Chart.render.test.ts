@@ -58,4 +58,50 @@ describe('D3Chart - rendering', () => {
       expect(isVisible()).toBe(false);
     });
   });
+
+  describe('multi-class boundary', () => {
+    const grid = (gridSize: number, cls: number): Prediction[] =>
+      Array.from({ length: gridSize * gridSize }, (_, i) => ({
+        x: i % gridSize,
+        y: Math.floor(i / gridSize),
+        confidence: 0.6,
+        predictedClass: (i + cls) % 3,
+        probabilities: [0.2, 0.2, 0.6],
+      })) as unknown as Prediction[];
+
+    const rects = (): Element[] => Array.from(container.querySelectorAll('.boundary rect'));
+
+    it('reuses the same rect nodes across renders with the same grid size', () => {
+      chart.renderBoundary(grid(4, 0), 4);
+      const before = rects();
+      expect(before).toHaveLength(16);
+      const fillBefore = before[0]?.getAttribute('fill');
+
+      chart.renderBoundary(grid(4, 1), 4);
+      const after = rects();
+      expect(after).toHaveLength(16);
+      after.forEach((node, i) => expect(node).toBe(before[i]));
+      // fills are updated in place
+      expect(after[0]?.getAttribute('fill')).not.toBe(fillBefore);
+    });
+
+    it('adds and removes cells when the grid size changes', () => {
+      chart.renderBoundary(grid(4, 0), 4);
+      chart.renderBoundary(grid(6, 0), 6);
+      expect(rects()).toHaveLength(36);
+      chart.renderBoundary(grid(3, 0), 3);
+      expect(rects()).toHaveLength(9);
+      expect(container.querySelectorAll('.boundary')).toHaveLength(1);
+    });
+
+    it('replaces the multi-class boundary when switching to binary', () => {
+      chart.renderBoundary(grid(4, 0), 4);
+      const binary = Array.from({ length: 16 }, (_, i) => ({
+        x: 0, y: 0, confidence: (i % 4) / 4, predictedClass: 0, probabilities: [0.5, 0.5],
+      })) as unknown as Prediction[];
+      chart.renderBoundary(binary, 4);
+      expect(rects()).toHaveLength(0);
+      expect(container.querySelectorAll('.boundary')).toHaveLength(1);
+    });
+  });
 });

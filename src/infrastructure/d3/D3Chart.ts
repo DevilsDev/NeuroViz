@@ -269,10 +269,8 @@ export class D3Chart implements IVisualizerService {
     this.cachedPredictions = predictions;
     this.cachedGridSize = gridSize;
 
-    // Remove existing boundary
-    this.chartGroup.selectAll('.boundary').remove();
-
     if (predictions.length !== gridSize * gridSize) {
+      this.chartGroup.selectAll('.boundary').remove();
       console.warn(
         `Expected ${gridSize * gridSize} predictions for gridSize ${gridSize}, got ${predictions.length}`
       );
@@ -283,8 +281,11 @@ export class D3Chart implements IVisualizerService {
     const numClasses = predictions[0]?.probabilities?.length ?? 2;
 
     if (numClasses === 2) {
+      this.chartGroup.selectAll('.boundary').remove();
       this.renderBinaryBoundary(predictions, gridSize);
     } else {
+      // The multi-class group is kept and updated in place (data join)
+      this.chartGroup.selectAll('.boundary:not(.boundary-multiclass)').remove();
       this.renderMultiClassBoundary(predictions, gridSize);
     }
   }
@@ -340,6 +341,8 @@ export class D3Chart implements IVisualizerService {
 
   /**
    * Renders multi-class boundary using pixel rectangles.
+   * Uses a keyed data join (cell index) so repeated renders update the
+   * existing rects in place instead of rebuilding gridSize² nodes.
    */
   private renderMultiClassBoundary(predictions: Prediction[], gridSize: number): void {
     const cellWidth = this.width / gridSize;
@@ -351,22 +354,27 @@ export class D3Chart implements IVisualizerService {
       return baseColour;
     };
 
-    const boundaryGroup = this.chartGroup
-      .insert('g', '.data-point')
-      .attr('class', 'boundary');
+    let boundaryGroup = this.chartGroup.select<SVGGElement>('.boundary-multiclass');
+    if (boundaryGroup.empty()) {
+      boundaryGroup = this.chartGroup
+        .insert<SVGGElement>('g', '.data-point')
+        .attr('class', 'boundary boundary-multiclass');
+    }
 
     boundaryGroup
-      .selectAll('rect')
-      .data(predictions)
-      .enter()
-      .append('rect')
+      .selectAll<SVGRectElement, Prediction>('rect')
+      .data(predictions, (_, i) => String(i))
+      .join(
+        (enter) => enter.append('rect').attr('stroke', 'none'),
+        (update) => update,
+        (exit) => exit.remove()
+      )
       .attr('x', (_, i) => (i % gridSize) * cellWidth)
       .attr('y', (_, i) => this.height - Math.floor(i / gridSize) * cellHeight - cellHeight)
       .attr('width', cellWidth)
       .attr('height', cellHeight)
       .attr('fill', (d) => getColour(d))
-      .attr('opacity', (d) => this.config.boundaryOpacity * (0.3 + d.confidence * 0.7))
-      .attr('stroke', 'none');
+      .attr('opacity', (d) => this.config.boundaryOpacity * (0.3 + d.confidence * 0.7));
   }
 
   /**
