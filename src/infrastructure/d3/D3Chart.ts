@@ -230,18 +230,14 @@ export class D3Chart implements IVisualizerService {
 
     // Add tooltip handlers if enabled
     if (this.config.tooltipsEnabled && this.tooltip) {
-      const tooltip = this.tooltip;
       dataPoints
-        .on('mouseenter', (event, d) => {
-          tooltip
-            .style('opacity', 1)
-            .html(`<strong>${d.isValidation ? 'Validation' : 'Training'} Point</strong><br/>x: ${d.x.toFixed(3)}<br/>y: ${d.y.toFixed(3)}<br/>class: ${d.label}`)
-            .style('left', `${event.pageX + 10}px`)
-            .style('top', `${event.pageY - 10}px`);
+        .on('mouseenter', (event: MouseEvent, d) => {
+          this.showTooltip(
+            `<strong>${d.isValidation ? 'Validation' : 'Training'} Point</strong><br/>x: ${d.x.toFixed(3)}<br/>y: ${d.y.toFixed(3)}<br/>class: ${d.label}`,
+            event
+          );
         })
-        .on('mouseleave', () => {
-          tooltip.style('opacity', 0);
-        });
+        .on('mouseleave', () => this.hideTooltip());
     }
 
     // Add click handler for prediction details
@@ -672,6 +668,30 @@ export class D3Chart implements IVisualizerService {
       .style('opacity', 0);
   }
 
+  /**
+   * Shows the shared tooltip. Every hover target (data points, adversarial
+   * points) goes through showTooltip/hideTooltip so they share one visibility
+   * mechanism (opacity, matching the .chart-tooltip CSS transition).
+   */
+  private showTooltip(html: string, event: MouseEvent): void {
+    if (!this.tooltip) this.setupTooltip();
+    this.tooltip
+      ?.style('display', null)
+      .style('opacity', 1)
+      .html(html);
+    this.moveTooltip(event);
+  }
+
+  private moveTooltip(event: MouseEvent): void {
+    this.tooltip
+      ?.style('left', `${event.pageX + 10}px`)
+      .style('top', `${event.pageY - 10}px`);
+  }
+
+  private hideTooltip(): void {
+    this.tooltip?.style('opacity', 0);
+  }
+
   // ===========================================================================
   // Export Methods
   // ===========================================================================
@@ -985,46 +1005,21 @@ export class D3Chart implements IVisualizerService {
       .attr('stroke-width', 2)
       .attr('opacity', 0.9)
       .style('cursor', 'pointer')
-      .on('mouseenter', (event, d) => {
-        // Show tooltip
-        if (!this.tooltip) {
-          this.tooltip = d3.select('body').append('div')
-            .attr('class', 'chart-tooltip')
-            .style('position', 'absolute')
-            .style('background', 'rgba(15, 23, 42, 0.95)')
-            .style('color', '#f1f5f9')
-            .style('padding', '8px 12px')
-            .style('border-radius', '6px')
-            .style('font-size', '12px')
-            .style('pointer-events', 'none')
-            .style('z-index', '1000')
-            .style('border', '1px solid rgba(245, 158, 11, 0.5)');
-        }
-
+      .on('mouseenter', (event: MouseEvent, d) => {
         const perturbMag = d.originalPoint
           ? Math.sqrt(Math.pow(d.x - d.originalPoint.x, 2) + Math.pow(d.y - d.originalPoint.y, 2))
           : null;
 
-        this.tooltip
-          .style('display', 'block')
-          .html(`
+        this.showTooltip(`
             <div class="font-bold text-amber-400">⚠ Adversarial Example</div>
             <div>Position: (${d.x.toFixed(2)}, ${d.y.toFixed(2)})</div>
             <div>True class: ${d.label}</div>
             ${perturbMag !== null ? `<div class="text-xs text-slate-400 mt-1">Perturbation: ${perturbMag.toFixed(3)}</div>` : ''}
             <div class="text-xs text-slate-400">This point fools the model</div>
-          `)
-          .style('left', `${event.pageX + 10}px`)
-          .style('top', `${event.pageY - 10}px`);
+          `, event);
       })
-      .on('mousemove', (event) => {
-        this.tooltip
-          ?.style('left', `${event.pageX + 10}px`)
-          .style('top', `${event.pageY - 10}px`);
-      })
-      .on('mouseleave', () => {
-        this.tooltip?.style('display', 'none');
-      });
+      .on('mousemove', (event: MouseEvent) => this.moveTooltip(event))
+      .on('mouseleave', () => this.hideTooltip());
 
     // Add pulsing animation
     adversarialGroup.selectAll('.adversarial-point')
