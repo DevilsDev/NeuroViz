@@ -1,4 +1,18 @@
-import { Point } from '../../domain';
+import { Point, DEFAULT_TRAINING_CONFIG } from '../../domain';
+
+/** Upper bound on the validation fraction so a training set always remains. */
+export const MAX_VALIDATION_SPLIT = 0.9;
+
+/**
+ * Clamps a validation fraction to [0, MAX_VALIDATION_SPLIT]; a non-finite value
+ * (e.g. NaN from an empty form field) falls back to the default split.
+ */
+export function normaliseValidationSplit(validationSplit: number): number {
+  if (!Number.isFinite(validationSplit)) {
+    return DEFAULT_TRAINING_CONFIG.validationSplit;
+  }
+  return Math.min(Math.max(validationSplit, 0), MAX_VALIDATION_SPLIT);
+}
 
 /**
  * Result of data splitting
@@ -19,20 +33,12 @@ export class TrainingDataSplitter {
   /**
    * Splits data into training and validation sets
    * @param data - Original dataset
-   * @param validationSplit - Fraction of data to use for validation (0-1)
+   * @param validationSplit - Fraction of data to use for validation (clamped to 0-0.9)
    * @param shuffle - Whether to shuffle data before splitting (default: true)
    * @returns Split data with training and validation sets
    */
   split(data: Point[], validationSplit: number, shuffle = true): SplitData {
-    // Validate input
-    if (validationSplit < 0 || validationSplit >= 1) {
-      // No validation split
-      return {
-        training: data,
-        validation: [],
-        all: data,
-      };
-    }
+    validationSplit = normaliseValidationSplit(validationSplit);
 
     if (data.length === 0) {
       return {
@@ -86,17 +92,11 @@ export class TrainingDataSplitter {
    * Stratified split - ensures each class is represented proportionally
    * in both training and validation sets
    * @param data - Original dataset
-   * @param validationSplit - Fraction of data to use for validation (0-1)
+   * @param validationSplit - Fraction of data to use for validation (clamped to 0-0.9)
    * @returns Split data with stratified sampling
    */
   stratifiedSplit(data: Point[], validationSplit: number): SplitData {
-    if (validationSplit < 0 || validationSplit >= 1) {
-      return {
-        training: data,
-        validation: [],
-        all: data,
-      };
-    }
+    validationSplit = normaliseValidationSplit(validationSplit);
 
     // Group by label
     const groupedByLabel = new Map<number, Point[]>();

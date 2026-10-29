@@ -201,6 +201,33 @@ describe('TrainingSession - loop policies', () => {
     });
   });
 
+  describe('data handling', () => {
+    it('should detect the number of classes in custom data', () => {
+      session.setCustomData([
+        { x: 0, y: 0, label: 0 },
+        { x: 1, y: 0, label: 1 },
+        { x: 0, y: 1, label: 2 },
+      ]);
+
+      expect(session.getDetectedNumClasses()).toBe(3);
+    });
+
+    it('should pause a running loop before loading new data', async () => {
+      session.setTrainingConfig({ maxEpochs: 0, targetFps: 0, validationSplit: 0 });
+      await session.setHyperparameters({ learningRate: 0.1, layers: [4] });
+      session.start();
+      await flush();
+
+      await session.loadData('test');
+      const trainCalls = vi.mocked(neuralNet.train).mock.calls.length;
+      await flush();
+
+      expect(session.getState().isPaused).toBe(true);
+      expect(session.getState().isProcessing).toBe(false);
+      expect(vi.mocked(neuralNet.train).mock.calls.length).toBe(trainCalls);
+    });
+  });
+
   describe('step() policies', () => {
     it('should not train past maxEpochs', async () => {
       session.setTrainingConfig({ maxEpochs: 2, validationSplit: 0 });

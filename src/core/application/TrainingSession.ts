@@ -205,6 +205,12 @@ export class TrainingSession implements ITrainingSession {
   // ===========================================================================
 
   async loadData(datasetType: string, options?: DatasetOptions): Promise<void> {
+    // Don't keep training (or let an in-flight step render) against the old data
+    if (this.state.getIsTraining() && !this.state.getIsPaused()) {
+      this.pause();
+    }
+    await this.waitForInFlightStep();
+
     const allData = await this.dataService.loadData(
       datasetType, options, this.trainingConfig.validationSplit
     );
