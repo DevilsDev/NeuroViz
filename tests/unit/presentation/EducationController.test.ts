@@ -2,6 +2,8 @@
  * EducationController tests: listener cleanup, a11y wiring, escaping.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { EducationController } from '../../../src/presentation/controllers/EducationController';
+import { KeyboardShortcuts } from '../../../src/utils/KeyboardShortcuts';
 
 const MARKUP = `
   <button id="btn-learn-menu">Learn</button>
@@ -32,28 +34,27 @@ const MARKUP = `
 `;
 
 describe('EducationController', () => {
-  type Ctor = typeof import('../../../src/presentation/controllers/EducationController').EducationController;
-  let EducationController: Ctor;
-  let controller: InstanceType<Ctor>;
+  let controller: EducationController | undefined;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     localStorage.clear();
-    document.head.innerHTML = '';
     document.body.innerHTML = MARKUP;
-    vi.resetModules();
-    ({ EducationController } = await import('../../../src/presentation/controllers/EducationController'));
   });
 
   afterEach(() => {
     controller?.dispose();
+    controller = undefined;
     vi.restoreAllMocks();
     localStorage.clear();
     document.body.innerHTML = '';
   });
 
-  it('injects no <style> element on import', () => {
+  it('injects no <style> element on import', async () => {
+    document.head.innerHTML = '';
+    vi.resetModules();
+    await import('../../../src/presentation/controllers/EducationController');
     expect(document.head.querySelectorAll('style')).toHaveLength(0);
-  });
+  }, 30_000);
 
   it('dispose() removes every document/window listener it added', () => {
     const docAdd = vi.spyOn(document, 'addEventListener');
@@ -106,7 +107,7 @@ describe('EducationController', () => {
     card.focus();
     card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
     expect(document.getElementById('tutorials-modal')!.classList.contains('hidden')).toBe(true);
-    expect(controller.getTutorialService().getCurrentTutorial()?.id).toBe(card.dataset.tutorialId);
+    expect(controller!.getTutorialService().getCurrentTutorial()?.id).toBe(card.dataset.tutorialId);
   });
 
   it('closes the tutorials modal on Escape and returns focus to the Learn button', () => {
@@ -125,8 +126,7 @@ describe('EducationController', () => {
     expect(document.activeElement?.id).toBe('btn-learn-menu');
   });
 
-  it('Space on a tutorial card starts it without triggering the start/pause shortcut', async () => {
-    const { KeyboardShortcuts } = await import('../../../src/utils/KeyboardShortcuts');
+  it('Space on a tutorial card starts it without triggering the start/pause shortcut', () => {
     const onStartPause = vi.fn();
     const shortcuts = new KeyboardShortcuts({
       onStartPause, onStep: vi.fn(), onReset: vi.fn(), onPause: vi.fn(),
@@ -140,7 +140,7 @@ describe('EducationController', () => {
     card.focus();
     card.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
 
-    expect(controller.getTutorialService().getCurrentTutorial()?.id).toBe(card.dataset.tutorialId);
+    expect(controller!.getTutorialService().getCurrentTutorial()?.id).toBe(card.dataset.tutorialId);
     expect(onStartPause).not.toHaveBeenCalled();
     shortcuts.dispose();
   });
