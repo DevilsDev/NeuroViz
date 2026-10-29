@@ -48,7 +48,8 @@ export function computeLossDomain(records: readonly TrainingRecord[]): [number, 
 
 export class D3LossChart {
   private readonly container: d3.Selection<HTMLElement, unknown, null, undefined>;
-  private readonly svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
+  /** Margin-translated plot group (a <g>, not the root <svg>) */
+  private readonly svg: d3.Selection<SVGGElement, unknown, null, undefined>;
   private width: number;
   private height: number;
 
@@ -94,9 +95,7 @@ export class D3LossChart {
 
     this.svg = svgElement
       .append('g')
-      .attr('transform', `translate(${this.margin.left},${this.margin.top})`) as unknown as d3.Selection<
-        SVGSVGElement, unknown, null, undefined
-      >;
+      .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
 
     // Scales
     this.xScale = d3.scaleLinear().range([0, this.width]);
