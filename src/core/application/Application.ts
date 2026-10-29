@@ -82,6 +82,7 @@ export class Application {
   private educationController: EducationController | null = null;
   private advancedFeatures: AdvancedFeaturesService | null = null;
   private workflowSpine: WorkflowSpine | null = null;
+  private readonly disposers: Array<() => void> = [];
 
   constructor(
     public readonly services: Services,
@@ -677,9 +678,18 @@ export class Application {
   }
 
   /**
+   * Registers extra cleanup to run on dispose() (e.g. listeners installed by
+   * module-level UI helpers during build).
+   */
+  addDisposer(dispose: () => void): void {
+    this.disposers.push(dispose);
+  }
+
+  /**
    * Disposes the application and cleans up all resources.
    */
   dispose(): void {
+    this.disposers.splice(0).forEach((dispose) => dispose());
     this.services.neuralNet.dispose();
 
     if ('dispose' in this.services.visualizer && typeof this.services.visualizer.dispose === 'function') {

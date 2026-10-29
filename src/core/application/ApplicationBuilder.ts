@@ -37,7 +37,6 @@ import { DatasetGallery } from '../../utils/DatasetGallery';
 import { setupTouchGestures } from '../../presentation/TouchGestures';
 import { setupBottomSheet } from '../../presentation/BottomSheet';
 import { setupOnboardingWizard } from '../../presentation/Onboarding';
-import { initELI5Tooltips } from '../../presentation/ELI5Tooltips';
 
 /**
  * Configuration for building the application
@@ -82,6 +81,8 @@ interface ConcreteServices {
  */
 export class ApplicationBuilder {
   private config: ApplicationConfig;
+  /** Teardowns for listeners installed by module-level UI helpers */
+  private readonly disposers: Array<() => void> = [];
 
   constructor(config: ApplicationConfig = {}) {
     this.config = {
@@ -118,7 +119,11 @@ export class ApplicationBuilder {
     this.setupWebGLRecovery(concreteServices);
 
     // Upcast to port-typed Services for Application (concrete types implement all ports)
-    return new Application(concreteServices as Services, controllers);
+    const app = new Application(concreteServices as Services, controllers);
+    // Module-level UI helpers registered document/window listeners; tear them
+    // down with the app (e.g. on HMR dispose)
+    this.disposers.forEach((dispose) => app.addDisposer(dispose));
+    return app;
   }
 
   /**
@@ -173,6 +178,7 @@ export class ApplicationBuilder {
     // Initialize Error Boundary
     const errorBoundary = new ErrorBoundary();
     errorBoundary.init();
+    this.disposers.push(() => errorBoundary.dispose());
   }
 
   /**
@@ -327,10 +333,9 @@ export class ApplicationBuilder {
     this.fixLearnDropdownPosition();
 
     // Initialize touch gestures and bottom sheet
-    setupTouchGestures();
-    setupBottomSheet();
+    this.disposers.push(setupTouchGestures());
+    this.disposers.push(setupBottomSheet());
     setupOnboardingWizard();
-    initELI5Tooltips();
 
     // Initialize Dataset Gallery
     const datasetGallery = new DatasetGallery();
