@@ -4,6 +4,11 @@ import type { Hyperparameters, Point, Prediction, OptimizerType, ActivationType,
 import { DEFAULT_HYPERPARAMETERS } from '../../core/domain';
 import { GradientExplosionError, ModelNotInitialisedError } from './errors';
 
+/** Argument accepted by `tf.Optimizer.applyGradients`. */
+type GradientsArg = Parameters<tf.Optimizer['applyGradients']>[0];
+/** A single named gradient (tf-core's `NamedTensor`, not re-exported by tfjs). */
+type NamedGradient = Extract<GradientsArg, unknown[]>[number];
+
 /**
  * TensorFlow.js implementation of INeuralNetworkService.
  * Encapsulates all TF.js logic—no other module should import tensorflow directly.
@@ -27,7 +32,6 @@ export class TFNeuralNet implements INeuralNetworkService {
   private model: tf.Sequential | null = null;
   private config: Hyperparameters | null = null;
   private numClasses = 2;
-  private clipNorm = 0;
   private isDisposed = false;
 
   /**
@@ -88,7 +92,7 @@ export class TFNeuralNet implements INeuralNetworkService {
    * @param data - Array of labelled points for supervised learning
    * @returns The batch training loss value
    * @throws {ModelNotInitialisedError} If called before initialize()
-   * @throws {GradientExplosionError} If loss is NaN (learning rate too high)
+   * @throws {GradientExplosionError} If loss is NaN or Infinity (learning rate too high)
    *
    * @remarks
    * Uses `trainOnBatch` for single-step training, enabling:
@@ -119,9 +123,11 @@ export class TFNeuralNet implements INeuralNetworkService {
       // Extract loss value
       const loss = Array.isArray(result) ? (result[0] ?? 0) : result;
 
-      // Check for gradient explosion
-      if (Number.isNaN(loss)) {
-        throw new GradientExplosionError();
+      // Check for gradient explosion (NaN or +/-Infinity)
+      if (!Number.isFinite(loss)) {
+        throw new GradientExplosionError(
+          `Training produced ${Number.isNaN(loss) ? 'NaN' : 'infinite'} loss. Try lowering the learning rate.`
+        );
       }
 
       // Model may have been disposed during the await above
@@ -131,10 +137,12 @@ export class TFNeuralNet implements INeuralNetworkService {
 
       // Compute accuracy manually since trainOnBatch doesn't compute metrics
       const predictions = this.model.predict(xs) as tf.Tensor;
-      const accuracy = await this.computeAccuracy(predictions, ys, data);
-      predictions.dispose();
-
-      return { loss, accuracy };
+      try {
+        const accuracy = await this.computeAccuracy(predictions, ys, data);
+        return { loss, accuracy };
+      } finally {
+        predictions.dispose();
+      }
     } finally {
       // CRITICAL: Always dispose tensors to prevent GPU memory leaks
       xs.dispose();
@@ -166,17 +174,19 @@ export class TFNeuralNet implements INeuralNetworkService {
       // Re-read this.model to avoid using a disposed reference
       const result = this.model!.evaluate(xs, ys) as tf.Scalar[];
 
-      // Extract loss and accuracy
-      const lossValue = await result[0]?.data();
-      const accuracyValue = await result[1]?.data();
+      try {
+        // Extract loss and accuracy
+        const lossValue = await result[0]?.data();
+        const accuracyValue = await result[1]?.data();
 
-      // Dispose result tensors
-      result.forEach((t) => t.dispose());
-
-      return {
-        loss: lossValue?.[0] ?? 0,
-        accuracy: accuracyValue?.[0] ?? 0,
-      };
+        return {
+          loss: lossValue?.[0] ?? 0,
+          accuracy: accuracyValue?.[0] ?? 0,
+        };
+      } finally {
+        // Dispose result tensors even if a readback fails
+        tf.dispose(result);
+      }
     } finally {
       xs.dispose();
       ys.dispose();
@@ -453,46 +463,40 @@ export class TFNeuralNet implements INeuralNetworkService {
 
     // Contract: returns one entry per layer in structure.layers, in order:
     //   [0]      raw input coordinates (input layer)
-    //   [1..N-1] output of each trainable Dense layer
+    //   [1..N-1] output of each logical (Dense) layer
     //
-    // TF.js Keras sequential models do NOT expose the input as a trainable layer,
-    // so model.layers has one fewer entry than structure.layers. Prepending the
-    // raw [x, y] here keeps callers' index math aligned with structure.layers
-    // and restores the Input vs Output labels on the activation histogram.
-    const activations: number[][] = [[point.x, point.y]];
-
-    // Create input tensor
-    const input = tf.tensor2d([[point.x, point.y]]);
+    // TF.js Keras sequential models do NOT expose the input as a layer, so the
+    // raw [x, y] is prepended to keep callers' index math aligned with
+    // structure.layers.
+    //
+    // model.layers also contains helper layers (BatchNormalization, Activation,
+    // Dropout) that structure.layers does not report. A logical layer is a
+    // Dense layer plus the helpers that follow it, so its activation is the
+    // running output just before the next Dense layer (or at the end). Every
+    // layer is still applied, so batch norm and the post-norm activation take
+    // effect; Dropout is the identity at inference time.
+    const model = this.model;
 
     try {
-      // Get activations from each trainable layer
-      let currentInput: tf.Tensor = input;
+      return tf.tidy(() => {
+        const activations: number[][] = [[point.x, point.y]];
+        let current: tf.Tensor = tf.tensor2d([[point.x, point.y]]);
 
-      for (const layer of this.model.layers) {
-        const output = layer.apply(currentInput) as tf.Tensor;
-        const data = output.dataSync();
-        activations.push(Array.from(data));
+        model.layers.forEach((layer, index) => {
+          if (index > 0 && layer.getClassName() === 'Dense') {
+            activations.push(Array.from(current.dataSync()));
+          }
+          current = layer.apply(current) as tf.Tensor;
+        });
+        activations.push(Array.from(current.dataSync()));
 
-        // Use this layer's output as next layer's input
-        if (currentInput !== input) {
-          currentInput.dispose();
-        }
-        currentInput = output;
-      }
-
-      // Dispose final output
-      if (currentInput !== input) {
-        currentInput.dispose();
-      }
+        return activations;
+      });
     } catch {
       // Model was disposed during execution, return empty array silently
       // This is expected during reinitialisation
       return [];
-    } finally {
-      input.dispose();
     }
-
-    return activations;
   }
 
   /**
@@ -743,23 +747,72 @@ export class TFNeuralNet implements INeuralNetworkService {
     momentum: number,
     clipNorm: number
   ): tf.Optimizer {
-    // TF.js optimizers don't have built-in clipNorm, but we can use clipByGlobalNorm
-    // For now, we'll store clipNorm and note that full implementation requires custom training
-    // The clipNorm value is stored for future use with custom gradient clipping
-    this.clipNorm = clipNorm;
-
+    let optimizer: tf.Optimizer;
     switch (type) {
       case 'sgd':
-        return tf.train.momentum(learningRate, momentum);
+        optimizer = tf.train.momentum(learningRate, momentum);
+        break;
       case 'adam':
-        return tf.train.adam(learningRate);
+        optimizer = tf.train.adam(learningRate);
+        break;
       case 'rmsprop':
-        return tf.train.rmsprop(learningRate);
+        optimizer = tf.train.rmsprop(learningRate);
+        break;
       case 'adagrad':
-        return tf.train.adagrad(learningRate);
+        optimizer = tf.train.adagrad(learningRate);
+        break;
       default:
-        return tf.train.adam(learningRate);
+        optimizer = tf.train.adam(learningRate);
     }
+
+    if (clipNorm > 0) {
+      TFNeuralNet.applyGlobalNormClipping(optimizer, clipNorm);
+    }
+    return optimizer;
+  }
+
+  /**
+   * Makes `optimizer` clip gradients by their global L2 norm before applying
+   * them: when ||g|| > clipNorm every gradient is scaled by clipNorm / ||g||.
+   *
+   * @remarks
+   * TF.js optimizers have no clipnorm option. `model.trainOnBatch()` ends in
+   * `optimizer.minimize()`, which computes the gradients and then calls
+   * `applyGradients()`. Wrapping that method on this instance clips every
+   * training step while keeping trainOnBatch's handling of regularisation
+   * losses and batch-norm moving statistics. The scale factor stays a tensor,
+   * so no GPU readback is added. `minimize()` disposes the original gradients;
+   * the scaled copies are disposed here.
+   */
+  private static applyGlobalNormClipping(optimizer: tf.Optimizer, clipNorm: number): void {
+    const applyGradients = optimizer.applyGradients.bind(optimizer);
+
+    optimizer.applyGradients = (variableGradients: GradientsArg): void => {
+      const named: NamedGradient[] = Array.isArray(variableGradients)
+        ? variableGradients
+        : Object.entries(variableGradients).map(([name, tensor]) => ({ name, tensor }));
+
+      const clipped = tf.tidy(() => {
+        const globalNorm = tf.sqrt(tf.addN(named.map(({ tensor }) => tf.sum(tf.square(tensor)))));
+        // scale = clipNorm / max(||g||, clipNorm), i.e. min(1, clipNorm / ||g||)
+        const scale = tf.div(clipNorm, tf.maximum(globalNorm, clipNorm));
+        return named.map(({ tensor }) => tf.mul(tensor, scale));
+      });
+
+      try {
+        if (Array.isArray(variableGradients)) {
+          applyGradients(named.map(({ name }, i) => ({ name, tensor: clipped[i]! })));
+        } else {
+          const map: tf.NamedTensorMap = {};
+          named.forEach(({ name }, i) => {
+            map[name] = clipped[i]!;
+          });
+          applyGradients(map);
+        }
+      } finally {
+        tf.dispose(clipped);
+      }
+    };
   }
 
   /**
