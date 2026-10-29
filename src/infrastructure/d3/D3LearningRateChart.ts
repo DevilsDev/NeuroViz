@@ -34,6 +34,9 @@ export class D3LearningRateChart {
   private lrPath: d3.Selection<SVGPathElement, unknown, null, undefined>;
   private xAxisGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
   private yAxisGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
+  private resizeObserver: ResizeObserver | null = null;
+  /** Last rendered history, replayed after a resize */
+  private lastHistory: TrainingHistory | null = null;
 
   constructor(containerId: string) {
     const element = document.getElementById(containerId);
@@ -100,6 +103,35 @@ export class D3LearningRateChart {
       .style('font-size', '9px')
       .style('font-weight', '600')
       .text('LR');
+
+    // Resize observer (same pattern as D3LossChart)
+    this.resizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        if (entry.contentRect) {
+          this.resize(entry.contentRect.width, entry.contentRect.height);
+        }
+      }
+    });
+    this.resizeObserver.observe(element);
+  }
+
+  resize(width: number, height: number): void {
+    const minWidth = this.margin.left + this.margin.right + 50;
+    const minHeight = this.margin.top + this.margin.bottom + 20;
+    if (width < minWidth || height < minHeight) return;
+
+    this.width = Math.max(0, width - this.margin.left - this.margin.right);
+    this.height = Math.max(0, height - this.margin.top - this.margin.bottom);
+
+    this.container.select('svg').attr('viewBox', `0 0 ${width} ${height}`);
+
+    this.xScale.range([0, this.width]);
+    this.yScale.range([this.height, 0]);
+    this.xAxisGroup.attr('transform', `translate(0,${this.height})`);
+
+    if (this.lastHistory && this.lastHistory.records.length > 0) {
+      this.render(this.lastHistory);
+    }
   }
 
   /**
@@ -114,6 +146,7 @@ export class D3LearningRateChart {
   }
 
   render(history: TrainingHistory): void {
+    this.lastHistory = history;
     const records = history.records;
 
     if (records.length === 0) {
@@ -122,7 +155,7 @@ export class D3LearningRateChart {
     }
 
     const maxEpoch = d3.max(records, d => d.epoch) ?? 1;
-    this.xScale.domain([0, maxEpoch]);
+    this.xScale.domain([1, maxEpoch]);
 
     const minLR = d3.min(records, d => d.learningRate) ?? 0;
     const maxLR = d3.max(records, d => d.learningRate) ?? 0.1;
@@ -167,12 +200,18 @@ export class D3LearningRateChart {
   }
 
   clear(): void {
+    this.lastHistory = null;
     this.lrPath.attr('d', null);
     this.xAxisGroup.selectAll('*').remove();
     this.yAxisGroup.selectAll('*').remove();
   }
 
   dispose(): void {
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
+    this.lastHistory = null;
     this.container.selectAll('*').remove();
   }
 }
