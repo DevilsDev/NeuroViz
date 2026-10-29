@@ -68,8 +68,8 @@
         "failComment": false,
         "assets": [
           {
-            "path": "dist/**",
-            "label": "Build artifacts"
+            "path": "neuroviz-dist.zip",
+            "label": "Production build (dist)"
           }
         ]
       }
