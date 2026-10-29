@@ -1,3 +1,9 @@
+## [2.36.0](https://github.com/DevilsDev/NeuroViz/compare/v2.35.0...v2.36.0) (2026-10-29)
+
+### Features
+
+* **train:** training timeline with GIF export and learning-rate finder ([7bd7950](https://github.com/DevilsDev/NeuroViz/commit/7bd79509b0d34ad4afcd868072850aade9d11362))
+
 ## [2.35.0](https://github.com/DevilsDev/NeuroViz/compare/v2.34.0...v2.35.0) (2026-10-29)
 
 ### Features
