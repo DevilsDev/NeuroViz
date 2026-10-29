@@ -57,7 +57,8 @@ on TensorFlow.js, D3, or the DOM.
 - **Activation heatmaps** — per-layer neuron activations in real time
 - **Voronoi overlay** — alternative boundary view
 - **Gradient flow animation** — backprop visualisation
-- **Boundary evolution recording** — record and replay training
+- **Training timeline** — every run records the decision boundary; scrub
+  back through it once paused and download it as an animated GIF
 
 ### Metrics & analysis
 - **Loss chart** — training loss + dashed validation loss overlay
@@ -67,6 +68,12 @@ on TensorFlow.js, D3, or the DOM.
 - **Training history** with JSON + CSV export
 - **Weight histograms** and model-complexity metrics
 - **Overfitting / underfitting detection** with suggested fixes
+- **Overfitting-risk meter** — model size against training-set size, before
+  you train
+- **Learning-rate finder** — sweeps rates on a copy of the model and suggests
+  one
+- **Reproducible runs** — lock a seed to repeat data, split, starting weights
+  and batch order
 
 ### Export & persistence
 - **Model download / upload** — TensorFlow.js JSON + weights format
@@ -98,8 +105,7 @@ them. They live in [`archive/`](archive/README.md), outside `src/`, so they
 are not built, type-checked or tested; the archive README explains how to
 revive one.
 
-- Model comparison (A/B), model ensembles, permutation feature importance,
-  learning-rate finder
+- Model comparison (A/B), model ensembles, permutation feature importance
 - Web-Worker-backed training, progressive grid rendering
 - LIME-style explanations, saliency maps, Bayesian NNs (MC Dropout),
   neural architecture search, WebGL renderer, REST API

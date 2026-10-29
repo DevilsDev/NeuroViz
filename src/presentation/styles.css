@@ -446,11 +446,11 @@ body[data-theme="light"] {
     @apply disabled:opacity-40 disabled:cursor-not-allowed;
     background: rgb(var(--color-cyan-rgb));
     color: var(--surface-0);
-    box-shadow: 0 2px 8px rgb(var(--color-cyan-rgb) / 0.25);
+    box-shadow: 0 2px 8px rgba(var(--color-cyan-rgb), 0.25);
   }
 
   .btn-primary:hover:not(:disabled) {
-    box-shadow: 0 4px 16px rgb(var(--color-cyan-rgb) / 0.35);
+    box-shadow: 0 4px 16px rgba(var(--color-cyan-rgb), 0.35);
     transform: translateY(-1px);
   }
 

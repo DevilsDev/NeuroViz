@@ -40,6 +40,9 @@ import { LayerEditor } from '../../presentation/LayerEditor';
 import { EvaluationSummary } from '../../presentation/EvaluationSummary';
 import { ReproducibilityPanel } from '../../presentation/ReproducibilityPanel';
 import { OverfittingRiskCard } from '../../presentation/OverfittingRiskCard';
+import { LRFinderPanel } from '../../presentation/LRFinderPanel';
+import { TimelinePanel } from '../../presentation/TimelinePanel';
+import { LRFinderService } from './training/LRFinderService';
 import { setupBottomSheet } from '../../presentation/BottomSheet';
 import { setupOnboardingWizard } from '../../presentation/Onboarding';
 
@@ -360,6 +363,21 @@ export class ApplicationBuilder {
       const unsubscribe = session.onStateChange(() => riskCard.update());
       this.disposers.push(() => { unsubscribe(); riskCard.dispose(); });
     }
+
+    // Learning-rate finder sweeps a throwaway network, never the user's model
+    const lrFinder = new LRFinderService(() => new TFNeuralNet());
+    const lrFinderPanel = LRFinderPanel.fromDocument({
+      getState: () => session.getState(),
+      getTrainingData: () => session.getTrainingData(),
+      onStateChange: (cb) => session.onStateChange(cb),
+      getConfig: () => trainingController.buildInitializeNetworkConfig(),
+      getBatchSize: () => parseInt((document.getElementById('input-batch-size') as HTMLInputElement | null)?.value ?? '', 10) || 32,
+      runFinder: (config, data, options) => lrFinder.run(config, data, options),
+    });
+    if (lrFinderPanel) this.disposers.push(() => lrFinderPanel.dispose());
+
+    const timeline = TimelinePanel.fromDocument(session);
+    if (timeline) this.disposers.push(() => timeline.dispose());
     const datasetGallery = new DatasetGallery();
 
     // Initialize Keyboard Shortcuts

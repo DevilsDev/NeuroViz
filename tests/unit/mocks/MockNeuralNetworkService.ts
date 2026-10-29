@@ -79,6 +79,10 @@ export class MockNeuralNetworkService implements INeuralNetworkService {
     return [[0.5, 0.8], [0.3, 0.6, 0.9], [0.7]];
   });
 
+  readonly dispose = vi.fn((): void => {
+    this.initializeCalled = false;
+  });
+
   readonly updateLearningRate = vi.fn((_newLearningRate: number): void => {
     // No-op for mock
   });
