@@ -30,7 +30,13 @@ export class TooltipService {
   private tooltipElement: HTMLElement | null = null;
   private showTimeout: number | null = null;
   private hideTimeout: number | null = null;
-  private boundListeners: Map<HTMLElement, { enter: () => void; leave: () => void; focus: () => void; blur: () => void }> = new Map();
+  private boundListeners: Map<HTMLElement, {
+    enter: () => void;
+    leave: () => void;
+    focus: () => void;
+    blur: () => void;
+    touch: (e: TouchEvent) => void;
+  }> = new Map();
 
   /** Delay before showing tooltip (ms) */
   private showDelay = 500;
@@ -88,16 +94,17 @@ export class TooltipService {
     element.addEventListener('blur', blur);
 
     // Touch support - tap to toggle
-    element.addEventListener('touchstart', (e) => {
+    const touch = (e: TouchEvent): void => {
       if (this.state.currentTarget === element && this.state.isVisible) {
         this.hide();
       } else {
         e.preventDefault();
         this.show(element, definition);
       }
-    }, { passive: false });
+    };
+    element.addEventListener('touchstart', touch, { passive: false });
 
-    this.boundListeners.set(element, { enter, leave, focus, blur });
+    this.boundListeners.set(element, { enter, leave, focus, blur, touch });
   }
 
   /**
@@ -111,6 +118,7 @@ export class TooltipService {
     element.removeEventListener('mouseleave', listeners.leave);
     element.removeEventListener('focus', listeners.focus);
     element.removeEventListener('blur', listeners.blur);
+    element.removeEventListener('touchstart', listeners.touch);
     element.removeAttribute('aria-describedby');
 
     this.boundListeners.delete(element);

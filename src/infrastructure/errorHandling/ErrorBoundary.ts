@@ -45,6 +45,11 @@ export class ErrorBoundary {
   private lastErrorTime = 0;
   private readonly ERROR_THROTTLE_MS = 5000; // Don't spam toasts
   private readonly MAX_ERRORS_BEFORE_DISABLE = 10;
+  private initialized = false;
+  /** Stable handler references so they can be removed again in dispose(). */
+  private readonly onWindowError = (event: ErrorEvent): void => this.handleError(event);
+  private readonly onUnhandledRejection = (event: PromiseRejectionEvent): void =>
+    this.handleUnhandledRejection(event);
 
   constructor(config: ErrorBoundaryConfig = {}) {
     this.config = {
@@ -60,16 +65,30 @@ export class ErrorBoundary {
    * Sets up handlers for uncaught exceptions and unhandled rejections.
    */
   init(): void {
+    // Idempotent: a second init() must not register duplicate handlers
+    if (this.initialized) return;
+    this.initialized = true;
+
     // Handle synchronous errors
-    window.addEventListener('error', this.handleError.bind(this));
+    window.addEventListener('error', this.onWindowError);
 
     // Handle promise rejections
-    window.addEventListener('unhandledrejection', this.handleUnhandledRejection.bind(this));
+    window.addEventListener('unhandledrejection', this.onUnhandledRejection);
 
     logger.info('Global error boundary initialized', {
       component: 'ErrorBoundary',
       action: 'init',
     });
+  }
+
+  /**
+   * Removes the global handlers installed by init().
+   */
+  dispose(): void {
+    if (!this.initialized) return;
+    window.removeEventListener('error', this.onWindowError);
+    window.removeEventListener('unhandledrejection', this.onUnhandledRejection);
+    this.initialized = false;
   }
 
   /**
