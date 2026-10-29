@@ -1,3 +1,58 @@
+## [2.32.0](https://github.com/DevilsDev/NeuroViz/compare/v2.31.4...v2.32.0) (2026-10-29)
+
+### Features
+
+* **a11y:** add reusable modal dialog focus/Escape helper ([a3d2d17](https://github.com/DevilsDev/NeuroViz/commit/a3d2d177a8a44c35413385f156f6eefbd51beed4))
+
+### Bug Fixes
+
+* **a11y:** make Learn menu, modals and tutorial cards keyboard accessible ([d3a215b](https://github.com/DevilsDev/NeuroViz/commit/d3a215b0257d4636cdcc373bfdbca29cba42a608)), closes [#btn-learn-menu](https://github.com/DevilsDev/NeuroViz/issues/btn-learn-menu)
+* **a11y:** restore focus to a visible element and consume card keys ([d803f4e](https://github.com/DevilsDev/NeuroViz/commit/d803f4eb7843a150e303780d73bc9b27534d6133)), closes [#btn-learn-menu](https://github.com/DevilsDev/NeuroViz/issues/btn-learn-menu)
+* **app:** tear down module-level UI listeners on dispose; archive inert ELI5 tooltips ([662996f](https://github.com/DevilsDev/NeuroViz/commit/662996fbcbcd7bd1f99bdf8492a586f6ad7a2878))
+* **chart:** align training panels on epoch axis and handle resize ([f6fae63](https://github.com/DevilsDev/NeuroViz/commit/f6fae636d9d9fc3e5603a716b10103f1f8f1bea9))
+* **chart:** escape class labels in confusion matrix tooltip ([d4dd64e](https://github.com/DevilsDev/NeuroViz/commit/d4dd64ea046e85b4e9d652cc186d85b083f7a2db))
+* **chart:** include axis margins in PNG export and handle load errors ([b7f850c](https://github.com/DevilsDev/NeuroViz/commit/b7f850c34b0ad8a8d45b296ea1dfa01af50955bd))
+* **chart:** interrupt pending transitions when disposing training panels ([dfc6084](https://github.com/DevilsDev/NeuroViz/commit/dfc608407e82f05cc27fd1145202a3cfd99e5d4b))
+* **chart:** pad loss y-domain by range and ignore null val loss ([a5e2117](https://github.com/DevilsDev/NeuroViz/commit/a5e2117826ad72024c038a887eb90502aabfbd90))
+* **chart:** refresh confusion-matrix tooltips on re-render ([ec896e5](https://github.com/DevilsDev/NeuroViz/commit/ec896e51af58cb00e326af30feb3cc61d1065e10))
+* **chart:** restore initial point stroke after misclassified highlight ([9e2dcc0](https://github.com/DevilsDev/NeuroViz/commit/9e2dcc0f3278c768cbce8dcda4fe80ce046f44ee))
+* **chart:** share one show/hide mechanism for chart tooltips ([8e05e08](https://github.com/DevilsDev/NeuroViz/commit/8e05e08b9aeaf0f72a5b7709546b5d9093adc297))
+* **education:** fire training 'complete' once per finished run ([8beb930](https://github.com/DevilsDev/NeuroViz/commit/8beb930eccbd70711c860c354465e65aede7950b))
+* **education:** keep tutorial overlay usable after completion ([0ad44fa](https://github.com/DevilsDev/NeuroViz/commit/0ad44fa388b91b33f4068011c7953e4232f5a42f))
+* **security:** escape interpolated values in report and banner HTML ([b1f87a8](https://github.com/DevilsDev/NeuroViz/commit/b1f87a875fd3a5e83839b2068ce23675d5e45a53))
+* **security:** remove 'unsafe-eval' from the Content Security Policy ([568e42b](https://github.com/DevilsDev/NeuroViz/commit/568e42b608122454962067c464dc87f075084b25))
+* **storage:** scope clear() to app keys and validate stored JSON ([dbb0630](https://github.com/DevilsDev/NeuroViz/commit/dbb0630d15b70974bd071e9673b7f9d31abf2a03))
+* **tfjs:** align activations, apply clipNorm, harden training paths ([c002508](https://github.com/DevilsDev/NeuroViz/commit/c002508cfd368b44006b1192747fc5eceb6662fc))
+* **tfjs:** initialise the backend before resolving the WebGL canvas ([396a526](https://github.com/DevilsDev/NeuroViz/commit/396a526a016159ab272c0f81cbe8a3d9d997db96))
+* **tfjs:** watch TF.js's own canvas for WebGL context loss ([6a54782](https://github.com/DevilsDev/NeuroViz/commit/6a547827e8a65e32b1197958daed8a08d949a8d2))
+* **training:** accept 0 epochs/batch and validate schedule and layer fields ([b11a884](https://github.com/DevilsDev/NeuroViz/commit/b11a88467adfd0976017e3fdc58964a920c12013))
+* **training:** harden dataset loading and validation split handling ([49c4c6b](https://github.com/DevilsDev/NeuroViz/commit/49c4c6be15197fcb7297b4a73fcb9cf591782f12))
+* **training:** isolate state listener exceptions ([de54460](https://github.com/DevilsDev/NeuroViz/commit/de5446096190b0a1cc7484a1bf4b8f59d59baa60))
+* **training:** share one epoch body between loop and step ([c8c4fe8](https://github.com/DevilsDev/NeuroViz/commit/c8c4fe8a2ab969a63098e586da687216606bc78b))
+* **ui:** make listener-owning modules removable ([b653bae](https://github.com/DevilsDev/NeuroViz/commit/b653baee9509108a16c4dc035096e628bb7eb7de))
+* **ui:** restore visible 3D, Voronoi and weights view toggles ([e20c579](https://github.com/DevilsDev/NeuroViz/commit/e20c5797814ee2791915113758fb5920541fef8f))
+
+### Performance Improvements
+
+* **app:** read weight matrices once per network visualisation update ([e9ff50b](https://github.com/DevilsDev/NeuroViz/commit/e9ff50b4cbbeec8260843054a2d56f635c363f8b))
+* **chart:** update multi-class boundary cells with a keyed data join ([48b49b3](https://github.com/DevilsDev/NeuroViz/commit/48b49b3361147208cd4090a9dadf89c00002da2b))
+* **ml:** batch adversarial spiral search into one predict call ([1c22998](https://github.com/DevilsDev/NeuroViz/commit/1c22998ef8286ad0e4ab24d5ff53605e13314aad))
+
+### Documentation
+
+* **api:** remove loadModel from the INeuralNetworkService reference ([a4037d3](https://github.com/DevilsDev/NeuroViz/commit/a4037d3d20de41a7e8f6343a1fa80ad745086a4b))
+* **readme:** point unwired features to archive/, fix optimizer/activation lists and Node version ([9062588](https://github.com/DevilsDev/NeuroViz/commit/9062588e154462ca88301227aab17ce80abee098))
+
+### Code Refactoring
+
+* archive the unused learning-rate finder ([2059a0d](https://github.com/DevilsDev/NeuroViz/commit/2059a0da3daacd6cea1632a26ca9fee2920f6ee9))
+* **chart:** type plot group selections as SVGGElement ([5cf3ee2](https://github.com/DevilsDev/NeuroViz/commit/5cf3ee29b31a0d198252646cd9a905495bbfe68f))
+* **education:** move import-time <style> injection into styles.css ([6d96cb0](https://github.com/DevilsDev/NeuroViz/commit/6d96cb076f54bf4eac83cd3e4f3dc04ae1d6ee32))
+* **education:** stop onboarding tour and ELI5 tooltips colliding ([8deca93](https://github.com/DevilsDev/NeuroViz/commit/8deca9367fbe68a6761841afbe6f81421b671ce0))
+* move modules the app never imports into archive/ ([80711ac](https://github.com/DevilsDev/NeuroViz/commit/80711ac1ce03ff7ce86a40a7cda3533a92b86a02))
+* **tfjs:** remove unused loadModel from the neural network port ([27e261e](https://github.com/DevilsDev/NeuroViz/commit/27e261e23e9a1c4b4af366be80bd8684e4bb380b))
+* **training:** share one Fisher-Yates shuffle helper ([600cab3](https://github.com/DevilsDev/NeuroViz/commit/600cab3605f5509598bcc2bdc855ca18f30c1dc1))
+
 ## [2.31.4](https://github.com/DevilsDev/NeuroViz/compare/v2.31.3...v2.31.4) (2026-10-29)
 
 ### Bug Fixes
