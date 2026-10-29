@@ -1,15 +1,26 @@
-export function setupBottomSheet(): void {
+let teardownBottomSheet: (() => void) | null = null;
+
+/**
+ * Wires drag-to-dismiss for the mobile bottom sheet.
+ *
+ * @returns A teardown function that removes every listener added. Calling
+ *          setupBottomSheet() again tears down the previous wiring first.
+ */
+export function setupBottomSheet(): () => void {
+    teardownBottomSheet?.();
+    teardownBottomSheet = null;
+
     const sheet = document.getElementById('bottom-sheet');
     const handle = document.getElementById('bottom-sheet-handle');
     const overlay = document.getElementById('bottom-sheet-overlay');
 
-    if (!sheet || !handle || !overlay) return;
+    if (!sheet || !handle || !overlay) return () => {};
 
     let startY = 0;
     let currentY = 0;
     let isDragging = false;
 
-    handle.addEventListener('touchstart', (e) => {
+    const onTouchStart = (e: TouchEvent): void => {
         if (e.touches.length > 0) {
             const touch = e.touches[0];
             if (touch) {
@@ -18,9 +29,9 @@ export function setupBottomSheet(): void {
                 sheet.style.transition = 'none';
             }
         }
-    }, { passive: true });
+    };
 
-    document.addEventListener('touchmove', (e) => {
+    const onTouchMove = (e: TouchEvent): void => {
         if (!isDragging) return;
         if (e.touches.length > 0) {
             const touch = e.touches[0];
@@ -33,9 +44,9 @@ export function setupBottomSheet(): void {
                 }
             }
         }
-    }, { passive: true });
+    };
 
-    document.addEventListener('touchend', () => {
+    const onTouchEnd = (): void => {
         if (!isDragging) return;
         isDragging = false;
         sheet.style.transition = 'transform 0.3s ease-out';
@@ -48,9 +59,22 @@ export function setupBottomSheet(): void {
             // Reset
             sheet.style.transform = 'translateY(0)';
         }
-    });
+    };
 
+    handle.addEventListener('touchstart', onTouchStart, { passive: true });
+    document.addEventListener('touchmove', onTouchMove, { passive: true });
+    document.addEventListener('touchend', onTouchEnd);
     overlay.addEventListener('click', closeBottomSheet);
+
+    const teardown = (): void => {
+        handle.removeEventListener('touchstart', onTouchStart);
+        document.removeEventListener('touchmove', onTouchMove);
+        document.removeEventListener('touchend', onTouchEnd);
+        overlay.removeEventListener('click', closeBottomSheet);
+        if (teardownBottomSheet === teardown) teardownBottomSheet = null;
+    };
+    teardownBottomSheet = teardown;
+    return teardown;
 }
 
 export function openBottomSheet(): void {

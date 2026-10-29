@@ -82,6 +82,7 @@ export class Application {
   private educationController: EducationController | null = null;
   private advancedFeatures: AdvancedFeaturesService | null = null;
   private workflowSpine: WorkflowSpine | null = null;
+  private readonly disposers: Array<() => void> = [];
 
   constructor(
     public readonly services: Services,
@@ -150,14 +151,17 @@ export class Application {
     const structure = this.services.neuralNet.getStructure();
     if (!structure) return;
 
+    // getWeightMatrices() does a synchronous GPU readback per layer, so read
+    // once and share the result between the diagram and the histogram.
+    const weightMatrices = this.services.neuralNet.getWeightMatrices();
+
     this.services.networkDiagram.render(
       structure.layers,
       structure.activations,
-      this.services.neuralNet.getWeightMatrices()
+      weightMatrices
     );
 
-    const weights = this.services.neuralNet.getWeightMatrices().flat().flat();
-    this.services.weightHistogram.update(weights);
+    this.services.weightHistogram.update(weightMatrices.flat().flat());
 
     this.updateActivationHistogram(structure);
   }
@@ -472,7 +476,8 @@ export class Application {
       if (state.currentEpoch > 0) {
         this.educationController.notifyTrainingEvent('epoch', state.currentEpoch);
       }
-      if (!state.isRunning && state.currentEpoch > 0) {
+      // Only on the run's single 'stopped' event, not on every later state change
+      if (state.eventType === 'stopped' && !state.isRunning && state.currentEpoch > 0) {
         this.educationController.notifyTrainingEvent('complete');
       }
 
@@ -673,9 +678,18 @@ export class Application {
   }
 
   /**
+   * Registers extra cleanup to run on dispose() (e.g. listeners installed by
+   * module-level UI helpers during build).
+   */
+  addDisposer(dispose: () => void): void {
+    this.disposers.push(dispose);
+  }
+
+  /**
    * Disposes the application and cleans up all resources.
    */
   dispose(): void {
+    this.disposers.splice(0).forEach((dispose) => dispose());
     this.services.neuralNet.dispose();
 
     if ('dispose' in this.services.visualizer && typeof this.services.visualizer.dispose === 'function') {

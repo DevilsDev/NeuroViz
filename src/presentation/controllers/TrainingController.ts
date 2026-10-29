@@ -2,6 +2,7 @@ import { TrainingSession } from '../../core/application/TrainingSession';
 import { toast } from '../toast';
 import { logger, type LogContext } from '../../infrastructure/logging/Logger';
 import { TrainingState } from '../../core/application/ITrainingSession';
+import { DEFAULT_TRAINING_CONFIG } from '../../core/domain';
 import {
     CommandExecutor,
     InitializeNetworkCommand,
@@ -240,9 +241,9 @@ export class TrainingController {
 
         if (!result.success) {
             if (result.validationResult) {
-                console.warn('Training config validation failed:', result.validationResult.message);
+                toast.warning(`Training settings not applied: ${result.validationResult.message}`);
             } else if (result.error) {
-                console.error('Failed to apply training config:', result.error);
+                toast.error(`Failed to apply training settings: ${result.error.message}`);
             }
         }
     }
@@ -255,7 +256,10 @@ export class TrainingController {
         const batchSize = parseInt(this.elements.inputBatchSize.value, 10) || 0;
         const maxEpochs = parseInt(this.elements.inputMaxEpochs.value, 10) || 0;
         const targetFps = parseInt(this.elements.inputFps.value, 10) || 60;
-        const validationSplit = parseInt(this.elements.inputValSplit.value, 10) / 100;
+        const splitPercent = parseInt(this.elements.inputValSplit.value, 10);
+        const validationSplit = Number.isNaN(splitPercent)
+            ? DEFAULT_TRAINING_CONFIG.validationSplit
+            : splitPercent / 100;
         // Validate LR schedule type at runtime
         const lrScheduleType = parseLRScheduleType(this.elements.inputLrSchedule.value);
 

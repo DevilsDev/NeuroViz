@@ -17,6 +17,16 @@ import { escapeHTML } from '../security/htmlSanitizer';
 
 type StateChangeCallback = (progress: TutorialProgress | null) => void;
 
+function isTutorialCompletion(value: unknown): value is TutorialCompletion {
+  if (typeof value !== 'object' || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.tutorialId === 'string' &&
+    typeof v.completedAt === 'number' &&
+    typeof v.durationMs === 'number'
+  );
+}
+
 /**
  * Service for managing interactive tutorials
  */
@@ -28,6 +38,8 @@ export class TutorialService {
   private actionListeners: Map<string, () => void> = new Map();
   private overlay: HTMLElement | null = null;
   private highlightElements: HTMLElement[] = [];
+  /** Pending auto-exit timer scheduled after completion. */
+  private completionTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     this.loadCompletions();
@@ -44,6 +56,7 @@ export class TutorialService {
       return false;
     }
 
+    this.clearCompletionTimer();
     this.currentTutorial = tutorial;
     this.progress = {
       tutorialId,
@@ -129,6 +142,7 @@ export class TutorialService {
    * Exits the tutorial without completing
    */
   exit(): void {
+    this.clearCompletionTimer();
     this.cleanup();
     this.currentTutorial = null;
     this.progress = null;
@@ -159,9 +173,18 @@ export class TutorialService {
     this.saveCompletions();
     this.showCompletionMessage();
 
-    setTimeout(() => {
+    this.clearCompletionTimer();
+    this.completionTimer = setTimeout(() => {
+      this.completionTimer = null;
       this.exit();
     }, 3000);
+  }
+
+  private clearCompletionTimer(): void {
+    if (this.completionTimer !== null) {
+      clearTimeout(this.completionTimer);
+      this.completionTimer = null;
+    }
   }
 
   /**
@@ -267,6 +290,7 @@ export class TutorialService {
    * Disposes the service
    */
   dispose(): void {
+    this.clearCompletionTimer();
     this.cleanup();
     this.stateListeners = [];
     if (this.overlay?.parentNode) {
@@ -292,6 +316,7 @@ export class TutorialService {
       <div class="tutorial-backdrop absolute inset-0 bg-black/50 pointer-events-auto"></div>
       <div class="tutorial-content absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-lg pointer-events-auto">
         <div class="bg-navy-800 rounded-xl border border-cyan-500/30 shadow-2xl shadow-cyan-500/10 p-6">
+          <div class="tutorial-step-panel">
           <div class="flex items-start justify-between mb-4">
             <div>
               <div class="text-xs text-cyan-400 uppercase tracking-wider mb-1">
@@ -299,7 +324,7 @@ export class TutorialService {
               </div>
               <h3 class="tutorial-title text-lg font-bold text-white"></h3>
             </div>
-            <button class="tutorial-close p-2 hover:bg-navy-700 rounded-lg text-slate-400 hover:text-white transition-colors" title="Exit tutorial">
+            <button class="tutorial-close p-2 hover:bg-navy-700 rounded-lg text-slate-400 hover:text-white transition-colors" title="Exit tutorial" aria-label="Exit tutorial">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -329,6 +354,16 @@ export class TutorialService {
           </div>
           <div class="tutorial-progress mt-4 h-1 bg-navy-700 rounded-full overflow-hidden">
             <div class="tutorial-progress-bar h-full bg-cyan-500 transition-all duration-300" style="width: 0%"></div>
+          </div>
+          </div>
+          <div class="tutorial-complete hidden text-center py-8" role="status">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
+              <svg class="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Tutorial Complete!</h3>
+            <p class="text-slate-400">Great job! You've completed this tutorial.</p>
           </div>
         </div>
       </div>
@@ -364,6 +399,8 @@ export class TutorialService {
   private renderCurrentStep(): void {
     const step = this.getCurrentStep();
     if (!step || !this.overlay || !this.currentTutorial) return;
+
+    this.setCompletionVisible(false);
 
     const stepIndex = this.progress?.currentStepIndex ?? 0;
     const totalSteps = this.currentTutorial.steps.length;
@@ -460,22 +497,19 @@ export class TutorialService {
   }
 
   private showCompletionMessage(): void {
-    if (!this.overlay) return;
+    this.clearHighlights();
+    this.setCompletionVisible(true);
+  }
 
-    const content = this.overlay.querySelector('.tutorial-content');
-    if (content) {
-      content.innerHTML = `
-        <div class="text-center py-8">
-          <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
-            <svg class="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h3 class="text-xl font-bold text-white mb-2">Tutorial Complete!</h3>
-          <p class="text-slate-400">Great job! You've completed this tutorial.</p>
-        </div>
-      `;
-    }
+  /**
+   * Toggles between the step panel and the completion panel. The overlay
+   * skeleton is built once, so this must never replace its markup — later
+   * tutorials look the step elements up again.
+   */
+  private setCompletionVisible(visible: boolean): void {
+    if (!this.overlay) return;
+    this.overlay.querySelector('.tutorial-step-panel')?.classList.toggle('hidden', visible);
+    this.overlay.querySelector('.tutorial-complete')?.classList.toggle('hidden', !visible);
   }
 
   private cleanup(): void {
@@ -488,7 +522,8 @@ export class TutorialService {
     try {
       const stored = localStorage.getItem('neuroviz-tutorial-completions');
       if (stored) {
-        this.completions = JSON.parse(stored);
+        const parsed: unknown = JSON.parse(stored);
+        this.completions = Array.isArray(parsed) ? parsed.filter(isTutorialCompletion) : [];
       }
     } catch {
       this.completions = [];
@@ -503,13 +538,3 @@ export class TutorialService {
     }
   }
 }
-
-// Add CSS animation for highlight pulse
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes tutorial-pulse {
-    0%, 100% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5), 0 0 20px rgba(34, 211, 238, 0.5); }
-    50% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5), 0 0 30px rgba(34, 211, 238, 0.8); }
-  }
-`;
-document.head.appendChild(style);

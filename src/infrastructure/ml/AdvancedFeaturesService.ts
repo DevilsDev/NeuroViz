@@ -140,25 +140,38 @@ export class AdvancedFeaturesService {
     onProgress?: (current: number, total: number, status: string) => void
   ): Promise<AdversarialExample[]> {
     const examples: AdversarialExample[] = [];
+    const validPoints = points.filter((p): p is Point => p !== undefined);
 
-    for (let i = 0; i < points.length; i++) {
-      const point = points[i];
-      if (!point) continue;
+    if (validPoints.length === 0 || !model.isReady()) {
+      this.adversarialExamples = examples;
+      onProgress?.(points.length, points.length, `Found ${examples.length} adversarial examples`);
+      return examples;
+    }
 
-      onProgress?.(i, points.length, `Testing point ${i + 1}/${points.length}...`);
+    // Build every candidate (original + spiral perturbations) up front and
+    // classify them in ONE predict call: a forward pass over a few thousand
+    // 2-D points is cheap, whereas one predict per candidate paid a GPU
+    // readback each time. Predictions are deterministic at inference, so
+    // scanning the batched results in spiral order finds the same examples.
+    onProgress?.(0, validPoints.length, 'Classifying perturbations...');
+    const candidateSets = validPoints.map((point) => this.buildSpiralCandidates(point, config));
+    const predictions = await model.predict(
+      candidateSets.flatMap(({ original, perturbations }) => [original, ...perturbations.map((c) => c.point)])
+    );
 
-      // Create async predict function wrapper
-      const predictFn = async (p: Point): Promise<Prediction | null> => {
-        if (!model.isReady()) return null;
-        const predictions = await model.predict([p]);
-        return predictions[0] ?? null;
-      };
+    let offset = 0;
+    candidateSets.forEach(({ original, perturbations }, i) => {
+      onProgress?.(i, validPoints.length, `Testing point ${i + 1}/${validPoints.length}...`);
+      const originalPred = predictions[offset];
+      const perturbedPreds = predictions.slice(offset + 1, offset + 1 + perturbations.length);
+      offset += 1 + perturbations.length;
 
-      const adversarial = await this.generateSingleSimpleAdversarial(point, predictFn, config);
+      if (!originalPred) return;
+      const adversarial = this.findFirstAdversarial(original, originalPred, perturbations, perturbedPreds, config);
       if (adversarial) {
         examples.push(adversarial);
       }
-    }
+    });
 
     this.adversarialExamples = examples;
     onProgress?.(points.length, points.length, `Found ${examples.length} adversarial examples`);
@@ -166,19 +179,15 @@ export class AdvancedFeaturesService {
   }
 
   /**
-   * Generates a single adversarial example using spiral search (async version)
+   * Builds spiral-search perturbations for a point, in search order:
+   * increasing radius, then 8 directions per radius.
    */
-  private async generateSingleSimpleAdversarial(
+  private buildSpiralCandidates(
     point: Point,
-    predictFn: (point: Point) => Promise<Prediction | null>,
     config: AdversarialConfig
-  ): Promise<AdversarialExample | null> {
-    const originalPred = await predictFn(point);
-    if (!originalPred) return null;
+  ): { original: Point; perturbations: Array<{ point: Point; dx: number; dy: number }> } {
+    const perturbations: Array<{ point: Point; dx: number; dy: number }> = [];
 
-    const originalClass = originalPred.predictedClass;
-
-    // Try perturbations in a spiral pattern
     for (let step = 1; step <= config.numSteps; step++) {
       const radius = (step / config.numSteps) * config.maxPerturbation;
 
@@ -186,34 +195,53 @@ export class AdvancedFeaturesService {
       for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
         const dx = Math.cos(angle) * radius;
         const dy = Math.sin(angle) * radius;
+        perturbations.push({
+          point: { x: point.x + dx, y: point.y + dy, label: point.label },
+          dx,
+          dy,
+        });
+      }
+    }
 
-        const perturbedPoint: Point = {
-          x: point.x + dx,
-          y: point.y + dy,
-          label: point.label,
+    return { original: point, perturbations };
+  }
+
+  /**
+   * Returns the first perturbation (in spiral order) that crosses the decision
+   * boundary with sufficient confidence, or null if none does.
+   */
+  private findFirstAdversarial(
+    point: Point,
+    originalPred: Prediction,
+    perturbations: ReadonlyArray<{ point: Point; dx: number; dy: number }>,
+    perturbedPreds: readonly Prediction[],
+    config: AdversarialConfig
+  ): AdversarialExample | null {
+    const originalClass = originalPred.predictedClass;
+
+    for (let k = 0; k < perturbations.length; k++) {
+      const candidate = perturbations[k];
+      const perturbedPred = perturbedPreds[k];
+      if (!candidate || !perturbedPred) continue;
+
+      // Check if we've crossed the decision boundary
+      if (perturbedPred.predictedClass !== originalClass &&
+          perturbedPred.confidence >= config.minConfidence) {
+        const { dx, dy } = candidate;
+        const magnitude = Math.sqrt(dx * dx + dy * dy);
+        const actualLabel = `Class ${point.label}`;
+        const predictedLabel = `Class ${perturbedPred.predictedClass}`;
+        const confidencePercent = Math.round(perturbedPred.confidence * 100);
+
+        return {
+          point: candidate.point,
+          originalPoint: point,
+          predictedClass: perturbedPred.predictedClass,
+          confidence: perturbedPred.confidence,
+          actualClass: point.label,
+          perturbationMagnitude: magnitude,
+          explanation: `Should be ${actualLabel}, but model predicts ${predictedLabel} with ${confidencePercent}% confidence.`,
         };
-
-        const perturbedPred = await predictFn(perturbedPoint);
-        if (!perturbedPred) continue;
-
-        // Check if we've crossed the decision boundary
-        if (perturbedPred.predictedClass !== originalClass &&
-            perturbedPred.confidence >= config.minConfidence) {
-          const magnitude = Math.sqrt(dx * dx + dy * dy);
-          const actualLabel = `Class ${point.label}`;
-          const predictedLabel = `Class ${perturbedPred.predictedClass}`;
-          const confidencePercent = Math.round(perturbedPred.confidence * 100);
-
-          return {
-            point: perturbedPoint,
-            originalPoint: point,
-            predictedClass: perturbedPred.predictedClass,
-            confidence: perturbedPred.confidence,
-            actualClass: point.label,
-            perturbationMagnitude: magnitude,
-            explanation: `Should be ${actualLabel}, but model predicts ${predictedLabel} with ${confidencePercent}% confidence.`,
-          };
-        }
       }
     }
 

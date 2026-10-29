@@ -5,8 +5,6 @@ export { D3AccuracyChart } from './D3AccuracyChart';
 export { D3ConfusionMatrix, calculateConfusionMatrix, calculateClassMetrics, calculateMacroMetrics } from './D3ConfusionMatrix';
 export type { ConfusionMatrixData, ClassMetrics } from './D3ConfusionMatrix';
 export { D3WeightHistogram } from './D3WeightHistogram';
-export { D3LRFinder, findOptimalLR } from './D3LRFinder';
-export type { LRFinderPoint } from './D3LRFinder';
 export { D3NetworkDiagram } from './D3NetworkDiagram';
 export { D3ActivationHeatmap } from './D3ActivationHeatmap';
 export { D3ActivationHistogram } from './D3ActivationHistogram';

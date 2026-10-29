@@ -16,9 +16,40 @@ function themeColor(prop: string, fallback: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(prop).trim() || fallback;
 }
 
+/** Fraction of the data range added above (and below, for negative data) the plotted losses. */
+const LOSS_DOMAIN_PADDING = 0.1;
+/** Absolute padding used when every loss value is identical (zero-height range). */
+const LOSS_DOMAIN_FLAT_PADDING = 0.1;
+
+/**
+ * Computes the loss-axis domain.
+ *
+ * - Null validation losses (no validation split) and NaN are ignored.
+ * - Zero stays in the domain, so non-negative losses keep their 0 baseline
+ *   ([0, max + 10%]); negative losses extend the lower bound (commit 96bcc77).
+ * - Padding is 10% of the data range on each free end, so negative-only
+ *   data is never clipped at the top.
+ * - A flat range (e.g. all-zero loss) gets a fixed small pad.
+ */
+export function computeLossDomain(records: readonly TrainingRecord[]): [number, number] {
+  const values: number[] = [];
+  for (const r of records) {
+    if (Number.isFinite(r.loss)) values.push(r.loss);
+    if (r.valLoss !== null && Number.isFinite(r.valLoss)) values.push(r.valLoss);
+  }
+  if (values.length === 0) return [0, 1];
+
+  const lo = Math.min(d3.min(values) ?? 0, 0);
+  const hi = d3.max(values) ?? 0;
+  const pad = (hi - lo) * LOSS_DOMAIN_PADDING || LOSS_DOMAIN_FLAT_PADDING;
+
+  return [lo === 0 ? 0 : lo - pad, hi + pad];
+}
+
 export class D3LossChart {
   private readonly container: d3.Selection<HTMLElement, unknown, null, undefined>;
-  private readonly svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
+  /** Margin-translated plot group (a <g>, not the root <svg>) */
+  private readonly svg: d3.Selection<SVGGElement, unknown, null, undefined>;
   private width: number;
   private height: number;
 
@@ -64,9 +95,7 @@ export class D3LossChart {
 
     this.svg = svgElement
       .append('g')
-      .attr('transform', `translate(${this.margin.left},${this.margin.top})`) as unknown as d3.Selection<
-        SVGSVGElement, unknown, null, undefined
-      >;
+      .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
 
     // Scales
     this.xScale = d3.scaleLinear().range([0, this.width]);
@@ -176,15 +205,9 @@ export class D3LossChart {
 
     // Update scales
     const maxEpoch = d3.max(records, d => d.epoch) ?? 1;
-    const maxTrainLoss = d3.max(records, d => d.loss) ?? 1;
-    const maxValLoss = d3.max(records, d => d.valLoss ?? 0) ?? 0;
-    const minTrainLoss = d3.min(records, d => d.loss) ?? 0;
-    const minValLoss = d3.min(records, d => d.valLoss ?? 0) ?? 0;
-    const maxLoss = Math.max(maxTrainLoss, maxValLoss);
-    const minLoss = Math.min(minTrainLoss, minValLoss, 0);
 
     this.xScale.domain([1, maxEpoch]);
-    this.yScaleLoss.domain([minLoss * 1.1, maxLoss * 1.1]);
+    this.yScaleLoss.domain(computeLossDomain(records));
 
     this.updateGrid();
 

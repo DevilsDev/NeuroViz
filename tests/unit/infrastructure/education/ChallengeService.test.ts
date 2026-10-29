@@ -538,4 +538,47 @@ describe('ChallengeService', () => {
       expect(() => service.clearProgress()).not.toThrow();
     });
   });
+  describe('stored data validation', () => {
+    const goodEntry = {
+      challengeId: 'c1', rank: 0, configName: 'cfg', score: 5,
+      metrics: { accuracy: 0.9, loss: 0.1, epochs: 10 }, achievedAt: 1,
+    };
+    const goodCompletion = {
+      challengeId: 'c1', completedAt: 1, config: { layers: [4] },
+      metrics: { accuracy: 0.9, loss: null, epochs: 10 }, timeTakenMs: 100,
+    };
+
+    it('falls back to empty data when stored JSON is not an array', () => {
+      service.dispose();
+      localStorageMock['neuroviz-challenge-completions'] = JSON.stringify({ evil: true });
+      localStorageMock['neuroviz-challenge-leaderboard'] = '"just a string"';
+      service = new ChallengeService();
+      expect(service.getCompletedChallenges()).toEqual([]);
+      expect(service.getGlobalLeaderboard()).toEqual([]);
+    });
+
+    it('falls back to empty data when stored JSON is corrupt', () => {
+      service.dispose();
+      localStorageMock['neuroviz-challenge-leaderboard'] = '{not json';
+      service = new ChallengeService();
+      expect(service.getGlobalLeaderboard()).toEqual([]);
+    });
+
+    it('drops malformed entries but keeps valid ones', () => {
+      service.dispose();
+      localStorageMock['neuroviz-challenge-completions'] = JSON.stringify([
+        goodCompletion, { challengeId: 7 }, null,
+      ]);
+      localStorageMock['neuroviz-challenge-leaderboard'] = JSON.stringify([
+        goodEntry,
+        { ...goodEntry, configName: { html: '<b>' } },
+        { ...goodEntry, score: 'lots' },
+        { ...goodEntry, metrics: null },
+      ]);
+      service = new ChallengeService();
+      expect(service.getCompletedChallenges()).toHaveLength(1);
+      expect(service.getGlobalLeaderboard()).toHaveLength(1);
+      expect(service.getGlobalLeaderboard()[0]?.configName).toBe('cfg');
+    });
+  });
 });

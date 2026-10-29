@@ -23,6 +23,29 @@ export enum StorageError {
 }
 
 /**
+ * Prefix shared by every key NeuroViz writes to localStorage. clear() only
+ * removes keys with this prefix so other data on the same origin survives.
+ */
+export const APP_STORAGE_PREFIX = 'neuroviz-';
+
+/** Runtime shape check for values read back from storage. */
+export type StorageValidator<T> = (value: unknown) => value is T;
+
+/**
+ * Coarse fallback check when no validator is supplied: the stored value must
+ * be the same kind (primitive type / array / plain object) as the default.
+ */
+function matchesDefaultKind(value: unknown, defaultValue: unknown): boolean {
+  if (defaultValue === undefined) return true;
+  if (defaultValue === null) return value === null;
+  if (Array.isArray(defaultValue)) return Array.isArray(value);
+  if (typeof defaultValue === 'object') {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+  }
+  return typeof value === typeof defaultValue;
+}
+
+/**
  * Safe localStorage wrapper class.
  */
 export class LocalStorageService {
@@ -92,6 +115,8 @@ export class LocalStorageService {
    *
    * @param key - Storage key
    * @param defaultValue - Value to return if key doesn't exist or parsing fails
+   * @param validate - Optional type guard; malformed values fall back to defaultValue.
+   *                   Without it, the value must at least match defaultValue's kind.
    * @returns Result with data or error
    *
    * @example
@@ -103,7 +128,7 @@ export class LocalStorageService {
    * }
    * ```
    */
-  getItem<T>(key: string, defaultValue?: T): StorageResult<T> {
+  getItem<T>(key: string, defaultValue?: T, validate?: StorageValidator<T>): StorageResult<T> {
     if (!this.available) {
       return {
         success: false,
@@ -119,8 +144,13 @@ export class LocalStorageService {
         return { success: true, data: defaultValue };
       }
 
-      const parsed = JSON.parse(item) as T;
-      return { success: true, data: parsed };
+      const parsed: unknown = JSON.parse(item);
+      const valid = validate ? validate(parsed) : matchesDefaultKind(parsed, defaultValue);
+      if (!valid) {
+        console.warn(`Ignoring malformed localStorage item "${key}"`);
+        return { success: true, data: defaultValue };
+      }
+      return { success: true, data: parsed as T };
     } catch (error) {
       // Handle legacy/corrupted data: if parse fails, clean up and use default
       console.warn(`Failed to parse localStorage item "${key}":`, error);
@@ -160,7 +190,8 @@ export class LocalStorageService {
   }
 
   /**
-   * Clears all items from localStorage.
+   * Removes every NeuroViz item (keys starting with APP_STORAGE_PREFIX).
+   * Other data stored on the same origin is left untouched.
    *
    * @returns Result indicating success/failure
    */
@@ -170,7 +201,11 @@ export class LocalStorageService {
     }
 
     try {
-      localStorage.clear();
+      // Collect first: removing while iterating key(i) would skip entries
+      const appKeys = this.getAllKeys().filter(key => key.startsWith(APP_STORAGE_PREFIX));
+      for (const key of appKeys) {
+        localStorage.removeItem(key);
+      }
       return { success: true };
     } catch {
       return { success: false, error: StorageError.UNKNOWN };

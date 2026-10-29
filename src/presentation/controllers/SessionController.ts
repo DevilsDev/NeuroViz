@@ -71,6 +71,40 @@ export interface SessionData {
     history: TrainingHistory;
 }
 
+const SESSION_NUMBER_FIELDS = [
+    'samples', 'noise', 'numClasses', 'learningRate', 'l2Regularization',
+    'batchSize', 'maxEpochs', 'targetFps',
+] as const;
+const SESSION_STRING_FIELDS = ['datasetType', 'layers', 'optimizer', 'activation'] as const;
+
+/**
+ * Runtime shape check for a saved session read back from localStorage.
+ * Anything malformed is treated as "no saved session" rather than crashing
+ * half-way through restoring the form.
+ */
+export function isSessionData(value: unknown): value is SessionData {
+    if (typeof value !== 'object' || value === null) return false;
+    const v = value as Record<string, unknown>;
+    if (typeof v.version !== 'number' || typeof v.config !== 'object' || v.config === null) return false;
+    const config = v.config as Record<string, unknown>;
+    if (!SESSION_NUMBER_FIELDS.every(f => typeof config[f] === 'number' && Number.isFinite(config[f]))) return false;
+    if (!SESSION_STRING_FIELDS.every(f => typeof config[f] === 'string')) return false;
+    // validationSplit can be saved as NaN (-> null in JSON); loadSession tolerates that
+    if (typeof config.validationSplit !== 'number' && config.validationSplit !== null) return false;
+    if (v.data !== undefined && !Array.isArray(v.data)) return false;
+    if (Array.isArray(v.data)) {
+        const pointsOk = v.data.every(p =>
+            typeof p === 'object' && p !== null &&
+            typeof (p as Record<string, unknown>).x === 'number' &&
+            typeof (p as Record<string, unknown>).y === 'number' &&
+            typeof (p as Record<string, unknown>).label === 'number');
+        if (!pointsOk) return false;
+    }
+    return true;
+}
+
+const isThemeString = (value: unknown): value is string => typeof value === 'string';
+
 export class SessionController {
     // Event cleanup tracking for proper disposal
     private eventCleanup: Array<{ element: HTMLElement; event: string; handler: EventListener }> = [];
@@ -190,7 +224,7 @@ export class SessionController {
     }
 
     private initTheme(): void {
-        const stored = this.storage.getItem<string>(THEME_KEY).data;
+        const stored = this.storage.getItem<string>(THEME_KEY, undefined, isThemeString).data;
         const theme = stored === 'light' || stored === 'dark'
             ? stored
             : (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
@@ -264,7 +298,7 @@ export class SessionController {
 
     private async loadSession(): Promise<void> {
         try {
-            const result = this.storage.getItem<SessionData>(SESSION_KEY);
+            const result = this.storage.getItem<SessionData>(SESSION_KEY, undefined, isSessionData);
             if (!result.success || !result.data) {
                 toast.info('No saved session found');
                 return;

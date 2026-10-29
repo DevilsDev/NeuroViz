@@ -1,0 +1,199 @@
+/**
+ * D3Chart rendering tests: tooltips, multi-class boundary, point styling, export.
+ */
+
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import * as d3 from 'd3';
+import { D3Chart } from '../../../../src/infrastructure/d3/D3Chart';
+import type { Point, Prediction } from '../../../../src/core/domain';
+
+const hover = (el: Element | null, type: 'mouseenter' | 'mouseleave'): void => {
+  el?.dispatchEvent(new MouseEvent(type, { bubbles: false, clientX: 5, clientY: 5 }));
+};
+
+describe('D3Chart - rendering', () => {
+  let container: HTMLDivElement;
+  let chart: D3Chart;
+
+  beforeEach(() => {
+    container = document.createElement('div');
+    container.id = 'render-test-chart';
+    document.body.appendChild(container);
+    chart = new D3Chart('render-test-chart');
+  });
+
+  afterEach(() => {
+    chart.dispose();
+    container.remove();
+    vi.restoreAllMocks();
+  });
+
+  const tooltip = (): d3.Selection<HTMLDivElement, unknown, HTMLElement, unknown> =>
+    (chart as unknown as { tooltip: d3.Selection<HTMLDivElement, unknown, HTMLElement, unknown> }).tooltip;
+
+  const isVisible = (): boolean =>
+    tooltip().style('opacity') === '1' && tooltip().style('display') !== 'none';
+
+  describe('tooltips', () => {
+    const points: Point[] = [{ x: 0.1, y: 0.2, label: 0 }];
+
+    it('shows the adversarial tooltip', () => {
+      chart.renderAdversarialPoints([{ x: 0.5, y: 0.5, label: 1, isAdversarial: true }]);
+      hover(container.querySelector('.adversarial-point'), 'mouseenter');
+      expect(isVisible()).toBe(true);
+    });
+
+    it('still shows data-point tooltips after hovering an adversarial point', () => {
+      chart.renderData(points);
+      chart.renderAdversarialPoints([{ x: 0.5, y: 0.5, label: 1, isAdversarial: true }]);
+
+      hover(container.querySelector('.adversarial-point'), 'mouseenter');
+      hover(container.querySelector('.adversarial-point'), 'mouseleave');
+      expect(isVisible()).toBe(false);
+
+      hover(container.querySelector('.data-point'), 'mouseenter');
+      expect(isVisible()).toBe(true);
+
+      hover(container.querySelector('.data-point'), 'mouseleave');
+      expect(isVisible()).toBe(false);
+    });
+  });
+
+  describe('misclassification highlight', () => {
+    const points: Point[] = [
+      { x: 0.1, y: 0.1, label: 0 },
+      { x: 0.2, y: 0.2, label: 1, isValidation: true },
+      { x: 0.3, y: 0.3, label: 0 },
+    ];
+    const preds = (classes: number[]): Prediction[] =>
+      classes.map((c) => ({ x: 0, y: 0, confidence: 0.9, predictedClass: c })) as unknown as Prediction[];
+    const strokes = (): Array<[string | null, string | null]> =>
+      Array.from(container.querySelectorAll('.data-point')).map((n) => [
+        n.getAttribute('stroke'),
+        n.getAttribute('stroke-width'),
+      ]);
+
+    it('restores the initial point stroke for correctly classified points', () => {
+      chart.renderData(points);
+      const initial = strokes();
+
+      chart.highlightMisclassified(preds([1, 1, 0]));
+      const highlighted = strokes();
+      expect(highlighted[0]).toEqual(['#ef4444', '3']);
+      expect(highlighted[1]).toEqual(initial[1]);
+      expect(highlighted[2]).toEqual(initial[2]);
+    });
+
+    it('clearMisclassifiedHighlight restores the initial stroke', () => {
+      chart.renderData(points);
+      const initial = strokes();
+      chart.highlightMisclassified(preds([1, 0, 1]));
+      chart.clearMisclassifiedHighlight();
+      expect(strokes()).toEqual(initial);
+    });
+  });
+
+  describe('PNG export', () => {
+    class FakeImage {
+      static last: FakeImage | null = null;
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      src = '';
+      constructor() { FakeImage.last = this; }
+    }
+
+    let canvas: HTMLCanvasElement | null;
+    const revoke = vi.fn();
+
+    beforeEach(() => {
+      canvas = null;
+      FakeImage.last = null;
+      revoke.mockReset();
+      const ctx = {
+        scale: vi.fn(), drawImage: vi.fn(), fillRect: vi.fn(), fillText: vi.fn(),
+        measureText: () => ({ width: 10 }), fillStyle: '', font: '',
+      };
+      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function (this: HTMLCanvasElement) {
+        canvas = this;
+        return ctx as unknown as CanvasRenderingContext2D;
+      } as unknown as HTMLCanvasElement['getContext']);
+      vi.stubGlobal('Image', FakeImage);
+      vi.stubGlobal('URL', Object.assign(Object.create(URL), {
+        createObjectURL: () => 'blob:fake',
+        revokeObjectURL: revoke,
+      }));
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    // Default container size in jsdom is 500x500 (margins included); scale 2
+    it('sizes the canvas to include the axis margins', () => {
+      chart.exportAsPNG('x');
+      expect(canvas?.width).toBe(1000);
+      expect(canvas?.height).toBe(1000);
+    });
+
+    it('sizes the metadata canvas to include the axis margins', () => {
+      chart.exportAsPNGWithMetadata('x', { a: 'b' });
+      expect(canvas?.width).toBe(1000);
+      expect(canvas?.height).toBe((500 + 80) * 2);
+    });
+
+    it('handles image load errors in exportAsPNGWithMetadata', () => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      chart.exportAsPNGWithMetadata('x', { a: 'b' });
+      expect(FakeImage.last?.onerror).toBeTypeOf('function');
+      FakeImage.last?.onerror?.();
+      expect(error).toHaveBeenCalled();
+      expect(revoke).toHaveBeenCalledWith('blob:fake');
+    });
+  });
+
+  describe('multi-class boundary', () => {
+    const grid = (gridSize: number, cls: number): Prediction[] =>
+      Array.from({ length: gridSize * gridSize }, (_, i) => ({
+        x: i % gridSize,
+        y: Math.floor(i / gridSize),
+        confidence: 0.6,
+        predictedClass: (i + cls) % 3,
+        probabilities: [0.2, 0.2, 0.6],
+      })) as unknown as Prediction[];
+
+    const rects = (): Element[] => Array.from(container.querySelectorAll('.boundary rect'));
+
+    it('reuses the same rect nodes across renders with the same grid size', () => {
+      chart.renderBoundary(grid(4, 0), 4);
+      const before = rects();
+      expect(before).toHaveLength(16);
+      const fillBefore = before[0]?.getAttribute('fill');
+
+      chart.renderBoundary(grid(4, 1), 4);
+      const after = rects();
+      expect(after).toHaveLength(16);
+      after.forEach((node, i) => expect(node).toBe(before[i]));
+      // fills are updated in place
+      expect(after[0]?.getAttribute('fill')).not.toBe(fillBefore);
+    });
+
+    it('adds and removes cells when the grid size changes', () => {
+      chart.renderBoundary(grid(4, 0), 4);
+      chart.renderBoundary(grid(6, 0), 6);
+      expect(rects()).toHaveLength(36);
+      chart.renderBoundary(grid(3, 0), 3);
+      expect(rects()).toHaveLength(9);
+      expect(container.querySelectorAll('.boundary')).toHaveLength(1);
+    });
+
+    it('replaces the multi-class boundary when switching to binary', () => {
+      chart.renderBoundary(grid(4, 0), 4);
+      const binary = Array.from({ length: 16 }, (_, i) => ({
+        x: 0, y: 0, confidence: (i % 4) / 4, predictedClass: 0, probabilities: [0.5, 0.5],
+      })) as unknown as Prediction[];
+      chart.renderBoundary(binary, 4);
+      expect(rects()).toHaveLength(0);
+      expect(container.querySelectorAll('.boundary')).toHaveLength(1);
+    });
+  });
+});

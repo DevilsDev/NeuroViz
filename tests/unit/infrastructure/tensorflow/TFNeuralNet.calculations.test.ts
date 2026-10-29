@@ -11,8 +11,9 @@
  * - Optimizer creation
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as tf from '@tensorflow/tfjs';
+import { seedMathRandom } from '../../helpers/seededRandom';
 import { TFNeuralNet } from '../../../../src/infrastructure/tensorflow/TFNeuralNet';
 import type { Point } from '../../../../src/core/domain';
 
@@ -20,6 +21,8 @@ describe('TFNeuralNet - Mathematical Correctness', () => {
   let neuralNet: TFNeuralNet;
 
   beforeEach(() => {
+    // Training from random weights is otherwise occasionally unlucky
+    seedMathRandom();
     neuralNet = new TFNeuralNet();
   });
 
@@ -27,6 +30,7 @@ describe('TFNeuralNet - Mathematical Correctness', () => {
     neuralNet.dispose();
     // Clean up any remaining tensors
     tf.disposeVariables();
+    vi.restoreAllMocks();
   });
 
   describe('Binary Classification Predictions', () => {

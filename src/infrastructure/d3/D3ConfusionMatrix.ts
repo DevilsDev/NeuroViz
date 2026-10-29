@@ -1,4 +1,5 @@
 import * as d3 from 'd3';
+import { escapeHTML } from '../security/htmlSanitizer';
 
 /**
  * Confusion matrix data structure.
@@ -103,11 +104,14 @@ export class D3ConfusionMatrix {
           .attr('rx', 2)
           .attr('fill', isCorrect ? colorScale(0) : d3.interpolateReds(0))
           .style('cursor', 'pointer')
+          .merge(rect)
+          // Bound on every render (not only on enter) so the tooltip closes
+          // over this render's count and percentage
           .on('mouseenter', (event) => {
             tooltipMerged
               .html(`
                 <div style="font-weight: bold; margin-bottom: 4px;">
-                  Actual: ${data.labels[i]} → Predicted: ${data.labels[j]}
+                  Actual: ${escapeHTML(String(data.labels[i] ?? ''))} → Predicted: ${escapeHTML(String(data.labels[j] ?? ''))}
                 </div>
                 <div>Count: <strong>${value}</strong></div>
                 <div>Percentage: <strong>${percentage}%</strong></div>
@@ -125,7 +129,6 @@ export class D3ConfusionMatrix {
           .on('mouseleave', () => {
             tooltipMerged.style('opacity', '0');
           })
-          .merge(rect)
           .transition()
           .duration(500)
           .attr('fill', isCorrect ? colorScale(value) : d3.interpolateReds(value / (maxVal || 1)));

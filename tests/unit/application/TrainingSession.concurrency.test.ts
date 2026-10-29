@@ -13,7 +13,6 @@ function createMockNeuralNet(): INeuralNetworkService {
     evaluate: vi.fn().mockResolvedValue({ loss: 0.5, accuracy: 0.8 }),
     getWeightMatrices: vi.fn().mockReturnValue([]),
     getLayerActivations: vi.fn().mockReturnValue([]),
-    loadModel: vi.fn().mockResolvedValue(undefined),
     getStructure: vi.fn().mockReturnValue(null),
     isReady: vi.fn().mockReturnValue(true),
     dispose: vi.fn(),
@@ -196,7 +195,10 @@ describe('TrainingSession - concurrency', () => {
       }
 
       expect(controllable.maxConcurrent()).toBe(1);
-      expect(controllable.pending()).toBe(1);
+      // The loop keeps going: the next step starts (wait for it rather than a
+      // fixed delay, which is flaky on a loaded machine)
+      await expect.poll(() => controllable.pending()).toBe(1);
+      expect(controllable.maxConcurrent()).toBe(1);
       session.pause();
       controllable.releaseAll();
     });

@@ -1,8 +1,19 @@
-export function setupTouchGestures(): void {
+let teardownTouchGestures: (() => void) | null = null;
+
+/**
+ * Emits swipe-left/right/up/down CustomEvents on document.
+ *
+ * @returns A teardown function that removes the listeners. Calling
+ *          setupTouchGestures() again tears down the previous wiring first.
+ */
+export function setupTouchGestures(): () => void {
+    teardownTouchGestures?.();
+    teardownTouchGestures = null;
+
     let touchStartX = 0;
     let touchStartY = 0;
 
-    document.addEventListener('touchstart', (e) => {
+    const onTouchStart = (e: TouchEvent): void => {
         if (e.touches.length > 0) {
             const touch = e.touches[0];
             if (touch) {
@@ -10,9 +21,9 @@ export function setupTouchGestures(): void {
                 touchStartY = touch.screenY;
             }
         }
-    }, { passive: true });
+    };
 
-    document.addEventListener('touchend', (e) => {
+    const onTouchEnd = (e: TouchEvent): void => {
         if (e.changedTouches.length > 0) {
             const touch = e.changedTouches[0];
             if (touch) {
@@ -21,7 +32,18 @@ export function setupTouchGestures(): void {
                 handleGesture(touchStartX, touchStartY, touchEndX, touchEndY);
             }
         }
-    }, { passive: true });
+    };
+
+    document.addEventListener('touchstart', onTouchStart, { passive: true });
+    document.addEventListener('touchend', onTouchEnd, { passive: true });
+
+    const teardown = (): void => {
+        document.removeEventListener('touchstart', onTouchStart);
+        document.removeEventListener('touchend', onTouchEnd);
+        if (teardownTouchGestures === teardown) teardownTouchGestures = null;
+    };
+    teardownTouchGestures = teardown;
+    return teardown;
 }
 
 function handleGesture(startX: number, startY: number, endX: number, endY: number): void {

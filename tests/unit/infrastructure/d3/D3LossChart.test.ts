@@ -265,4 +265,41 @@ describe('D3LossChart', () => {
       expect(() => chart.update(history)).not.toThrow();
     });
   });
+  describe('y-axis domain', () => {
+    const rec = (epoch: number, loss: number, valLoss: number | null) => ({
+      epoch, loss, valLoss, accuracy: 0.5, valAccuracy: null, timestamp: 0, learningRate: 0.01,
+    });
+    const domainOf = (): number[] =>
+      (chart as unknown as { yScaleLoss: { domain(): number[] } }).yScaleLoss.domain();
+    const historyOf = (records: ReturnType<typeof rec>[]): TrainingHistory =>
+      ({ records, bestLoss: null, bestEpoch: null } as unknown as TrainingHistory);
+
+    it('keeps all-negative losses inside the domain', () => {
+      chart.update(historyOf([rec(1, -2, -1.8), rec(2, -1.5, -1)]));
+      const [lo, hi] = domainOf();
+      expect(lo).toBeLessThan(-2);
+      expect(hi).toBeGreaterThan(-1);
+    });
+
+    it('ignores null validation loss when computing the domain', () => {
+      chart.update(historyOf([rec(1, -2, null), rec(2, -1, null)]));
+      const [lo, hi] = domainOf();
+      expect(lo).toBeLessThan(-2);
+      expect(hi).toBeGreaterThan(-1);
+      expect(hi).toBeLessThan(0);
+    });
+
+    it('anchors non-negative losses at zero with 10% headroom', () => {
+      chart.update(historyOf([rec(1, 1, 0.8), rec(2, 0.5, 0.6)]));
+      const [lo, hi] = domainOf();
+      expect(lo).toBe(0);
+      expect(hi).toBeCloseTo(1.1);
+    });
+
+    it('gives an all-zero loss a non-zero-height domain', () => {
+      chart.update(historyOf([rec(1, 0, null), rec(2, 0, null)]));
+      const [lo, hi] = domainOf();
+      expect(hi - lo).toBeGreaterThan(0);
+    });
+  });
 });

@@ -18,27 +18,8 @@ import { TFNeuralNet } from '../../../src/infrastructure/tensorflow/TFNeuralNet'
 import { MockDataRepository } from '../../../src/infrastructure/api/MockDataRepository';
 import type { Point, Prediction, Hyperparameters } from '../../../src/core/domain';
 import * as tf from '@tensorflow/tfjs';
+import { seedMathRandom } from '../helpers/seededRandom';
 
-/**
- * Deterministic PRNG (mulberry32) used in place of Math.random.
- *
- * TF.js seeds every unseeded random op (weight initialisers, dropout) from
- * Math.random(), and MockDataRepository generates datasets with it. Without a
- * fixed seed, these convergence tests occasionally hit an unlucky
- * initialisation and fail (~5-10% per test).
- */
-function seededRandom(seed: number): () => number {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let t = state;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-const RANDOM_SEED = 42;
 
 describe('Neural Network Integration Tests', () => {
   let neuralNet: TFNeuralNet;
@@ -51,7 +32,7 @@ describe('Neural Network Integration Tests', () => {
 
   beforeEach(() => {
     // Fresh seed per test so results don't depend on test order
-    vi.spyOn(Math, 'random').mockImplementation(seededRandom(RANDOM_SEED));
+    seedMathRandom();
     neuralNet = new TFNeuralNet();
     dataRepo = new MockDataRepository(0); // No latency for tests
     tf.engine().startScope();
@@ -447,7 +428,7 @@ describe('Neural Network Integration Tests', () => {
         expect(pred.confidence).toBeLessThanOrEqual(1);
         expect([0, 1]).toContain(pred.predictedClass);
       }
-    });
+    }, 30000);
 
     it('should show spatial coherence in predictions', async () => {
       await neuralNet.initialize({

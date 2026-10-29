@@ -467,36 +467,6 @@ describe('TrainingSession – Characterisation (regression gate)', () => {
   });
 
   // ===========================================================================
-  // LR Finder
-  // ===========================================================================
-
-  describe('runLRFinder', () => {
-    it('returns array of {lr, loss} points', async () => {
-      await session.setHyperparameters(defaultConfig);
-      dataRepo.setMockDataset([{ x: 0, y: 0, label: 0 }, { x: 1, y: 1, label: 1 }]);
-      await session.loadData('test');
-
-      const results = await session.runLRFinder(1e-5, 0.1, 10);
-      expect(results.length).toBeGreaterThan(0);
-      expect(results[0]).toHaveProperty('lr');
-      expect(results[0]).toHaveProperty('loss');
-    });
-
-    it('restores model after LR finder completes', async () => {
-      await session.setHyperparameters(defaultConfig);
-      dataRepo.setMockDataset([{ x: 0, y: 0, label: 0 }, { x: 1, y: 1, label: 1 }]);
-      await session.loadData('test');
-
-      const initCallsBefore = neuralNet.initialize.mock.calls.length;
-      await session.runLRFinder(1e-5, 0.1, 5);
-
-      // Should re-initialize with original config to restore model
-      expect(neuralNet.initialize.mock.calls.length).toBe(initCallsBefore + 1);
-      expect(neuralNet.initialize).toHaveBeenLastCalledWith(defaultConfig);
-    });
-  });
-
-  // ===========================================================================
   // dispose
   // ===========================================================================
 

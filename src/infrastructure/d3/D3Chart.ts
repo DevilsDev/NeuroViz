@@ -19,6 +19,15 @@ function themeColor(prop: string, fallback: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(prop).trim() || fallback;
 }
 
+/** Default data-point outline, shared by initial render and highlight resets. */
+const POINT_STYLE = {
+  training: { stroke: 'rgba(255,255,255,0.7)', strokeWidth: 1, dash: 'none' },
+  validation: { stroke: '#fbbf24', strokeWidth: 2, dash: '3,2' },
+} as const;
+
+const pointStyle = (d: Point): (typeof POINT_STYLE)[keyof typeof POINT_STYLE] =>
+  d.isValidation ? POINT_STYLE.validation : POINT_STYLE.training;
+
 export class D3Chart implements IVisualizerService {
   private readonly container: d3.Selection<HTMLElement, unknown, null, undefined>;
   private readonly svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
@@ -223,25 +232,21 @@ export class D3Chart implements IVisualizerService {
       .attr('cy', (d) => this.yScale(d.y))
       .attr('r', this.config.pointRadius)
       .attr('fill', (d) => getColour(d.label))
-      .attr('stroke', (d) => d.isValidation ? '#fbbf24' : 'rgba(255,255,255,0.7)')
-      .attr('stroke-width', (d) => d.isValidation ? 2 : 1)
-      .attr('stroke-dasharray', (d) => d.isValidation ? '3,2' : 'none')
+      .attr('stroke', (d) => pointStyle(d).stroke)
+      .attr('stroke-width', (d) => pointStyle(d).strokeWidth)
+      .attr('stroke-dasharray', (d) => pointStyle(d).dash)
       .attr('opacity', 0.85);
 
     // Add tooltip handlers if enabled
     if (this.config.tooltipsEnabled && this.tooltip) {
-      const tooltip = this.tooltip;
       dataPoints
-        .on('mouseenter', (event, d) => {
-          tooltip
-            .style('opacity', 1)
-            .html(`<strong>${d.isValidation ? 'Validation' : 'Training'} Point</strong><br/>x: ${d.x.toFixed(3)}<br/>y: ${d.y.toFixed(3)}<br/>class: ${d.label}`)
-            .style('left', `${event.pageX + 10}px`)
-            .style('top', `${event.pageY - 10}px`);
+        .on('mouseenter', (event: MouseEvent, d) => {
+          this.showTooltip(
+            `<strong>${d.isValidation ? 'Validation' : 'Training'} Point</strong><br/>x: ${d.x.toFixed(3)}<br/>y: ${d.y.toFixed(3)}<br/>class: ${d.label}`,
+            event
+          );
         })
-        .on('mouseleave', () => {
-          tooltip.style('opacity', 0);
-        });
+        .on('mouseleave', () => this.hideTooltip());
     }
 
     // Add click handler for prediction details
@@ -273,10 +278,8 @@ export class D3Chart implements IVisualizerService {
     this.cachedPredictions = predictions;
     this.cachedGridSize = gridSize;
 
-    // Remove existing boundary
-    this.chartGroup.selectAll('.boundary').remove();
-
     if (predictions.length !== gridSize * gridSize) {
+      this.chartGroup.selectAll('.boundary').remove();
       console.warn(
         `Expected ${gridSize * gridSize} predictions for gridSize ${gridSize}, got ${predictions.length}`
       );
@@ -287,8 +290,11 @@ export class D3Chart implements IVisualizerService {
     const numClasses = predictions[0]?.probabilities?.length ?? 2;
 
     if (numClasses === 2) {
+      this.chartGroup.selectAll('.boundary').remove();
       this.renderBinaryBoundary(predictions, gridSize);
     } else {
+      // The multi-class group is kept and updated in place (data join)
+      this.chartGroup.selectAll('.boundary:not(.boundary-multiclass)').remove();
       this.renderMultiClassBoundary(predictions, gridSize);
     }
   }
@@ -344,6 +350,8 @@ export class D3Chart implements IVisualizerService {
 
   /**
    * Renders multi-class boundary using pixel rectangles.
+   * Uses a keyed data join (cell index) so repeated renders update the
+   * existing rects in place instead of rebuilding gridSize² nodes.
    */
   private renderMultiClassBoundary(predictions: Prediction[], gridSize: number): void {
     const cellWidth = this.width / gridSize;
@@ -355,22 +363,27 @@ export class D3Chart implements IVisualizerService {
       return baseColour;
     };
 
-    const boundaryGroup = this.chartGroup
-      .insert('g', '.data-point')
-      .attr('class', 'boundary');
+    let boundaryGroup = this.chartGroup.select<SVGGElement>('.boundary-multiclass');
+    if (boundaryGroup.empty()) {
+      boundaryGroup = this.chartGroup
+        .insert<SVGGElement>('g', '.data-point')
+        .attr('class', 'boundary boundary-multiclass');
+    }
 
     boundaryGroup
-      .selectAll('rect')
-      .data(predictions)
-      .enter()
-      .append('rect')
+      .selectAll<SVGRectElement, Prediction>('rect')
+      .data(predictions, (_, i) => String(i))
+      .join(
+        (enter) => enter.append('rect').attr('stroke', 'none'),
+        (update) => update,
+        (exit) => exit.remove()
+      )
       .attr('x', (_, i) => (i % gridSize) * cellWidth)
       .attr('y', (_, i) => this.height - Math.floor(i / gridSize) * cellHeight - cellHeight)
       .attr('width', cellWidth)
       .attr('height', cellHeight)
       .attr('fill', (d) => getColour(d))
-      .attr('opacity', (d) => this.config.boundaryOpacity * (0.3 + d.confidence * 0.7))
-      .attr('stroke', 'none');
+      .attr('opacity', (d) => this.config.boundaryOpacity * (0.3 + d.confidence * 0.7));
   }
 
   /**
@@ -424,9 +437,9 @@ export class D3Chart implements IVisualizerService {
     // Update point styling - preserve validation styling for non-misclassified
     this.chartGroup
       .selectAll<SVGCircleElement, Point>('.data-point')
-      .attr('stroke', (d, i) => misclassifiedIndices.has(i) ? '#ef4444' : (d.isValidation ? '#fbbf24' : '#fff'))
-      .attr('stroke-width', (d, i) => misclassifiedIndices.has(i) ? 3 : (d.isValidation ? 2.5 : 1.5))
-      .attr('stroke-dasharray', (d, i) => misclassifiedIndices.has(i) ? 'none' : (d.isValidation ? '3,2' : 'none'));
+      .attr('stroke', (d, i) => misclassifiedIndices.has(i) ? '#ef4444' : pointStyle(d).stroke)
+      .attr('stroke-width', (d, i) => misclassifiedIndices.has(i) ? 3 : pointStyle(d).strokeWidth)
+      .attr('stroke-dasharray', (d, i) => misclassifiedIndices.has(i) ? 'none' : pointStyle(d).dash);
   }
 
   /**
@@ -435,9 +448,9 @@ export class D3Chart implements IVisualizerService {
   clearMisclassifiedHighlight(): void {
     this.chartGroup
       .selectAll<SVGCircleElement, Point>('.data-point')
-      .attr('stroke', (d) => d.isValidation ? '#fbbf24' : '#fff')
-      .attr('stroke-width', (d) => d.isValidation ? 2.5 : 1.5)
-      .attr('stroke-dasharray', (d) => d.isValidation ? '3,2' : 'none');
+      .attr('stroke', (d) => pointStyle(d).stroke)
+      .attr('stroke-width', (d) => pointStyle(d).strokeWidth)
+      .attr('stroke-dasharray', (d) => pointStyle(d).dash);
   }
 
   /**
@@ -672,47 +685,86 @@ export class D3Chart implements IVisualizerService {
       .style('opacity', 0);
   }
 
+  /**
+   * Shows the shared tooltip. Every hover target (data points, adversarial
+   * points) goes through showTooltip/hideTooltip so they share one visibility
+   * mechanism (opacity, matching the .chart-tooltip CSS transition).
+   */
+  private showTooltip(html: string, event: MouseEvent): void {
+    if (!this.tooltip) this.setupTooltip();
+    this.tooltip
+      ?.style('display', null)
+      .style('opacity', 1)
+      .html(html);
+    this.moveTooltip(event);
+  }
+
+  private moveTooltip(event: MouseEvent): void {
+    this.tooltip
+      ?.style('left', `${event.pageX + 10}px`)
+      .style('top', `${event.pageY - 10}px`);
+  }
+
+  private hideTooltip(): void {
+    this.tooltip?.style('opacity', 0);
+  }
+
   // ===========================================================================
   // Export Methods
   // ===========================================================================
 
   /**
-   * Exports the current chart as a PNG image.
-   * @param filename - Name of the downloaded file (without extension)
+   * Clones the chart SVG for raster export: inlines styles, adds a background
+   * and pins explicit pixel dimensions covering the full chart *including*
+   * the axis margins (the live SVG is sized "100%" with no viewBox).
    */
-  exportAsPNG(filename = 'neuroviz-boundary'): void {
+  private serializeForRasterExport(): { url: string; width: number; height: number } | null {
     const svgElement = this.svg.node();
-    if (!svgElement) return;
+    if (!svgElement) return null;
 
-    // Clone SVG and inline styles
+    const width = this.width + this.margin.left + this.margin.right;
+    const height = this.height + this.margin.top + this.margin.bottom;
+
     const clonedSvg = svgElement.cloneNode(true) as SVGSVGElement;
     this.inlineStyles(clonedSvg);
+    clonedSvg.setAttribute('width', String(width));
+    clonedSvg.setAttribute('height', String(height));
 
-    // Add white background for PNG
     const background = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     background.setAttribute('width', '100%');
     background.setAttribute('height', '100%');
     background.setAttribute('fill', '#0a0f1a');
     clonedSvg.insertBefore(background, clonedSvg.firstChild);
 
-    // Serialize SVG to string
-    const serializer = new XMLSerializer();
-    const svgString = serializer.serializeToString(clonedSvg);
+    const svgString = new XMLSerializer().serializeToString(clonedSvg);
     const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(svgBlob);
+    return { url: URL.createObjectURL(svgBlob), width, height };
+  }
+
+  /**
+   * Exports the current chart as a PNG image.
+   * @param filename - Name of the downloaded file (without extension)
+   */
+  exportAsPNG(filename = 'neuroviz-boundary'): void {
+    const exported = this.serializeForRasterExport();
+    if (!exported) return;
+    const { url, width, height } = exported;
 
     // Create canvas and draw SVG
     const canvas = document.createElement('canvas');
     const scale = 2; // Higher resolution
-    canvas.width = this.width * scale;
-    canvas.height = this.height * scale;
+    canvas.width = width * scale;
+    canvas.height = height * scale;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      URL.revokeObjectURL(url);
+      return;
+    }
 
     const img = new Image();
     img.onload = () => {
       ctx.scale(scale, scale);
-      ctx.drawImage(img, 0, 0);
+      ctx.drawImage(img, 0, 0, width, height);
       URL.revokeObjectURL(url);
 
       // Download PNG
@@ -736,34 +788,21 @@ export class D3Chart implements IVisualizerService {
    * @param metadata - Configuration metadata to display on the image
    */
   exportAsPNGWithMetadata(filename = 'neuroviz-boundary', metadata: Record<string, string>): void {
-    const svgElement = this.svg.node();
-    if (!svgElement) return;
-
-    // Clone SVG and inline styles
-    const clonedSvg = svgElement.cloneNode(true) as SVGSVGElement;
-    this.inlineStyles(clonedSvg);
-
-    // Add dark background for PNG
-    const background = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    background.setAttribute('width', '100%');
-    background.setAttribute('height', '100%');
-    background.setAttribute('fill', '#0a0f1a');
-    clonedSvg.insertBefore(background, clonedSvg.firstChild);
-
-    // Serialize SVG to string
-    const serializer = new XMLSerializer();
-    const svgString = serializer.serializeToString(clonedSvg);
-    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(svgBlob);
+    const exported = this.serializeForRasterExport();
+    if (!exported) return;
+    const { url, width, height } = exported;
 
     // Create canvas with extra space for metadata
     const canvas = document.createElement('canvas');
     const scale = 2;
     const metadataHeight = 80;
-    canvas.width = this.width * scale;
-    canvas.height = (this.height + metadataHeight) * scale;
+    canvas.width = width * scale;
+    canvas.height = (height + metadataHeight) * scale;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      URL.revokeObjectURL(url);
+      return;
+    }
 
     const img = new Image();
     img.onload = () => {
@@ -773,12 +812,12 @@ export class D3Chart implements IVisualizerService {
 
       // Draw chart
       ctx.scale(scale, scale);
-      ctx.drawImage(img, 0, 0);
+      ctx.drawImage(img, 0, 0, width, height);
       URL.revokeObjectURL(url);
 
       // Draw metadata panel
       ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
-      ctx.fillRect(0, this.height, this.width, metadataHeight);
+      ctx.fillRect(0, height, width, metadataHeight);
 
       // Draw metadata text
       ctx.fillStyle = '#94a3b8';
@@ -786,8 +825,8 @@ export class D3Chart implements IVisualizerService {
 
       const entries = Object.entries(metadata);
       const cols = 3;
-      const colWidth = this.width / cols;
-      const startY = this.height + 18;
+      const colWidth = width / cols;
+      const startY = height + 18;
       const lineHeight = 16;
 
       entries.forEach(([key, value], i) => {
@@ -805,7 +844,7 @@ export class D3Chart implements IVisualizerService {
       // Add NeuroViz watermark
       ctx.fillStyle = '#475569';
       ctx.font = '10px Inter, system-ui, sans-serif';
-      ctx.fillText('NeuroViz', this.width - 55, this.height + metadataHeight - 8);
+      ctx.fillText('NeuroViz', width - 55, height + metadataHeight - 8);
 
       // Download PNG
       const pngUrl = canvas.toDataURL('image/png');
@@ -813,6 +852,10 @@ export class D3Chart implements IVisualizerService {
       link.download = `${filename}.png`;
       link.href = pngUrl;
       link.click();
+    };
+    img.onerror = () => {
+      console.error('Failed to load SVG for export');
+      URL.revokeObjectURL(url);
     };
     img.src = url;
   }
@@ -985,46 +1028,21 @@ export class D3Chart implements IVisualizerService {
       .attr('stroke-width', 2)
       .attr('opacity', 0.9)
       .style('cursor', 'pointer')
-      .on('mouseenter', (event, d) => {
-        // Show tooltip
-        if (!this.tooltip) {
-          this.tooltip = d3.select('body').append('div')
-            .attr('class', 'chart-tooltip')
-            .style('position', 'absolute')
-            .style('background', 'rgba(15, 23, 42, 0.95)')
-            .style('color', '#f1f5f9')
-            .style('padding', '8px 12px')
-            .style('border-radius', '6px')
-            .style('font-size', '12px')
-            .style('pointer-events', 'none')
-            .style('z-index', '1000')
-            .style('border', '1px solid rgba(245, 158, 11, 0.5)');
-        }
-
+      .on('mouseenter', (event: MouseEvent, d) => {
         const perturbMag = d.originalPoint
           ? Math.sqrt(Math.pow(d.x - d.originalPoint.x, 2) + Math.pow(d.y - d.originalPoint.y, 2))
           : null;
 
-        this.tooltip
-          .style('display', 'block')
-          .html(`
+        this.showTooltip(`
             <div class="font-bold text-amber-400">⚠ Adversarial Example</div>
             <div>Position: (${d.x.toFixed(2)}, ${d.y.toFixed(2)})</div>
             <div>True class: ${d.label}</div>
             ${perturbMag !== null ? `<div class="text-xs text-slate-400 mt-1">Perturbation: ${perturbMag.toFixed(3)}</div>` : ''}
             <div class="text-xs text-slate-400">This point fools the model</div>
-          `)
-          .style('left', `${event.pageX + 10}px`)
-          .style('top', `${event.pageY - 10}px`);
+          `, event);
       })
-      .on('mousemove', (event) => {
-        this.tooltip
-          ?.style('left', `${event.pageX + 10}px`)
-          .style('top', `${event.pageY - 10}px`);
-      })
-      .on('mouseleave', () => {
-        this.tooltip?.style('display', 'none');
-      });
+      .on('mousemove', (event: MouseEvent) => this.moveTooltip(event))
+      .on('mouseleave', () => this.hideTooltip());
 
     // Add pulsing animation
     adversarialGroup.selectAll('.adversarial-point')
