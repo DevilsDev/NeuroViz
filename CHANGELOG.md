@@ -1,3 +1,19 @@
+## [2.31.3](https://github.com/DevilsDev/NeuroViz/compare/v2.31.2...v2.31.3) (2026-10-29)
+
+### Bug Fixes
+
+* **3d:** stop the three.js render loop while the 3D view is hidden ([719e458](https://github.com/DevilsDev/NeuroViz/commit/719e4581908b84fc4010195689c477e79fa7d554))
+* **chart:** correct zoom transform, clipping and axis rescaling ([7c1c15e](https://github.com/DevilsDev/NeuroViz/commit/7c1c15e3c4f6d5da3e94d10e7f66ccd8b09e6b3e))
+* **tensorflow:** release optimizer state and one-hot index tensors ([c104ad9](https://github.com/DevilsDev/NeuroViz/commit/c104ad9412999781796fbfbe4e88796b092e30cf))
+* **training:** apply slow LR schedules to the optimizer ([8594346](https://github.com/DevilsDev/NeuroViz/commit/8594346c94949c56ac3f0778c57aa724ee1efcc8))
+* **training:** don't start training on the old model when re-init fails ([fdfad09](https://github.com/DevilsDev/NeuroViz/commit/fdfad099b2b1f8871817dd97c195e5e84a99938f))
+* **training:** make TrainingSession safe against reset/re-init races ([44fb7e9](https://github.com/DevilsDev/NeuroViz/commit/44fb7e9ef7faec55dc0cdcb6d6b614e162a2b08a))
+* **training:** stop updateLearningRate from disposing live model weights ([a3c30d9](https://github.com/DevilsDev/NeuroViz/commit/a3c30d941f262649e35ff57dd1b21420033357a6))
+
+### Documentation
+
+* **readme:** align feature list and architecture claims with the code ([8abfae5](https://github.com/DevilsDev/NeuroViz/commit/8abfae5301cb6874c7b7a55b42b066295e4ba62b))
+
 ## [2.31.2](https://github.com/DevilsDev/NeuroViz/compare/v2.31.1...v2.31.2) (2026-10-29)
 
 ### Bug Fixes

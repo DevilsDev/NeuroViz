@@ -71,9 +71,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Build the bundle published as release assets (.releaserc.json: dist/**)
+      # Build the bundle and package it as a single release asset
+      # (.releaserc.json: neuroviz-dist.zip). Uploading dist/** file by file
+      # fails on dist/.nojekyll: GitHub rejects zero-byte release assets.
       - name: Build
         run: npm run build
+
+      - name: Package build
+        run: cd dist && zip -qr ../neuroviz-dist.zip .
 
       # -----------------------------------------------------------------------
       # Semantic Release
