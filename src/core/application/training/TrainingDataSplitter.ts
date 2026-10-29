@@ -1,4 +1,5 @@
 import { Point, DEFAULT_TRAINING_CONFIG } from '../../domain';
+import { shuffle as shuffleItems } from './shuffle';
 
 /** Upper bound on the validation fraction so a training set always remains. */
 export const MAX_VALIDATION_SPLIT = 0.9;
@@ -49,7 +50,7 @@ export class TrainingDataSplitter {
     }
 
     // Shuffle data if requested
-    const processedData = shuffle ? this.shuffleData(data) : [...data];
+    const processedData = shuffle ? shuffleItems(data) : [...data];
 
     // Split
     const splitIndex = Math.floor(processedData.length * (1 - validationSplit));
@@ -68,24 +69,6 @@ export class TrainingDataSplitter {
       validation: validationData,
       all: allData,
     };
-  }
-
-  /**
-   * Shuffles an array of points using Fisher-Yates algorithm
-   * @param data - Data to shuffle
-   * @returns Shuffled copy of the data
-   */
-  private shuffleData(data: Point[]): Point[] {
-    const shuffled = [...data];
-
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      const temp = shuffled[i] as Point;
-      shuffled[i] = shuffled[j] as Point;
-      shuffled[j] = temp;
-    }
-
-    return shuffled;
   }
 
   /**
@@ -114,7 +97,7 @@ export class TrainingDataSplitter {
 
     for (const [, points] of groupedByLabel) {
       // Shuffle within group
-      const shuffled = this.shuffleData(points);
+      const shuffled = shuffleItems(points);
 
       // Split
       const splitIndex = Math.floor(shuffled.length * (1 - validationSplit));
@@ -123,8 +106,8 @@ export class TrainingDataSplitter {
     }
 
     // Shuffle again to mix classes
-    const shuffledTraining = this.shuffleData(trainingData);
-    const shuffledValidation = this.shuffleData(validationData);
+    const shuffledTraining = shuffleItems(trainingData);
+    const shuffledValidation = shuffleItems(validationData);
 
     return {
       training: shuffledTraining,

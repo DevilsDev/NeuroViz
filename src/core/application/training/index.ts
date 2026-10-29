@@ -6,3 +6,4 @@ export { SessionStateStore } from './SessionStateStore';
 export { DatasetPreparationService } from './DatasetPreparationService';
 export { ExperimentService } from './ExperimentService';
 export { LRFinderService } from './LRFinderService';
+export { shuffle } from './shuffle';

@@ -11,6 +11,7 @@ import {
   DatasetPreparationService,
   ExperimentService,
   LRFinderService,
+  shuffle,
 } from './training';
 
 /**
@@ -556,15 +557,7 @@ export class TrainingSession implements ITrainingSession {
       return trainingData;
     }
 
-    const shuffled = [...trainingData];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      const temp = shuffled[i] as Point;
-      shuffled[i] = shuffled[j] as Point;
-      shuffled[j] = temp;
-    }
-
-    return shuffled.slice(0, batchSize);
+    return shuffle(trainingData).slice(0, batchSize);
   }
 
   private async updateVisualisation(): Promise<void> {
