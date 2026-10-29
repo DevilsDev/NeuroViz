@@ -1,5 +1,9 @@
 import type { TrainingHistory } from '../../core/domain/TrainingHistory';
 import type { Hyperparameters } from '../../core/domain/Hyperparameters';
+import { escapeHTML } from '../security/htmlSanitizer';
+
+/** Escapes any interpolated value for safe inclusion in HTML text content. */
+const esc = (value: unknown): string => escapeHTML(String(value));
 
 /**
  * Training report data
@@ -163,34 +167,34 @@ export function generateHTMLReport(data: TrainingReportData): string {
     <table class="config-table">
       <tr>
         <td>Dataset</td>
-        <td>${data.datasetInfo.name} <span class="badge">${data.datasetInfo.samples} samples</span></td>
+        <td>${esc(data.datasetInfo.name)} <span class="badge">${esc(data.datasetInfo.samples)} samples</span></td>
       </tr>
       <tr>
         <td>Architecture</td>
-        <td>[2, ${data.config.layers.join(', ')}, ${data.datasetInfo.classes}]</td>
+        <td>[2, ${esc(data.config.layers.join(', '))}, ${esc(data.datasetInfo.classes)}]</td>
       </tr>
       <tr>
         <td>Learning Rate</td>
-        <td>${data.config.learningRate}</td>
+        <td>${esc(data.config.learningRate)}</td>
       </tr>
       <tr>
         <td>Optimizer</td>
-        <td>${data.config.optimizer ?? 'adam'}</td>
+        <td>${esc(data.config.optimizer ?? 'adam')}</td>
       </tr>
       <tr>
         <td>Activation</td>
-        <td>${data.config.activation ?? 'relu'}</td>
+        <td>${esc(data.config.activation ?? 'relu')}</td>
       </tr>
       ${data.config.l2Regularization ? `
       <tr>
         <td>L2 Regularization</td>
-        <td>${data.config.l2Regularization}</td>
+        <td>${esc(data.config.l2Regularization)}</td>
       </tr>
       ` : ''}
       ${data.config.dropoutRate ? `
       <tr>
         <td>Dropout Rate</td>
-        <td>${data.config.dropoutRate}</td>
+        <td>${esc(data.config.dropoutRate)}</td>
       </tr>
       ` : ''}
     </table>
@@ -198,7 +202,7 @@ export function generateHTMLReport(data: TrainingReportData): string {
     <h2>Training Progress</h2>
     <div class="chart-placeholder">
       📊 Loss curve would be rendered here<br>
-      <small>Best Loss: ${data.history.bestLoss?.toFixed(4) ?? 'N/A'} at epoch ${data.history.bestEpoch ?? 'N/A'}</small>
+      <small>Best Loss: ${data.history.bestLoss?.toFixed(4) ?? 'N/A'} at epoch ${esc(data.history.bestEpoch ?? 'N/A')}</small>
     </div>
 
     ${data.confusionMatrix ? `

@@ -40,6 +40,8 @@ export interface MetricsElements {
 export class MetricsController {
   private speedBaseline: SpeedBaseline | null = null;
   private currentClassificationMetrics: ClassificationMetrics | null = null;
+  /** Teardown callbacks for listeners/subscriptions registered in initialize(). */
+  private cleanupFunctions: Array<() => void> = [];
 
   constructor(
     private readonly session: TrainingSession,
@@ -52,8 +54,23 @@ export class MetricsController {
    * Binds event listeners for speed comparison buttons.
    */
   initialize(): void {
+    // Re-initialising must not stack duplicate listeners
+    this.dispose();
     this.setupSpeedComparison();
     this.setupStateSync();
+  }
+
+  /**
+   * Removes all DOM listeners and the session subscription added by initialize().
+   */
+  dispose(): void {
+    this.cleanupFunctions.forEach(fn => fn());
+    this.cleanupFunctions = [];
+  }
+
+  private listen(element: HTMLElement, type: string, handler: EventListener): void {
+    element.addEventListener(type, handler);
+    this.cleanupFunctions.push(() => element.removeEventListener(type, handler));
   }
 
   /**
@@ -149,7 +166,7 @@ export class MetricsController {
 
   private setupSpeedComparison(): void {
     if (this.elements.saveSpeedBaselineBtn) {
-      this.elements.saveSpeedBaselineBtn.addEventListener('click', () => {
+      this.listen(this.elements.saveSpeedBaselineBtn, 'click', () => {
         const state = this.session.getState();
         const metrics = calculateSpeedMetrics(state.history);
         if (metrics) {
@@ -160,7 +177,7 @@ export class MetricsController {
     }
 
     if (this.elements.clearSpeedBaselineBtn) {
-      this.elements.clearSpeedBaselineBtn.addEventListener('click', () => {
+      this.listen(this.elements.clearSpeedBaselineBtn, 'click', () => {
         this.speedBaseline = null;
         if (this.elements.speedComparisonContainer) this.elements.speedComparisonContainer.classList.add('hidden');
         if (this.elements.clearSpeedBaselineBtn) this.elements.clearSpeedBaselineBtn.classList.add('hidden');
@@ -176,7 +193,7 @@ export class MetricsController {
   }
 
   private setupStateSync(): void {
-    this.session.onStateChange((state: TrainingState): void => {
+    const unsubscribe = this.session.onStateChange((state: TrainingState): void => {
       // Update speed metrics on every state change
       this.updateSpeedMetrics(state.history);
 
@@ -202,5 +219,6 @@ export class MetricsController {
         void this.updateClassificationMetrics();
       }
     });
+    if (typeof unsubscribe === 'function') this.cleanupFunctions.push(unsubscribe);
   }
 }

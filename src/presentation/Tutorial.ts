@@ -201,6 +201,11 @@ export const TUTORIALS: Tutorial[] = [
 
 /**
  * Tutorial manager class.
+ *
+ * Drives the first-run onboarding tour. This is distinct from the
+ * TutorialService-based guided tutorials (Learn menu), so its DOM uses an
+ * `onboarding-tutorial-*` id namespace to avoid duplicate ids, and the DOM is
+ * created lazily on first start() so importing this module has no side effects.
  */
 export class TutorialManager {
   private currentTutorial: Tutorial | null = null;
@@ -209,49 +214,54 @@ export class TutorialManager {
   private tooltip: HTMLDivElement | null = null;
   private onComplete: (() => void) | null = null;
 
-  constructor() {
+  private ensureDom(): void {
+    if (this.overlay?.isConnected && this.tooltip?.isConnected) return;
+    this.overlay?.remove();
+    this.tooltip?.remove();
     this.createOverlay();
     this.createTooltip();
   }
 
   private createOverlay(): void {
     this.overlay = document.createElement('div');
-    this.overlay.id = 'tutorial-overlay';
+    this.overlay.id = 'onboarding-tutorial-overlay';
     this.overlay.className = 'fixed inset-0 bg-black/50 z-40 hidden';
     this.overlay.innerHTML = `
-      <div id="tutorial-highlight" class="absolute border-2 border-accent-400 rounded-lg shadow-lg shadow-accent-400/30 transition-all duration-300"></div>
+      <div id="onboarding-tutorial-highlight" class="absolute border-2 border-accent-400 rounded-lg shadow-lg shadow-accent-400/30 transition-all duration-300"></div>
     `;
     document.body.appendChild(this.overlay);
   }
 
   private createTooltip(): void {
     this.tooltip = document.createElement('div');
-    this.tooltip.id = 'tutorial-tooltip';
+    this.tooltip.id = 'onboarding-tutorial-tooltip';
     this.tooltip.className = 'fixed z-50 bg-navy-800 border border-navy-600 rounded-lg shadow-xl p-4 max-w-sm hidden';
+    this.tooltip.setAttribute('role', 'dialog');
+    this.tooltip.setAttribute('aria-labelledby', 'onboarding-tutorial-title');
     this.tooltip.innerHTML = `
       <div class="flex items-start justify-between mb-2">
-        <h3 id="tutorial-title" class="text-lg font-semibold text-white"></h3>
-        <button id="tutorial-close" class="text-slate-400 hover:text-white">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <h3 id="onboarding-tutorial-title" class="text-lg font-semibold text-white"></h3>
+        <button type="button" id="onboarding-tutorial-close" class="text-slate-400 hover:text-white" aria-label="Close tutorial">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
-      <p id="tutorial-content" class="text-slate-300 text-sm mb-4"></p>
+      <p id="onboarding-tutorial-content" class="text-slate-300 text-sm mb-4"></p>
       <div class="flex items-center justify-between">
-        <span id="tutorial-progress" class="text-xs text-slate-500"></span>
+        <span id="onboarding-tutorial-progress" class="text-xs text-slate-500"></span>
         <div class="flex gap-2">
-          <button id="tutorial-prev" class="btn-secondary text-xs px-3 py-1">Previous</button>
-          <button id="tutorial-next" class="btn-primary text-xs px-3 py-1">Next</button>
+          <button type="button" id="onboarding-tutorial-prev" class="btn-secondary text-xs px-3 py-1">Previous</button>
+          <button type="button" id="onboarding-tutorial-next" class="btn-primary text-xs px-3 py-1">Next</button>
         </div>
       </div>
     `;
     document.body.appendChild(this.tooltip);
 
-    // Bind events
-    document.getElementById('tutorial-close')?.addEventListener('click', () => this.stop());
-    document.getElementById('tutorial-prev')?.addEventListener('click', () => this.prev());
-    document.getElementById('tutorial-next')?.addEventListener('click', () => this.next());
+    // Bind events (scoped to the tooltip; these elements live and die with it)
+    this.tooltip.querySelector('#onboarding-tutorial-close')?.addEventListener('click', () => this.stop());
+    this.tooltip.querySelector('#onboarding-tutorial-prev')?.addEventListener('click', () => this.prev());
+    this.tooltip.querySelector('#onboarding-tutorial-next')?.addEventListener('click', () => this.next());
   }
 
   /**
@@ -261,6 +271,7 @@ export class TutorialManager {
     const tutorial = TUTORIALS.find(t => t.id === tutorialId);
     if (!tutorial) return false;
 
+    this.ensureDom();
     this.currentTutorial = tutorial;
     this.currentStepIndex = 0;
     this.onComplete = onComplete ?? null;
@@ -283,6 +294,17 @@ export class TutorialManager {
   }
 
   /**
+   * Removes the tour's DOM. A later start() rebuilds it.
+   */
+  dispose(): void {
+    this.stop();
+    this.overlay?.remove();
+    this.tooltip?.remove();
+    this.overlay = null;
+    this.tooltip = null;
+  }
+
+  /**
    * Shows the current step.
    */
   private showStep(): void {
@@ -292,11 +314,11 @@ export class TutorialManager {
     if (!step) return;
 
     // Update tooltip content
-    const titleEl = document.getElementById('tutorial-title');
-    const contentEl = document.getElementById('tutorial-content');
-    const progressEl = document.getElementById('tutorial-progress');
-    const prevBtn = document.getElementById('tutorial-prev') as HTMLButtonElement;
-    const nextBtn = document.getElementById('tutorial-next') as HTMLButtonElement;
+    const titleEl = this.tooltip.querySelector('#onboarding-tutorial-title');
+    const contentEl = this.tooltip.querySelector('#onboarding-tutorial-content');
+    const progressEl = this.tooltip.querySelector('#onboarding-tutorial-progress');
+    const prevBtn = this.tooltip.querySelector<HTMLButtonElement>('#onboarding-tutorial-prev');
+    const nextBtn = this.tooltip.querySelector<HTMLButtonElement>('#onboarding-tutorial-next');
 
     if (titleEl) titleEl.textContent = step.title;
     if (contentEl) contentEl.textContent = step.content;
@@ -377,7 +399,7 @@ export class TutorialManager {
   }
 
   private highlightTarget(step: TutorialStep): void {
-    const highlight = document.getElementById('tutorial-highlight');
+    const highlight = this.overlay?.querySelector<HTMLElement>('#onboarding-tutorial-highlight');
     if (!highlight) return;
 
     if (step.target) {
@@ -431,5 +453,5 @@ export class TutorialManager {
   }
 }
 
-// Singleton instance
+// Singleton instance (no DOM is created until start() is called)
 export const tutorialManager = new TutorialManager();

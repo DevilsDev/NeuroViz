@@ -3138,3 +3138,31 @@ header {
     max-height: calc(100vh - 280px) !important;
   }
 }
+
+/* =========================================================================
+   Education (TutorialService, TooltipService, EducationController)
+   Previously injected as <style> elements at module import.
+   ========================================================================= */
+@keyframes tutorial-pulse {
+  0%, 100% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5), 0 0 20px rgba(34, 211, 238, 0.5); }
+  50% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5), 0 0 30px rgba(34, 211, 238, 0.8); }
+}
+
+.tooltip-visible {
+  opacity: 1;
+}
+.tooltip-hidden {
+  opacity: 0;
+}
+#neuroviz-tooltip {
+  transition: opacity 0.15s ease-in-out;
+}
+
+@keyframes bounce-in {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-bounce-in {
+  animation: bounce-in 0.5s ease-out;
+}

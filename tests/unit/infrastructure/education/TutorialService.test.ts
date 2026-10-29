@@ -631,4 +631,69 @@ describe('TutorialService', () => {
       newService.dispose();
     });
   });
+  describe('completion lifecycle', () => {
+    const finish = (svc: TutorialService, id: string): void => {
+      const t = TUTORIALS.find(x => x.id === id)!;
+      svc.start(id);
+      for (let i = 0; i < t.steps.length; i++) svc.next();
+    };
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('renders the next tutorial after a previous one completed', () => {
+      vi.useFakeTimers();
+      const [a, b] = TUTORIALS;
+      finish(service, a!.id);
+      vi.advanceTimersByTime(3000);
+
+      service.start(b!.id);
+      const overlay = document.getElementById('tutorial-overlay')!;
+      expect(overlay.querySelector('.tutorial-title')?.textContent).toBe(b!.steps[0]!.title);
+      expect(overlay.querySelector('.tutorial-next')).not.toBeNull();
+      expect(overlay.querySelector('.tutorial-complete')?.classList.contains('hidden')).toBe(true);
+    });
+
+    it('does not let the completion timer exit a tutorial started meanwhile', () => {
+      vi.useFakeTimers();
+      const [a, b] = TUTORIALS;
+      finish(service, a!.id);
+      service.start(b!.id);
+      vi.advanceTimersByTime(3000);
+
+      expect(service.isActive()).toBe(true);
+      expect(service.getCurrentTutorial()?.id).toBe(b!.id);
+    });
+
+    it('shows a completion panel and still exits after 3s', () => {
+      vi.useFakeTimers();
+      finish(service, TUTORIALS[0]!.id);
+      const overlay = document.getElementById('tutorial-overlay')!;
+      expect(overlay.querySelector('.tutorial-complete')?.classList.contains('hidden')).toBe(false);
+      vi.advanceTimersByTime(3000);
+      expect(service.isActive()).toBe(false);
+    });
+
+    it('exit button has an accessible name', () => {
+      const close = document.querySelector('#tutorial-overlay .tutorial-close');
+      expect(close?.getAttribute('aria-label')).toBe('Exit tutorial');
+    });
+
+    it('ignores malformed stored completions', () => {
+      service.dispose();
+      localStorageMock['neuroviz-tutorial-completions'] = JSON.stringify({ not: 'an array' });
+      service = new TutorialService();
+      expect(service.getCompletedTutorialIds()).toEqual([]);
+
+      service.dispose();
+      localStorageMock['neuroviz-tutorial-completions'] = JSON.stringify([
+        { tutorialId: 'x', completedAt: 1, durationMs: 2 },
+        { tutorialId: 42 },
+        null,
+      ]);
+      service = new TutorialService();
+      expect(service.getCompletedTutorialIds()).toEqual(['x']);
+    });
+  });
 });

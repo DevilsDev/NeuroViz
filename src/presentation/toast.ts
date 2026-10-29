@@ -162,7 +162,8 @@ function getToastIcon(type: ToastType): HTMLSpanElement {
 export function showPersistentBanner(id: string, message?: string): void {
   const el = document.getElementById(id);
   if (!el) return;
-  if (message) el.innerHTML = message;
+  // textContent: callers may pass untrusted text; never parse it as HTML
+  if (message) el.textContent = message;
   el.classList.remove('hidden');
 }
 

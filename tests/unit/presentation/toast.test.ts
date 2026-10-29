@@ -20,9 +20,10 @@ describe('Persistent Banner helpers', () => {
     expect(banner.classList.contains('hidden')).toBe(false);
   });
 
-  it('showPersistentBanner updates innerHTML when message provided', () => {
-    showPersistentBanner('test-banner', 'Something went <strong>wrong</strong>');
-    expect(banner.innerHTML).toBe('Something went <strong>wrong</strong>');
+  it('showPersistentBanner sets the message as text, never as HTML', () => {
+    showPersistentBanner('test-banner', 'Something went <img src=x onerror="alert(1)">');
+    expect(banner.textContent).toBe('Something went <img src=x onerror="alert(1)">');
+    expect(banner.querySelector('img')).toBeNull();
     expect(banner.classList.contains('hidden')).toBe(false);
   });
 

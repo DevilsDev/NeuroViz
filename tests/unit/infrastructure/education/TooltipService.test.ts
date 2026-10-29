@@ -32,12 +32,12 @@ describe('TooltipService', () => {
       expect(tooltip?.classList.contains('hidden')).toBe(true);
     });
 
-    it('should add tooltip CSS to document', () => {
+    it('should not inject <style> elements (CSS lives in presentation/styles.css)', () => {
       const styles = Array.from(document.head.querySelectorAll('style'));
       const tooltipStyle = styles.find(style =>
         style.textContent?.includes('.tooltip-visible')
       );
-      expect(tooltipStyle).not.toBeUndefined();
+      expect(tooltipStyle).toBeUndefined();
     });
   });
 
