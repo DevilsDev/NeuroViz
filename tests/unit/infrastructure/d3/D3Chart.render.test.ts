@@ -59,6 +59,40 @@ describe('D3Chart - rendering', () => {
     });
   });
 
+  describe('misclassification highlight', () => {
+    const points: Point[] = [
+      { x: 0.1, y: 0.1, label: 0 },
+      { x: 0.2, y: 0.2, label: 1, isValidation: true },
+      { x: 0.3, y: 0.3, label: 0 },
+    ];
+    const preds = (classes: number[]): Prediction[] =>
+      classes.map((c) => ({ x: 0, y: 0, confidence: 0.9, predictedClass: c })) as unknown as Prediction[];
+    const strokes = (): Array<[string | null, string | null]> =>
+      Array.from(container.querySelectorAll('.data-point')).map((n) => [
+        n.getAttribute('stroke'),
+        n.getAttribute('stroke-width'),
+      ]);
+
+    it('restores the initial point stroke for correctly classified points', () => {
+      chart.renderData(points);
+      const initial = strokes();
+
+      chart.highlightMisclassified(preds([1, 1, 0]));
+      const highlighted = strokes();
+      expect(highlighted[0]).toEqual(['#ef4444', '3']);
+      expect(highlighted[1]).toEqual(initial[1]);
+      expect(highlighted[2]).toEqual(initial[2]);
+    });
+
+    it('clearMisclassifiedHighlight restores the initial stroke', () => {
+      chart.renderData(points);
+      const initial = strokes();
+      chart.highlightMisclassified(preds([1, 0, 1]));
+      chart.clearMisclassifiedHighlight();
+      expect(strokes()).toEqual(initial);
+    });
+  });
+
   describe('PNG export', () => {
     class FakeImage {
       static last: FakeImage | null = null;

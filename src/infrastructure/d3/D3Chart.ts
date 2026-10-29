@@ -19,6 +19,15 @@ function themeColor(prop: string, fallback: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(prop).trim() || fallback;
 }
 
+/** Default data-point outline, shared by initial render and highlight resets. */
+const POINT_STYLE = {
+  training: { stroke: 'rgba(255,255,255,0.7)', strokeWidth: 1, dash: 'none' },
+  validation: { stroke: '#fbbf24', strokeWidth: 2, dash: '3,2' },
+} as const;
+
+const pointStyle = (d: Point): (typeof POINT_STYLE)[keyof typeof POINT_STYLE] =>
+  d.isValidation ? POINT_STYLE.validation : POINT_STYLE.training;
+
 export class D3Chart implements IVisualizerService {
   private readonly container: d3.Selection<HTMLElement, unknown, null, undefined>;
   private readonly svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
@@ -223,9 +232,9 @@ export class D3Chart implements IVisualizerService {
       .attr('cy', (d) => this.yScale(d.y))
       .attr('r', this.config.pointRadius)
       .attr('fill', (d) => getColour(d.label))
-      .attr('stroke', (d) => d.isValidation ? '#fbbf24' : 'rgba(255,255,255,0.7)')
-      .attr('stroke-width', (d) => d.isValidation ? 2 : 1)
-      .attr('stroke-dasharray', (d) => d.isValidation ? '3,2' : 'none')
+      .attr('stroke', (d) => pointStyle(d).stroke)
+      .attr('stroke-width', (d) => pointStyle(d).strokeWidth)
+      .attr('stroke-dasharray', (d) => pointStyle(d).dash)
       .attr('opacity', 0.85);
 
     // Add tooltip handlers if enabled
@@ -428,9 +437,9 @@ export class D3Chart implements IVisualizerService {
     // Update point styling - preserve validation styling for non-misclassified
     this.chartGroup
       .selectAll<SVGCircleElement, Point>('.data-point')
-      .attr('stroke', (d, i) => misclassifiedIndices.has(i) ? '#ef4444' : (d.isValidation ? '#fbbf24' : '#fff'))
-      .attr('stroke-width', (d, i) => misclassifiedIndices.has(i) ? 3 : (d.isValidation ? 2.5 : 1.5))
-      .attr('stroke-dasharray', (d, i) => misclassifiedIndices.has(i) ? 'none' : (d.isValidation ? '3,2' : 'none'));
+      .attr('stroke', (d, i) => misclassifiedIndices.has(i) ? '#ef4444' : pointStyle(d).stroke)
+      .attr('stroke-width', (d, i) => misclassifiedIndices.has(i) ? 3 : pointStyle(d).strokeWidth)
+      .attr('stroke-dasharray', (d, i) => misclassifiedIndices.has(i) ? 'none' : pointStyle(d).dash);
   }
 
   /**
@@ -439,9 +448,9 @@ export class D3Chart implements IVisualizerService {
   clearMisclassifiedHighlight(): void {
     this.chartGroup
       .selectAll<SVGCircleElement, Point>('.data-point')
-      .attr('stroke', (d) => d.isValidation ? '#fbbf24' : '#fff')
-      .attr('stroke-width', (d) => d.isValidation ? 2.5 : 1.5)
-      .attr('stroke-dasharray', (d) => d.isValidation ? '3,2' : 'none');
+      .attr('stroke', (d) => pointStyle(d).stroke)
+      .attr('stroke-width', (d) => pointStyle(d).strokeWidth)
+      .attr('stroke-dasharray', (d) => pointStyle(d).dash);
   }
 
   /**
