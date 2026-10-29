@@ -150,14 +150,17 @@ export class Application {
     const structure = this.services.neuralNet.getStructure();
     if (!structure) return;
 
+    // getWeightMatrices() does a synchronous GPU readback per layer, so read
+    // once and share the result between the diagram and the histogram.
+    const weightMatrices = this.services.neuralNet.getWeightMatrices();
+
     this.services.networkDiagram.render(
       structure.layers,
       structure.activations,
-      this.services.neuralNet.getWeightMatrices()
+      weightMatrices
     );
 
-    const weights = this.services.neuralNet.getWeightMatrices().flat().flat();
-    this.services.weightHistogram.update(weights);
+    this.services.weightHistogram.update(weightMatrices.flat().flat());
 
     this.updateActivationHistogram(structure);
   }
