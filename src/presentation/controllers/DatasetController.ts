@@ -5,6 +5,7 @@ import { toast } from '../toast';
 import { Point, MULTI_CLASS_COLOURS } from '../../core/domain';
 import { PreprocessingType } from '../../core/ports';
 import { setVisible } from '../../utils/dom';
+import type { DataSeedSource } from '../ReproducibilityPanel';
 
 export interface DatasetElements {
   datasetSelect: HTMLSelectElement;
@@ -43,7 +44,9 @@ export class DatasetController {
   constructor(
     private session: TrainingSession,
     private visualizerService: D3Chart,
-    private elements: DatasetElements
+    private elements: DatasetElements,
+    /** Supplies the seed for each load; without it data is unseeded */
+    private seedSource?: DataSeedSource | null
   ) {
     this.bindEvents();
   }
@@ -137,7 +140,8 @@ export class DatasetController {
     });
 
     try {
-      await this.session.loadData(datasetType, { samples, noise, numClasses, classBalance, preprocessing });
+      const seed = this.seedSource?.seedForDataLoad();
+      await this.session.loadData(datasetType, { samples, noise, numClasses, classBalance, preprocessing, seed });
       logger.debug('[DatasetController] session.loadData completed');
 
       // Get the actual number of classes detected in the data

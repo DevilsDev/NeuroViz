@@ -565,7 +565,7 @@ export class TFNeuralNet implements INeuralNetworkService {
         inputShape: [2],
         units: config.layers[0] ?? 4,
         activation: useBatchNorm ? 'linear' : getActivation(0),
-        kernelInitializer: 'heNormal',
+        kernelInitializer: this.createKernelInitializer(config, 0),
         kernelRegularizer: regularizer,
       })
     );
@@ -587,7 +587,7 @@ export class TFNeuralNet implements INeuralNetworkService {
         tf.layers.dense({
           units: config.layers[i] ?? 4,
           activation: useBatchNorm ? 'linear' : getActivation(i),
-          kernelInitializer: 'heNormal',
+          kernelInitializer: this.createKernelInitializer(config, i),
           kernelRegularizer: regularizer,
         })
       );
@@ -611,6 +611,7 @@ export class TFNeuralNet implements INeuralNetworkService {
         tf.layers.dense({
           units: 1,
           activation: 'sigmoid',
+          kernelInitializer: this.createOutputInitializer(config),
         })
       );
     } else {
@@ -619,6 +620,7 @@ export class TFNeuralNet implements INeuralNetworkService {
         tf.layers.dense({
           units: numClasses,
           activation: 'softmax',
+          kernelInitializer: this.createOutputInitializer(config),
         })
       );
     }
@@ -793,6 +795,33 @@ export class TFNeuralNet implements INeuralNetworkService {
    * Maps activation type to TensorFlow.js activation identifier.
    * Returns a string literal that TensorFlow.js accepts.
    */
+  /**
+   * Hidden-layer weight initialiser. With a seed each layer gets its own
+   * derived seed, so the same seed always produces the same starting weights.
+   */
+  private createKernelInitializer(config: Hyperparameters, layerIndex: number): ReturnType<typeof tf.initializers.heNormal> {
+    const seed = this.layerSeed(config, layerIndex);
+    const args = seed === undefined ? {} : { seed };
+    switch (config.weightInit ?? DEFAULT_HYPERPARAMETERS.weightInit) {
+      case 'glorotUniform':
+        return tf.initializers.glorotUniform(args);
+      case 'lecunNormal':
+        return tf.initializers.leCunNormal(args);
+      default:
+        return tf.initializers.heNormal(args);
+    }
+  }
+
+  /** Output layer keeps Glorot (suits sigmoid/softmax), seeded like the rest. */
+  private createOutputInitializer(config: Hyperparameters): ReturnType<typeof tf.initializers.heNormal> {
+    const seed = this.layerSeed(config, config.layers.length);
+    return tf.initializers.glorotUniform(seed === undefined ? {} : { seed });
+  }
+
+  private layerSeed(config: Hyperparameters, layerIndex: number): number | undefined {
+    return config.seed === null || config.seed === undefined ? undefined : config.seed * 101 + layerIndex;
+  }
+
   private mapActivation(type: ActivationType): 'relu' | 'sigmoid' | 'tanh' | 'elu' {
     switch (type) {
       case 'relu':

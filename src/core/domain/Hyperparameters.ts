@@ -17,6 +17,14 @@ export type LossType = 'crossEntropy' | 'mse' | 'hinge';
 export type ActivationType = 'linear' | 'relu' | 'sigmoid' | 'tanh' | 'elu' | 'leaky_relu' | 'selu' | 'softmax';
 
 /**
+ * How hidden-layer weights are drawn before training.
+ * - heNormal: suits ReLU-family activations
+ * - glorotUniform: suits tanh and sigmoid
+ * - lecunNormal: suits SELU
+ */
+export type WeightInitType = 'heNormal' | 'glorotUniform' | 'lecunNormal';
+
+/**
  * Learning rate schedule types.
  * - none: constant learning rate
  * - exponential: LR * decayRate^(epoch/decaySteps)
@@ -88,6 +96,15 @@ export interface Hyperparameters {
 
   /** Loss function to use for training (default: crossEntropy) */
   readonly lossFunction?: LossType;
+
+  /** Hidden-layer weight initialiser (default: heNormal) */
+  readonly weightInit?: WeightInitType;
+
+  /**
+   * Seed for initial weights, dropout masks and batch order.
+   * null = a different random start every time.
+   */
+  readonly seed?: number | null;
 }
 
 /**
@@ -133,6 +150,8 @@ export const DEFAULT_HYPERPARAMETERS: Required<Hyperparameters> = {
   clipNorm: 0,
   batchNorm: false,
   lossFunction: 'crossEntropy',
+  weightInit: 'heNormal',
+  seed: null,
 };
 
 /**

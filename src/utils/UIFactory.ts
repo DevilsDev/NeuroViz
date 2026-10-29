@@ -92,6 +92,8 @@ export function getTrainingElements(): TrainingElements {
     inputDropout: getCachedOrCreate<HTMLSelectElement>('input-dropout', 'select'),
     inputBatchNorm: getCachedOrCreate<HTMLInputElement>('input-batch-norm', 'input'),
     inputLossFunction: getCachedOrCreate<HTMLSelectElement>('input-loss-function', 'select'),
+    inputSeed: document.getElementById('input-seed') as HTMLInputElement | null,
+    inputWeightInit: document.getElementById('input-weight-init') as HTMLSelectElement | null,
     btnInit: getCachedOrCreate<HTMLButtonElement>('btn-init', 'button'),
 
     inputBatchSize: getCachedOrCreate<HTMLInputElement>('input-batch-size', 'input'),
