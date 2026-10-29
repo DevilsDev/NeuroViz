@@ -1,3 +1,9 @@
+## [2.35.0](https://github.com/DevilsDev/NeuroViz/compare/v2.34.0...v2.35.0) (2026-10-29)
+
+### Features
+
+* **train:** overfitting-risk and reproducibility cards ([f3504e6](https://github.com/DevilsDev/NeuroViz/commit/f3504e6c3398a03d4b06067706de06326ebf1743))
+
 ## [2.34.0](https://github.com/DevilsDev/NeuroViz/compare/v2.33.0...v2.34.0) (2026-10-29)
 
 ### Features
