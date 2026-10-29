@@ -23,11 +23,10 @@
     "forceConsistentCasingInFileNames": true,
 
     /* Path Aliases */
-    "baseUrl": ".",
     "paths": {
-      "@core/*": ["src/core/*"],
-      "@infrastructure/*": ["src/infrastructure/*"],
-      "@presentation/*": ["src/presentation/*"]
+      "@core/*": ["./src/core/*"],
+      "@infrastructure/*": ["./src/infrastructure/*"],
+      "@presentation/*": ["./src/presentation/*"]
     },
 
     "skipLibCheck": true
