@@ -185,6 +185,7 @@ export class TrainingSession implements ITrainingSession {
     // Store for LR scheduling and reset scheduler
     this.currentHyperparameters = config;
     this.reseedTrainingStream();
+    this.experiment.clearBoundarySnapshots();
     this.appliedLearningRate = config.learningRate;
     this.initialLearningRate = config.learningRate;
     this.lrScheduler.setInitialLR(config.learningRate);
@@ -212,6 +213,7 @@ export class TrainingSession implements ITrainingSession {
 
     // A seed makes generation and the train/validation split repeatable
     seedRandom(options?.seed ?? null);
+    this.experiment.clearBoundarySnapshots();
     const allData = await this.dataService.loadData(
       datasetType, options, this.trainingConfig.validationSplit
     );
@@ -285,6 +287,7 @@ export class TrainingSession implements ITrainingSession {
     this.state.resetProgress();
     this.earlyStoppingStrategy.reset();
     this.reseedTrainingStream();
+    this.experiment.clearBoundarySnapshots();
 
     // Re-split data
     if (this.dataService.hasData()) {
@@ -301,6 +304,7 @@ export class TrainingSession implements ITrainingSession {
 
   clearAll(): void {
     this.sessionGeneration++;
+    this.experiment.clearBoundarySnapshots();
     this.state.clearAll();
     this.dataService.clear();
     this.visualizer.clear();
@@ -401,6 +405,26 @@ export class TrainingSession implements ITrainingSession {
 
   clearBoundarySnapshots(): void {
     this.experiment.clearBoundarySnapshots();
+  }
+
+  /**
+   * Draws a recorded boundary (timeline replay). Ignored while training runs,
+   * because the next step would overwrite it immediately.
+   * @returns whether the snapshot was drawn
+   */
+  showBoundarySnapshot(index: number): boolean {
+    if (this.state.getIsTraining() && !this.state.getIsPaused()) return false;
+    const snapshot = this.experiment.getBoundarySnapshots()[index];
+    if (!snapshot) return false;
+    this.visualizer.renderBoundary(snapshot.predictions, this.config.gridSize);
+    return true;
+  }
+
+  /** Returns the plot to the current model's boundary after a replay. */
+  showLiveBoundary(): void {
+    if (this.cachedPredictions.length > 0) {
+      this.visualizer.renderBoundary(this.cachedPredictions, this.config.gridSize);
+    }
   }
 
   async undoConfig(): Promise<boolean> {
@@ -620,9 +644,9 @@ export class TrainingSession implements ITrainingSession {
     if (isFinalEpoch || epoch === 1 || epoch % this.config.renderInterval === 0) {
       await this.updateVisualisation();
       if (isStale()) return null;
+      // Only on render epochs: the cached boundary is current for this epoch
+      this.experiment.recordSnapshot(epoch, this.cachedPredictions, isFinalEpoch);
     }
-
-    this.experiment.maybeRecordSnapshot(epoch, this.cachedPredictions);
 
     return { epoch, earlyStop };
   }

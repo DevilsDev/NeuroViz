@@ -10,12 +10,14 @@ interface GifFrame {
 
 /**
  * Encodes frames into an animated GIF.
- * Simplified implementation using median cut colour quantisation.
+ * Uses an adaptive palette of the most common colours across all frames.
  */
 export class GifEncoder {
   private width: number;
   private height: number;
   private frames: GifFrame[] = [];
+  /** Nearest palette index per 5-bit colour bucket, filled while encoding */
+  private readonly colourCache = new Map<number, number>();
 
   constructor(width: number, height: number) {
     this.width = width;
@@ -55,7 +57,8 @@ export class GifEncoder {
     bytes.push(0);    // Pixel aspect ratio
 
     // Global Colour Table (256 colours)
-    const palette = this.generatePalette();
+    const palette = this.buildPalette();
+    this.colourCache.clear();
     for (const colour of palette) {
       bytes.push(colour.r, colour.g, colour.b);
     }
@@ -89,29 +92,38 @@ export class GifEncoder {
     bytes.push((value >> 8) & 0xFF);
   }
 
-  private generatePalette(): Array<{ r: number; g: number; b: number }> {
-    // Generate a 256-colour palette using web-safe colours + grayscale
-    const palette: Array<{ r: number; g: number; b: number }> = [];
-
-    // Web-safe colours (6x6x6 = 216 colours)
-    for (let r = 0; r < 6; r++) {
-      for (let g = 0; g < 6; g++) {
-        for (let b = 0; b < 6; b++) {
-          palette.push({
-            r: Math.round(r * 51),
-            g: Math.round(g * 51),
-            b: Math.round(b * 51),
-          });
+  /**
+   * Adaptive palette: the 256 most common colours across all frames, each
+   * the average of a 5-bit-per-channel bucket. Charts use few distinct
+   * colours, so pale tints keep their hue instead of snapping to the
+   * nearest web-safe colour. Unused slots are padded with black.
+   */
+  private buildPalette(): Array<{ r: number; g: number; b: number }> {
+    const buckets = new Map<number, { count: number; r: number; g: number; b: number }>();
+    for (const frame of this.frames) {
+      const data = frame.imageData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i] ?? 0;
+        const g = data[i + 1] ?? 0;
+        const b = data[i + 2] ?? 0;
+        const key = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
+        const bucket = buckets.get(key);
+        if (bucket) {
+          bucket.count++;
+          bucket.r += r;
+          bucket.g += g;
+          bucket.b += b;
+        } else {
+          buckets.set(key, { count: 1, r, g, b });
         }
       }
     }
 
-    // Fill remaining with grayscale
-    for (let i = 216; i < 256; i++) {
-      const gray = Math.round((i - 216) * 6.375);
-      palette.push({ r: gray, g: gray, b: gray });
-    }
-
+    const palette = [...buckets.values()]
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 256)
+      .map((c) => ({ r: Math.round(c.r / c.count), g: Math.round(c.g / c.count), b: Math.round(c.b / c.count) }));
+    while (palette.length < 256) palette.push({ r: 0, g: 0, b: 0 });
     return palette;
   }
 
@@ -165,7 +177,13 @@ export class GifEncoder {
       const r = data[i] ?? 0;
       const g = data[i + 1] ?? 0;
       const b = data[i + 2] ?? 0;
-      indexed.push(this.findClosestColour(r, g, b, palette));
+      const key = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
+      let index = this.colourCache.get(key);
+      if (index === undefined) {
+        index = this.findClosestColour(r, g, b, palette);
+        this.colourCache.set(key, index);
+      }
+      indexed.push(index);
     }
 
     // LZW encode
@@ -257,11 +275,13 @@ export class GifEncoder {
 
 /**
  * Captures an SVG element as ImageData.
+ * @param background - fill behind the SVG (default: the dark theme surface)
  */
 export async function captureSvgAsImageData(
   svg: SVGSVGElement,
   width: number,
-  height: number
+  height: number,
+  background = '#0f172a'
 ): Promise<ImageData> {
   return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas');
@@ -280,7 +300,7 @@ export async function captureSvgAsImageData(
 
     const img = new Image();
     img.onload = () => {
-      ctx.fillStyle = '#0f172a'; // Dark background
+      ctx.fillStyle = background;
       ctx.fillRect(0, 0, width, height);
       ctx.drawImage(img, 0, 0, width, height);
       URL.revokeObjectURL(url);

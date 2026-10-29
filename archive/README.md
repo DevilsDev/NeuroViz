@@ -18,11 +18,10 @@ not — fix those paths when reviving a module.
 | `src/experimental/plugins/` | Plugin manager |
 | `src/core/application/ModelComparison.ts`, `ModelEnsemble.ts` | A/B model comparison and ensemble voting |
 | `src/core/research/FeatureImportance.ts` | Permutation feature importance |
-| `src/core/application/training/LRFinderService.ts`, `src/infrastructure/d3/D3LRFinder.ts` | Learning-rate finder (LR sweep + sensitivity chart). Was reachable only via `TrainingSession.runLRFinder()`, which nothing called; its "restore" re-initialises the model with fresh random weights. |
 | `src/infrastructure/performance/` | Frame-rate limiter and progressive grid renderer |
 | `src/workers/` | Web Worker training (`WorkerManager` + worker). Its request handlers are keyed by response type, not request id, so concurrent requests can clobber each other; fix before reuse. |
 | `src/presentation/ELI5Tooltips.ts` | Plain-language tooltips for elements marked `data-eli5`. No markup uses that attribute, so it never showed anything; hyperparameter tooltips come from `infrastructure/education/TooltipService`. |
-| `tests/unit/experimental/`, `tests/unit/application/training/LRFinderService.test.ts`, `tests/unit/presentation/ELI5Tooltips.test.ts` | Unit tests for the archived LIME, NAS, LR finder and ELI5 tooltip modules |
+| `tests/unit/experimental/`, `tests/unit/presentation/ELI5Tooltips.test.ts` | Unit tests for the archived LIME, NAS and ELI5 tooltip modules |
 
 ## Reviving a module
 

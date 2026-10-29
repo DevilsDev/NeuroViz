@@ -208,8 +208,9 @@ export class TrainingController {
     /**
      * Builds InitializeNetworkConfig from UI inputs.
      * Uses runtime validation for enum-like values to ensure type safety.
+     * Public so the learning-rate finder can sweep the model as entered.
      */
-    private buildInitializeNetworkConfig(): InitializeNetworkConfig {
+    public buildInitializeNetworkConfig(): InitializeNetworkConfig {
         const learningRate = parseFloat(this.elements.inputLr.value);
         const layers = this.parseLayersInput(this.elements.inputLayers.value);
         // Validate enum values at runtime to prevent invalid configurations

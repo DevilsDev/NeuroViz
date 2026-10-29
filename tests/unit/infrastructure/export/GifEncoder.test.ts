@@ -403,3 +403,41 @@ describe('captureSvgAsImageData', () => {
     expect(imageData).toBeInstanceOf(ImageData);
   });
 });
+
+describe('GifEncoder adaptive palette', () => {
+  function solid(width: number, height: number, rgb: [number, number, number]): ImageData {
+    const data = new Uint8ClampedArray(width * height * 4);
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = rgb[0];
+      data[i + 1] = rgb[1];
+      data[i + 2] = rgb[2];
+      data[i + 3] = 255;
+    }
+    return { data, width, height, colorSpace: 'srgb' } as ImageData;
+  }
+
+  async function paletteOf(blob: Blob): Promise<number[][]> {
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    // Header (6) + logical screen descriptor (7), then 256 RGB triples
+    return Array.from({ length: 256 }, (_, i) => Array.from(bytes.slice(13 + i * 3, 16 + i * 3)));
+  }
+
+  it('keeps pale chart tints exact instead of snapping to web-safe colours', async () => {
+    const encoder = new GifEncoder(4, 4);
+    encoder.addFrame(solid(4, 4, [253, 186, 116]), 100); // boundary orange tint
+    encoder.addFrame(solid(4, 4, [147, 197, 253]), 100); // boundary blue tint
+    const palette = await paletteOf(await encoder.encode());
+    expect(palette).toContainEqual([253, 186, 116]);
+    expect(palette).toContainEqual([147, 197, 253]);
+  });
+
+  it('orders the palette by how often colours appear', async () => {
+    const encoder = new GifEncoder(4, 4);
+    const frame = solid(4, 4, [10, 20, 30]);
+    frame.data.set([200, 100, 50, 255], 0); // one odd pixel
+    encoder.addFrame(frame, 100);
+    const palette = await paletteOf(await encoder.encode());
+    expect(palette[0]).toEqual([10, 20, 30]);
+    expect(palette[1]).toEqual([200, 100, 50]);
+  });
+});
