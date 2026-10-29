@@ -1,3 +1,17 @@
+## [2.33.0](https://github.com/DevilsDev/NeuroViz/compare/v2.32.0...v2.33.0) (2026-10-29)
+
+### Features
+
+* **chart:** add a legend and axis titles to the decision boundary plot ([8a293c5](https://github.com/DevilsDev/NeuroViz/commit/8a293c521e0eb78fd4fb12f5a03e1d2e0a15aa9d))
+* **ui:** adopt the redesign colour palette ([685c044](https://github.com/DevilsDev/NeuroViz/commit/685c04434cef5909d8750fe07187115b0b903818)), closes [#F6F7F9](https://github.com/DevilsDev/NeuroViz/issues/F6F7F9) [#0F172A](https://github.com/DevilsDev/NeuroViz/issues/0F172A) [#475569](https://github.com/DevilsDev/NeuroViz/issues/475569) [#0F766E](https://github.com/DevilsDev/NeuroViz/issues/0F766E) [#2DD4BF](https://github.com/DevilsDev/NeuroViz/issues/2DD4BF) [#1E40AF](https://github.com/DevilsDev/NeuroViz/issues/1E40AF) [#F08A24](https://github.com/DevilsDev/NeuroViz/issues/F08A24)
+* **ui:** clearer labels and a phone layout that fits ([8cebfa1](https://github.com/DevilsDev/NeuroViz/commit/8cebfa146ff24897f3402df19ceacf82fad731cf))
+* **ui:** three-column workspace with workflow nav, transport bar and metrics column ([9db4015](https://github.com/DevilsDev/NeuroViz/commit/9db4015fe0aa2bb7272a878c714c4b8b59b6406c))
+
+### Bug Fixes
+
+* **chart:** put the x₁/x₂ axis titles in the plot margins ([16ffa34](https://github.com/DevilsDev/NeuroViz/commit/16ffa34d5ba4aa368e44d24dc764e4c939fcc010))
+* **tfjs:** report one output unit for binary models ([a4813ef](https://github.com/DevilsDev/NeuroViz/commit/a4813ef308bfc025bff628cd728144573c859d18))
+
 ## [2.32.0](https://github.com/DevilsDev/NeuroViz/compare/v2.31.4...v2.32.0) (2026-10-29)
 
 ### Features
