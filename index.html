@@ -49,10 +49,10 @@
     }
   </style>
 
-  <script type="module" crossorigin src="/NeuroViz/assets/index-DoJC-RxT.js"></script>
+  <script type="module" crossorigin src="/NeuroViz/assets/index-CuGo6xZm.js"></script>
   <link rel="modulepreload" crossorigin href="/NeuroViz/assets/vendor-tensorflow-BABp9r46.js">
   <link rel="modulepreload" crossorigin href="/NeuroViz/assets/vendor-d3-3RmUZZtA.js">
-  <link rel="stylesheet" crossorigin href="/NeuroViz/assets/index-BTLoyl7p.css">
+  <link rel="stylesheet" crossorigin href="/NeuroViz/assets/index-pylA7uYh.css">
 </head>
 
 <body>
@@ -74,17 +74,6 @@
         <!-- Divider -->
         <div class="w-px h-6 bg-white/10"></div>
 
-        <!-- Dataset Chips -->
-        <div class="dataset-chips flex" role="radiogroup" aria-label="Select dataset">
-          <button class="dataset-chip dataset-preview-card selected" data-dataset="circle" role="radio" aria-checked="true" aria-label="Circle dataset">Circle</button>
-          <button class="dataset-chip dataset-preview-card" data-dataset="xor" role="radio" aria-checked="false" aria-label="XOR dataset">XOR</button>
-          <button class="dataset-chip dataset-preview-card" data-dataset="spiral" role="radio" aria-checked="false" aria-label="Spiral dataset">Spiral</button>
-          <button class="dataset-chip dataset-preview-card" data-dataset="gaussian" role="radio" aria-checked="false" aria-label="Gaussian dataset">Gaussian</button>
-          <button class="dataset-chip dataset-preview-card" data-dataset="clusters" role="radio" aria-checked="false" aria-label="Clusters dataset">Clusters</button>
-          <button class="dataset-chip dataset-preview-card" data-dataset="iris" role="radio" aria-checked="false" aria-label="Iris dataset">Iris</button>
-          <button class="dataset-chip dataset-preview-card" data-dataset="wine" role="radio" aria-checked="false" aria-label="Wine dataset">Wine</button>
-          <button class="dataset-chip dataset-preview-card" data-dataset="custom" role="radio" aria-checked="false" aria-label="Custom draw mode">Draw</button>
-        </div>
 
         <!-- Spacer -->
         <div class="flex-1"></div>
@@ -311,6 +300,77 @@
 
           <!-- ===== DATA TAB ===== -->
           <div class="tab-content active" data-tab-content="tab-data" role="tabpanel" id="tab-data">
+            <!-- Dataset picker: choosing a card loads it -->
+            <section class="dataset-picker" aria-labelledby="dataset-picker-title">
+              <h3 id="dataset-picker-title" class="panel-section-title">Choose a dataset</h3>
+              <div class="dataset-cards" role="radiogroup" aria-labelledby="dataset-picker-title">
+                <button type="button" class="dataset-card dataset-preview-card selected" data-dataset="circle" role="radio" aria-checked="true" aria-label="Circle dataset, easy, 2 classes">
+                  <svg class="dataset-card-preview" data-preview="circle"></svg>
+                  <span class="dataset-card-body">
+                    <span class="dataset-card-name">Circle</span>
+                    <span class="dataset-card-level level-easy">Easy</span>
+                  </span>
+                  <span class="dataset-card-meta">2 classes</span>
+                </button>
+                <button type="button" class="dataset-card dataset-preview-card" data-dataset="xor" role="radio" aria-checked="false" aria-label="XOR dataset, easy, 2 classes">
+                  <svg class="dataset-card-preview" data-preview="xor"></svg>
+                  <span class="dataset-card-body">
+                    <span class="dataset-card-name">XOR</span>
+                    <span class="dataset-card-level level-easy">Easy</span>
+                  </span>
+                  <span class="dataset-card-meta">2 classes</span>
+                </button>
+                <button type="button" class="dataset-card dataset-preview-card" data-dataset="gaussian" role="radio" aria-checked="false" aria-label="Gaussian dataset, easy, 2 classes">
+                  <svg class="dataset-card-preview" data-preview="gaussian"></svg>
+                  <span class="dataset-card-body">
+                    <span class="dataset-card-name">Gaussian</span>
+                    <span class="dataset-card-level level-easy">Easy</span>
+                  </span>
+                  <span class="dataset-card-meta">2 classes</span>
+                </button>
+                <button type="button" class="dataset-card dataset-preview-card" data-dataset="spiral" role="radio" aria-checked="false" aria-label="Spiral dataset, hard, 2 classes">
+                  <svg class="dataset-card-preview" data-preview="spiral"></svg>
+                  <span class="dataset-card-body">
+                    <span class="dataset-card-name">Spiral</span>
+                    <span class="dataset-card-level level-hard">Hard</span>
+                  </span>
+                  <span class="dataset-card-meta">2 classes</span>
+                </button>
+                <button type="button" class="dataset-card dataset-preview-card" data-dataset="clusters" role="radio" aria-checked="false" aria-label="Clusters dataset, medium, 4 classes">
+                  <svg class="dataset-card-preview" data-preview="clusters"></svg>
+                  <span class="dataset-card-body">
+                    <span class="dataset-card-name">Clusters</span>
+                    <span class="dataset-card-level level-medium">Medium</span>
+                  </span>
+                  <span class="dataset-card-meta">4 classes</span>
+                </button>
+                <button type="button" class="dataset-card dataset-preview-card" data-dataset="iris" role="radio" aria-checked="false" aria-label="Iris dataset, medium, 3 classes · real">
+                  <svg class="dataset-card-preview" data-preview="iris"></svg>
+                  <span class="dataset-card-body">
+                    <span class="dataset-card-name">Iris</span>
+                    <span class="dataset-card-level level-medium">Medium</span>
+                  </span>
+                  <span class="dataset-card-meta">3 classes · real</span>
+                </button>
+                <button type="button" class="dataset-card dataset-preview-card" data-dataset="wine" role="radio" aria-checked="false" aria-label="Wine dataset, medium, 3 classes · real">
+                  <svg class="dataset-card-preview" data-preview="wine"></svg>
+                  <span class="dataset-card-body">
+                    <span class="dataset-card-name">Wine</span>
+                    <span class="dataset-card-level level-medium">Medium</span>
+                  </span>
+                  <span class="dataset-card-meta">3 classes · real</span>
+                </button>
+                <button type="button" class="dataset-card dataset-preview-card" data-dataset="custom" role="radio" aria-checked="false" aria-label="Draw your own dataset, yours, Click to add points">
+                  <svg class="dataset-card-preview" data-preview="custom"></svg>
+                  <span class="dataset-card-body">
+                    <span class="dataset-card-name">Draw your own</span>
+                    <span class="dataset-card-level level-yours">Yours</span>
+                  </span>
+                  <span class="dataset-card-meta">Click to add points</span>
+                </button>
+              </div>
+            </section>
+
             <!-- Dataset Options (moved from left panel) -->
             <div class="p-4 bg-navy-800/30 rounded-xl mb-4">
               <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Data Settings</h3>
@@ -438,8 +498,9 @@
                   <span class="input-label">Batch Norm</span>
                 </label>
               </div>
+              <div id="layer-editor" class="layer-editor" role="group" aria-label="Hidden layers"></div>
               <label class="block">
-                <span class="input-label">Hidden Layers</span>
+                <span class="input-label">Hidden layers (comma-separated)</span>
                 <input type="text" id="input-layers" class="input-field text-xs" value="8, 4"
                   placeholder="e.g., 8, 4" aria-label="Hidden layer sizes, comma separated" />
                 <span class="control-caption" data-min-mode="learn-only">Neurons per layer; more = more complex boundaries</span>
@@ -548,6 +609,35 @@
 
           <!-- ===== ANALYZE TAB ===== -->
           <div class="tab-content" data-tab-content="tab-analyze" role="tabpanel" id="tab-analyze">
+          <!-- How well does it classify? Filled by MetricsController via EvaluationSummary -->
+          <section id="eval-summary" class="eval-summary" data-state="empty" aria-labelledby="eval-summary-title">
+            <h3 id="eval-summary-title" class="panel-section-title">How well does it classify?</h3>
+            <p class="eval-scope" data-eval="scope">Train the model to see how well it classifies.</p>
+            <div class="eval-tiles">
+              <div class="eval-tile">
+                <div class="eval-tile-label">Accuracy</div>
+                <div id="eval-accuracy" class="eval-tile-value" data-eval="accuracy">—</div>
+                <div class="eval-tile-detail" data-eval="accuracy-detail"></div>
+              </div>
+              <div class="eval-tile">
+                <div class="eval-tile-label">Macro F1</div>
+                <div id="eval-f1" class="eval-tile-value" data-eval="f1">—</div>
+                <div class="eval-tile-detail">Average over classes</div>
+              </div>
+              <div class="eval-tile eval-verdict" data-eval="verdict-tile">
+                <div class="eval-tile-label">Verdict</div>
+                <div id="eval-verdict" class="eval-tile-value" data-eval="verdict">—</div>
+              </div>
+            </div>
+            <p class="eval-verdict-detail" data-eval="verdict-detail"></p>
+            <table class="eval-class-table" aria-label="Per-class metrics">
+              <thead>
+                <tr><th scope="col">Class</th><th scope="col">Precision</th><th scope="col">Recall</th><th scope="col">F1</th><th scope="col">Points</th></tr>
+              </thead>
+              <tbody id="eval-class-rows" data-eval="rows"></tbody>
+            </table>
+          </section>
+
           <div class="space-y-2">
             <!-- Network Architecture Diagram -->
             <details class="group bg-navy-800/30 rounded-lg p-2" open>
@@ -566,7 +656,7 @@
             </details>
 
             <!-- Classification Metrics -->
-            <details class="group bg-navy-800/30 rounded-lg p-2" data-min-mode="experiment">
+            <details class="group bg-navy-800/30 rounded-lg p-2" open>
               <summary class="text-xs font-bold text-slate-400 cursor-pointer list-none flex justify-between">
                 Confusion Matrix <span class="group-open:rotate-180 transition-transform">▼</span>
               </summary>
@@ -720,7 +810,9 @@
           </div>
 
           <!-- Export Tools -->
-          <div class="mt-4 pt-4 border-t border-white/5" data-min-mode="experiment">
+          <section class="eval-exports" data-min-mode="experiment" aria-labelledby="eval-exports-title">
+            <h3 id="eval-exports-title" class="panel-section-title">Take it further</h3>
+            <p class="eval-exports-hint">Save the trained model, the training history or a full report.</p>
             <div class="grid grid-cols-2 gap-2 mb-2">
               <button id="btn-export-model-sticky" class="btn-secondary text-xs">Export Model</button>
               <button id="btn-export-history-sticky" class="btn-secondary text-xs">Export Stats</button>
@@ -731,7 +823,7 @@
               </svg>
               Export Training Report
             </button>
-          </div>
+          </section>
           </div><!-- /tab-analyze -->
 
         </div><!-- /panel-scroll -->
