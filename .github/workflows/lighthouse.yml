@@ -22,7 +22,11 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write  # For PR comments
+
+# Superseded runs for the same ref are cancelled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   NODE_VERSION: '22'
@@ -31,6 +35,7 @@ jobs:
   lighthouse:
     name: Lighthouse Performance Audit
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
@@ -75,7 +80,9 @@ jobs:
           urls: |
             http://localhost:5173/NeuroViz/
           uploadArtifacts: true
-          temporaryPublicStorage: true
+          # Reports are kept as workflow artifacts; don't publish them to
+          # Lighthouse's temporary public storage
+          temporaryPublicStorage: false
           configPath: '.lighthouserc.json'
 
       # -----------------------------------------------------------------------

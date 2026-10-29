@@ -255,7 +255,6 @@ jobs:
 
     permissions:
       contents: write   # For gh-pages branch push
-      id-token: write   # Reserved for future Pages attestation
 
     steps:
       - name: Checkout code
