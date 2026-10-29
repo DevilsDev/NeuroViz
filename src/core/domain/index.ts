@@ -16,6 +16,7 @@ export type {
   LRScheduleType,
   LRScheduleConfig,
   LossType,
+  WeightInitType,
 } from './Hyperparameters';
 export {
   DEFAULT_HYPERPARAMETERS,
@@ -146,3 +147,8 @@ export {
   getAllPresets,
   getPreset,
 } from './TrainingPresets';
+
+// Reproducibility and overfitting risk
+export { MAX_SEED, mulberry32, random, seedRandom, newSeed, parseSeed } from './Random';
+export type { RiskLevel, OverfittingRiskInput, OverfittingRisk } from './OverfittingRisk';
+export { assessOverfittingRisk } from './OverfittingRisk';

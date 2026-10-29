@@ -45,6 +45,7 @@ vi.mock('../../../src/utils/validation', () => ({
     parseLRScheduleType: vi.fn((v: string) => ['none', 'exponential', 'step', 'cosine', 'cyclic_triangular', 'cyclic_cosine'].includes(v) ? v : 'none'),
     parsePerformanceMode: vi.fn((v: string) => ['full', 'balanced', 'battery'].includes(v) ? v : 'full'),
     parseLossType: vi.fn((v: string) => ['crossEntropy', 'mse', 'hinge'].includes(v) ? v : 'crossEntropy'),
+    parseWeightInitType: vi.fn((v: string) => ['heNormal', 'glorotUniform', 'lecunNormal'].includes(v) ? v : 'heNormal'),
     performanceModeToFps: vi.fn((mode: string) => mode === 'full' ? 60 : mode === 'balanced' ? 30 : 15),
     fpsToPerformanceMode: vi.fn((fps: number) => fps >= 50 ? 'full' : fps >= 25 ? 'balanced' : 'battery'),
 }));

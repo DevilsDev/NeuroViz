@@ -1,5 +1,6 @@
 import type { IDatasetRepository, DatasetOptions } from '../../core/ports';
 import type { Point } from '../../core/domain';
+import { random } from '../../core/domain/Random';
 
 /**
  * Mock implementation of IDatasetRepository.
@@ -111,13 +112,13 @@ export class MockDataRepository implements IDatasetRepository {
     // Class 0: top-right and bottom-left quadrants
     for (let i = 0; i < Math.floor(samplesClass0 / 2); i++) {
       points.push({
-        x: (0.2 + Math.random() * 0.6) + this.noise(noise * 0.3),
-        y: (0.2 + Math.random() * 0.6) + this.noise(noise * 0.3),
+        x: (0.2 + random() * 0.6) + this.noise(noise * 0.3),
+        y: (0.2 + random() * 0.6) + this.noise(noise * 0.3),
         label: 0,
       });
       points.push({
-        x: -(0.2 + Math.random() * 0.6) + this.noise(noise * 0.3),
-        y: -(0.2 + Math.random() * 0.6) + this.noise(noise * 0.3),
+        x: -(0.2 + random() * 0.6) + this.noise(noise * 0.3),
+        y: -(0.2 + random() * 0.6) + this.noise(noise * 0.3),
         label: 0,
       });
     }
@@ -125,13 +126,13 @@ export class MockDataRepository implements IDatasetRepository {
     // Class 1: top-left and bottom-right quadrants
     for (let i = 0; i < Math.floor(samplesClass1 / 2); i++) {
       points.push({
-        x: (0.2 + Math.random() * 0.6) + this.noise(noise * 0.3),
-        y: -(0.2 + Math.random() * 0.6) + this.noise(noise * 0.3),
+        x: (0.2 + random() * 0.6) + this.noise(noise * 0.3),
+        y: -(0.2 + random() * 0.6) + this.noise(noise * 0.3),
         label: 1,
       });
       points.push({
-        x: -(0.2 + Math.random() * 0.6) + this.noise(noise * 0.3),
-        y: (0.2 + Math.random() * 0.6) + this.noise(noise * 0.3),
+        x: -(0.2 + random() * 0.6) + this.noise(noise * 0.3),
+        y: (0.2 + random() * 0.6) + this.noise(noise * 0.3),
         label: 1,
       });
     }
@@ -352,13 +353,13 @@ export class MockDataRepository implements IDatasetRepository {
   }
 
   private noise(scale: number): number {
-    return (Math.random() - 0.5) * 2 * scale;
+    return (random() - 0.5) * 2 * scale;
   }
 
   private gaussianNoise(stdDev: number): number {
     // Box-Muller transform for Gaussian distribution
-    const u1 = Math.random();
-    const u2 = Math.random();
+    const u1 = random();
+    const u2 = random();
     const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
     return z * stdDev;
   }
@@ -366,7 +367,7 @@ export class MockDataRepository implements IDatasetRepository {
   private shuffle<T>(array: T[]): T[] {
     const result = [...array];
     for (let i = result.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = Math.floor(random() * (i + 1));
       const temp = result[i] as T;
       result[i] = result[j] as T;
       result[j] = temp;

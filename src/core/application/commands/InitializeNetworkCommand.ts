@@ -1,7 +1,7 @@
 import { ICommand } from './ICommand';
 import { ValidationResult } from './ValidationResult';
 import { ITrainingSession } from '../ITrainingSession';
-import { Hyperparameters, OptimizerType, ActivationType, LossType } from '../../domain';
+import { Hyperparameters, OptimizerType, ActivationType, LossType, WeightInitType, MAX_SEED } from '../../domain';
 
 /**
  * Configuration for InitializeNetworkCommand
@@ -20,6 +20,9 @@ export interface InitializeNetworkConfig {
   clipNorm?: number;
   batchNorm?: boolean;
   lossFunction?: LossType;
+  weightInit?: WeightInitType;
+  /** null/omitted = random starting weights */
+  seed?: number | null;
 }
 
 /**
@@ -87,6 +90,12 @@ export class InitializeNetworkCommand implements ICommand<void> {
       errors.set('numClasses', 'Number of classes must be at least 2');
     }
 
+    // Validate seed (if provided)
+    if (this.config.seed !== undefined && this.config.seed !== null
+        && (!Number.isInteger(this.config.seed) || this.config.seed < 1 || this.config.seed > MAX_SEED)) {
+      errors.set('seed', `Seed must be a whole number from 1 to ${MAX_SEED}`);
+    }
+
     // Validate layer activations (if provided)
     if (this.config.layerActivations && this.config.layerActivations.length !== layers.length) {
       errors.set('layerActivations', 'Layer activations must match the number of layers');
@@ -116,6 +125,8 @@ export class InitializeNetworkCommand implements ICommand<void> {
       clipNorm: this.config.clipNorm ?? 0,
       batchNorm: this.config.batchNorm ?? false,
       lossFunction: this.config.lossFunction ?? 'crossEntropy',
+      weightInit: this.config.weightInit ?? 'heNormal',
+      seed: this.config.seed ?? null,
     };
 
     await this.session.setHyperparameters(hyperparameters);

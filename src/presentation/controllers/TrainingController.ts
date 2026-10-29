@@ -2,7 +2,7 @@ import { TrainingSession } from '../../core/application/TrainingSession';
 import { toast } from '../toast';
 import { logger, type LogContext } from '../../infrastructure/logging/Logger';
 import { TrainingState } from '../../core/application/ITrainingSession';
-import { DEFAULT_TRAINING_CONFIG } from '../../core/domain';
+import { DEFAULT_TRAINING_CONFIG, parseSeed } from '../../core/domain';
 import {
     CommandExecutor,
     InitializeNetworkCommand,
@@ -17,6 +17,7 @@ import {
     parseLRScheduleType,
     parsePerformanceMode,
     parseLossType,
+    parseWeightInitType,
     performanceModeToFps,
     fpsToPerformanceMode,
 } from '../../utils/validation';
@@ -33,6 +34,9 @@ export interface TrainingElements {
     inputDropout: HTMLSelectElement;
     inputBatchNorm: HTMLInputElement;
     inputLossFunction: HTMLSelectElement;
+    /** Reproducibility card (optional: absent in older layouts and tests) */
+    inputSeed?: HTMLInputElement | null;
+    inputWeightInit?: HTMLSelectElement | null;
     btnInit: HTMLButtonElement;
 
     inputBatchSize: HTMLInputElement;
@@ -118,6 +122,8 @@ export class TrainingController {
             this.elements.inputL1, this.elements.inputL2,
             this.elements.inputDropout, this.elements.inputNumClasses,
         ];
+        if (this.elements.inputSeed) staleInputs.push(this.elements.inputSeed);
+        if (this.elements.inputWeightInit) staleInputs.push(this.elements.inputWeightInit);
         for (const el of staleInputs) {
             this.addTrackedListener(el, 'change', () => this.updateStaleBadge());
             this.addTrackedListener(el, 'input', () => this.updateStaleBadge());
@@ -215,6 +221,10 @@ export class TrainingController {
         const dropoutRate = parseFloat(this.elements.inputDropout.value) || 0;
         const batchNorm = this.elements.inputBatchNorm.checked;
         const lossFunction = parseLossType(this.elements.inputLossFunction.value);
+        const weightInit = parseWeightInitType(this.elements.inputWeightInit?.value ?? 'heNormal');
+        // Blank = random start; anything else must be a valid seed (NaN fails validation)
+        const seedText = this.elements.inputSeed?.value.trim() ?? '';
+        const seed = seedText === '' ? null : parseSeed(seedText) ?? NaN;
 
         return {
             learningRate,
@@ -227,6 +237,8 @@ export class TrainingController {
             dropoutRate,
             batchNorm,
             lossFunction,
+            weightInit,
+            seed,
         };
     }
 
@@ -288,6 +300,8 @@ export class TrainingController {
             this.elements.inputL2.value,
             this.elements.inputDropout.value,
             this.elements.inputNumClasses.value,
+            this.elements.inputSeed?.value ?? '',
+            this.elements.inputWeightInit?.value ?? '',
         ].join('|');
     }
 

@@ -3,7 +3,7 @@
  * Ensures type safety when parsing user input that should match TypeScript types.
  */
 
-import type { OptimizerType, ActivationType, LRScheduleType, LossType } from '../core/domain';
+import type { OptimizerType, ActivationType, LRScheduleType, LossType, WeightInitType } from '../core/domain';
 
 // =============================================================================
 // Valid Value Sets
@@ -276,4 +276,11 @@ export function parseLossType(
         console.warn(`[Validation] Invalid loss type "${value}", using default "${defaultValue}"`);
     }
     return defaultValue;
+}
+
+const VALID_WEIGHT_INIT_TYPES: readonly WeightInitType[] = ['heNormal', 'glorotUniform', 'lecunNormal'];
+
+/** Parses a weight-initialiser choice from a DOM value, falling back to He normal. */
+export function parseWeightInitType(value: string, defaultValue: WeightInitType = 'heNormal'): WeightInitType {
+    return VALID_WEIGHT_INIT_TYPES.includes(value as WeightInitType) ? (value as WeightInitType) : defaultValue;
 }

@@ -2514,6 +2514,154 @@ html .dashboard-grid .sidebar-tab.active {
     border-top: 1px solid var(--border-subtle);
 }
 
+/* Train step: overfitting risk and reproducibility cards */
+.side-card {
+    padding: 12px;
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+}
+
+.side-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.side-card-head .panel-section-title {
+    margin-bottom: 8px;
+}
+
+.side-card-text {
+    margin: 6px 0 0;
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--color-text-secondary);
+}
+
+.risk-badge {
+    margin-bottom: 8px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--surface-2);
+    color: var(--color-text-secondary);
+}
+
+.risk-meter {
+    position: relative;
+    height: 8px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #DCFCE7 0%, #FEF3C7 50%, #FEE2E2 100%);
+    overflow: hidden;
+}
+
+.risk-meter-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0;
+    border-radius: 999px;
+    background: #94A3B8;
+    transition: width 200ms ease, background-color 200ms ease;
+}
+
+.risk-card[data-level="low"] .risk-meter-fill { background: #16A34A; }
+.risk-card[data-level="moderate"] .risk-meter-fill { background: #D97706; }
+.risk-card[data-level="high"] .risk-meter-fill { background: #DC2626; }
+
+.risk-scale {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 3px;
+    font-size: 10px;
+    color: var(--color-text-secondary);
+}
+
+.risk-numbers {
+    margin: 8px 0 0;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 11px;
+    color: var(--color-text-primary);
+}
+
+.risk-tip {
+    margin: 6px 0 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.risk-card[data-level="low"] .risk-badge {
+    background: #DCFCE7;
+    color: #166534;
+}
+
+.risk-card[data-level="moderate"] .risk-badge {
+    background: #FEF3C7;
+    color: #92400E;
+}
+
+.risk-card[data-level="high"] .risk-badge {
+    background: #FEE2E2;
+    color: #991B1B;
+}
+
+.repro-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.repro-field {
+    display: block;
+    min-width: 0;
+}
+
+.repro-seed {
+    display: flex;
+    gap: 4px;
+}
+
+.repro-seed .input-field {
+    min-width: 0;
+    flex: 1;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+.repro-seed .input-field[aria-invalid="true"] {
+    border-color: #DC2626;
+}
+
+.repro-dice {
+    flex: none;
+    width: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    background: var(--surface-1);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+}
+
+.repro-dice:hover {
+    border-color: var(--border-hover);
+    color: rgb(var(--color-cyan-rgb));
+}
+
+.repro-lock {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
 /* ===== PHONE LAYOUT =====
    Below 768px the header and transport bar wrap instead of running off the
    right edge (the page used to scroll sideways on phones). */

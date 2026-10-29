@@ -1,5 +1,5 @@
 import type { Hyperparameters, Point, Prediction, TrainingConfig, TrainingHistory, ExportFormat } from '../domain';
-import { DEFAULT_TRAINING_CONFIG, DEFAULT_LR_SCHEDULE, exportHistory, isModelDisposedError } from '../domain';
+import { DEFAULT_TRAINING_CONFIG, DEFAULT_LR_SCHEDULE, exportHistory, isModelDisposedError, seedRandom } from '../domain';
 import type { INeuralNetworkService, IVisualizerService, IDatasetRepository, DatasetOptions } from '../ports';
 import type { ITrainingSession, TrainingState } from './ITrainingSession';
 import { logger } from '../../infrastructure/logging/Logger';
@@ -184,6 +184,7 @@ export class TrainingSession implements ITrainingSession {
 
     // Store for LR scheduling and reset scheduler
     this.currentHyperparameters = config;
+    this.reseedTrainingStream();
     this.appliedLearningRate = config.learningRate;
     this.initialLearningRate = config.learningRate;
     this.lrScheduler.setInitialLR(config.learningRate);
@@ -209,6 +210,8 @@ export class TrainingSession implements ITrainingSession {
     }
     await this.waitForInFlightStep();
 
+    // A seed makes generation and the train/validation split repeatable
+    seedRandom(options?.seed ?? null);
     const allData = await this.dataService.loadData(
       datasetType, options, this.trainingConfig.validationSplit
     );
@@ -263,6 +266,16 @@ export class TrainingSession implements ITrainingSession {
     this.state.notifyListeners('paused');
   }
 
+  /**
+   * Restarts the random stream behind the split and batch order from the
+   * model's seed, so training from the same start repeats exactly.
+   * Offset from the data seed so the two streams differ.
+   */
+  private reseedTrainingStream(): void {
+    const seed = this.currentHyperparameters?.seed;
+    seedRandom(seed === null || seed === undefined ? null : seed + 1);
+  }
+
   reset(): void {
     this.sessionGeneration++;
     this.state.setTraining(false);
@@ -271,6 +284,7 @@ export class TrainingSession implements ITrainingSession {
     // releases it when it finishes (its results are discarded).
     this.state.resetProgress();
     this.earlyStoppingStrategy.reset();
+    this.reseedTrainingStream();
 
     // Re-split data
     if (this.dataService.hasData()) {

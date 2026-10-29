@@ -38,6 +38,8 @@ import { setupTouchGestures } from '../../presentation/TouchGestures';
 import { renderAllDatasetPreviews } from '../../presentation/DatasetPreviews';
 import { LayerEditor } from '../../presentation/LayerEditor';
 import { EvaluationSummary } from '../../presentation/EvaluationSummary';
+import { ReproducibilityPanel } from '../../presentation/ReproducibilityPanel';
+import { OverfittingRiskCard } from '../../presentation/OverfittingRiskCard';
 import { setupBottomSheet } from '../../presentation/BottomSheet';
 import { setupOnboardingWizard } from '../../presentation/Onboarding';
 
@@ -227,10 +229,15 @@ export class ApplicationBuilder {
    * Builds all controllers with their dependencies
    */
   private buildControllers(services: ConcreteServices): Controllers {
+    // Seed source for data loads; must exist before the dataset controller
+    const reproducibility = ReproducibilityPanel.fromDocument();
+    if (reproducibility) this.disposers.push(() => reproducibility.dispose());
+
     const datasetController = new DatasetController(
       services.session,
       services.visualizer,
-      getDatasetElements()
+      getDatasetElements(),
+      reproducibility
     );
 
     // Build MetricsController first so it can be used by clear callback
@@ -345,6 +352,14 @@ export class ApplicationBuilder {
     renderAllDatasetPreviews();
     const layerEditor = LayerEditor.fromDocument();
     if (layerEditor) this.disposers.push(() => layerEditor.dispose());
+    const riskCard = OverfittingRiskCard.fromDocument(() =>
+      session.getState().datasetLoaded ? session.getTrainingData().length : null
+    );
+    if (riskCard) {
+      // Data loads and re-splits change the training-set size
+      const unsubscribe = session.onStateChange(() => riskCard.update());
+      this.disposers.push(() => { unsubscribe(); riskCard.dispose(); });
+    }
     const datasetGallery = new DatasetGallery();
 
     // Initialize Keyboard Shortcuts

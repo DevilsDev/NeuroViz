@@ -19,6 +19,8 @@ export interface DatasetOptions {
   readonly classBalance?: number;
   /** Preprocessing method for features. Default: 'none' */
   readonly preprocessing?: PreprocessingType;
+  /** Seed for generation and the train/validation split; omitted = random */
+  readonly seed?: number;
 }
 
 /**
