@@ -3,6 +3,7 @@ import type { IVisualizerService, PointAddedCallback } from '../../core/ports';
 import type { Point, Prediction, VisualizationConfig, ColourScheme } from '../../core/domain';
 import { DEFAULT_VISUALIZATION_CONFIG, COLOUR_PALETTES, MULTI_CLASS_COLOURS } from '../../core/domain';
 import { D3VoronoiOverlay } from './D3VoronoiOverlay';
+import { renderPlotLegend, EMPTY_LEGEND_STATE, type PlotLegendState } from './PlotLegend';
 
 /**
  * D3.js implementation of IVisualizerService.
@@ -38,7 +39,8 @@ export class D3Chart implements IVisualizerService {
   private width: number;
   private height: number;
   // Margins: right increased to prevent last x-tick clipping
-  private readonly margin = { top: 6, right: 16, bottom: 24, left: 32 };
+  // Bottom/left leave room for the x₁/x₂ axis titles under/beside the tick labels
+  private readonly margin = { top: 6, right: 16, bottom: 34, left: 44 };
 
   private xScale: d3.ScaleLinear<number, number>;
   private yScale: d3.ScaleLinear<number, number>;
@@ -66,6 +68,10 @@ export class D3Chart implements IVisualizerService {
 
   // Adversarial points
   private adversarialPoints: Array<Point & { isAdversarial: boolean; originalPoint?: Point }> = [];
+
+  // Legend shown under the plot (optional #viz-legend element in the page)
+  private readonly legendEl: HTMLElement | null = document.getElementById('viz-legend');
+  private legendState: PlotLegendState = { ...EMPTY_LEGEND_STATE };
 
   /**
    * @param containerId - DOM element ID where the chart will be rendered
@@ -213,6 +219,10 @@ export class D3Chart implements IVisualizerService {
   renderData(points: Point[]): void {
     // Cache for re-rendering
     this.cachedPoints = points;
+    this.updateLegend({
+      classes: [...new Set(points.map((p) => p.label))].sort((a, b) => a - b),
+      hasValidation: points.some((p) => p.isValidation),
+    });
 
     // Remove existing data points
     this.chartGroup.selectAll('.data-point').remove();
@@ -288,6 +298,7 @@ export class D3Chart implements IVisualizerService {
 
     // Determine if multi-class based on predictions
     const numClasses = predictions[0]?.probabilities?.length ?? 2;
+    this.updateLegend({ binaryBoundary: numClasses === 2 });
 
     if (numClasses === 2) {
       this.chartGroup.selectAll('.boundary').remove();
@@ -401,6 +412,12 @@ export class D3Chart implements IVisualizerService {
 
     // Remove ALL children of chartGroup (axes are in a separate group on svg)
     this.chartGroup.selectAll('*').remove();
+    this.updateLegend({ ...EMPTY_LEGEND_STATE });
+  }
+
+  private updateLegend(change: Partial<PlotLegendState>): void {
+    this.legendState = { ...this.legendState, ...change, colourScheme: this.config.colourScheme };
+    if (this.legendEl) renderPlotLegend(this.legendEl, this.legendState);
   }
 
   /**
@@ -440,12 +457,14 @@ export class D3Chart implements IVisualizerService {
       .attr('stroke', (d, i) => misclassifiedIndices.has(i) ? '#ef4444' : pointStyle(d).stroke)
       .attr('stroke-width', (d, i) => misclassifiedIndices.has(i) ? 3 : pointStyle(d).strokeWidth)
       .attr('stroke-dasharray', (d, i) => misclassifiedIndices.has(i) ? 'none' : pointStyle(d).dash);
+    this.updateLegend({ showMisclassified: misclassifiedIndices.size > 0 });
   }
 
   /**
    * Clears misclassified highlighting, restoring default styling.
    */
   clearMisclassifiedHighlight(): void {
+    this.updateLegend({ showMisclassified: false });
     this.chartGroup
       .selectAll<SVGCircleElement, Point>('.data-point')
       .attr('stroke', (d) => pointStyle(d).stroke)
@@ -528,6 +547,7 @@ export class D3Chart implements IVisualizerService {
       this.voronoiOverlay = null;
     }
     this.container.selectAll('*').remove();
+    if (this.legendEl) renderPlotLegend(this.legendEl, EMPTY_LEGEND_STATE);
   }
 
   /**
@@ -612,6 +632,26 @@ export class D3Chart implements IVisualizerService {
       .attr('stroke', themeColor('--chart-tick-line', '#475569'));
     yAxisGroup.select('.domain')
       .attr('stroke', themeColor('--chart-domain', '#334155'));
+
+    // Axis titles: the two input features, in the margins beside the ticks
+    for (const [cls, text] of [['x-axis-title', 'x₁'], ['y-axis-title', 'x₂']] as const) {
+      axesGroup.append('text')
+        .attr('class', `axis-title ${cls}`)
+        .attr('font-size', 11)
+        .attr('font-weight', 600)
+        .attr('text-anchor', 'middle')
+        .attr('fill', themeColor('--chart-tick-text', '#94a3b8'))
+        .text(text);
+    }
+    this.positionAxisTitles();
+  }
+
+  private positionAxisTitles(): void {
+    this.svg.select('.x-axis-title')
+      .attr('x', this.width / 2)
+      .attr('y', this.height + 30);
+    this.svg.select('.y-axis-title')
+      .attr('transform', `translate(${-34},${this.height / 2}) rotate(-90)`);
   }
 
   /**
@@ -619,6 +659,7 @@ export class D3Chart implements IVisualizerService {
    * visible region.
    */
   private updateAxes(): void {
+    this.positionAxisTitles();
     const tt = themeColor('--chart-tick-text', '#94a3b8');
     const tl = themeColor('--chart-tick-line', '#475569');
     const dc = themeColor('--chart-domain', '#334155');

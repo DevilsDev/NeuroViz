@@ -573,13 +573,10 @@ describe('TFNeuralNet - Mathematical Correctness', () => {
     });
 
     it('should populate the output layer for binary classification (no more "No data")', async () => {
-      // Binary classification uses sigmoid with units=1 in TF.js Keras, so
-      // activations[last] has length 1 (not 2 as structure.layers suggests —
-      // that is a pre-existing cosmetic inconsistency in getStructure, not
-      // part of this fix). The point of this test is: before the fix the
-      // output slot was EMPTY because the input layer was being aliased into
-      // index 0. After the fix, the output slot is populated with the
-      // sigmoid probability.
+      // Binary classification uses a single sigmoid unit, so activations[last]
+      // has length 1 and getStructure() reports 1 output unit to match.
+      // Before the fix the output slot was EMPTY because the input layer was
+      // being aliased into index 0; now it holds the sigmoid probability.
       await neuralNet.initialize({
         learningRate: 0.01,
         layers: [8, 4],
@@ -590,9 +587,10 @@ describe('TFNeuralNet - Mathematical Correctness', () => {
       const point: Point = { x: 0.3, y: -0.7, label: 0 };
       const activations = neuralNet.getLayerActivations(point);
 
-      // Length 4 (input + 2 hidden + 1 output) despite structure reporting
-      // [2, 8, 4, 2] — the array is still one-per-layer in the TF model sense.
+      // Length 4 (input + 2 hidden + 1 output), one entry per structure layer
       expect(activations).toHaveLength(4);
+      expect(neuralNet.getStructure()!.layers).toEqual([2, 8, 4, 1]);
+      expect(activations.map((a) => a.length)).toEqual([2, 8, 4, 1]);
 
       // Raw input prepended
       expect(activations[0]).toEqual([0.3, -0.7]);

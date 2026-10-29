@@ -477,8 +477,10 @@ export class TFNeuralNet implements INeuralNetworkService {
   getStructure(): { layers: number[]; activations: string[] } | null {
     if (!this.config) return null;
 
-    // Reconstruct full layer sizes including input and output
-    const layers = [2, ...this.config.layers, this.numClasses];
+    // Reconstruct full layer sizes including input and output. Binary models
+    // have a single sigmoid unit (P(class 1)), not one unit per class.
+    const outputUnits = this.numClasses === 2 ? 1 : this.numClasses;
+    const layers = [2, ...this.config.layers, outputUnits];
 
     // Reconstruct activations
     const defaultActivation = this.config.activation ?? DEFAULT_HYPERPARAMETERS.activation;

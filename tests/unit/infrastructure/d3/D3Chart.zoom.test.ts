@@ -37,7 +37,7 @@ describe('D3Chart - zoom', () => {
     applyZoom(d3.zoomIdentity.translate(40, 20).scale(2));
 
     expect(plotArea?.getAttribute('transform')).toBe(before);
-    expect(before).toBe('translate(32,6)');
+    expect(before).toBe('translate(44,6)');
   });
 
   it('should rescale the axes to the zoomed domain and restore them on reset', () => {
@@ -63,7 +63,7 @@ describe('D3Chart - zoom', () => {
     // A content point p (inner coords) is drawn at margin + inner(p) and must
     // land where the SVG-space zoom puts it: svgTransform(margin + p)
     const p = [50, 30] as const;
-    const drawn = [32 + tx + k * p[0], 6 + ty + k * p[1]];
-    expect(drawn).toEqual(svgTransform.apply([32 + p[0], 6 + p[1]]));
+    const drawn = [44 + tx + k * p[0], 6 + ty + k * p[1]];
+    expect(drawn).toEqual(svgTransform.apply([44 + p[0], 6 + p[1]]));
   });
 });
