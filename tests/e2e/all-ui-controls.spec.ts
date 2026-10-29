@@ -359,8 +359,6 @@ test.describe('All UI Controls - Complete Coverage', () => {
   });
 
   test.describe('Visualization Controls', () => {
-    // View toggles (3D, Voronoi, gradients) have no visible control since bb0954f: the inputs sit in a hidden div and no toolbar toggle was added
-    test.fixme(true, 'View toggles (3D, Voronoi, gradients) have no visible control since bb0954f: the inputs sit in a hidden div and no toolbar toggle was added');
     test('3D view checkbox toggles 3D visualization', async ({ page }) => {
       await neuroPage.selectAndLoadDataset('circle');
 
