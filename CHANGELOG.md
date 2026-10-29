@@ -1,3 +1,9 @@
+## [2.31.2](https://github.com/DevilsDev/NeuroViz/compare/v2.31.1...v2.31.2) (2026-10-29)
+
+### Bug Fixes
+
+* **training:** keep the Step button clickable after a step ([9206ad4](https://github.com/DevilsDev/NeuroViz/commit/9206ad42a042819e2e0edb20ba0a2479ff51d01b))
+
 ## [2.31.1](https://github.com/DevilsDev/NeuroViz/compare/v2.31.0...v2.31.1) (2026-04-10)
 
 ### Bug Fixes
