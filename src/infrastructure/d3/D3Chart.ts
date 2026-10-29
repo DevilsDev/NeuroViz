@@ -39,7 +39,8 @@ export class D3Chart implements IVisualizerService {
   private width: number;
   private height: number;
   // Margins: right increased to prevent last x-tick clipping
-  private readonly margin = { top: 6, right: 16, bottom: 24, left: 32 };
+  // Bottom/left leave room for the x₁/x₂ axis titles under/beside the tick labels
+  private readonly margin = { top: 6, right: 16, bottom: 34, left: 44 };
 
   private xScale: d3.ScaleLinear<number, number>;
   private yScale: d3.ScaleLinear<number, number>;
@@ -632,17 +633,14 @@ export class D3Chart implements IVisualizerService {
     yAxisGroup.select('.domain')
       .attr('stroke', themeColor('--chart-domain', '#334155'));
 
-    // Axis titles: the two input features. Drawn inside the plot corners with a
-    // halo so they stay readable over the boundary heatmap.
-    for (const [cls, text] of [['x-axis-title', 'x₁ →'], ['y-axis-title', 'x₂ ↑']] as const) {
+    // Axis titles: the two input features, in the margins beside the ticks
+    for (const [cls, text] of [['x-axis-title', 'x₁'], ['y-axis-title', 'x₂']] as const) {
       axesGroup.append('text')
         .attr('class', `axis-title ${cls}`)
         .attr('font-size', 11)
         .attr('font-weight', 600)
+        .attr('text-anchor', 'middle')
         .attr('fill', themeColor('--chart-tick-text', '#94a3b8'))
-        .attr('stroke', themeColor('--surface-1', '#ffffff'))
-        .attr('stroke-width', 3)
-        .attr('paint-order', 'stroke')
         .text(text);
     }
     this.positionAxisTitles();
@@ -650,13 +648,10 @@ export class D3Chart implements IVisualizerService {
 
   private positionAxisTitles(): void {
     this.svg.select('.x-axis-title')
-      .attr('x', this.width - 4)
-      .attr('y', this.height - 6)
-      .attr('text-anchor', 'end');
+      .attr('x', this.width / 2)
+      .attr('y', this.height + 30);
     this.svg.select('.y-axis-title')
-      .attr('x', 6)
-      .attr('y', 14)
-      .attr('text-anchor', 'start');
+      .attr('transform', `translate(${-34},${this.height / 2}) rotate(-90)`);
   }
 
   /**

@@ -73,7 +73,7 @@ describe('D3Chart legend and axis titles', () => {
 
   it('labels the axes with the input features', () => {
     const titles = Array.from(container.querySelectorAll('.axis-title')).map((t) => t.textContent);
-    expect(titles).toEqual(['x₁ →', 'x₂ ↑']);
+    expect(titles).toEqual(['x₁', 'x₂']);
   });
 
   it('updates the legend as data, boundary and highlights change', () => {
