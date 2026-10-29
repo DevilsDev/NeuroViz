@@ -1,3 +1,9 @@
+## [2.34.0](https://github.com/DevilsDev/NeuroViz/compare/v2.33.0...v2.34.0) (2026-10-29)
+
+### Features
+
+* **ui:** redesigned Data, Model and Evaluate steps ([caf0b09](https://github.com/DevilsDev/NeuroViz/commit/caf0b0997827f7e95aaa1d2930ec492b70b07ad5)), closes [#input-layers](https://github.com/DevilsDev/NeuroViz/issues/input-layers)
+
 ## [2.33.0](https://github.com/DevilsDev/NeuroViz/compare/v2.32.0...v2.33.0) (2026-10-29)
 
 ### Features
