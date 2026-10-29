@@ -240,4 +240,33 @@ describe('D3ConfusionMatrix', () => {
       expect(() => chart.render(data)).not.toThrow();
     });
   });
+  describe('tooltip', () => {
+    it('escapes class labels in the tooltip HTML', () => {
+      const data: ConfusionMatrixData = {
+        matrix: [[1, 0], [0, 1]],
+        labels: ['<img src=x onerror=alert(1)>', 'B'],
+        total: 2,
+      };
+      chart.render(data);
+
+      const cell = document.querySelector(`#${containerId} #cell-0-1`);
+      cell?.dispatchEvent(new MouseEvent('mouseenter'));
+
+      const tooltip = document.querySelector('.cm-tooltip');
+      expect(tooltip?.querySelector('img')).toBeNull();
+      expect(tooltip?.textContent).toContain('<img src=x onerror=alert(1)>');
+    });
+
+    it('shows the latest counts after a re-render', () => {
+      chart.render({ matrix: [[1, 2], [3, 4]], labels: ['A', 'B'], total: 10 });
+      chart.render({ matrix: [[7, 8], [9, 6]], labels: ['A', 'B'], total: 30 });
+
+      const cell = document.querySelector(`#${containerId} #cell-0-1`);
+      cell?.dispatchEvent(new MouseEvent('mouseenter'));
+
+      const tooltip = document.querySelector('.cm-tooltip');
+      expect(tooltip?.textContent).toContain('Count: 8');
+      expect(tooltip?.textContent).toContain('26.7%');
+    });
+  });
 });

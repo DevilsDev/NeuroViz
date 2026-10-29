@@ -17,7 +17,8 @@ function themeColor(prop: string, fallback: string): string {
 
 export class D3AccuracyChart {
   private readonly container: d3.Selection<HTMLElement, unknown, null, undefined>;
-  private readonly svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
+  /** Margin-translated plot group (a <g>, not the root <svg>) */
+  private readonly svg: d3.Selection<SVGGElement, unknown, null, undefined>;
   private width: number;
   private height: number;
   private readonly margin = { top: 8, right: 10, bottom: 20, left: 45 };
@@ -29,6 +30,9 @@ export class D3AccuracyChart {
   private accuracyPath: d3.Selection<SVGPathElement, unknown, null, undefined>;
   private xAxisGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
   private yAxisGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
+  private resizeObserver: ResizeObserver | null = null;
+  /** Last rendered history, replayed after a resize */
+  private lastHistory: TrainingHistory | null = null;
 
   constructor(containerId: string) {
     const element = document.getElementById(containerId);
@@ -57,9 +61,7 @@ export class D3AccuracyChart {
 
     this.svg = svgElement
       .append('g')
-      .attr('transform', `translate(${this.margin.left},${this.margin.top})`) as unknown as d3.Selection<
-        SVGSVGElement, unknown, null, undefined
-      >;
+      .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
 
     // Scales
     this.xScale = d3.scaleLinear().range([0, this.width]);
@@ -95,9 +97,39 @@ export class D3AccuracyChart {
       .style('font-size', '9px')
       .style('font-weight', '600')
       .text('Acc');
+
+    // Resize observer (same pattern as D3LossChart)
+    this.resizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        if (entry.contentRect) {
+          this.resize(entry.contentRect.width, entry.contentRect.height);
+        }
+      }
+    });
+    this.resizeObserver.observe(element);
+  }
+
+  resize(width: number, height: number): void {
+    const minWidth = this.margin.left + this.margin.right + 50;
+    const minHeight = this.margin.top + this.margin.bottom + 20;
+    if (width < minWidth || height < minHeight) return;
+
+    this.width = Math.max(0, width - this.margin.left - this.margin.right);
+    this.height = Math.max(0, height - this.margin.top - this.margin.bottom);
+
+    this.container.select('svg').attr('viewBox', `0 0 ${width} ${height}`);
+
+    this.xScale.range([0, this.width]);
+    this.yScale.range([this.height, 0]);
+    this.xAxisGroup.attr('transform', `translate(0,${this.height})`);
+
+    if (this.lastHistory && this.lastHistory.records.length > 0) {
+      this.update(this.lastHistory);
+    }
   }
 
   update(history: TrainingHistory): void {
+    this.lastHistory = history;
     const records = history.records as TrainingRecord[];
 
     if (records.length === 0) {
@@ -145,12 +177,20 @@ export class D3AccuracyChart {
   }
 
   clear(): void {
+    this.lastHistory = null;
     this.accuracyPath.attr('d', null);
     this.xAxisGroup.selectAll('*').remove();
     this.yAxisGroup.selectAll('*').remove();
   }
 
   dispose(): void {
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
+    this.lastHistory = null;
+    // Stop pending axis/line transitions so they don't tween detached nodes
+    this.container.selectAll('*').interrupt();
     this.container.selectAll('*').remove();
   }
 }
