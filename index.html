@@ -87,9 +87,9 @@
 
         <!-- Mode Selector — controls UI complexity level -->
         <div class="mode-selector" role="radiogroup" aria-label="Interface mode">
-          <button class="mode-btn active" data-mode="learn" role="radio" aria-checked="true" tabindex="0" title="Simplified interface with guided hints">Learn</button>
-          <button class="mode-btn" data-mode="experiment" role="radio" aria-checked="false" tabindex="-1" title="Common controls visible, reduced friction">Experiment</button>
-          <button class="mode-btn" data-mode="advanced" role="radio" aria-checked="false" tabindex="-1" title="Full control panels and diagnostics">Advanced</button>
+          <button class="mode-btn active" data-mode="learn" role="radio" aria-checked="true" tabindex="0" title="Simplified interface with guided hints">Guided</button>
+          <button class="mode-btn" data-mode="experiment" role="radio" aria-checked="false" tabindex="-1" title="Common controls visible, reduced friction">Standard</button>
+          <button class="mode-btn" data-mode="advanced" role="radio" aria-checked="false" tabindex="-1" title="Full control panels and diagnostics">Expert</button>
         </div>
 
         <!-- Actions (low emphasis) -->
@@ -117,13 +117,13 @@
           </button>
           <!-- Learn Menu Dropdown -->
           <div class="relative" id="learn-menu-container">
-            <button id="btn-learn-menu" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 transition-colors flex items-center gap-2 text-sm font-medium text-white"
-              aria-label="Learning resources" title="Tutorials & Challenges"
+            <button id="btn-learn-menu" class="btn-tutorials px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 text-sm font-medium"
+              title="Tutorials &amp; challenges"
               aria-haspopup="true" aria-expanded="false" aria-controls="learn-menu-dropdown">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
-              Learn
+              Tutorials
               <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
@@ -228,11 +228,11 @@
               <span id="status-loss" class="toolbar-metric-value" style="color: rgb(var(--color-orange-rgb))">—</span>
             </div>
             <div class="toolbar-metric">
-              <span class="toolbar-metric-label">Acc</span>
+              <span class="toolbar-metric-label">Accuracy</span>
               <span id="status-accuracy" class="toolbar-metric-value" style="color: rgb(var(--color-success-rgb))">—</span>
             </div>
             <div class="toolbar-metric">
-              <span class="toolbar-metric-label">Val</span>
+              <span class="toolbar-metric-label">Val loss</span>
               <span id="status-val-loss" class="toolbar-metric-value" style="color: rgb(var(--color-danger-rgb))">—</span>
             </div>
           </div>

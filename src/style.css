@@ -930,6 +930,17 @@ html:not(.dark) .text-red-400 {
     /* All visual panels (main viz + charts) share the same card language */
 
     /* Viz cards — Colab output cells: borderless, flow into page */
+    /* Header "Tutorials" menu button: neutral, so the accent stays for primary actions */
+    .btn-tutorials {
+        background: var(--surface-1);
+        border-color: var(--border-subtle);
+        color: var(--color-text-primary);
+    }
+
+    .btn-tutorials:hover {
+        border-color: var(--border-hover);
+    }
+
     /* Decision-boundary plot legend */
     .viz-legend {
         @apply flex flex-wrap items-center gap-x-4 gap-y-1.5 px-2 pt-2 pb-1 text-xs;
@@ -1840,4 +1851,66 @@ html:not(.dark) .text-red-400 {
     top: 60%;
     left: 75%;
     animation-delay: 1.35s;
+}
+/* ===== PHONE LAYOUT =====
+   Below 768px the header, toolbar and chart row wrap instead of running off the
+   right edge (the page used to scroll sideways on phones). */
+@media (max-width: 767px) {
+    /* 1fr would never shrink below its widest child's min-content width */
+    .dashboard-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .app-top-bar {
+        flex-wrap: wrap;
+        row-gap: 8px;
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    /* Dataset chips get their own full-width row and scroll within it */
+    .app-top-bar .dataset-chips {
+        order: 10;
+        flex: 1 0 100%;
+        min-width: 0;
+    }
+
+    .app-top-bar > .w-px {
+        display: none;
+    }
+
+    /* Interface-level switch gets its own full-width row */
+    .app-top-bar .mode-selector {
+        order: 9;
+        flex: 1 0 100%;
+        display: flex;
+    }
+
+    .app-top-bar .mode-selector .mode-btn {
+        flex: 1;
+    }
+
+    .panel-center {
+        min-width: 0;
+        overflow: visible;
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .toolbar-group {
+        flex-wrap: wrap;
+    }
+
+    #viz-panel {
+        min-height: 340px;
+    }
+
+    .charts-row {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+
+    .charts-row .viz-card {
+        height: 140px;
+    }
 }
