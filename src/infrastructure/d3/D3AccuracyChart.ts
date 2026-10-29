@@ -189,6 +189,8 @@ export class D3AccuracyChart {
       this.resizeObserver = null;
     }
     this.lastHistory = null;
+    // Stop pending axis/line transitions so they don't tween detached nodes
+    this.container.selectAll('*').interrupt();
     this.container.selectAll('*').remove();
   }
 }
