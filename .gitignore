@@ -149,3 +149,4 @@ test-results/
 test_output*.txt
 error_log.txt
 debug_results.txt
+neuroviz-dist.zip
