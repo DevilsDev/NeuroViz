@@ -52,8 +52,8 @@ export class TFNeuralNet implements INeuralNetworkService {
    * @throws {ModelNotInitialisedError} If called before initialize()
    *
    * @remarks
-   * TensorFlow.js doesn't provide a direct way to update optimizer learning rate,
-   * so we recompile the model with a new optimizer while preserving weights.
+   * TensorFlow.js has no public learning-rate setter on every optimizer, so the
+   * compiled optimizer is updated in place rather than replaced.
    */
   updateLearningRate(newLearningRate: number): void {
     const model = this.assertInitialised();
@@ -61,34 +61,25 @@ export class TFNeuralNet implements INeuralNetworkService {
       throw new ModelNotInitialisedError();
     }
 
-    // Save current weights before recompiling
-    const weights = model.getWeights();
-
-    // Update config with new learning rate
     this.config = { ...this.config, learningRate: newLearningRate };
 
-    // Create new optimizer with updated learning rate
-    const optimizer = this.createOptimizer(
-      this.config.optimizer ?? DEFAULT_HYPERPARAMETERS.optimizer,
-      newLearningRate,
-      this.config.momentum ?? DEFAULT_HYPERPARAMETERS.momentum,
-      this.config.clipNorm ?? 0
-    );
-
-    // Recompile model with new optimizer (preserves architecture and weights)
-    const lossType = this.config.lossFunction ?? DEFAULT_HYPERPARAMETERS.lossFunction;
-    const loss = this.getLossFunction(lossType, this.numClasses);
-    model.compile({
-      optimizer,
-      loss,
-      metrics: ['accuracy'],
-    });
-
-    // Restore weights - they persist through recompilation
-    model.setWeights(weights);
-
-    // Dispose old weight tensors to prevent memory leak
-    weights.forEach(w => w.dispose());
+    // Mutate the live optimizer instead of recompiling: this keeps the weights
+    // untouched and preserves optimizer state (Adam moments, momentum buffers).
+    // Note: model.getWeights() returns the live variables, not copies, so the
+    // old get/recompile/set/dispose approach destroyed the model's weights.
+    // `instanceof` can't be used here: tf.Optimizer overrides Symbol.hasInstance
+    // with duck typing, so every optimizer passes `instanceof tf.SGDOptimizer`.
+    const optimizer = model.optimizer as unknown as {
+      learningRate: number;
+      setLearningRate?: (lr: number) => void;
+    };
+    if (typeof optimizer.setLearningRate === 'function') {
+      // SGD and Momentum cache the LR in a scalar tensor; setLearningRate refreshes it
+      optimizer.setLearningRate(newLearningRate);
+    } else {
+      // Adam, RMSprop and Adagrad read `learningRate` on every applyGradients call
+      optimizer.learningRate = newLearningRate;
+    }
   }
 
   /**
@@ -273,6 +264,9 @@ export class TFNeuralNet implements INeuralNetworkService {
    */
   dispose(): void {
     if (this.model) {
+      // Optimizers passed to compile() are not owned by the model, so
+      // model.dispose() leaves their slot variables (e.g. Adam moments) alive.
+      this.model.optimizer?.dispose();
       this.model.dispose();
       this.model = null;
     }
@@ -695,10 +689,9 @@ export class TFNeuralNet implements INeuralNetworkService {
       // Binary: single column with 0 or 1
       return tf.tensor2d(data.map((p) => [p.label]));
     } else {
-      // Multi-class: one-hot encoded
-      return tf.oneHot(
-        tf.tensor1d(data.map((p) => p.label), 'int32'),
-        this.numClasses
+      // Multi-class: one-hot encoded (tidy frees the intermediate index tensor)
+      return tf.tidy(() =>
+        tf.oneHot(tf.tensor1d(data.map((p) => p.label), 'int32'), this.numClasses)
       );
     }
   }

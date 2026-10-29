@@ -28,10 +28,13 @@ export class ThreeVisualization {
   private camera: THREE.PerspectiveCamera;
   private renderer: THREE.WebGLRenderer;
   private controls: OrbitControls;
-  private surfaceMesh: THREE.Mesh | null = null;
+  private surfaceMesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshPhongMaterial> | null = null;
+  private surfaceGridSize = 0;
   private pointsGroup: THREE.Group;
   private animationId: number | null = null;
   private isDisposed = false;
+  private isPaused = false;
+  private resizeObserver: ResizeObserver;
 
   // Colour palette for classes
   private classColours = [
@@ -94,8 +97,10 @@ export class ThreeVisualization {
     const axesHelper = new THREE.AxesHelper(1.2);
     this.scene.add(axesHelper);
 
-    // Handle resize
-    window.addEventListener('resize', this.handleResize);
+    // Track the container itself (not just the window) so layout changes and
+    // un-hiding the container resize the canvas correctly
+    this.resizeObserver = new ResizeObserver(this.handleResize);
+    this.resizeObserver.observe(container);
 
     // Start animation loop
     this.animate();
@@ -103,9 +108,11 @@ export class ThreeVisualization {
 
   private handleResize = (): void => {
     if (this.isDisposed) return;
-    
+
     const width = this.container.clientWidth;
     const height = this.container.clientHeight;
+    // A hidden container reports 0x0; keep the last valid size
+    if (width === 0 || height === 0) return;
 
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
@@ -113,12 +120,34 @@ export class ThreeVisualization {
   };
 
   private animate = (): void => {
-    if (this.isDisposed) return;
-    
+    if (this.isDisposed || this.isPaused) return;
+
     this.animationId = requestAnimationFrame(this.animate);
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
   };
+
+  /**
+   * Stops the render loop (e.g. while the 3D view is hidden) without
+   * releasing any resources.
+   */
+  pause(): void {
+    this.isPaused = true;
+    if (this.animationId !== null) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
+    }
+  }
+
+  /**
+   * Restarts the render loop after pause().
+   */
+  resume(): void {
+    if (this.isDisposed || !this.isPaused) return;
+    this.isPaused = false;
+    this.handleResize();
+    this.animate();
+  }
 
   /**
    * Renders the decision boundary surface.
@@ -126,57 +155,62 @@ export class ThreeVisualization {
    * @param gridSize - Number of points per axis
    */
   renderSurface(predictions: Prediction3D[], gridSize: number): void {
-    // Remove existing surface
-    if (this.surfaceMesh) {
-      this.scene.remove(this.surfaceMesh);
-      this.surfaceMesh.geometry.dispose();
-      if (this.surfaceMesh.material instanceof THREE.Material) {
-        this.surfaceMesh.material.dispose();
-      }
+    if (predictions.length === 0) {
+      this.removeSurface();
+      return;
     }
 
-    if (predictions.length === 0) return;
+    // Reuse the mesh while the grid size is unchanged; only the buffers change
+    if (!this.surfaceMesh || this.surfaceGridSize !== gridSize) {
+      this.removeSurface();
+      const geometry = new THREE.PlaneGeometry(2, 2, gridSize - 1, gridSize - 1);
+      const vertexCount = geometry.attributes.position?.count ?? 0;
+      geometry.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(vertexCount * 3), 3));
 
-    // Create geometry
-    const geometry = new THREE.PlaneGeometry(2, 2, gridSize - 1, gridSize - 1);
+      const material = new THREE.MeshPhongMaterial({
+        vertexColors: true,
+        side: THREE.DoubleSide,
+        flatShading: false,
+        transparent: true,
+        opacity: 0.85,
+      });
+
+      this.surfaceMesh = new THREE.Mesh(geometry, material);
+      this.surfaceGridSize = gridSize;
+      this.scene.add(this.surfaceMesh);
+    }
+
+    const geometry = this.surfaceMesh.geometry;
     const positions = geometry.attributes.position as THREE.BufferAttribute;
-    const colors: number[] = [];
-
-    if (!positions) return;
+    const colors = geometry.attributes.color as THREE.BufferAttribute;
+    const colour = new THREE.Color();
 
     // Update vertex positions and colours based on predictions
     for (let i = 0; i < positions.count; i++) {
       const prediction = predictions[i];
       if (!prediction) continue;
 
-      // Map x, y from [-1, 1] to grid position
-      const x = (prediction.x + 1) - 1; // Normalize to [-1, 1]
-      const y = (prediction.y + 1) - 1;
       const z = prediction.confidence * 0.5; // Height based on confidence
+      positions.setXYZ(i, prediction.x, z, prediction.y); // Note: Three.js uses Y as up
 
-      positions.setXYZ(i, x, z, y); // Note: Three.js uses Y as up
-
-      // Colour based on predicted class
-      const colour = new THREE.Color(this.classColours[prediction.predictedClass % this.classColours.length]);
-      // Adjust brightness based on confidence
+      // Colour based on predicted class, brightness based on confidence
+      colour.set(this.classColours[prediction.predictedClass % this.classColours.length] ?? 0xffffff);
       colour.multiplyScalar(0.5 + prediction.confidence * 0.5);
-      colors.push(colour.r, colour.g, colour.b);
+      colors.setXYZ(i, colour.r, colour.g, colour.b);
     }
 
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    positions.needsUpdate = true;
+    colors.needsUpdate = true;
     geometry.computeVertexNormals();
+  }
 
-    // Create material with vertex colours
-    const material = new THREE.MeshPhongMaterial({
-      vertexColors: true,
-      side: THREE.DoubleSide,
-      flatShading: false,
-      transparent: true,
-      opacity: 0.85,
-    });
-
-    this.surfaceMesh = new THREE.Mesh(geometry, material);
-    this.scene.add(this.surfaceMesh);
+  private removeSurface(): void {
+    if (!this.surfaceMesh) return;
+    this.scene.remove(this.surfaceMesh);
+    this.surfaceMesh.geometry.dispose();
+    this.surfaceMesh.material.dispose();
+    this.surfaceMesh = null;
+    this.surfaceGridSize = 0;
   }
 
   /**
@@ -206,11 +240,8 @@ export class ThreeVisualization {
       const sphere = new THREE.Mesh(sphereGeometry, material);
 
       // Position: x and z on the plane, y slightly above
-      sphere.position.set(
-        (point.x + 1) - 1, // Normalize x
-        0.05, // Slightly above the surface
-        (point.y + 1) - 1  // Normalize y (z in Three.js)
-      );
+      // x and y map to the plane (y becomes z in Three.js), slightly above the surface
+      sphere.position.set(point.x, 0.05, point.y);
 
       this.pointsGroup.add(sphere);
     }
@@ -258,14 +289,7 @@ export class ThreeVisualization {
    * Clears the visualization.
    */
   clear(): void {
-    if (this.surfaceMesh) {
-      this.scene.remove(this.surfaceMesh);
-      this.surfaceMesh.geometry.dispose();
-      if (this.surfaceMesh.material instanceof THREE.Material) {
-        this.surfaceMesh.material.dispose();
-      }
-      this.surfaceMesh = null;
-    }
+    this.removeSurface();
 
     while (this.pointsGroup.children.length > 0) {
       const child = this.pointsGroup.children[0];
@@ -288,13 +312,16 @@ export class ThreeVisualization {
     
     if (this.animationId !== null) {
       cancelAnimationFrame(this.animationId);
+      this.animationId = null;
     }
 
-    window.removeEventListener('resize', this.handleResize);
+    this.resizeObserver.disconnect();
 
     this.clear();
     this.controls.dispose();
     this.renderer.dispose();
+    // dispose() alone doesn't release the GPU context; browsers cap live contexts
+    this.renderer.forceContextLoss();
 
     if (this.container.contains(this.renderer.domElement)) {
       this.container.removeChild(this.renderer.domElement);

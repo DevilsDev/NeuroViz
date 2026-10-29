@@ -99,12 +99,16 @@ export class VisualizationController {
                     this.elements.threeContainer.classList.add('hidden');
                     return;
                 }
+            } else {
+                this.threeViz.resume();
             }
 
             // Update 3D view with current data
             await this.update3dView();
         } else {
             this.elements.threeContainer.classList.add('hidden');
+            // Stop rendering WebGL frames while the view is hidden
+            this.threeViz?.pause();
         }
     }
 

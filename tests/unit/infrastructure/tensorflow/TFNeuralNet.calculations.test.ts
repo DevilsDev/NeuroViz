@@ -683,6 +683,58 @@ describe('TFNeuralNet - Mathematical Correctness', () => {
     });
   });
 
+  describe('Learning Rate Updates', () => {
+    const data: Point[] = [
+      { x: -1, y: -1, label: 0 },
+      { x: 1, y: 1, label: 1 },
+    ];
+
+    it.each(['sgd', 'adam', 'rmsprop', 'adagrad'] as const)(
+      'should keep trained weights usable after updateLearningRate (%s)',
+      async (optimizer) => {
+        await neuralNet.initialize({ learningRate: 0.05, layers: [4], numClasses: 2, optimizer });
+        await neuralNet.train(data);
+        const weightsBefore = neuralNet.getWeights();
+
+        neuralNet.updateLearningRate(0.01);
+
+        // Weights must survive the update unchanged and remain usable
+        expect(neuralNet.getWeights()).toEqual(weightsBefore);
+        const predictions = await neuralNet.predict(data);
+        expect(predictions).toHaveLength(2);
+        const result = await neuralNet.train(data);
+        expect(Number.isFinite(result.loss)).toBe(true);
+      }
+    );
+
+    it.each(['sgd', 'adam', 'rmsprop', 'adagrad'] as const)(
+      'should apply the new learning rate to subsequent training (%s)',
+      async (optimizer) => {
+        await neuralNet.initialize({ learningRate: 0.1, layers: [4], numClasses: 2, optimizer });
+        await neuralNet.train(data);
+
+        // A zero learning rate must freeze the weights
+        neuralNet.updateLearningRate(0);
+        const weightsBefore = neuralNet.getWeights();
+        await neuralNet.train(data);
+
+        expect(neuralNet.getWeights()).toEqual(weightsBefore);
+      }
+    );
+
+    it('should not leak tensors when updating the learning rate repeatedly', async () => {
+      await neuralNet.initialize({ learningRate: 0.1, layers: [4], numClasses: 2, optimizer: 'sgd' });
+      await neuralNet.train(data);
+      const tensorsBefore = tf.memory().numTensors;
+
+      for (let i = 0; i < 10; i++) {
+        neuralNet.updateLearningRate(0.1 / (i + 2));
+      }
+
+      expect(tf.memory().numTensors).toBe(tensorsBefore);
+    });
+  });
+
   describe('Regularization', () => {
     it('should produce higher loss with L2 regularization for large weights', async () => {
       const data: Point[] = [
@@ -898,6 +950,46 @@ describe('TFNeuralNet - Mathematical Correctness', () => {
       // Prediction should not leak tensors
       const tensorGrowth = finalNumTensors - initialNumTensors;
       expect(tensorGrowth).toBeLessThan(10);
+    });
+
+    it('should not leak label tensors in multi-class train and evaluate', async () => {
+      await neuralNet.initialize({ learningRate: 0.01, layers: [4], numClasses: 3 });
+      const data: Point[] = [
+        { x: 0, y: 0, label: 0 },
+        { x: 1, y: 1, label: 1 },
+        { x: -1, y: 1, label: 2 },
+      ];
+
+      // Warm up: the first train step allocates optimizer state
+      await neuralNet.train(data);
+      await neuralNet.evaluate(data);
+      const tensorsBefore = tf.memory().numTensors;
+
+      for (let i = 0; i < 5; i++) {
+        await neuralNet.train(data);
+        await neuralNet.evaluate(data);
+      }
+
+      expect(tf.memory().numTensors).toBe(tensorsBefore);
+    });
+
+    it('should release optimizer state when re-initialising', async () => {
+      const config = { learningRate: 0.01, layers: [4], numClasses: 2, optimizer: 'adam' as const };
+      const data: Point[] = [
+        { x: 0, y: 0, label: 0 },
+        { x: 1, y: 1, label: 1 },
+      ];
+
+      await neuralNet.initialize(config);
+      await neuralNet.train(data);
+      const tensorsAfterFirstRun = tf.memory().numTensors;
+
+      for (let i = 0; i < 3; i++) {
+        await neuralNet.initialize(config);
+        await neuralNet.train(data);
+      }
+
+      expect(tf.memory().numTensors).toBe(tensorsAfterFirstRun);
     });
   });
 

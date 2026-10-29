@@ -7,9 +7,11 @@
 #   - Weekly schedule (Mondays at 9 AM UTC)
 #
 # Pipeline stages:
-#   1. Dependency Vulnerability Scan (npm audit + Snyk)
-#   2. Secret Scanning (Gitleaks)
-#   3. SAST Analysis (CodeQL + ESLint Security)
+#   1. Dependency Vulnerability Scan (npm audit)
+#      - BLOCKING: high/critical advisories in production dependencies
+#      - Advisory: full report (incl. dev dependencies, moderate+) in summary
+#   2. Secret Scanning (TruffleHog, verified secrets only)
+#   3. SAST Analysis (CodeQL security-extended)
 # =============================================================================
 
 name: Security Scan
@@ -54,16 +56,22 @@ jobs:
       # -----------------------------------------------------------------------
       # Run npm audit for vulnerability scanning
       # -----------------------------------------------------------------------
-      - name: Run npm audit
+      # Advisory: full report including dev tooling. Never fails the job.
+      - name: npm audit report (all dependencies)
         run: |
-          echo "## NPM Audit Report" >> $GITHUB_STEP_SUMMARY
-          npm audit --audit-level=moderate || {
-            echo "::warning::Vulnerabilities found in dependencies"
-            npm audit >> $GITHUB_STEP_SUMMARY
-            exit 0
-          }
-          echo "✅ No vulnerabilities found" >> $GITHUB_STEP_SUMMARY
-        continue-on-error: true
+          echo "## NPM Audit Report (all dependencies)" >> $GITHUB_STEP_SUMMARY
+          if npm audit --audit-level=moderate > audit-full.txt; then
+            echo "✅ No moderate+ vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "::warning::Vulnerabilities found in dependencies (see summary)"
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat audit-full.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+      # Blocking: high/critical advisories in code that ships to users
+      - name: npm audit (production dependencies, high+)
+        run: npm audit --omit=dev --audit-level=high
 
       # -----------------------------------------------------------------------
       # Verify package-lock.json integrity
@@ -144,29 +152,6 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
 
-      # -----------------------------------------------------------------------
-      # ESLint Security Scanning
-      # -----------------------------------------------------------------------
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run ESLint security checks
-        run: |
-          echo "## ESLint Security Report" >> $GITHUB_STEP_SUMMARY
-          npm run lint -- --format json --output-file eslint-report.json || true
-          echo "✅ ESLint security scan completed" >> $GITHUB_STEP_SUMMARY
-        continue-on-error: true
-
-      - name: Upload ESLint report
-        uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: eslint-security-report
-          path: eslint-report.json
-          retention-days: 30
+      # Note: the former "ESLint security" step was removed. No security plugin
+      # is configured, so it only re-ran the regular lint (already blocking in
+      # CI) with failures suppressed. CodeQL above is the SAST gate.
