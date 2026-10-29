@@ -18,9 +18,10 @@ not — fix those paths when reviving a module.
 | `src/experimental/plugins/` | Plugin manager |
 | `src/core/application/ModelComparison.ts`, `ModelEnsemble.ts` | A/B model comparison and ensemble voting |
 | `src/core/research/FeatureImportance.ts` | Permutation feature importance |
+| `src/core/application/training/LRFinderService.ts`, `src/infrastructure/d3/D3LRFinder.ts` | Learning-rate finder (LR sweep + sensitivity chart). Was reachable only via `TrainingSession.runLRFinder()`, which nothing called; its "restore" re-initialises the model with fresh random weights. |
 | `src/infrastructure/performance/` | Frame-rate limiter and progressive grid renderer |
 | `src/workers/` | Web Worker training (`WorkerManager` + worker). Its request handlers are keyed by response type, not request id, so concurrent requests can clobber each other; fix before reuse. |
-| `tests/unit/experimental/` | Unit tests for the LIME and NAS modules |
+| `tests/unit/experimental/`, `tests/unit/application/training/LRFinderService.test.ts` | Unit tests for the archived LIME, NAS and LR finder modules |
 
 ## Reviving a module
 

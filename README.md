@@ -98,7 +98,8 @@ them. They live in [`archive/`](archive/README.md), outside `src/`, so they
 are not built, type-checked or tested; the archive README explains how to
 revive one.
 
-- Model comparison (A/B), model ensembles, permutation feature importance
+- Model comparison (A/B), model ensembles, permutation feature importance,
+  learning-rate finder
 - Web-Worker-backed training, progressive grid rendering
 - LIME-style explanations, saliency maps, Bayesian NNs (MC Dropout),
   neural architecture search, WebGL renderer, REST API
@@ -157,7 +158,7 @@ the edges and are wired up in a composition root.
 │                          Core                                   │
 │   Domain (entities)  ·  Ports (interfaces)  ·  Application      │
 │   TrainingSession facade → SessionStateStore,                    │
-│   DatasetPreparationService, ExperimentService, LRFinderService  │
+│   DatasetPreparationService, ExperimentService                   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -172,7 +173,7 @@ src/
 │   ├── domain/              # Point, Prediction, Hyperparameters, ...
 │   ├── ports/               # INeuralNetworkService, IVisualizerService, ...
 │   └── application/         # TrainingSession facade + extracted services
-│       └── training/        # SessionStateStore, DatasetPrep, Experiment, LRFinder
+│       └── training/        # SessionStateStore, DatasetPrep, Experiment
 │
 ├── infrastructure/          # Framework-specific adapters
 │   ├── tensorflow/          # TFNeuralNet (TensorFlow.js)

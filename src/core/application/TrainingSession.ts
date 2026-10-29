@@ -10,7 +10,6 @@ import {
   SessionStateStore,
   DatasetPreparationService,
   ExperimentService,
-  LRFinderService,
   shuffle,
 } from './training';
 
@@ -59,7 +58,6 @@ export class TrainingSession implements ITrainingSession {
   private readonly state: SessionStateStore;
   private readonly dataService: DatasetPreparationService;
   private readonly experiment: ExperimentService;
-  private readonly lrFinder: LRFinderService;
   private lrScheduler: LearningRateScheduler;
   private earlyStoppingStrategy: EarlyStoppingStrategy;
 
@@ -102,11 +100,10 @@ export class TrainingSession implements ITrainingSession {
     this.initialisePredictionGrid();
 
     // Construct services
-    // Construction order: StateStore → DatasetPrep → Experiment → LRFinder → LR/EarlyStopping
+    // Construction order: StateStore → DatasetPrep → Experiment → LR/EarlyStopping
     this.state = new SessionStateStore({ ...this.trainingConfig });
     this.dataService = new DatasetPreparationService(dataRepo, new TrainingDataSplitter());
     this.experiment = new ExperimentService();
-    this.lrFinder = new LRFinderService(this.neuralNet);
 
     this.lrScheduler = new LearningRateScheduler(
       this.initialLearningRate,
@@ -412,38 +409,6 @@ export class TrainingSession implements ITrainingSession {
 
   canRedo(): boolean {
     return this.experiment.canRedo();
-  }
-
-  // ===========================================================================
-  // LR Finder (delegates to LRFinderService)
-  // ===========================================================================
-
-  async runLRFinder(
-    minLR = 1e-7,
-    maxLR = 1,
-    steps = 100
-  ): Promise<Array<{ lr: number; loss: number }>> {
-    this.assertReadyToTrain();
-
-    if (this.state.getIsTraining() && !this.state.getIsPaused()) {
-      this.pause();
-    }
-    await this.waitForInFlightStep();
-
-    if (!this.currentHyperparameters) {
-      throw new Error('Model not initialized');
-    }
-
-    const results = await this.lrFinder.run(
-      () => this.getTrainingBatch(),
-      this.currentHyperparameters,
-      minLR,
-      maxLR,
-      steps
-    );
-    // The finder re-initialises the network at the original LR
-    this.appliedLearningRate = this.currentHyperparameters.learningRate;
-    return results;
   }
 
   // ===========================================================================

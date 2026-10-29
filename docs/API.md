@@ -433,7 +433,6 @@ interface ITrainingSession {
   onStateChange(callback: (state: TrainingState) => void): () => void;
 
   exportHistory(format: ExportFormat): string;
-  runLRFinder(minLR?: number, maxLR?: number, steps?: number): Promise<Array<{ lr: number; loss: number }>>;
 
   undoConfig(): Promise<boolean>;
   redoConfig(): Promise<boolean>;
@@ -865,21 +864,6 @@ Exports training history.
 ```typescript
 const json = session.exportHistory('json');
 const csv = session.exportHistory('csv');
-```
-
----
-
-##### `async runLRFinder(minLR = 1e-7, maxLR = 1, steps = 100): Promise<Array<{ lr: number; loss: number }>>`
-
-Runs learning rate finder to discover optimal LR.
-
-**Returns**:
-- Array of LR/loss pairs
-
-**Example**:
-```typescript
-const results = await session.runLRFinder(1e-6, 0.1, 100);
-const optimalLR = findOptimalLR(results);
 ```
 
 ---
