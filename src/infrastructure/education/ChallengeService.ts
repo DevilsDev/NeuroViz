@@ -20,6 +20,54 @@ import type { TrainingHistory } from '../../core/domain/TrainingHistory';
 
 type ChallengeStateCallback = (state: ChallengeState) => void;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function hasValidMetrics(value: unknown): boolean {
+  return isRecord(value) &&
+    isFiniteNumber(value.accuracy) &&
+    // NaN/Infinity losses serialise to null; tolerate that rather than drop the entry
+    (typeof value.loss === 'number' || value.loss === null) &&
+    isFiniteNumber(value.epochs);
+}
+
+/** Shape guard for a persisted challenge completion. */
+export function isChallengeCompletion(value: unknown): value is ChallengeCompletion {
+  return isRecord(value) &&
+    typeof value.challengeId === 'string' &&
+    isFiniteNumber(value.completedAt) &&
+    isRecord(value.config) &&
+    hasValidMetrics(value.metrics) &&
+    isFiniteNumber(value.timeTakenMs);
+}
+
+/** Shape guard for a persisted leaderboard entry. */
+export function isLeaderboardEntry(value: unknown): value is LeaderboardEntry {
+  return isRecord(value) &&
+    typeof value.challengeId === 'string' &&
+    isFiniteNumber(value.rank) &&
+    typeof value.configName === 'string' &&
+    isFiniteNumber(value.score) &&
+    hasValidMetrics(value.metrics) &&
+    isFiniteNumber(value.achievedAt);
+}
+
+/** Parses a stored JSON array, keeping only entries that pass the guard. */
+function parseStoredArray<T>(raw: string | null, guard: (value: unknown) => value is T): T[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter(guard) : [];
+  } catch {
+    return [];
+  }
+}
+
 /**
  * Current state of challenge mode
  */
@@ -307,15 +355,14 @@ export class ChallengeService {
 
   private loadData(): void {
     try {
-      const completionsData = localStorage.getItem('neuroviz-challenge-completions');
-      if (completionsData) {
-        this.completions = JSON.parse(completionsData);
-      }
-
-      const leaderboardData = localStorage.getItem('neuroviz-challenge-leaderboard');
-      if (leaderboardData) {
-        this.leaderboard = JSON.parse(leaderboardData);
-      }
+      this.completions = parseStoredArray(
+        localStorage.getItem('neuroviz-challenge-completions'),
+        isChallengeCompletion
+      );
+      this.leaderboard = parseStoredArray(
+        localStorage.getItem('neuroviz-challenge-leaderboard'),
+        isLeaderboardEntry
+      );
     } catch {
       this.completions = [];
       this.leaderboard = [];
