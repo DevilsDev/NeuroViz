@@ -19,7 +19,9 @@ export default defineConfig({
   },
   build: {
     target: 'ES2022',
-    sourcemap: true,
+    // No source maps in production: they were being deployed publicly to GitHub
+    // Pages alongside the bundle. Use `npm run dev` for debugging.
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {
