@@ -282,5 +282,24 @@ describe('TrainingReport', () => {
       expect(html).toContain('<body>');
       expect(html).toContain('</body>');
     });
+
+    it('escapes dataset name and config values', () => {
+      const data: TrainingReportData = {
+        config: {
+          layers: [4],
+          learningRate: 0.01,
+          activation: '<img src=x id=act>' as never,
+          optimizer: '<script>alert(1)</script>' as never,
+        } as Hyperparameters,
+        history: { records: [], initialLoss: 1, finalLoss: 0.5 } as unknown as TrainingHistory,
+        datasetInfo: { name: '<img src=x onerror=alert(1)>', samples: 1, classes: 2 },
+        finalMetrics: { loss: 0.5, accuracy: 0.5 },
+      };
+
+      const html = generateHTMLReport(data);
+      expect(html).not.toContain('<img src=x');
+      expect(html).not.toContain('<script>alert(1)</script>');
+      expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
+    });
   });
 });
