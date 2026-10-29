@@ -2,7 +2,7 @@
  * GifEncoder Infrastructure Tests
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import { GifEncoder, captureSvgAsImageData } from '../../../../src/infrastructure/export/GifEncoder';
 
 describe('GifEncoder', () => {
@@ -26,17 +26,24 @@ describe('GifEncoder', () => {
   describe('addFrame', () => {
     let encoder: GifEncoder;
     let imageData: ImageData;
+    let ctx: CanvasRenderingContext2D;
+
+    // The first getContext('2d') loads jsdom's native canvas module, which can
+    // take several seconds on a busy machine; do it once with a generous timeout
+    // instead of inside every beforeEach (whose 10 s default it used to exceed).
+    beforeAll(() => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 100;
+      canvas.height = 100;
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('Could not get context');
+      ctx = context;
+    }, 60000);
 
     beforeEach(() => {
       encoder = new GifEncoder(100, 100);
 
       // Create test ImageData
-      const canvas = document.createElement('canvas');
-      canvas.width = 100;
-      canvas.height = 100;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Could not get context');
-
       imageData = ctx.createImageData(100, 100);
       // Fill with red
       for (let i = 0; i < imageData.data.length; i += 4) {
