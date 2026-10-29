@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { deriveStages, WorkflowSpine } from '../../../src/presentation/WorkflowSpine';
+import { deriveStages, WorkflowNav } from '../../../src/presentation/WorkflowNav';
 import type { TrainingState } from '../../../src/core/application/ITrainingSession';
 
 function createState(overrides: Partial<TrainingState> = {}): TrainingState {
@@ -91,48 +91,50 @@ describe('deriveStages', () => {
   });
 });
 
-describe('WorkflowSpine DOM rendering', () => {
-  let container: HTMLDivElement;
+describe('WorkflowNav', () => {
+  let nav: HTMLDivElement;
 
   beforeEach(() => {
-    container = document.createElement('div');
-    container.id = 'test-workflow-spine';
-    document.body.appendChild(container);
+    nav = document.createElement('div');
+    nav.id = 'test-workflow-nav';
+    for (const tab of ['tab-data', 'tab-model', 'tab-train', 'tab-analyze']) {
+      const button = document.createElement('button');
+      button.dataset.tab = tab;
+      nav.appendChild(button);
+    }
+    document.body.appendChild(nav);
   });
 
   afterEach(() => {
-    container.remove();
+    nav.remove();
   });
 
-  it('renders four stages with connectors', () => {
-    const spine = new WorkflowSpine('test-workflow-spine');
-    const stages = container.querySelectorAll('.workflow-stage');
-    const connectors = container.querySelectorAll('.workflow-connector');
+  const status = (tab: string): string | undefined =>
+    nav.querySelector<HTMLElement>(`[data-tab="${tab}"]`)?.dataset.status;
 
-    expect(stages.length).toBe(4);
-    expect(connectors.length).toBe(3);
-    expect(stages[0]?.textContent).toBe('Prepare');
-    expect(stages[3]?.textContent).toBe('Analyze');
+  it('marks finished steps complete and highlights the next one', () => {
+    const wf = new WorkflowNav('test-workflow-nav');
 
-    // Suppress unused variable warning
-    void spine;
+    wf.update(createState({ datasetLoaded: true }));
+    expect(status('tab-data')).toBe('complete');
+    expect(status('tab-model')).toBe('current');
+    expect(status('tab-train')).toBe('pending');
+
+    wf.update(createState({ datasetLoaded: true, isInitialised: true, currentEpoch: 12 }));
+    expect(status('tab-model')).toBe('complete');
+    expect(status('tab-train')).toBe('complete');
+    expect(status('tab-analyze')).toBe('current');
   });
 
-  it('update() applies active/complete classes', () => {
-    const spine = new WorkflowSpine('test-workflow-spine');
+  it('announces step progress to screen readers', () => {
+    const wf = new WorkflowNav('test-workflow-nav');
+    wf.update(createState({ datasetLoaded: true }));
 
-    spine.update(createState({ datasetLoaded: true, isInitialised: true }));
-
-    const prepareEl = container.querySelector('[data-stage="prepare"]');
-    const configureEl = container.querySelector('[data-stage="configure"]');
-    const trainEl = container.querySelector('[data-stage="train"]');
-
-    expect(prepareEl?.classList.contains('complete')).toBe(true);
-    expect(configureEl?.classList.contains('complete')).toBe(true);
-    expect(trainEl?.classList.contains('active')).toBe(true);
+    expect(nav.querySelector('[data-tab="tab-data"] .step-status')?.textContent).toBe(' (done)');
+    expect(nav.querySelector('[data-tab="tab-model"] .step-status')?.textContent).toBe(' (next step)');
   });
 
-  it('throws if container not found', () => {
-    expect(() => new WorkflowSpine('nonexistent')).toThrow();
+  it('throws if the nav is missing', () => {
+    expect(() => new WorkflowNav('nonexistent')).toThrow();
   });
 });
