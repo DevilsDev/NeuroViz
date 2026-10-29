@@ -136,10 +136,12 @@ export class D3ConfusionMatrix {
         // Cell value text with animation
         const textId = `text-${i}-${j}`;
         const text = this.svg.selectAll<SVGTextElement, number>(`#${textId}`).data([value]);
+        const onDarkCell = value > maxVal * 0.5;
 
         text.enter()
           .append('text')
           .attr('id', textId)
+          .attr('class', 'cm-count')
           .attr('x', j * cellSize + cellSize / 2)
           .attr('y', i * cellSize + cellSize / 2)
           .attr('text-anchor', 'middle')
@@ -147,12 +149,14 @@ export class D3ConfusionMatrix {
           .attr('font-size', '10px')
           .attr('font-weight', 'bold')
           .attr('pointer-events', 'none')
-          .attr('fill', value > maxVal * 0.5 ? '#fff' : '#e2e8f0')
+          .attr('fill', onDarkCell ? '#fff' : '#e2e8f0')
           .text(0)
           .merge(text)
+          // The light-theme `svg text` rule forces dark text; this class opts out
+          .classed('cm-count--on-dark', onDarkCell)
           .transition()
           .duration(500)
-          .attr('fill', value > maxVal * 0.5 ? '#fff' : '#1e293b')
+          .attr('fill', onDarkCell ? '#fff' : '#1e293b')
           .textTween(function(d) {
             const i = d3.interpolateNumber(parseFloat(d3.select(this).text()) || 0, d);
             return (t) => Math.round(i(t)).toString();

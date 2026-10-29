@@ -35,6 +35,9 @@ import { safeGetElement } from '../../utils/dom';
 import { KeyboardShortcuts } from '../../utils/KeyboardShortcuts';
 import { DatasetGallery } from '../../utils/DatasetGallery';
 import { setupTouchGestures } from '../../presentation/TouchGestures';
+import { renderAllDatasetPreviews } from '../../presentation/DatasetPreviews';
+import { LayerEditor } from '../../presentation/LayerEditor';
+import { EvaluationSummary } from '../../presentation/EvaluationSummary';
 import { setupBottomSheet } from '../../presentation/BottomSheet';
 import { setupOnboardingWizard } from '../../presentation/Onboarding';
 
@@ -246,6 +249,7 @@ export class ApplicationBuilder {
         speedComparisonResult: document.getElementById('speed-comparison-result'),
         saveSpeedBaselineBtn: document.getElementById('btn-save-speed-baseline'),
         clearSpeedBaselineBtn: document.getElementById('btn-clear-speed-baseline'),
+        evaluationSummary: EvaluationSummary.fromDocument(),
       }
     );
 
@@ -338,6 +342,9 @@ export class ApplicationBuilder {
     setupOnboardingWizard();
 
     // Initialize Dataset Gallery
+    renderAllDatasetPreviews();
+    const layerEditor = LayerEditor.fromDocument();
+    if (layerEditor) this.disposers.push(() => layerEditor.dispose());
     const datasetGallery = new DatasetGallery();
 
     // Initialize Keyboard Shortcuts

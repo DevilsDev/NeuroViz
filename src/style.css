@@ -878,36 +878,6 @@ html:not(.dark) .text-red-400 {
         @apply flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 hover:bg-white/5 active:scale-95 focus:outline-none focus:ring-2 focus:ring-cyan/50;
     }
 
-    /* ===== DATASET CHIPS (Header inline dataset selector) ===== */
-
-    .dataset-chips {
-        @apply flex gap-1 items-center overflow-x-auto;
-        scrollbar-width: none;
-    }
-
-    .dataset-chips::-webkit-scrollbar {
-        display: none;
-    }
-
-    /* Dataset chips — Colab-style: compact, subtle */
-    .dataset-chip {
-        @apply px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap cursor-pointer transition-all duration-150;
-        color: var(--color-text-secondary);
-        border: 1px solid transparent;
-    }
-
-    .dataset-chip:hover {
-        color: var(--color-text-primary);
-        background: rgba(var(--color-cyan-rgb), 0.06);
-    }
-
-    .dataset-chip.selected {
-        background: rgba(var(--color-cyan-rgb), 0.12);
-        color: rgb(var(--color-cyan-rgb));
-        border-color: rgba(var(--color-cyan-rgb), 0.3);
-        font-weight: 600;
-    }
-
     /* ===== METRIC TILES (Google Analytics style) ===== */
 
     .metric-tile {
@@ -1563,15 +1533,7 @@ html:not(.dark) .text-red-400 {
     @apply font-mono text-slate-200;
 }
 
-/*
- * Visual Dataset Gallery (legacy): the large card grid was replaced by the inline
- * .dataset-chip pill bar in the header. The .dataset-preview-card class is still
- * carried on each chip as a JS hook for DatasetGallery.querySelectorAll(), but its
- * visual rules (flex-col, p-2, bg-navy-800 hover, -translate-y) both conflicted with
- * the pill layout and rendered dark-on-dark unreadable in light mode on hover.
- * Only a focus-visible ring is kept for keyboard a11y. All other card/grid/badge/
- * icon/label rules were dead code (no HTML references remaining).
- */
+/* Dataset cards (Data step): styled under STEP PANELS; keep the keyboard focus ring here. */
 .dataset-preview-card:focus-visible {
     @apply ring-2 ring-cyan outline-none;
 }
@@ -2239,17 +2201,12 @@ html .dashboard-grid .sidebar-tab.active {
         min-height: 360px;
     }
 
-    /* Header: dataset chips move to their own row so the controls fit */
+    /* Header wraps so the controls fit */
     .app-top-bar {
         flex-wrap: wrap;
         row-gap: 8px;
     }
 
-    .app-top-bar .dataset-chips {
-        order: 10;
-        flex: 1 0 100%;
-        min-width: 0;
-    }
 }
 
 /* Tablets: KPI tiles in one row */
@@ -2257,6 +2214,304 @@ html .dashboard-grid .sidebar-tab.active {
     .kpi-grid {
         grid-template-columns: repeat(4, minmax(0, 1fr));
     }
+}
+
+/* ===== STEP PANELS (redesign phase 3) ===== */
+.panel-section-title {
+    margin: 0 0 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+/* Data step: dataset cards with point previews */
+.dataset-picker {
+    margin-bottom: 16px;
+}
+
+.dataset-cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.dataset-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 0 8px;
+    overflow: hidden;
+    text-align: left;
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.dataset-card:hover {
+    border-color: var(--border-hover);
+}
+
+.dataset-card:focus-visible {
+    outline: 2px solid rgb(var(--color-cyan-rgb));
+    outline-offset: 2px;
+}
+
+.dataset-card.selected {
+    border-color: rgb(var(--color-cyan-rgb));
+    box-shadow: 0 0 0 1px rgb(var(--color-cyan-rgb));
+}
+
+.dataset-card-preview {
+    display: block;
+    width: 100%;
+    aspect-ratio: 100 / 64;
+    background: var(--surface-0);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.dataset-card-body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 0 8px;
+}
+
+.dataset-card-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.dataset-card-level {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 999px;
+}
+
+.level-easy {
+    background: #DCFCE7;
+    color: #166534;
+}
+
+.level-medium {
+    background: #FEF3C7;
+    color: #92400E;
+}
+
+.level-hard {
+    background: #FEE2E2;
+    color: #991B1B;
+}
+
+.level-yours {
+    background: var(--surface-2);
+    color: var(--color-text-secondary);
+}
+
+.dataset-card-meta {
+    padding: 0 8px;
+    font-size: 11px;
+    color: var(--color-text-secondary);
+}
+
+/* Model step: visual hidden-layer editor */
+.layer-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.layer-row {
+    display: grid;
+    grid-template-columns: 1fr 32px 36px auto 32px 28px;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+}
+
+.layer-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+.layer-units {
+    text-align: center;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.layer-units-label {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+}
+
+.layer-btn {
+    height: 32px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    background: var(--surface-1);
+    color: var(--color-text-primary);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.layer-btn:hover:not(:disabled) {
+    border-color: var(--border-hover);
+}
+
+.layer-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.layer-row .layer-btn:last-child {
+    border-color: transparent;
+    background: transparent;
+    color: var(--color-text-secondary);
+}
+
+.layer-add {
+    height: 36px;
+    border: 1px dashed rgb(var(--color-cyan-rgb) / 0.5);
+    border-radius: 10px;
+    background: rgb(var(--color-cyan-rgb) / 0.06);
+    color: rgb(var(--color-cyan-rgb));
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.layer-add:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.layer-summary {
+    margin: 2px 0 0;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+
+/* Evaluate step: accuracy, F1, verdict and per-class table */
+.eval-summary {
+    margin-bottom: 12px;
+    padding: 12px;
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+}
+
+.eval-scope,
+.eval-verdict-detail,
+.eval-exports-hint {
+    margin: 0 0 10px;
+    font-size: 11px;
+    color: var(--color-text-secondary);
+}
+
+.eval-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.eval-tile {
+    padding: 8px;
+    background: var(--surface-0);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+}
+
+.eval-tile-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-secondary);
+}
+
+.eval-tile-value {
+    margin-top: 2px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.eval-tile-detail {
+    font-size: 10px;
+    color: var(--color-text-secondary);
+}
+
+.eval-verdict[data-kind="good"] {
+    border-color: #16A34A;
+    background: rgb(22 163 74 / 0.08);
+}
+
+.eval-verdict[data-kind="info"] {
+    border-color: rgb(var(--color-cyan-rgb));
+    background: rgb(var(--color-cyan-rgb) / 0.08);
+}
+
+.eval-verdict[data-kind="warning"] {
+    border-color: #D97706;
+    background: rgb(217 119 6 / 0.1);
+}
+
+.eval-class-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+}
+
+.eval-class-table th,
+.eval-class-table td {
+    padding: 4px 6px;
+    text-align: right;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.eval-class-table th:first-child {
+    text-align: left;
+}
+
+.eval-class-table thead th {
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+.eval-class-table tbody th {
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.eval-class-table td {
+    color: var(--color-text-primary);
+}
+
+.eval-summary[data-state="empty"] .eval-class-table {
+    display: none;
+}
+
+.eval-exports {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-subtle);
 }
 
 /* ===== PHONE LAYOUT =====
@@ -2275,12 +2530,6 @@ html .dashboard-grid .sidebar-tab.active {
         padding-right: 12px;
     }
 
-    /* Dataset chips get their own full-width row and scroll within it */
-    .app-top-bar .dataset-chips {
-        order: 10;
-        flex: 1 0 100%;
-        min-width: 0;
-    }
 
     .app-top-bar > .w-px {
         display: none;

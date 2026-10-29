@@ -109,9 +109,9 @@ export class Onboarding {
 
   private handlePresetEntry(): void {
     logger.info('Onboarding: user chose preset entry', { component: 'Onboarding' });
-    // Click the first dataset chip (Circle) to auto-load a simple dataset
-    const circleChip = document.querySelector('.dataset-chip[data-dataset="circle"]') as HTMLElement | null;
-    circleChip?.click();
+    // Pick the Circle card to auto-load a simple dataset
+    const circleCard = document.querySelector('.dataset-preview-card[data-dataset="circle"]') as HTMLElement | null;
+    circleCard?.click();
 
     // Brief delay then click load data
     setTimeout(() => {
